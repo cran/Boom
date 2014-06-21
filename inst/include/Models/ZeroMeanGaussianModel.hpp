@@ -1,0 +1,55 @@
+/*
+  Copyright (C) 2008 Steven L. Scott
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+*/
+
+#ifndef BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP
+#define BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP
+#include <Models/GaussianModelBase.hpp>
+#include <Models/GammaModel.hpp>
+#include <Models/Policies/ParamPolicy_1.hpp>
+#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
+namespace BOOM{
+
+  class ZeroMeanGaussianModel
+      : public GaussianModelBase,
+        public ParamPolicy_1<UnivParams>,
+        public ConjugatePriorPolicy<ZeroMeanGaussianConjSampler>
+  {
+   public:
+    ZeroMeanGaussianModel(double sigma=1.0);
+    ZeroMeanGaussianModel(const std::vector<double> &);
+    virtual ZeroMeanGaussianModel * clone()const;
+
+    virtual void set_sigsq(double sigsq);
+
+    Ptr<UnivParams> Sigsq_prm();
+    const Ptr<UnivParams> Sigsq_prm()const;
+
+    virtual double mu()const{return 0;}
+    virtual double sigsq()const;
+    virtual double sigma()const;
+
+    virtual void mle();
+    void set_conjugate_prior(double df, double sigma_guess);
+    void set_conjugate_prior(Ptr<GammaModelBase>);
+    void set_conjugate_prior(Ptr<ZeroMeanGaussianConjSampler>);
+
+    double Loglike(Vec &g, Mat &h, uint nd)const;
+  };
+}
+#endif // BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP

@@ -1,0 +1,818 @@
+/*
+  Copyright (C) 2005 Steven L. Scott
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+*/
+
+#include <LinAlg/SpdMatrix.hpp>
+#include <LinAlg/Matrix.hpp>
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Cholesky.hpp>
+#include <LinAlg/LU.hpp>
+#include <LinAlg/SubMatrix.hpp>
+
+#include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
+
+#include <cmath>
+#include <numeric>
+#include <stdexcept>
+#include <sstream>
+
+extern "C"{
+#include <cblas.h>
+  void dpotrf_(const char *uplo, const int *n, double *data, const int *lda,
+	       int *info);
+  void dposv_(const char *uplo, const int *n, const int *nrhs, double *spd_a,
+              const int *lda, double *rhs_b, const int *b, int *info);
+  void dpotri_(const char *, int *, double *, int *, int *);
+
+  void dsyevr_(const char *JOBZ,
+               const char * RANGE,
+               const char * UPLO,
+               const int * N,
+	       double *A,
+	       const int *LDA,
+	       const double *VL,
+	       const double *VU,
+	       const int *IL,
+	       const int *IU,
+	       const double *abstol,
+	       const int *M,
+	       double *evals,
+	       double *evecs,
+	       const int *LDZ,
+	       int * isuppz,
+	       double *work,
+	       const int *lwork,
+	       int * iwork,
+	       const int *liwork,
+	       int *info);
+  double dlamch_(const char *);
+}
+
+namespace BOOM{
+   using namespace std;
+   typedef std::vector<double> dVector;
+
+   SpdMatrix::SpdMatrix(){}
+
+   SpdMatrix::SpdMatrix(uint dim, double x)
+     : Matrix(dim,dim)
+   {
+     if(dim > 0) set_diag(x);
+   }
+
+   SpdMatrix::SpdMatrix(uint n, double *x, bool ColMajor)
+     : Matrix(n, n, x, ColMajor)
+   {}
+
+   SpdMatrix::SpdMatrix(const SpdMatrix &rhs)
+     : Matrix(rhs)
+   {}
+
+   SpdMatrix::SpdMatrix(const Matrix &A, bool check)
+     : Matrix(A)
+   {
+     if(check) assert(A.is_sym());
+   }
+
+   SpdMatrix::SpdMatrix(const SubMatrix &rhs, bool check)
+   {
+     if(check){
+       if(rhs.nrow() != rhs.ncol()){
+         report_error("SpdMatrix constructor was supplied a non-square"
+                      "SubMatrix argument");
+       }
+     }
+     operator=(rhs);
+   }
+
+   SpdMatrix & SpdMatrix::operator=(const SpdMatrix &rhs){
+     if(&rhs!= this){
+       Matrix::operator=(rhs);
+     }
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::operator=(const SubMatrix &rhs){
+     if(rhs.nrow() != rhs.ncol()){
+       report_error("SpdMatrix::operator= called with rectangular "
+                    "RHS argument");
+     }
+     Matrix::operator=(rhs);
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::operator=(const Matrix &rhs){
+     assert(rhs.is_sym());
+     Matrix::operator=(rhs);
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::operator=(double x){
+     Matrix::operator=(x);
+     return *this;
+   }
+
+   bool SpdMatrix::operator==(const SpdMatrix &rhs)const{
+     return Matrix::operator==(rhs);}
+
+   void SpdMatrix::swap(SpdMatrix &rhs){ Matrix::swap(rhs); }
+
+
+   void SpdMatrix::randomize(){
+     Matrix::randomize();
+     SpdMatrix tmp(nrow());
+     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans, nrow(), nrow(),
+       	  1.0, data(), nrow(), 0.0, tmp.data(), tmp.nrow());
+     swap(tmp);
+     reflect();
+   }
+
+   uint SpdMatrix::nelem()const{
+     uint n = nrow();
+     return n*(n+1)/2;}
+
+
+   SpdMatrix & SpdMatrix::resize(uint n){
+     Matrix::resize(n,n);
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::set_diag(double x, bool zero){
+     Matrix::set_diag(x,zero);
+     return *this; }
+
+   SpdMatrix & SpdMatrix::set_diag(const Vector &v, bool zero){
+     Matrix::set_diag(v,zero);
+     return *this; }
+
+   inline void zero_upper(SpdMatrix &V){
+     uint n = V.nrow();
+     for(uint i=0; i<n; ++i){
+       dVector::iterator b = V.col_begin(i);
+       dVector::iterator e = b+i;
+       std::fill(b,e,0.0);}}
+
+   Matrix SpdMatrix::chol()const{ bool ok=true; return chol(ok);}
+   Matrix SpdMatrix::chol(bool &ok)const{
+     SpdMatrix ans(*this);
+     ans.reflect();
+     int n = ans.nrow();
+     int info=0;
+     dpotrf_("L", &n, ans.data(), &n, &info);
+     ok = (info == 0);
+     zero_upper(ans);
+     return ans;
+   }
+
+   SpdMatrix SpdMatrix::inv()const{bool ok=true; return inv(ok);}
+   SpdMatrix SpdMatrix::inv(bool & ok)const{
+     int n = nrow();
+     int info=0;
+     SpdMatrix LLT(*this);
+     SpdMatrix ans(Id());
+     dposv_("U", &n, &n, LLT.data(), &n, ans.data(), &n, &info);
+     ok = info==0;
+     return ans;
+   }
+
+   double SpdMatrix::det()const{
+     Chol L(*this);
+     if(L.is_pos_def()) return std::exp(L.logdet());
+
+     LU L2(*this);
+     return L2.det();
+   }
+
+   double SpdMatrix::logdet() const{
+     bool ok(true);
+     return logdet(ok);}
+
+   double SpdMatrix::logdet(bool &ok) const{
+     Matrix L(chol(ok));
+     if(!ok) return BOOM::negative_infinity();
+     double ans =0.0;
+     uint n = nrow();
+     for(uint i=0; i<n; ++i) ans+= std::log(L(i,i));
+     ans *=2;
+     return ans;
+   }
+
+   Matrix SpdMatrix::solve(const Matrix &rhs)const{
+     assert(rhs.nrow() == ncol());
+     int n = nrow();
+     int nrhs = rhs.ncol();
+     int info=0;
+     SpdMatrix LLT(*this);
+     Matrix ans(rhs);
+     dposv_("U", &n, &nrhs, LLT.data(), &n, ans.data(), &n, &info);
+     if(info!=0){
+       ostringstream msg;
+       msg << "Matrix not positive definite in SpdMatrix::solve(Matrix)" << endl
+           << "info = "<< info <<  endl <<"arguments: " << endl
+           << "n = " << n << "  nrhs = " << nrhs << endl
+           << "SpdMatrix: " << endl << *this << endl;
+       report_error(msg.str());
+     }
+     return ans;
+   }
+
+   Vector SpdMatrix::solve(const Vector &rhs)const{
+     bool ok = true;
+     Vector ans(this->solve(rhs, ok));
+     if (!ok) {
+       ostringstream msg;
+       msg << "Matrix not positive definite in SpdMatrix::solve(Vector)."
+           << endl;
+       report_error(msg.str());
+     }
+     return ans;
+   }
+
+  Vector SpdMatrix::solve(const Vector &rhs, bool &ok)const{
+     assert(rhs.size() == ncol());
+     int n = nrow();
+     int nrhs = 1;
+     int info=0;
+     SpdMatrix LLT(*this);
+     Vector ans(rhs);
+     dposv_("U", &n, &nrhs, LLT.data(), &n, ans.data(), &n, &info);
+     if(info!=0){
+       ok = false;
+       return rhs.zero() + negative_infinity();
+     }
+     ok = true;
+     return ans;
+  }
+
+   void SpdMatrix::reflect(){
+     uint n = nrow();
+     double *d = data();
+     for(uint i=0; i<n; ++i){
+       uint pos = i*n + i;
+       double * row = d+pos;  // stride is n, length is n-i
+       double * col = d+pos;  // stride is 1, length is n-i
+       cblas_dcopy(n-i, row, n, col, 1); // y is column, x is row
+     }
+   }
+
+   double SpdMatrix::Mdist(const Vector &x, const Vector &y)const{
+     Vector v(x-y);
+     Vector Av(v);
+     mult(v,Av);
+     return Av.dot(v);
+   }
+
+   double SpdMatrix::Mdist(const Vector &x)const{
+     Vector tmp(x);
+     mult(x, tmp);
+     return tmp.dot(x);
+   }
+
+   template <class V>
+   void local_add_outer(SpdMatrix &S, const V &v, double w){
+     assert(v.size()==S.nrow());
+     cblas_dsyr(CblasColMajor, CblasUpper, v.size(), w, v.data(), v.stride(),
+       	 S.data(), S.nrow());
+   }
+
+   SpdMatrix & SpdMatrix::add_outer(const Vector &v, double w, bool force_sym){
+     local_add_outer<Vector>(*this,v,w);
+     if(force_sym) reflect();
+     return *this; }
+
+   SpdMatrix & SpdMatrix::add_outer(const VectorView &v, double w,
+       			     bool force_sym){
+     local_add_outer<VectorView>(*this,v,w);
+     if(force_sym) reflect();
+     return *this; }
+
+   SpdMatrix & SpdMatrix::add_outer(const ConstVectorView &v, double w,
+       			     bool force_sym){
+     local_add_outer<ConstVectorView>(*this,v,w);
+     if(force_sym) reflect();
+     return *this; }
+
+   SpdMatrix & SpdMatrix::add_outer(const Matrix &X, double w, bool force_sym){
+     assert(X.nrow() == this->nrow());
+     int n = nrow();
+     assert(X.ncol() == this->nrow());
+     uint k = X.ncol();
+     cblas_dsyrk(CblasColMajor,  // order
+                 CblasUpper,     // uplo
+                 CblasNoTrans,   // trans
+       	  n,              // N      number of rows in *this
+                 k,              // k      number of columns in X
+                 w,              // alpha  scale factor for X * X^T
+                 X.data(),       // A
+                 n,              // lda
+                 1.0,            // beta   scale factor for *this
+                 this->data(),   // C
+                 n);             // ldc  (number of rows in C)
+     if(force_sym) reflect();
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::add_inner(const Matrix &X, const Vec &w,
+       			     bool force_sym){
+     assert(X.nrow()==w.size());
+     assert(X.ncol()==this->ncol());
+     uint n = w.size();
+     for(uint i=0; i<n; ++i) this->add_outer(X.row(i),w[i],false);
+     if(force_sym) reflect();
+     return *this;
+   }
+
+
+   SpdMatrix & SpdMatrix::add_inner(const Mat &x, double w){
+     int n = nrow();
+     assert(x.ncol() == this->nrow());
+     uint k = x.nrow();
+     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans,
+       	  n,k, w, x.data(), k, 1.0, this->data(), n);
+     reflect();
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::add_inner2(const Mat &A, const Mat &B, double w){
+     // adds w*(A^TB + B^TA)
+     assert(A.ncol() == B.ncol() && A.ncol()==nrow());
+     assert(A.nrow()==B.nrow());
+     cblas_dsyr2k(CblasColMajor, CblasUpper, CblasTrans,
+       	   nrow(),
+       	   A.nrow(),
+       	   w,
+       	   A.data(),
+       	   A.nrow(),
+       	   B.data(),
+       	   B.nrow(),
+       	   1.0,
+       	   data(),
+       	   nrow());
+     reflect();
+     return *this;
+   }
+
+
+   SpdMatrix & SpdMatrix::add_outer2(const Mat &A, const Mat &B, double w){
+     // adds w*(AB^T + BA^T)
+     assert(A.nrow()==B.nrow()  &&  B.nrow()==nrow());
+     assert(B.ncol()==A.ncol());
+     cblas_dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans,
+       	   nrow(),
+       	   A.ncol(),
+       	   w,
+       	   A.data(),
+       	   A.nrow(),
+       	   B.data(),
+       	   B.nrow(),
+       	   1.0,
+       	   data(),
+       	   nrow());
+     reflect();
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::add_outer2(const Vector &x, const Vector &y, double w){
+     assert(x.size()==nrow() && y.size()==ncol());
+     cblas_dsyr2(CblasColMajor, CblasUpper, nrow(), w,
+       	  x.data(), x.stride(),
+       	  y.data(), y.stride(),
+       	  data(), nrow());
+     reflect();
+     return *this;
+   }
+
+   //-------------- multiplication --------------------
+
+
+   //---------- general_Matrix ---------
+   Matrix & SpdMatrix::mult(const Matrix &B, Matrix &ans, double scal)const{
+     assert(can_mult(B,ans));
+     uint m = nrow();
+     uint n = B.ncol();
+     cblas_dsymm(CblasColMajor, CblasLeft, CblasUpper, m,n,
+       	  scal, data(), nrow(), B.data(), B.nrow(),
+       	  0.0, ans.data(), ans.nrow());
+     return ans; }
+
+   Matrix & SpdMatrix::Tmult(const Matrix &B, Matrix &ans, double scal)const{
+     return mult(B,ans, scal);}
+
+   Matrix & SpdMatrix::multT(const Matrix &B, Matrix & ans, double scal)const{
+     return Matrix::multT(B,ans, scal);}
+
+   //---------- SpdMatrix ---------
+   Matrix & SpdMatrix::mult(const SpdMatrix &B, Matrix &ans, double scal)const{
+     const Matrix &A(B);
+     return mult(A,ans, scal);}
+
+   Matrix & SpdMatrix::Tmult(const SpdMatrix &B, Matrix &ans, double scal)const{
+     const Matrix &A(B);
+     return Tmult(A,ans, scal);}
+
+   Matrix & SpdMatrix::multT(const SpdMatrix &B, Matrix &ans, double scal)const{
+     const Matrix &A(B);
+     return multT(A,ans, scal);}
+
+   //--------- DiagonalMatrix this and B are both symmetric ---------
+   Matrix & SpdMatrix::mult(const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);}
+   Matrix & SpdMatrix::Tmult(const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);}
+   Matrix & SpdMatrix::multT(const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);}
+
+   //--------- Vector --------------
+
+   Vector & SpdMatrix::mult(const Vector &v, Vector & ans, double scal)const{
+     assert(ans.size()==nrow());
+     cblas_dsymv(CblasColMajor, CblasUpper, nrow(), scal, data(), nrow(),
+       	  v.data(), v.stride(), 0.0, ans.data(), ans.stride());
+     return ans;}
+
+   Vector & SpdMatrix::Tmult(const Vector &v, Vector & ans, double scal)const{
+     return mult(v,ans,scal);}
+
+   Vector SpdMatrix::vectorize(bool minimal)const{  // copies upper triangle
+     uint n = ncol();
+     uint ans_size = minimal ? nelem() : n*n;
+     Vector ans(ans_size);
+     Vector::iterator it = ans.begin();
+     for(uint i=0; i<n; ++i){
+       dVector::const_iterator b = col_begin(i);
+       dVector::const_iterator e = minimal ? b+i+1 : b+n;
+       it = std::copy(b,e,it);}
+     return ans;
+   }
+
+   void SpdMatrix::unvectorize(const Vector &x, bool minimal){
+     Vector::const_iterator b(x.begin());
+     unvectorize(b, minimal);}
+
+   Vector::const_iterator SpdMatrix::unvectorize
+   (Vector::const_iterator &b, bool minimal){
+     uint n = ncol();
+     for(uint i=0; i<n; ++i){
+       Vector::const_iterator e = minimal ? b+i+1 : b+n;
+       dVector::iterator dest = col_begin(i);
+       std::copy(b,e,dest);
+       b=e;}
+     reflect();
+     return b;
+   }
+
+   void SpdMatrix::make_symmetric(bool have_upper){
+     uint n = ncol();
+     for(uint i = 1; i<n; ++i){
+       for(uint j=0; j<i; ++j){ // (i,j) is in the lower triangle
+         if(have_upper) unchecked(i,j) = unchecked(j,i);
+         else  unchecked(j,i) = unchecked(i,j);}}}
+
+   //================== non member functions ===========================
+   SpdMatrix Id(uint p){
+     SpdMatrix ans(p);
+     ans.set_diag(1.0);
+     return ans;
+   }
+
+   SpdMatrix outer(const Vector &v){
+     SpdMatrix ans(v.size(), 0.0);
+     ans.add_outer(v);
+     return ans; }
+   SpdMatrix outer(const VectorView &v){
+     SpdMatrix ans(v.size(), 0.0);
+     ans.add_outer(v);
+     return ans; }
+   SpdMatrix outer(const ConstVectorView &v){
+     SpdMatrix ans(v.size(), 0.0);
+     ans.add_outer(v);
+     return ans; }
+
+
+    SpdMatrix LLT(const Matrix &L, double a){
+      SpdMatrix ans(L.nrow());
+      int n = L.nrow();
+      int k = L.ncol();
+      cblas_dsyrk(CblasColMajor, CblasUpper, CblasNoTrans,
+       	   n,k, a,
+       	   L.data(), n,
+       	   0.0, ans.data(), n);
+      ans.reflect();
+      return ans;
+    }
+
+   SpdMatrix RTR(const Matrix &R, double a){
+     SpdMatrix ans(R.ncol());
+     int n = R.nrow();
+     int k = R.ncol();
+     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans,
+       	  n,k, a,
+       	  R.data(), n,
+       	  0.0, ans.data(), n);
+     ans.reflect();
+     return ans;
+   }
+
+   SpdMatrix LTL(const Matrix &L){
+     Matrix ans(L);
+     cblas_dtrmm(CblasColMajor, CblasLeft, CblasLower, CblasTrans,
+       	  CblasNonUnit, L.nrow(), L.ncol(), 1.0,
+       	  L.data(), L.nrow(), ans.data(), ans.nrow());
+     return ans;
+   }
+
+
+   Matrix chol(const SpdMatrix &S){ return S.chol();}
+   Matrix chol(const SpdMatrix &S, bool & ok){return S.chol(ok);}
+
+   SpdMatrix chol2inv(const Mat &L){
+     assert(L.is_square());
+     int n = L.nrow();
+     SpdMatrix ans(L, false);
+     int info=0;
+
+     dpotri_("L", &n, ans.data(), &n, &info);
+     for(int i=0; i<n; ++i){
+       for(int j=0; j<i; ++j){
+         ans(j,i) = ans(i,j);}}
+     return ans;
+   }
+
+   SpdMatrix sandwich(const Matrix &A, const SpdMatrix &V){  // AVA^T
+     Matrix tmp(A.nrow(), V.ncol());
+     cblas_dsymm(CblasColMajor, CblasRight, CblasUpper,
+       	  tmp.nrow(),
+       	  tmp.ncol(),
+       	  1.0,
+       	  V.data(),
+       	  V.nrow(),
+       	  A.data(),
+       	  A.nrow(),
+       	  0.0,
+       	  tmp.data(),
+       	  tmp.nrow());
+     return matmultT(tmp, A);
+   }
+
+
+   SpdMatrix select(const SpdMatrix &S, const std::vector<bool> &inc){
+     uint nvars = std::accumulate(inc.begin(), inc.end(), 0);
+     return select(S,inc,nvars);
+   }
+
+   SpdMatrix select(const SpdMatrix &S, const std::vector<bool> &inc,
+		      uint nvars){
+     SpdMatrix ans(nvars);
+     uint I=0;
+     for(uint i=0; i<nvars; ++i){
+	if(inc[i]){
+	  uint J=0;
+	  for(uint j=0; j<nvars; ++j){
+	    if(inc[j]){
+	      ans.unchecked(I,J) = S.unchecked(i,j);
+	      ++J; }}
+	  ++I;}}
+     return ans; }
+
+   SpdMatrix as_symmetric(const Matrix &A){
+     assert(A.is_square());
+     Matrix ans = A.t();
+     ans+=A;
+     ans/=2.0;
+     return SpdMatrix(ans, false); // no symmetry check needed
+   }
+
+   SpdMatrix sum_self_transpose(const Mat &A){
+     assert(A.is_square());
+     uint n = A.nrow();
+     Spd ans(n, 0.0);
+     for(uint i=0; i<n; ++i){
+       for(uint j=0; j<i; ++j){
+         ans(i,j) = ans(j,i) = A(i,j) + A(j,i);}}
+     return ans;
+   }
+
+   Vector eigen(const SpdMatrix &X){
+     SpdMatrix tmp(X);
+     int n = tmp.nrow();
+     int nfound=0;
+     Vector ans(n);
+     double zero = 0.0;
+     double abstol = dlamch_("Safe minimum");
+     int lwork(-1);
+     Vector work(1);
+     std::vector<int> iwork(1);
+     int liwork(-1);
+     int info(0);
+     std::vector<int> isuppz(2*n, 0);
+     dsyevr_("N",         // JOBZ
+             "A",         // RANGE
+             "U",         // UPLO
+             &n,          // N... dimension of problem
+             tmp.data(),  // A    Matrix to decompose
+             &n,          // LDA
+             &zero, &zero, // VL, VU... not referenced
+             &n, &n,      // IL, IU...  not referenced
+             &abstol,     // criterion for eigenvalue convergence
+             &nfound,     // M... number of eigenvalues found
+             ans.data(),  // W... eigenvalues
+             ans.data(), // Z... eigenVectors.. not referenced
+             &n,          // LDZ
+             &isuppz[0],  //
+             work.data(),
+             &lwork,
+             &iwork[0],
+             &liwork,
+             &info);
+
+     lwork = static_cast<int>(work[0]);
+     work.resize(lwork);
+
+     liwork = static_cast<int>(iwork[0]);
+     iwork.resize(liwork);
+
+     dsyevr_("N",         // JOBZ
+             "A",         // RANGE
+             "U",         // UPLO
+             &n,          // N... dimension of problem
+             tmp.data(),  // A    Matrix to decompose
+             &n,          // LDA
+             &zero, &zero, // VL, VU... not referenced
+             &n, &n,      // IL, IU...  not referenced
+             &abstol,     // criterion for eigenvalue convergence
+             &nfound,     // M... number of eigenvalues found
+             ans.data(),  // W... eigenvalues
+             ans.data(), // Z... eigenVectors.. not referenced
+             &n,          // LDZ
+             &isuppz[0],  //
+             work.data(),
+             &lwork,
+             &iwork[0],
+             &liwork,
+             &info);
+
+     return ans;
+   }
+
+   inline bool checkZ(const Matrix &Z, int n){
+     const unsigned int m = n;
+     if(Z.nrow()!=m || Z.ncol()!=m) return false;
+     return true;
+   }
+
+   Vector eigen(const SpdMatrix &X, Matrix & Z){
+     SpdMatrix tmp(X);
+     int n = tmp.nrow();
+     if(checkZ(Z,n)) Z = Matrix(n,n);
+     int nfound=0;
+     Vector ans(n);
+     double zero = 0.0;
+     double abstol = dlamch_("Safe minimum");
+     int lwork(-1);
+     Vector work(1);
+     std::vector<int> iwork(1);
+     int liwork(-1);
+     int info(0);
+     std::vector<int> isuppz(2*n, 0);
+     dsyevr_("V",         // JOBZ
+             "A",         // RANGE
+             "U",         // UPLO
+             &n,          // N... dimension of problem
+             tmp.data(),  // A    Matrix to decompose
+             &n,          // LDA
+             &zero, &zero, // VL, VU... not referenced
+             &n, &n,      // IL, IU...  not referenced
+             &abstol,     // criterion for eigenvalue convergence
+             &nfound,     // M... number of eigenvalues found
+             ans.data(),  // W... eigenvalues
+             Z.data(),    // Z... eigenVectors.. not referenced
+             &n,          // LDZ
+             &isuppz[0],  //
+             work.data(),
+             &lwork,
+             &iwork[0],
+             &liwork,
+             &info);
+
+     lwork = static_cast<int>(work[0]);
+     work.resize(lwork);
+
+     liwork = static_cast<int>(iwork[0]);
+     iwork.resize(liwork);
+
+     dsyevr_("V",         // JOBZ
+             "A",         // RANGE
+             "U",         // UPLO
+             &n,          // N... dimension of problem
+             tmp.data(),  // A    Matrix to decompose
+             &n,          // LDA
+             &zero, &zero, // VL, VU... not referenced
+             &n, &n,      // IL, IU...  not referenced
+             &abstol,     // criterion for eigenvalue convergence
+             &nfound,     // M... number of eigenvalues found
+             ans.data(),  // W... eigenvalues
+             Z.data(),    // Z... eigenvectors.. not referenced
+             &n,          // LDZ
+             &isuppz[0],  //
+             work.data(),
+             &lwork,
+             &iwork[0],
+             &liwork,
+             &info);
+
+     return ans;
+   }
+
+  double largest_eigenvalue(const SpdMatrix &X){
+    SpdMatrix tmp(X);
+    int n = tmp.nrow();
+    int nfound = 0;
+    Vector ans(n);
+    double zero = 0.0;
+    double abstol = dlamch_("Safe minimum");
+    int IL = n;  // Indices of the smallest and largest
+    int IU = n;  // eigenvalues to be found
+    int lwork(-1);
+    Vector work(1);
+    std::vector<int> iwork(1);
+    int liwork(-1);
+    int info(0);
+    std::vector<int> isuppz(2*n, 0);
+    dsyevr_("N",         // JOBZ
+            "I",         // RANGE
+            "U",         // UPLO
+            &n,          // N... dimension of problem
+            tmp.data(),  // A    Matrix to decompose
+            &n,          // LDA
+            &zero, &zero, // VL, VU... not referenced
+            &IL, &IU,
+            &abstol,     // criterion for eigenvalue convergence
+            &nfound,     // M... number of eigenvalues found
+            ans.data(),  // W... eigenvalues
+            ans.data(),  // Z... eigenVectors.. not referenced
+            &n,          // LDZ
+            &isuppz[0],  //
+            work.data(),
+            &lwork,
+            &iwork[0],
+            &liwork,
+            &info);
+
+    lwork = static_cast<int>(work[0]);
+    work.resize(lwork);
+
+    liwork = static_cast<int>(iwork[0]);
+    iwork.resize(liwork);
+
+    dsyevr_("N",         // JOBZ
+            "I",         // RANGE
+            "U",         // UPLO
+            &n,          // N... dimension of problem
+            tmp.data(),  // A    Matrix to decompose
+            &n,          // LDA
+            &zero, &zero,// VL, VU... not referenced
+            &IL,         // Indices of the smallest and largest
+            &IU,         //   eigenvalues to be found
+            &abstol,     // criterion for eigenvalue convergence
+            &nfound,     // M... number of eigenvalues found
+            ans.data(),  // W... eigenvalues
+            ans.data(),  // Z... eigenVectors.. not referenced
+            &n,          // LDZ
+            &isuppz[0],  //
+            work.data(),
+            &lwork,
+            &iwork[0],
+            &liwork,
+            &info);
+    return ans[0];
+  }
+
+   SpdMatrix operator*(double x, const SpdMatrix &V){
+     assert(x>=0);
+     SpdMatrix ans(V);
+     ans*=x;
+     return ans;
+   }
+
+   SpdMatrix operator*(const SpdMatrix &V, double x){
+     return x*V; }
+
+   SpdMatrix operator/(const SpdMatrix &v, double x){
+     return v*(1.0/x); }
+
+} // namespace BOOM
