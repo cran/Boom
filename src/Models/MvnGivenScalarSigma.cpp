@@ -20,40 +20,45 @@
 
 namespace BOOM{
 
+  MvnGivenScalarSigmaBase::MvnGivenScalarSigmaBase(Ptr<UnivParams> sigsq)
+      : sigsq_(sigsq)
+  {}
+
+  double MvnGivenScalarSigmaBase::sigsq() const {
+    return sigsq_->value();
+  }
+
   typedef MvnGivenScalarSigma MGSS;
 
   MvnGivenScalarSigma::MvnGivenScalarSigma(const Spd &ominv,
                                            Ptr<UnivParams> sigsq)
-      : ParamPolicy(new VectorParams(nrow(ominv))),
-      DataPolicy(new MvnSuf(nrow(ominv))),
-      PriorPolicy(),
-      sigsq_(sigsq),
-      omega_(ominv, true),
-      wsp_(ominv)
-      {}
+      : MvnGivenScalarSigmaBase(sigsq),
+        ParamPolicy(new VectorParams(nrow(ominv))),
+        DataPolicy(new MvnSuf(nrow(ominv))),
+        PriorPolicy(),
+        omega_(ominv, true),
+        wsp_(ominv)
+  {}
 
   MvnGivenScalarSigma::MvnGivenScalarSigma(const Vec &mean,
                                            const Spd &ominv,
                                            Ptr<UnivParams> sigsq)
-      : ParamPolicy(new VectorParams(mean)),
-      DataPolicy(new MvnSuf(mean.size())),
-      PriorPolicy(),
-      sigsq_(sigsq),
-      omega_(ominv, true),
-      wsp_(mean.size())
-      {}
+      : MvnGivenScalarSigmaBase(sigsq),
+        ParamPolicy(new VectorParams(mean)),
+        DataPolicy(new MvnSuf(mean.size())),
+        PriorPolicy(),
+        omega_(ominv, true),
+        wsp_(mean.size())
+  {}
 
-
-  MGSS::MvnGivenScalarSigma(const MGSS &rhs)
+  MvnGivenScalarSigma::MvnGivenScalarSigma(const MGSS &rhs)
       : Model(rhs),
         VectorModel(rhs),
-        MLE_Model(rhs),
-        MvnBase(rhs),
+        MvnGivenScalarSigmaBase(rhs),
         LoglikeModel(rhs),
         ParamPolicy(rhs),
         DataPolicy(rhs),
         PriorPolicy(rhs),
-        sigsq_(rhs.sigsq_),
         omega_(rhs.omega_),
         wsp_(rhs.wsp_)
       {}
@@ -67,17 +72,17 @@ namespace BOOM{
   const Vec & MGSS::mu()const{ return Mu_prm()->value(); }
 
   const Spd & MGSS::Sigma()const{
-    wsp_ = omega_.var() * sigsq_->value();
+    wsp_ = omega_.var() * sigsq();
     return wsp_;
   }
 
   const Spd & MGSS::siginv()const{
-    wsp_ = omega_.ivar() / sigsq_->value();
+    wsp_ = omega_.ivar() / sigsq();
     return wsp_;
   }
 
   double MGSS::ldsi()const{
-    return omega_.ldsi() - dim() * log(sigsq_->value());
+    return omega_.ldsi() - dim() * log(sigsq());
   }
 
   const Spd & MGSS::Omega()const{ return omega_.var();}
@@ -87,21 +92,13 @@ namespace BOOM{
   void MGSS::set_mu(const Vec &mu){Mu_prm()->set(mu);}
   void MGSS::mle(){ set_mu(suf()->ybar()); }
 
-  // copied from MvnModel::loglike.  Consider moving to MvnBase
-  double MGSS::loglike()const{
-    const double log2pi = 1.83787706641;
-    double dim = mu().size();
-    double n = suf()->n();
-    const Vec ybar = suf()->ybar();
-    const Spd sumsq = suf()->center_sumsq();
-
-    double qform = n*(siginv().Mdist(ybar, mu()));
-    qform+= traceAB(siginv(), sumsq);
-
-    double nc = 0.5*n*( -dim*log2pi + ldsi());
-
-    double ans = nc - .5*qform;
-    return ans;
+  double MGSS::loglike(const Vector &mu_ominv)const{
+    const ConstVectorView mu(mu_ominv, 0, dim());
+    SpdMatrix siginv(dim());
+    Vector::const_iterator b(mu_ominv.cbegin() + dim());
+    siginv.unvectorize(b, true);
+    siginv /= sigsq();
+    return MvnBase::log_likelihood(Vector(mu), siginv, *suf());
   }
 
   double MGSS::pdf(Ptr<Data> dp, bool logscale)const{

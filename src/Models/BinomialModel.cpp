@@ -95,7 +95,7 @@ namespace BOOM{
   }
 
   Vec::const_iterator BS::unvectorize(Vec::const_iterator &v,
-                                          bool){
+                                      bool){
     sum_ = *v;  ++v;
     nobs_ = *v; ++v;
     return v;
@@ -121,7 +121,6 @@ namespace BOOM{
 
   BM::BinomialModel(const BM & rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       ConjPriorPolicy(rhs),
@@ -152,8 +151,14 @@ namespace BOOM{
   Ptr<UnivParams> BM::Prob_prm(){ return ParamPolicy::prm();}
   const Ptr<UnivParams> BM::Prob_prm()const{ return ParamPolicy::prm();}
 
-  double BM::Loglike(Vec &g, Mat &h, uint nd)const{
-    double p = prob();
+  double BM::Loglike(const Vector &probvec, Vec &g, Mat &h, uint nd)const{
+    if (probvec.size() != 1) {
+      report_error("Wrong size argument.");
+    }
+    double p = probvec[0];
+    if (p < 0 || p > 1) {
+      return negative_infinity();
+    }
     double logp = log(p);
     double logp2 = log(1-p);
 
@@ -167,7 +172,7 @@ namespace BOOM{
       double q = 1-p;
       g[0] = (success - p*ntrials)/(p*q);
       if(nd>1){
-	h(0,0) = -1*(success/(p*p)  + fail/(q*q));
+        h(0,0) = -1*(success/(p*p)  + fail/(q*q));
       }
     }
     return ans;

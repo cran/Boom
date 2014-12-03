@@ -77,8 +77,7 @@ namespace BOOM{
   class HealthStateModel :
       public TimeSeriesDataPolicy<HealthStateData>,
       public CompositeParamPolicy,
-      public PriorPolicy,
-      public LoglikeModel
+      public PriorPolicy
   {
    public:
     HealthStateModel(const std::vector<Ptr<MixtureComponent> > &mix,
@@ -87,7 +86,7 @@ namespace BOOM{
     HealthStateModel(const HealthStateModel &rhs);
     virtual HealthStateModel * clone()const;
 
-    virtual double loglike()const;
+    double loglike()const;
 
     uint state_space_size()const;
     uint ntreatments()const;

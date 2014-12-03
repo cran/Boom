@@ -37,7 +37,7 @@
  *
  *  DESCRIPTION
  *
- *	The density of the exponential distribution.
+ *      The density of the exponential distribution.
  */
 
 #include "nmath.hpp"
@@ -53,10 +53,10 @@ double dexp(double x, double scale, int give_log)
     if (scale <= 0.0) ML_ERR_return_NAN;
 
     if (x < 0.)
-	return R_D__0;
+        return R_D__0;
     return (give_log ?
-	    (-x / scale) - log(scale) :
-	    exp(-x / scale) / scale);
+            (-x / scale) - log(scale) :
+            exp(-x / scale) / scale);
 }
 }
 

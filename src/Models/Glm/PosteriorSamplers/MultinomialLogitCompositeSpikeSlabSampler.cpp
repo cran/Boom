@@ -88,29 +88,29 @@ namespace BOOM {
         VectorView beta_chunk_view(beta, start_, chunk_size_);
         beta_chunk_view = beta_chunk;
 
-        Selector inclusion(beta.size(), false);
-        if (nd > 0) {
-          for (int i = 0; i < chunk_size_; ++i) {
-            int pos = start_ + i;
-            inclusion.add(pos);
-          }
+        // Indicates which elements of beta are being handled in this
+        // chunk.
+        Selector chunk_mask(beta.size(), false);
+        for (int i = 0; i < chunk_size_; ++i) {
+          int pos = start_ + i;
+          chunk_mask.add(pos);
         }
+
+        // The call to log_likelihood computes g and h with respect to
+        // beta.  Afterwards, they need to be subset using chunk_mask.
         Vector g;
         Matrix h;
         double ans = model_->log_likelihood(beta, g, h, nd);
-        if (nd > 0) {
-          gradient = inclusion.select(g);
-          if (nd > 1) {
-            Hessian = inclusion.select_square(h);
-          }
-        }
 
+        Vector *gradient_pointer = nd > 0 ? &g : nullptr;
+        Matrix *Hessian_pointer = nd > 1 ? &h : nullptr;
+        const Selector &inclusion(model_->coef().inc());
         ans += prior_->logp_given_inclusion(
-            beta, g, h, nd, model_->coef().inc());
+            beta, gradient_pointer, Hessian_pointer, inclusion, false);
         if (nd > 0) {
-          gradient += inclusion.select(g);
+          gradient = chunk_mask.select(g);
           if (nd > 1) {
-            Hessian += inclusion.select_square(h);
+            Hessian = chunk_mask.select_square(h);
           }
         }
         return ans;

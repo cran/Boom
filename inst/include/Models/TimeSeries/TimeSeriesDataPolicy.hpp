@@ -85,9 +85,7 @@ namespace BOOM{
 
   template<class D, class TS>
   TimeSeriesDataPolicy<D,TS>::TimeSeriesDataPolicy()
-  {
-  }
-
+  {}
 
   template<class D, class TS>
   TimeSeriesDataPolicy<D,TS>::TimeSeriesDataPolicy(Ptr<TS> ts)
@@ -115,11 +113,10 @@ namespace BOOM{
   template<class D, class TS>
   void TimeSeriesDataPolicy<D, TS>::add_data_point(Ptr<D> dp){
     if(ts_.empty()){
-      NEW(DataSeriesType, ts)(dp);
+      NEW(DataSeriesType, ts)();
       ts_.push_back(ts);
-    }else{
-      ts_.back()->add_1(dp);
     }
+    ts_.back()->add_1(dp);
   }
 
   template<class D, class TS>

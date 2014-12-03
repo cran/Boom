@@ -38,8 +38,7 @@ class HmmDataImputer;
 class HiddenMarkovModel :
       public TimeSeriesDataPolicy<Data>,
       public CompositeParamPolicy,
-      public PriorPolicy,
-      public LoglikeModel
+      public PriorPolicy
 {
  public:
   // constructors...
@@ -69,7 +68,7 @@ class HiddenMarkovModel :
   uint nthreads()const;
 
   Ptr<MarkovModel> mark();
-  virtual double loglike()const;
+  double loglike()const;
   double saved_loglike()const;
   void randomly_assign_data();
 

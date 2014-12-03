@@ -26,6 +26,7 @@ namespace BOOM {
       Ptr<GammaModel> siginv_prior)
       : model_(model),
         siginv_prior_(siginv_prior),
+        sigsq_sampler_(siginv_prior_),
         handle_siginv_prior_separately_(false)
   {}
 
@@ -37,10 +38,8 @@ namespace BOOM {
     siginv_prior_->clear_data();
     for (int i = 0; i < model_->state_dimension(); ++i) {
       const GaussianSuf *suf = model_->suf(i);
-      double df = suf->n() + 2 * siginv_prior_->alpha();
-      double sumsq = suf->sumsq() * model_->predictor_variance()[i]
-          + 2 * siginv_prior_->beta();
-      double sigsq = 1.0 / rgamma_mt(rng(), df/2, sumsq/2);
+      double sumsq = suf->sumsq() * model_->predictor_variance()[i];
+      double sigsq = sigsq_sampler_.draw(rng(), suf->n(), sumsq);
       model_->set_sigsq(sigsq, i);
       siginv_prior_->suf()->update_raw(1.0/sigsq);
     }

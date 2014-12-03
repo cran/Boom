@@ -279,7 +279,6 @@ namespace BOOM{
 
   WRM::WeightedRegressionModel(const WeightedRegressionModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -325,25 +324,27 @@ namespace BOOM{
     set_sigsq(SSE/n);
   }
 
-  double WRM::Loglike(Vec &g, Mat &h, uint nd)const{
+  double WRM::Loglike(const Vector &beta_sigsq,
+                      Vec &g, Mat &h, uint nd)const{
     const double log2pi = 1.8378770664093453;
-    const Selector & inc(coef().inc());
+    const Selector & inclusion_indicators(coef().inc());
+    const int beta_dim(inclusion_indicators.nvars());
+    const Vector beta(ConstVectorView(beta_sigsq, 0, beta_dim));
+    const double sigsq = beta_sigsq.back();
 
-    if(sigsq() <= 0){
+    if(sigsq <= 0){
       g=0;
-      g.back() = -sigsq();
+      g.back() = -sigsq;
       h = h.Id();
       return BOOM::negative_infinity();
     }
 
-    Spd xtwx(suf()->xtx(inc));
-    Vec xtwy(suf()->xty(inc));
+    Spd xtwx(suf()->xtx(inclusion_indicators));
+    Vec xtwy(suf()->xty(inclusion_indicators));
     double ytwy =suf()->yty();
     double n = suf()->n();
     double sumlogw = suf()->sumlogw();
 
-    Vec beta(this->included_coefficients());
-    double sigsq = this->sigsq();
     double SS = xtwx.Mdist(beta) -2*beta.dot(xtwy) + ytwy;
     double ans = -.5*(n*log2pi + n*log(sigsq) - sumlogw + SS/sigsq);
 

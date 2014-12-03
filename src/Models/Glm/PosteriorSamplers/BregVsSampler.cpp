@@ -20,19 +20,34 @@
 #include <cpputil/seq.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
+#include <distributions/trun_gamma.hpp>
+#include <Models/ChisqModel.hpp>
 #include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
 #include <Models/MvnGivenScalarSigma.hpp>
 
 namespace BOOM{
 
   typedef BregVsSampler BVS;
+
+  namespace {
+    Ptr<GammaModelBase> create_siginv_prior(RegressionModel *mod,
+                                            double prior_nobs,
+                                            double expected_rsq) {
+      double sample_variance = mod->suf()->SST() / (mod->suf()->n() - 1);
+      assert(expected_rsq > 0 && expected_rsq < 1);
+      double sigma_guess = sqrt(sample_variance * (1-expected_rsq));
+      return new ChisqModel(prior_nobs, sigma_guess);
+    }
+  }
+
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel * mod,
-		     double prior_nobs,
-		     double expected_rsq,
-		     double expected_model_size,
+                     double prior_nobs,
+                     double expected_rsq,
+                     double expected_model_size,
                      bool first_term_is_intercept)
     : m_(mod),
+      spri_(create_siginv_prior(mod, prior_nobs, expected_rsq)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
       draw_beta_(true),
@@ -41,29 +56,23 @@ namespace BOOM{
       beta_tilde_(1, negative_infinity()),
       iV_tilde_(1, negative_infinity()),
       DF_(negative_infinity()),
-      SS_(negative_infinity())
+      SS_(negative_infinity()),
+      sigsq_sampler_(spri_)
   {
     uint p = m_->nvars_possible();
     Vec b = Vec(p, 0.0);
-    if(first_term_is_intercept){
+    if (first_term_is_intercept) {
       b[0] = m_->suf()->ybar();
     }
     Spd ominv(m_->suf()->xtx());
     double n = m_->suf()->n();
-    ominv *= prior_nobs/n;
-
+    ominv *= prior_nobs / n;
     bpri_ = new MvnGivenScalarSigma(ominv, mod->Sigsq_prm());
 
-    double v = m_->suf()->SST()/(n-1);
-    assert(expected_rsq > 0 && expected_rsq < 1);
-    double sigma_guess = sqrt(v * (1-expected_rsq));
-
-    spri_ = new GammaModel(prior_nobs, pow(sigma_guess, 2)*prior_nobs/2);
-
     double prob = expected_model_size/p;
-    if(prob>1) prob = 1.0;
+    if (prob>1) prob = 1.0;
     Vec pi(p, prob);
-    if(first_term_is_intercept){
+    if (first_term_is_intercept) {
       pi[0] = 1.0;
     }
 
@@ -72,17 +81,19 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel *mod,
-		     double prior_sigma_nobs,
+                     double prior_sigma_nobs,
                      double prior_sigma_guess,
                      double prior_beta_nobs,
                      double diagonal_shrinkage,
-		     double prior_inclusion_probability,
+                     double prior_inclusion_probability,
                      bool force_intercept)
     : m_(mod),
+      spri_(new ChisqModel(prior_sigma_nobs, prior_sigma_guess)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
       draw_beta_(true),
-      draw_sigma_(true)
+      draw_sigma_(true),
+      sigsq_sampler_(spri_)
   {
     uint p = m_->nvars_possible();
     Vec b = Vec(p, 0.0);
@@ -91,10 +102,10 @@ namespace BOOM{
     Spd ominv(m_->suf()->xtx());
     double n = m_->suf()->n();
 
-    if(prior_sigma_guess <= 0){
+    if (prior_sigma_guess <= 0) {
       ostringstream msg;
-      msg << "illegal value of prior_sigma_guess in constructor to BregVsSampler"
-          << endl
+      msg << "illegal value of prior_sigma_guess in constructor "
+          << "to BregVsSampler" << endl
           << "supplied value:  " << prior_sigma_guess << endl
           << "legal values are strictly > 0";
       report_error(msg.str());
@@ -104,7 +115,7 @@ namespace BOOM{
     // handle diagonal shrinkage:  ominv =alpha*diag(ominv) + (1-alpha)*ominv
     // This prevents a perfectly singular ominv.
     double alpha = diagonal_shrinkage;
-    if(alpha > 1.0 || alpha < 0.0){
+    if (alpha > 1.0 || alpha < 0.0) {
       ostringstream msg;
       msg << "illegal value of 'diagonal_shrinkage' in "
           << "BregVsSampler constructor.  Supplied value = "
@@ -112,7 +123,7 @@ namespace BOOM{
       report_error(msg.str());
     }
 
-    if(alpha < 1.0){
+    if (alpha < 1.0) {
       diag(ominv).axpy(diag(ominv), alpha/(1-alpha));
       ominv *= (1-alpha);
     }else{
@@ -121,11 +132,8 @@ namespace BOOM{
 
     bpri_ = new MvnGivenScalarSigma(b, ominv, m_->Sigsq_prm());
 
-    double prior_ss = pow(prior_sigma_guess, 2)*prior_sigma_nobs;
-    spri_ = new GammaModel(prior_sigma_nobs/2, prior_ss/2);
-
     Vec pi(p, prior_inclusion_probability);
-    if(force_intercept) pi[0] = 1.0;
+    if (force_intercept) pi[0] = 1.0;
 
     vpri_ = new VariableSelectionPrior(pi);
     check_dimensions();
@@ -139,12 +147,13 @@ namespace BOOM{
                      const Vec &prior_inclusion_probs)
     : m_(mod),
       bpri_(new MvnGivenScalarSigma(b, Omega_inverse, m_->Sigsq_prm())),
-      spri_(new GammaModel(df/2, pow(sigma_guess, 2)*df/2)),
+      spri_(new ChisqModel(df, sigma_guess)),
       vpri_(new VariableSelectionPrior(prior_inclusion_probs)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
       draw_beta_(true),
-      draw_sigma_(true)
+      draw_sigma_(true),
+      sigsq_sampler_(spri_)
   {
     check_dimensions();
   }
@@ -162,15 +171,16 @@ namespace BOOM{
         indx(seq<uint>(0, m_->nvars_possible()-1)),
         max_nflips_(indx.size()),
         draw_beta_(true),
-        draw_sigma_(true)
+        draw_sigma_(true),
+        sigsq_sampler_(spri_)
   {
     check_dimensions();
   }
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel * mod,
-		     Ptr<MvnGivenScalarSigma> bpri,
-		     Ptr<GammaModelBase> spri,
-		     Ptr<VariableSelectionPrior> vpri)
+                     Ptr<MvnGivenScalarSigmaBase> bpri,
+                     Ptr<GammaModelBase> spri,
+                     Ptr<VariableSelectionPrior> vpri)
     : m_(mod),
       bpri_(bpri),
       spri_(spri),
@@ -178,34 +188,38 @@ namespace BOOM{
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
       draw_beta_(true),
-      draw_sigma_(true)
+      draw_sigma_(true),
+      sigsq_sampler_(spri_)
   {
     check_dimensions();
   }
   //----------------------------------------------------------------------
-  void BVS::limit_model_selection(uint n){ max_nflips_ =n;}
-  void BVS::allow_model_selection(){ max_nflips_ = indx.size();}
-  void BVS::supress_model_selection(){max_nflips_ =0;}
-  void BVS::supress_beta_draw(){draw_beta_ = false;}
-  void BVS::allow_beta_draw(){draw_beta_ = false;}
-  void BVS::supress_sigma_draw(){draw_sigma_ = false;}
-  void BVS::allow_sigma_draw(){draw_sigma_ = false;}
+  void BVS::limit_model_selection(uint n) { max_nflips_ =n;}
+  void BVS::allow_model_selection() { max_nflips_ = indx.size();}
+  void BVS::supress_model_selection() {max_nflips_ =0;}
+  void BVS::supress_beta_draw() {draw_beta_ = false;}
+  void BVS::allow_beta_draw() {draw_beta_ = false;}
+  void BVS::supress_sigma_draw() {draw_sigma_ = false;}
+  void BVS::allow_sigma_draw() {draw_sigma_ = false;}
 
   //  since alpha = df/2 df is 2 * alpha, likewise for beta
-  double BVS::prior_df()const{ return 2 * spri_->alpha(); }
-  double BVS::prior_ss()const{ return 2 * spri_->beta(); }
+  double BVS::prior_df() const { return 2 * spri_->alpha(); }
+  double BVS::prior_ss() const { return 2 * spri_->beta(); }
 
-  double BVS::log_model_prob(const Selector &g)const{
-    //    if(g.nvars()==0) return BOOM::negative_infinity();
-    if(g.nvars()==0){
-      // integrate out sigma
+  double BVS::log_model_prob(const Selector &g) const {
+    if (g.nvars()==0) {
+      // Integrate out sigma.  The empty model is handled as a special
+      // case because information matrices cancel, and do not appear
+      // in the sum of squares.  It is easier to handle them here than
+      // to impose a global requirement about what logdet() should
+      // mean for an empty matrix.
       double ss = m_->suf()->yty() + prior_ss();
       double df = m_->suf()->n() + prior_df();
       double ans = vpri_->logp(g) - (.5*df-1)*log(ss);
       return ans;
     }
     double ans = vpri_->logp(g);
-    if(ans == negative_infinity()){
+    if (ans == negative_infinity()) {
       return ans;
     }
     double ldoi = set_reg_post_params(g, true);
@@ -217,78 +231,83 @@ namespace BOOM{
     return ans;
   }
   //----------------------------------------------------------------------
-  double BVS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old){
+  double BVS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old) {
     mod.flip(which_var);
     double logp_new = log_model_prob(mod);
-    double u = runif(0,1);
-    if(log(u) > logp_new - logp_old){
+    double u = runif (0,1);
+    if (log(u) > logp_new - logp_old) {
       mod.flip(which_var);  // reject draw
       return logp_old;
     }
     return logp_new;
   }
   //----------------------------------------------------------------------
-  void BVS::draw(){
-    if(max_nflips_>0) draw_model_indicators();
-    if(draw_beta_ || draw_sigma_){
+  void BVS::draw() {
+    if (max_nflips_>0) draw_model_indicators();
+    if (draw_beta_ || draw_sigma_) {
       set_reg_post_params(m_->coef().inc(),false);
     }
-    if(draw_sigma_) draw_sigma();
-    if(draw_beta_) draw_beta();
+    if (draw_sigma_) draw_sigma();
+    if (draw_beta_) draw_beta();
   }
   //----------------------------------------------------------------------
-  bool BVS::model_is_empty()const{
+  bool BVS::model_is_empty() const {
     return m_->coef().inc().nvars()==0;
   }
   //----------------------------------------------------------------------
-  void BVS::draw_sigma(){
-    double siginv = 0;
-    if(model_is_empty()){
-      double ss = m_->suf()->yty() + prior_ss();
-      double df = m_->suf()->n() + prior_df();
-      siginv = rgamma(df/2.0, ss/2.0);
-    }else{
-      siginv = rgamma(DF_/2.0, SS_/2.0);
-    }
-    m_->set_sigsq(1.0/siginv);
+  void BVS::set_sigma_upper_limit(double sigma_upper_limit) {
+    sigsq_sampler_.set_sigma_max(sigma_upper_limit);
   }
   //----------------------------------------------------------------------
-  void BVS::draw_beta(){
-    if(model_is_empty()) return;
+  void BVS::draw_sigma() {
+    double df, ss;
+    if (model_is_empty()) {
+      ss = m_->suf()->yty();
+      df = m_->suf()->n();
+    } else {
+      df = DF_ - prior_df();
+      ss = SS_ - prior_ss();
+    }
+    double sigsq = draw_sigsq_given_sufficient_statistics(df, ss);
+    m_->set_sigsq(sigsq);
+  }
+  //----------------------------------------------------------------------
+  void BVS::draw_beta() {
+    if (model_is_empty()) return;
     iV_tilde_ /= m_->sigsq();
     beta_tilde_ = rmvn_ivar(beta_tilde_, iV_tilde_);
     m_->set_included_coefficients(beta_tilde_);
   }
   //----------------------------------------------------------------------
-  void BVS::draw_model_indicators(){
+  void BVS::draw_model_indicators() {
     Selector g = m_->coef().inc();
     std::random_shuffle(indx.begin(), indx.end());
     double logp = log_model_prob(g);
 
-    if(!std::isfinite(logp)){
+    if (!std::isfinite(logp)) {
       ostringstream err;
       err << "BregVsSampler did not start with a legal configuration." << endl
-	  << "Selector vector:  " << g << endl
-	  << "beta: " << m_->included_coefficients() << endl;
+          << "Selector vector:  " << g << endl
+          << "beta: " << m_->included_coefficients() << endl;
       report_error(err.str());
     }
 
     uint n = std::min<uint>(max_nflips_, g.nvars_possible());
-    for(uint i=0; i<n; ++i){
+    for (uint i=0; i<n; ++i) {
       logp = mcmc_one_flip(g, indx[i], logp);
     }
     m_->coef().set_inc(g);
   }
   //----------------------------------------------------------------------
-  double BVS::logpri()const{
+  double BVS::logpri() const {
     const Selector &g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
-    if(ans <= BOOM::negative_infinity()) return ans;
+    if (ans <= BOOM::negative_infinity()) return ans;
 
     double sigsq = m_->sigsq();
     ans += spri_->logp(1.0/sigsq);               // p(1/sigsq)
 
-    if(g.nvars() > 0){
+    if (g.nvars() > 0) {
       ans += dmvn(g.select(m_->Beta()),
                   g.select(bpri_->mu()),
                   g.select(bpri_->siginv()), true);
@@ -296,12 +315,15 @@ namespace BOOM{
     return ans;
   }
   //----------------------------------------------------------------------
-  double BVS::set_reg_post_params(const Selector &g, bool do_ldoi)const{
-    if(g.nvars()==0){
+  double BVS::set_reg_post_params(const Selector &g, bool do_ldoi) const {
+    if (g.nvars()==0) {
       return 0;
     }
     Vec b = g.select(bpri_->mu());
-    Spd Ominv = g.select(bpri_->ominv());
+    // Sigma = sigsq * Omega, so
+    // siginv = ominv / sigsq, so
+    // ominv = siginv * sigsq.
+    Spd Ominv = g.select(bpri_->siginv()) * m_->sigsq();
     double ldoi = do_ldoi ? Ominv.logdet() : 0.0;
 
     Ptr<RegSuf> s = m_->suf();
@@ -335,7 +357,7 @@ namespace BOOM{
     return ldoi;
   }
 
-  void BVS::check_dimensions()const{
+  void BVS::check_dimensions() const {
     if (vpri_->potential_nvars() != bpri_->dim()) {
       ostringstream err;
       err << "Objects of incompatible dimension were passed to the "

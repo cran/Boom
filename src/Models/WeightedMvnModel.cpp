@@ -159,7 +159,6 @@ namespace BOOM{
 
   WeightedMvnModel::WeightedMvnModel(const WeightedMvnModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -194,15 +193,20 @@ namespace BOOM{
     set_Sigma(suf()->var_hat());
   }
 
-  double WeightedMvnModel::loglike()const{
+  double WeightedMvnModel::loglike(const Vector &mu_siginv_triangle)const{
     const double log2pi = 1.83787706641;
-    uint dim = mu().size();
+    const ConstVectorView mu(mu_siginv_triangle, 0, dim());
+    SpdMatrix siginv(dim());
+    Vector::const_iterator it = mu_siginv_triangle.begin() + dim();
+    siginv.unvectorize(it, true);
+    double ldsi = siginv.logdet();
+
     double sumlogw = suf()->sumlogw();
     const Spd sumsq = suf()->center_sumsq();
     double n = suf()->n();
 
-    double ans = n*.5*(log2pi+ldsi()) + dim*.5*sumlogw;
-    ans -= -.5*traceAB(siginv(), suf()->center_sumsq(mu()));
+    double ans = n*.5*(log2pi + ldsi) + dim() * .5 *sumlogw;
+    ans -= -.5*traceAB(siginv, suf()->center_sumsq(mu));
     return ans;
   }
 

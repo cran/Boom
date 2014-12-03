@@ -48,26 +48,6 @@ namespace {
     const BOOM::GammaSuf *suf_;
   };
 
-  inline double square(double x) {return x*x;}
-
-  inline double draw_variance(const BOOM::WeightedGaussianSuf &suf,
-                              const BOOM::GammaModelBase &prior,
-                              double sigma_upper_limit,
-                              BOOM::RNG &rng){
-    // Prior is 1.0 / sigsq ~ Gamma(df/2, ss/2).
-    // So df = 2 * alpha, and ss = 2 * beta.
-    double df = suf.n() + 2 * prior.alpha();   // alpha = df / 2
-    double ss = suf.sumsq() + 2 * prior.beta();
-
-    double siginv;
-    if (sigma_upper_limit == BOOM::infinity()) {
-      siginv = BOOM::rgamma_mt(rng, df/2, ss/2);
-    } else {
-      siginv = BOOM::rtrun_gamma_mt(rng, df/2, ss/2,
-                              1.0/square(sigma_upper_limit));
-    }
-    return 1.0 / siginv;
-  }
 }  // namespace
 
 namespace BOOM {
@@ -82,8 +62,8 @@ namespace BOOM {
         nu_level_prior_(nu_level_prior),
         sigsq_slope_prior_(sigsq_slope_prior),
         nu_slope_prior_(nu_slope_prior),
-        sigma_level_upper_limit_(infinity()),
-        sigma_slope_upper_limit_(infinity())
+        sigsq_level_sampler_(sigsq_level_prior_),
+        sigsq_slope_sampler_(sigsq_slope_prior_)
   {}
 
   double StudentLocalLinearTrendPosteriorSampler::logpri()const{
@@ -102,27 +82,25 @@ namespace BOOM {
 
   void StudentLocalLinearTrendPosteriorSampler::set_sigma_level_upper_limit(
       double upper_limit){
-    sigma_level_upper_limit_ = upper_limit;
+    sigsq_level_sampler_.set_sigma_max(upper_limit);
   }
 
   void StudentLocalLinearTrendPosteriorSampler::set_sigma_slope_upper_limit(
       double upper_limit){
-    sigma_slope_upper_limit_ = upper_limit;
+    sigsq_slope_sampler_.set_sigma_max(upper_limit);
   }
 
   void StudentLocalLinearTrendPosteriorSampler::draw_sigsq_level(){
-    double sigsq = draw_variance(model_->sigma_slope_complete_data_suf(),
-                                 *sigsq_level_prior_,
-                                 sigma_level_upper_limit_,
-                                 rng());
+    const WeightedGaussianSuf &suf(
+        model_->sigma_level_complete_data_suf());
+    double sigsq = sigsq_level_sampler_.draw(rng(), suf.n(), suf.sumsq());
     model_->set_sigsq_level(sigsq);
   }
 
   void StudentLocalLinearTrendPosteriorSampler::draw_sigsq_slope(){
-    double sigsq = draw_variance(model_->sigma_slope_complete_data_suf(),
-                                 *sigsq_slope_prior_,
-                                 sigma_slope_upper_limit_,
-                                 rng());
+    const WeightedGaussianSuf &suf(
+        model_->sigma_slope_complete_data_suf());
+    double sigsq = sigsq_slope_sampler_.draw(rng(), suf.n(), suf.sumsq());
     model_->set_sigsq_slope(sigsq);
   }
 

@@ -282,10 +282,8 @@ namespace BOOM{
 
   VSP::VariableSelectionPrior(const VSP & rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      LoglikeModel(rhs),
       pi_(new VectorParams(rhs.pi_->size()))
   {
     uint n = rhs.vars_.size();
@@ -296,13 +294,14 @@ namespace BOOM{
 
   VSP * VSP::clone()const{ return new VSP(*this);}
 
-  double VSP::loglike()const{
-    double ans = 0;
-    uint n = vars_.size();
-    for(uint i=0; i<n; ++i)
-      ans += vars_[i]->model()->loglike();
-    return ans;
-  }
+  // double VSP::loglike()const{
+  //   double ans = 0;
+  //   uint n = vars_.size();
+  //   for(uint i=0; i<n; ++i) {
+  //     ans += vars_[i]->model()->loglike();
+  //   }
+  //   return ans;
+  // }
 
   void VSP::check_size_eq(uint n, const string &fun)const{
     if(vars_.size()==n) return;

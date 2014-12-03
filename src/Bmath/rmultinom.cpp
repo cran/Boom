@@ -18,7 +18,7 @@
 
 /*
  *  Mathlib : A C Library of Special Functions
- *  Copyright (C) 2003	      The R Foundation
+ *  Copyright (C) 2003        The R Foundation
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,20 +38,20 @@
  *
  *  SYNOPSIS
  *
- *	#include <Bmath.hpp>
- *	void rmultinom(int n, double* prob, int K, int* rN);
+ *      #include <Bmath.hpp>
+ *      void rmultinom(int n, double* prob, int K, int* rN);
  *
  *  DESCRIPTION
  *
- *	Random Vector from the multinomial distribution.
+ *      Random Vector from the multinomial distribution.
  *             ~~~~~~
  *  NOTE
- *	Because we generate random _vectors_ this doesn't fit easily
- *	into the do_random[1-4](.) framework setup in ../main/random.c
- *	as that is used only for the univariate random generators.
+ *      Because we generate random _vectors_ this doesn't fit easily
+ *      into the do_random[1-4](.) framework setup in ../main/random.c
+ *      as that is used only for the univariate random generators.
  *      Multivariate distributions typically have too complex parameter spaces
- *	to be treated uniformly.
- *	=> Hence also can have  int arguments.
+ *      to be treated uniformly.
+ *      => Hence also can have  int arguments.
  */
 
 #include <Bmath/Bmath.hpp>

@@ -36,15 +36,24 @@ namespace BOOM{
     virtual void draw();
     virtual double logpri()const;
 
-    double logp(const Vec &beta)const;
-    double dlogp(const Vec &beta, Vec &g)const;
-    double d2logp(const Vec &beta, Vec &g, Mat &H)const;
-    double Logp(const Vec &beta, Vec &g, Mat &h, int nd)const;
+    double logp(const Vector &beta)const;
+    double dlogp(const Vector &beta, Vector &g)const;
+    double d2logp(const Vector &beta, Vector &g, Mat &H)const;
+    double Logp(const Vector &beta, Vector &g, Mat &h, int nd)const;
    private:
     BinomialLogitModel *m_;
     Ptr<MvnBase> pri_;
     TIM sam_;
-    //    Ptr<MvtIndepProposal> create_proposal(int n)const;
+    bool save_modes_;
+
+    struct Mode {
+      Vector location;
+      SpdMatrix precision;
+      bool empty() const { return location.size() == 0; }
+    };
+    std::map<Selector, Mode> modes_;
+
+    const Mode & locate_mode(const Selector &included_coefficients);
   };
 
 }

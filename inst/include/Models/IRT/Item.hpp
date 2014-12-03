@@ -27,8 +27,7 @@ namespace BOOM{
   namespace IRT{
 
     class Item
-      : public IID_DataPolicy<Subject>,
-	public LoglikeModel
+      : public IID_DataPolicy<Subject>
     {
     public:
       friend class Subject;
@@ -91,7 +90,7 @@ namespace BOOM{
       virtual double response_prob(uint r, const Vec &Theta,
 				   bool logscale)const=0;
 
-      virtual double loglike()const;
+      double loglike()const;
     private:
       Indicators subscales_;      // which subscales does this item assess
       string id_;                 // internal id, like "17"

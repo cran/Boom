@@ -45,7 +45,7 @@ double rlogis_mt(BOOM::RNG & rng, double location, double scale)
     double u;
 
     if (!R_FINITE(location) || !R_FINITE(scale))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     do{
       u = unif_rand(rng);

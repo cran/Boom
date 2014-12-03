@@ -49,7 +49,8 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<GammaModelBase>);
     void set_conjugate_prior(Ptr<ZeroMeanGaussianConjSampler>);
 
-    double Loglike(Vec &g, Mat &h, uint nd)const;
+    double Loglike(const Vector &sigsq_vec,
+                   Vec &g, Mat &h, uint nd)const;
   };
 }
 #endif // BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP

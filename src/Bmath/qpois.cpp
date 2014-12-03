@@ -37,15 +37,15 @@
  *
  *  DESCRIPTION
  *
- *	The quantile function of the Poisson distribution.
+ *      The quantile function of the Poisson distribution.
  *
  *  METHOD
  *
- *	Uses the Cornish-Fisher Expansion to include a skewness
- *	correction to a normal approximation.  This gives an
- *	initial value which never seems to be off by more than
- *	1 or 2.	 A search is then conducted of values close to
- *	this initial start point.
+ *      Uses the Cornish-Fisher Expansion to include a skewness
+ *      correction to a normal approximation.  This gives an
+ *      initial value which never seems to be off by more than
+ *      1 or 2.  A search is then conducted of values close to
+ *      this initial start point.
  */
 
 #include "nmath.hpp"
@@ -57,10 +57,10 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
     double mu, sigma, gamma, z, y;
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(lambda))
-	return p + lambda;
+        return p + lambda;
 #endif
     if(!R_FINITE(lambda))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
     R_Q_P01_check(p);
     if(lambda < 0) ML_ERR_return_NAN;
 
@@ -76,9 +76,9 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
     /* Note : "same" code in qpois.c, qbinom.c, qnbinom.c --
      * FIXME: This is far from optimal [cancellation for p ~= 1, etc]: */
     if(!lower_tail || log_p) {
-	p = R_DT_qIv(p); /* need check again (cancellation!): */
-	if (p == 0.) return 0;
-	if (p == 1.) return BOOM::infinity();
+        p = R_DT_qIv(p); /* need check again (cancellation!): */
+        if (p == 0.) return 0;
+        if (p == 1.) return BOOM::infinity();
     }
     /* temporary hack --- FIXME --- */
     if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity();
@@ -100,20 +100,20 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
 #else
     if(z >= p) {
 #endif
-			/* search to the left */
-	for(;;) {
-	    if(y == 0 ||
-	       (z = ppois(y - 1, lambda, /*l._t.*/true, /*log_p*/false)) < p)
-		return y;
-	    y = y - 1;
-	}
+                        /* search to the left */
+        for(;;) {
+            if(y == 0 ||
+               (z = ppois(y - 1, lambda, /*l._t.*/true, /*log_p*/false)) < p)
+                return y;
+            y = y - 1;
+        }
     }
-    else {		/* search to the right */
-	for(;;) {
-	    y = y + 1;
-	    if((z = ppois(y, lambda, /*l._t.*/true, /*log_p*/false)) >= p)
-		return y;
-	}
+    else {              /* search to the right */
+        for(;;) {
+            y = y + 1;
+            if((z = ppois(y, lambda, /*l._t.*/true, /*log_p*/false)) >= p)
+                return y;
+        }
     }
 }
 }

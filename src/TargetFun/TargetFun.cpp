@@ -19,6 +19,9 @@
 #include <TargetFun/TargetFun.hpp>
 #include <cmath>
 #include <LinAlg/Matrix.hpp>
+#include <cpputil/report_error.hpp>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 // #include <LinAlg/Types.hpp>
 
 namespace BOOM{
@@ -32,25 +35,6 @@ namespace BOOM{
 
   dTargetFun::dTargetFun() : eps_scale(1e-5){}
 
-//   Mat dTargetFun::h_approx(const Vec &x)const{
-//     uint k = x.size();
-//     Mat ans(k,k);
-
-//     Vec y = x;
-//     Vec df1 = x;
-//     Vec df2 = x;
-//     for(uint i=0; i<k; ++i){
-//       double eps = (y[i]==0 ? eps_scale : eps_scale * fabs(y[i]));
-//       y[i]+=eps;
-//       d1(y,df1);
-//       y[i]-= eps;
-//       d1(y,df2);
-//       for(uint j=0; j<k; ++j) ans(i,j) = (df1[j]-df2[j])/(2*eps);
-//       y[i]=x[i];
-//     }
-//     return ans;
-//   }
-
   //======================================================================
   void intrusive_ptr_add_ref(ScalarTargetFun *s){
     s->up_count();}
@@ -60,15 +44,59 @@ namespace BOOM{
   //----------------------------------------------------------------------
   dScalarTargetFun::dScalarTargetFun() : eps_scale(1e-5){}
 
-//   double dScalarTargetFun::h_approx(const double &x)const{
-//     double y(x), df1(0), df2(0);
-//     double eps = (y==0 ? eps_scale : eps_scale * fabs(y));
-//     y = x+eps;
-//     d1(y,df1);
-//     y= x-eps;
-//     d1(y,df2);
-//     return (df1 - df2)/(2*eps);
-//   }
+
+  d2TargetFunPointerAdapter::d2TargetFunPointerAdapter(
+      const TargetType &target)
+  {
+    add_function(target);
+  }
+
+  d2TargetFunPointerAdapter::d2TargetFunPointerAdapter(
+      const TargetType &prior, const TargetType &likelihood)
+  {
+    add_function(prior);
+    add_function(likelihood);
+  }
+
+  void d2TargetFunPointerAdapter::add_function(const TargetType &fun) {
+    targets_.push_back(fun);
+  }
+
+  double d2TargetFunPointerAdapter::operator()(const Vector &x) const {
+    check_not_empty();
+    double ans = targets_[0](x, nullptr, nullptr, true);
+    for (int i = 1; i < targets_.size(); ++i) {
+      ans += targets_[i](x, nullptr, nullptr, false);
+    }
+    return ans;
+  }
+
+  double d2TargetFunPointerAdapter::operator()(
+      const Vector &x, Vector &g) const {
+    check_not_empty();
+    double ans = targets_[0](x, &g, nullptr, true);
+    for (int i = 1; i < targets_.size(); ++i) {
+      ans += targets_[i](x, &g, nullptr, false);
+    }
+    return ans;
+  }
+
+  double d2TargetFunPointerAdapter::operator()(
+      const Vector &x, Vector &g, Matrix &h) const {
+    check_not_empty();
+    double ans = targets_[0](x, &g, &h, true);
+    for (int i = 1; i < targets_.size(); ++i) {
+      ans += targets_[i](x, &g, &h, false);
+    }
+    return ans;
+  }
+
+  void d2TargetFunPointerAdapter::check_not_empty() const {
+    if (targets_.empty()) {
+      report_error("Error in d2TargetFunPointerAdapter.  "
+                   "No component functions specified.");
+    }
+  }
 
   //======================================================================
 

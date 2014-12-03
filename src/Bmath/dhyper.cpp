@@ -22,7 +22,7 @@
  *    October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000, 2001 The R Core Development Team
+ *      Copyright (C) 2000, 2001 The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,7 +67,7 @@ double dhyper(double x, double r, double b, double n, int give_log)
 #endif
 
     if (R_D_notnnegint(r) || R_D_notnnegint(b) || R_D_notnnegint(n) || n > r+b)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if (R_D_notnnegint(x)) return(R_D__0);
     x = R_D_forceint(x);

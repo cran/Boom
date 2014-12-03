@@ -72,7 +72,8 @@ namespace BOOM{
     BinomialModel * clone()const;
 
     virtual void mle();
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    virtual double Loglike(
+        const Vector &probvec, Vec &g, Mat &h, uint nd)const;
 
     uint n()const;
     double prob()const;

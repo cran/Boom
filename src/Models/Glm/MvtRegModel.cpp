@@ -64,7 +64,6 @@ namespace BOOM{
 
   MVTR::MvtRegModel(const MvtRegModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -98,11 +97,24 @@ namespace BOOM{
     nyi("MvtRegModel::mle");
   }
 
-  double MVTR::loglike()const{
+  double MVTR::loglike(
+      const Vector &beta_columns_siginv_triangle_nu) const {
+    Matrix Beta(xdim(), ydim());
+    SpdMatrix siginv(ydim());
+    Vector::const_iterator it = beta_columns_siginv_triangle_nu.cbegin();
+    std::copy(it, it + Beta.size(), Beta.begin());
+    it += Beta.size();
+    siginv.unvectorize(it, true);
+    double ldsi = siginv.logdet();
+    double nu = beta_columns_siginv_triangle_nu.back();
+
     const DatasetType & d(dat());
     uint n = d.size();
     double ans =0;
-    for(uint i=0; i<n; ++i) ans += pdf(d[i], true);
+    for (uint i=0; i<n; ++i) {
+      Vector mu = d[i]->x() * Beta;
+      ans += dmvt(d[i]->y(), mu, siginv, nu, ldsi, true);
+    }
     return ans;
   }
 

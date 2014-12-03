@@ -18,16 +18,15 @@
 #include <LinAlg/DiagonalMatrix.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
+#include <LinAlg/blas.hpp>
+
 #include <distributions.hpp>
 #include <algorithm>
 #include <numeric>
 #include <functional>
 
-extern "C"{
-#include <cblas.h>
-}
-
 namespace BOOM{
+    using namespace blas;
     typedef DiagonalMatrix DM;
 
     DM::DiagonalMatrix()
@@ -82,10 +81,10 @@ namespace BOOM{
 
     DM & DM::resize(uint n){
       if(nrow()!=n){
-	Vector d(diag());
-	d.resize(n);
-	Matrix::resize(n,n);
-	set_diag(d);
+        Vector d(diag());
+        d.resize(n);
+        Matrix::resize(n,n);
+        set_diag(d);
       }
       return *this;
     }
@@ -110,11 +109,10 @@ namespace BOOM{
       // scale the column of
       assert(nrow()==ans.nrow() && ncol()==B.nrow() && B.ncol()==ans.ncol());
       for(uint i=0; i<ncol(); ++i){
-	double a = unchecked(i,i)*scal;
-	ConstVectorView b(B.row(i));
-	VectorView Ans(ans.row(i));
-	cblas_daxpy(b.size(), a, b.data(), b.stride(),
-                    Ans.data(), Ans.stride());}
+        double a = unchecked(i,i)*scal;
+        ConstVectorView b(B.row(i));
+        VectorView Ans(ans.row(i));
+        daxpy(b.size(), a, b.data(), b.stride(), Ans.data(), Ans.stride());}
       return ans;}
 
     Matrix & DM::Tmult(const Matrix &B, Matrix & ans, double scal)const{
@@ -123,11 +121,10 @@ namespace BOOM{
     Matrix & DM::multT(const Matrix &B, Matrix & ans, double scal)const{
       assert(nrow()==ans.nrow() && B.nrow()==ans.ncol() && ncol()==B.ncol());
       for(uint i=0; i<nrow(); ++i){
-	double a = unchecked(i,i)*scal;
-	VectorView b(B.col(i));
-	VectorView Ans(ans.row(i));
-	cblas_daxpy(b.size(), a, b.data(), b.stride(),
-                    Ans.data(), Ans.stride());}
+        double a = unchecked(i,i)*scal;
+        VectorView b(B.col(i));
+        VectorView Ans(ans.row(i));
+        daxpy(b.size(), a, b.data(), b.stride(), Ans.data(), Ans.stride());}
       return ans;}
 
     //------ SpdMatrix (this and spd both symmetric) ----------
@@ -151,10 +148,10 @@ namespace BOOM{
       DiagonalMatrix &D(dynamic_cast<DiagonalMatrix &>(ans));
       assert(can_mult(S,ans));
       if(scal==1.0)
-	std::transform(dbegin(), dend(), S.dbegin(), D.dbegin(),
+        std::transform(dbegin(), dend(), S.dbegin(), D.dbegin(),
                        std::multiplies<double>());
       else
-	std::transform(dbegin(), dend(), S.dbegin(), D.dbegin(),
+        std::transform(dbegin(), dend(), S.dbegin(), D.dbegin(),
                        scale_mult(scal));
       return D;
     }
@@ -167,23 +164,20 @@ namespace BOOM{
                                double scal)const{
       return mult(S,ans, scal);}
 
-
     //---------- Vector ------------
     Vector & DM::mult(const Vector &v, Vector &ans, double scal)const{
       assert(v.size()==ans.size());
       if(scal==1.0)
-	std::transform(dbegin(), dend(), v.begin(), ans.begin(),
+        std::transform(dbegin(), dend(), v.begin(), ans.begin(),
                        std::multiplies<double>());
       else
-	std::transform(dbegin(), dend(), v.begin(), ans.begin(),
+        std::transform(dbegin(), dend(), v.begin(), ans.begin(),
                        scale_mult(scal));
       return ans;
     }
 
     Vector & DM::Tmult(const Vector &v, Vector &ans, double scal)const{
       return this->mult(v,ans, scal);}
-
-
 
     DiagonalMatrix DM::t()const{ return *this;}
 
@@ -200,7 +194,7 @@ namespace BOOM{
     SpdMatrix DM::inner()const{
       SpdMatrix ans(nrow());
       std::transform(dbegin(), dend(), dbegin(), ans.dbegin(),
-		     std::multiplies<double>());
+                     std::multiplies<double>());
       return ans;
     }
 
@@ -208,11 +202,10 @@ namespace BOOM{
       assert(ncol()==mat.nrow());
       Matrix ans(mat.nrow(), mat.ncol());
       for(uint i=0; i<nrow(); ++i){
-	double a = unchecked(i,i);
-	ConstVectorView b(mat.row(i));
-	VectorView Ans(ans.row(i));
-	cblas_daxpy(b.size(), a, b.data(), b.stride(), Ans.data(),
-		    Ans.stride());}
+        double a = unchecked(i,i);
+        ConstVectorView b(mat.row(i));
+        VectorView Ans(ans.row(i));
+        daxpy(b.size(), a, b.data(), b.stride(), Ans.data(), Ans.stride());}
       return ans;}
 
     Vector DM::solve(const Vector &v)const{

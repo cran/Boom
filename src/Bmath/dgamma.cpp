@@ -22,7 +22,7 @@
  *    October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000 The R Core Development Team
+ *      Copyright (C) 2000 The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,9 +68,9 @@ double dgamma(double x, double shape, double scale, int give_log)
 #endif
     if (shape <= 0 || scale <= 0) ML_ERR_return_NAN;
     if (x < 0)
-	return R_D__0;
+        return R_D__0;
     if (x == 0) {
-      //	if (shape < 1) ML_ERR_return_NAN;
+      //        if (shape < 1) ML_ERR_return_NAN;
       if(shape < 1) return BOOM::infinity();
       if(shape > 1) return R_D__0;
       /* else */
@@ -81,14 +81,14 @@ double dgamma(double x, double shape, double scale, int give_log)
 
     x /= scale;
     return give_log ?
-	   ((shape - 1) * log(x) - lgammafn(shape) - x) - log(scale) :
-	exp((shape - 1) * log(x) - lgammafn(shape) - x) / scale;
+           ((shape - 1) * log(x) - lgammafn(shape) - x) - log(scale) :
+        exp((shape - 1) * log(x) - lgammafn(shape) - x) / scale;
 
 #else /* new dpois() based code */
 
     if (shape < 1) {
-	pr = dpois_raw(shape, x/scale, give_log);
-	return give_log ?  pr + log(shape/x) : pr*shape/x;
+        pr = dpois_raw(shape, x/scale, give_log);
+        return give_log ?  pr + log(shape/x) : pr*shape/x;
     }
     /* else  shape >= 1 */
     pr = dpois_raw(shape-1, x/scale, give_log);

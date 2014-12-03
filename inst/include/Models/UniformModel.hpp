@@ -86,7 +86,7 @@ namespace BOOM{
     const Ptr<UnivParams> LoParam()const;
     const Ptr<UnivParams> HiParam()const;
     virtual double Logp(double x, double &g, double &h, uint nd)const;
-    virtual double loglike()const;
+    virtual double loglike(const Vector &support_lower_and_upper_limits)const;
     virtual void mle();
     virtual double sim()const;
   };

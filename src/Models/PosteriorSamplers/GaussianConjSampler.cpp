@@ -18,16 +18,18 @@
 #include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
 #include <Models/GaussianModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
   typedef GaussianConjSampler GCS;
   GCS::GaussianConjSampler(GaussianModel *m,
-				Ptr<GaussianModelGivenSigma> mu,
-				Ptr<GammaModelBase> sig)
+                           Ptr<GaussianModelGivenSigma> mu,
+                           Ptr<GammaModelBase> sig)
     : mod_(m),
       mu_(mu),
-      siginv_(sig)
+      siginv_(sig),
+      sigsq_sampler_(siginv_)
   {}
 
   double GCS::logpri()const{
@@ -52,15 +54,12 @@ namespace BOOM{
     // prior parameters
     double kappa = this->kappa();
     double mu0 = this->mu();
-    double df = this->df();
-    df += n;
 
     double mu_hat = (n* mod_->ybar() + kappa * mu0)/(n+kappa);
 
-    double ss = this->ss() + (n-1)*v;
-    ss += n * kappa * pow(ybar - mu0, 2) / (n + kappa);
+    double ss = (n-1)*v + n * kappa * square(ybar - mu0) / (n + kappa);
+    double sigsq = sigsq_sampler_.draw(rng(), n, ss);
 
-    double sigsq = 1.0/rgamma_mt(rng(), df/2, ss/2);
     v = sigsq/(n+kappa);
     double mu = rnorm_mt(rng(), mu_hat, sqrt(v));
     mod_->set_params(mu, sigsq);
@@ -79,7 +78,7 @@ namespace BOOM{
     double mu_hat = (n * ybar + k * mu0)/(n+k);
 
     double SS = ss + (n-1) * mod_->sample_var();
-    SS += k * pow(mu0-mu_hat, 2) + n * pow(ybar-mu_hat, 2);
+    SS += k * square(mu0 - mu_hat) + n * square(ybar - mu_hat);
 
     mod_->set_params(mu_hat, SS/(DF-1));
   }

@@ -95,7 +95,18 @@ namespace BOOM{
     void set_delta(const Vec &d);
     bool check_delta(const Vec & Delta)const;  // if Delta satisfies constraint
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    // Args:
+    //   beta_delta: A vector with leading elements corresponding to
+    //     the set of nonzero "included" regression coefficients.  The
+    //     remaining coefficients correspond to the vector of
+    //     cutpoints 'delta'.
+    //   g: Gradient vector (unused if nd == 0).  Dimension must match
+    //     beta_delta.
+    //   h: Hessian matrix (unused if nd < 2).  Dimension must match
+    //     beta_delta.
+    //   nd:  The number of derivatives desired.
+    virtual double Loglike(const Vector &beta_delta,
+                           Vector &g, Matrix &h, uint nd)const;
     double log_likelihood(const Vec & beta, const Vec & delta)const;
     OrdinalCutpointBetaLogLikelihood beta_log_likelihood()const;
     OrdinalCutpointDeltaLogLikelihood delta_log_likelihood()const;

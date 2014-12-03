@@ -58,11 +58,9 @@ namespace BOOM{
   HMM::HiddenMarkovModel(const HMM &rhs)
       : Model(rhs),
         DataInfoPolicy(rhs),
-        MLE_Model(rhs),
         DataPolicy(rhs),
         ParamPolicy(),
         PriorPolicy(rhs),
-        LoglikeModel(rhs),
         mark_(rhs.mark_->clone()),
         mix_(rhs.state_space_size()),
         loglike_(new UnivParams(0.0)),
@@ -193,7 +191,6 @@ namespace BOOM{
   HMM_EM::HMM_EM(const HMM_EM & rhs)
       : Model(rhs),
         DataInfoPolicy(rhs),
-        MLE_Model(rhs),
         HiddenMarkovModel(rhs),
         mix_(rhs.mix_),
         eps(rhs.eps)

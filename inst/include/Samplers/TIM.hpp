@@ -50,7 +50,7 @@ namespace BOOM{
     //     logf returns the log of the un-normalized target distribution
     //     at theta.
     //   nu:  The degrees of freedom parameter to use for the
-    TIM(boost::function<double(const Vec &, Vec &, Mat &, int)> logf,
+    TIM(boost::function<double(const Vector &, Vector &, Matrix &, int)> logf,
         double nu = 3);
 
     TIM(const BOOM::Target & logf,
@@ -58,7 +58,7 @@ namespace BOOM{
         const BOOM::d2Target & d2logf,
         double nu = 3);
 
-    virtual Vec draw(const Vec &old);
+    virtual Vector draw(const Vector &old);
 
     // In the typical use case the mode is located each iteration.  If
     // you want to avoid locating the mode use fix_mode(true).  To
@@ -71,16 +71,24 @@ namespace BOOM{
     //
     // Users will normally not have to call locate_mode directly, but
     // you can if you want.
-    bool locate_mode(const Vec & old);
+    bool locate_mode(const Vector & old);
+
+    // In some rare cases (e.g. spike and slab models with varying
+    // dimensions) you may want to store the mode in some other
+    // location.  In those cases you can use set_mode to store a
+    // previously found mode.  Once set_mode() has been called the
+    // supplied modal approximation will be used until set_mode is
+    // called again.
+    void set_mode(const Vector &location, const Matrix &hessian);
 
     // Once locate_mode has been called, the following can be called
     // to get the location of the mode and the inverse of the variance
     // of the approximating normal at the mode (i.e. the negative
     // Hessian).
-    const Vec & mode()const;
-    const Spd & ivar()const;
+    const Vector & mode()const;
+    const SpdMatrix & ivar()const;
   private:
-    void report_failure(const Vec &old);
+    void report_failure(const Vector &old);
     Ptr<MvtIndepProposal> create_proposal(int dim, double nu);
     void check_proposal(int dim);
 
@@ -89,9 +97,9 @@ namespace BOOM{
     BOOM::Target f_;
     BOOM::dTarget df_;
     BOOM::d2Target d2f_;
-    Vec cand_;
-    Vec g_;
-    Mat H_;
+    Vector cand_;
+    Vector g_;
+    Matrix H_;
     bool mode_is_fixed_;
     bool mode_has_been_found_;
   };

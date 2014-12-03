@@ -22,6 +22,7 @@
 #include <Models/GaussianModelGivenSigma.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
   class GaussianModel;
@@ -45,6 +46,7 @@ namespace BOOM{
     GaussianModel *mod_;
     Ptr<GaussianModelGivenSigma> mu_;
     Ptr<GammaModelBase> siginv_;
+    GenericGaussianVarianceSampler sigsq_sampler_;
   };
 }
 #endif// BOOM_GAUSSIAN_MODEL_CONJUGATE_SAMPLER_HPP

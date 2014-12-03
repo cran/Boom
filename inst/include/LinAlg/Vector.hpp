@@ -81,14 +81,11 @@ namespace BOOM{
          : dVector(rhs.begin(), rhs.end())
     {}
 
-    virtual ~Vector();
-
     Vector & operator=(const Vector &);  // value semantics
     Vector & operator=(const double &);  // value semantics
     Vector & operator=(const dVector &);
     Vector & operator=(const VectorView &);
     Vector & operator=(const ConstVectorView &);
-
 
     Vector & swap(Vector &);
     bool operator==(const Vector &rhs)const;
@@ -125,9 +122,20 @@ namespace BOOM{
     Vector & operator/=(double x);
 
     Vector & operator+=(const Vector &y);
+    Vector & operator+=(const ConstVectorView &y);
+    Vector & operator+=(const VectorView &y);
+
     Vector & operator-=(const Vector &y);
+    Vector & operator-=(const ConstVectorView &y);
+    Vector & operator-=(const VectorView &y);
+
     Vector & operator*=(const Vector &y);
+    Vector & operator*=(const ConstVectorView &y);
+    Vector & operator*=(const VectorView &y);
+
     Vector & operator/=(const Vector &y);
+    Vector & operator/=(const ConstVectorView &y);
+    Vector & operator/=(const VectorView &y);
 
     //--------- linear algebra
     Vector & axpy(const Vector &x, double w); // *this += w*x
@@ -202,7 +210,38 @@ namespace BOOM{
 
   // operators not covered by boost
   Vector operator/(double a, const Vector &x);
+  Vector operator/(double a, const VectorView &x);
+  Vector operator/(double a, const ConstVectorView &x);
+  Vector operator/(const ConstVectorView &x, double a);
+  Vector operator/(const VectorView &x, double a);
+
   Vector operator-(double a, const Vector &x);
+  Vector operator-(double a, const VectorView &x);
+  Vector operator-(double a, const ConstVectorView &x);
+  Vector operator-(const ConstVectorView &x, double a);
+  Vector operator-(const VectorView &x, double a);
+
+  // Operators between VectorView and ConstVectorView are defined in
+  // VectorView.hpp.
+  Vector operator+(const ConstVectorView &x, const Vector &y);
+  Vector operator+(const Vector &x, const ConstVectorView &y);
+  Vector operator+(const VectorView &x, const Vector &y);
+  Vector operator+(const Vector &x, const VectorView &y);
+
+  Vector operator-(const ConstVectorView &x, const Vector &y);
+  Vector operator-(const Vector &x, const ConstVectorView &y);
+  Vector operator-(const VectorView &x, const Vector &y);
+  Vector operator-(const Vector &x, const VectorView &y);
+
+  Vector operator*(const ConstVectorView &x, const Vector &y);
+  Vector operator*(const Vector &x, const ConstVectorView &y);
+  Vector operator*(const VectorView &x, const Vector &y);
+  Vector operator*(const Vector &x, const VectorView &y);
+
+  Vector operator/(const ConstVectorView &x, const Vector &y);
+  Vector operator/(const Vector &x, const ConstVectorView &y);
+  Vector operator/(const VectorView &x, const Vector &y);
+  Vector operator/(const Vector &x, const VectorView &y);
 
   // unary transformations
   Vector operator-(const Vector &x); // unary minus
@@ -213,10 +252,28 @@ namespace BOOM{
   using std::pow;
 
   Vector log(const Vector &x);
+  Vector log(const VectorView &x);
+  Vector log(const ConstVectorView &x);
+
   Vector exp(const Vector &x);
+  Vector exp(const VectorView &x);
+  Vector exp(const ConstVectorView &x);
+
   Vector sqrt(const Vector &x);
+  Vector sqrt(const VectorView &x);
+  Vector sqrt(const ConstVectorView &x);
+
   Vector pow(const Vector &x, double p);
+  Vector pow(const VectorView &x, double p);
+  Vector pow(const ConstVectorView &x, double p);
+
   Vector pow(const Vector &x, int p);
+  Vector pow(const VectorView &x, int p);
+  Vector pow(const ConstVectorView &x, int p);
+
+  Vector abs(const Vector &x);
+  Vector abs(const VectorView &x);
+  Vector abs(const ConstVectorView &x);
 
   inline int length(const Vector &x){return x.length();}
   inline double sum(const Vector &x){return x.sum();}
@@ -230,6 +287,8 @@ namespace BOOM{
   Vector cumsum(const Vector &x);
   // IO
   std::ostream & operator<<(std::ostream & out, const Vector &x);
+  // prints to stdout.  This function is here so it can be called from gdb.
+  void print(const Vector &v);
   std::istream & operator>>(std::istream &, Vector &);
   Vector read_Vector(std::istream &in);
 
@@ -267,6 +326,9 @@ namespace BOOM{
   Vector sort(const Vector &v);
   Vector sort(const VectorView &v);
   Vector sort(const ConstVectorView &v);
+  Vector rev(const Vector &v);
+  Vector rev(const VectorView &v);
+  Vector rev(const ConstVectorView &v);
 
   template <class V1, class V2>
   Vector linear_combination(double a, const V1 &x,

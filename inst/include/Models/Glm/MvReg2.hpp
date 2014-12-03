@@ -248,7 +248,9 @@ namespace BOOM{
 
     //--- estimation and probability calculations
     virtual void mle();
-    virtual double loglike()const;
+    // The argument to loglike is a vector created by stacking the
+    // columns of Beta, and the upper triangle of Sigma
+    virtual double loglike(const Vector &beta_sigma)const;
     virtual double pdf(dPtr, bool)const;
 
     // Returns x * Beta();

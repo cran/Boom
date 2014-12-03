@@ -54,7 +54,7 @@ double rlnorm(double logmean, double logsd){
 double rlnorm_mt(RNG & rng, double logmean, double logsd)
 {
     if(!R_FINITE(logmean) || !R_FINITE(logsd) || logsd < 0.)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     return exp(rnorm_mt(rng, logmean, logsd));
 }

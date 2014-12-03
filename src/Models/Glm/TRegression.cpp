@@ -52,7 +52,7 @@ namespace BOOM{
     setup_params();
   }
 
-  TRM::TRegressionModel(const Vec &b, double Sigma, double nu)
+  TRM::TRegressionModel(const Vector &b, double Sigma, double nu)
     : wreg_(new WRM(b,Sigma)),
       wgt_(new SCM(nu))
   {
@@ -62,7 +62,6 @@ namespace BOOM{
 
   TRM::TRegressionModel(const TRegressionModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GlmModel(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
@@ -105,9 +104,13 @@ namespace BOOM{
   void TRM::set_sigsq(double s2){wreg_->set_sigsq(s2);}
   void TRM::set_nu(double Nu){wgt_->set_nu(Nu);}
 
-  double TRM::Loglike(Vec &g, Mat &h, uint nd)const{
-    double sigsq =this->sigsq();
-    double nu = this->nu();
+  double TRM::Loglike(const Vector &beta_sigsq_nu,
+                      Vector &g, Matrix &h, uint nd)const{
+    double nu = beta_sigsq_nu.back();
+    double sigsq = beta_sigsq_nu[beta_sigsq_nu.size() - 2];
+    const Selector &inclusion_indicators(coef().inc());
+    int beta_dim = inclusion_indicators.nvars();
+    const Vector beta(ConstVectorView(beta_sigsq_nu, 0, beta_dim));
     double ans=0;
     if(nd>0){
       g=0;
@@ -115,8 +118,8 @@ namespace BOOM{
     }
 
     for(uint i=0; i < dat().size(); ++i){
-      const Vec X = coef().inc().select((dat())[i]->x());
-      const double yhat = predict(X);
+      const Vector X = coef().inc().select((dat())[i]->x());
+      const double yhat = beta.dot(X);
       const double y = (dat())[i]->y();
       ans+= dstudent(y, yhat, sigsq, nu, true);
       if(nd>0){
@@ -124,9 +127,9 @@ namespace BOOM{
  	double esq_ns =e*e/(nu*sigsq);
  	double frac = esq_ns/(1+esq_ns);
 
- 	Vec gbeta = ((nu+1)*frac/e) *X;
+ 	Vector gbeta = ((nu+1)*frac/e) *X;
 
- 	Vec gsignu(2);
+ 	Vector gsignu(2);
  	gsignu[0] = -1/(2*sigsq);
  	gsignu[0]*= (1-(nu+1)*frac);
 
@@ -134,15 +137,15 @@ namespace BOOM{
 			-log(1+esq_ns) + frac*(nu+1)/nu);
  	g += concat(gbeta, gsignu);
  	if(nd>1){
- 	  throw_exception<std::logic_error>(
-              "derivatives of TRegression are not yet implemented.");
+          report_error(
+              "second derivatives of TRegression are not yet implemented.");
  	  double esq = e*e;
  	  double sn = sigsq*nu;
  	  double esp = esq + sn;
 
- 	  Mat hbb = X.outer()* ((nu+1)*( (esq -sn)/esp));
- 	  Vec hbs = (-e*(nu+1)*nu/pow(esp, 2)) * X;
- 	  Vec hbn = ((e/esp)*(1-(nu+1)*sigsq/esp)) * X;}}}
+ 	  Matrix hbb = X.outer()* ((nu+1)*( (esq -sn)/esp));
+ 	  Vector hbs = (-e*(nu+1)*nu/pow(esp, 2)) * X;
+ 	  Vector hbn = ((e/esp)*(1-(nu+1)*sigsq/esp)) * X;}}}
     return ans;
   }
 
@@ -151,20 +154,20 @@ namespace BOOM{
   public:
     TrmNuTF(TRegressionModel *Mod) : mod(Mod){}
     TrmNuTF * clone()const{return new TrmNuTF(*this);}
-    double operator()(const Vec &Nu)const;
-    double operator()(const Vec &Nu, Vec &g)const;
+    double operator()(const Vector &Nu)const;
+    double operator()(const Vector &Nu, Vector &g)const;
   private:
-    double Loglike(const Vec &Nu, Vec &g, uint nd)const;
+    double Loglike(const Vector &Nu, Vector &g, uint nd)const;
     TRegressionModel *mod;
   };
 
-  double TrmNuTF::operator()(const Vec &Nu)const{
-    Vec g;
+  double TrmNuTF::operator()(const Vector &Nu)const{
+    Vector g;
     return Loglike(Nu, g, 0);}
-  double TrmNuTF::operator()(const Vec &Nu, Vec &g)const{
+  double TrmNuTF::operator()(const Vector &Nu, Vector &g)const{
     return Loglike(Nu,g,1);}
 
-  double TrmNuTF::Loglike(const Vec &Nu, Vec &g, uint nd)const{
+  double TrmNuTF::Loglike(const Vector &Nu, Vector &g, uint nd)const{
     const std::vector<Ptr<RegressionData> > & dat(mod->dat());
     uint n = dat.size();
     double nu = Nu[0];
@@ -197,9 +200,9 @@ namespace BOOM{
   void TRM::mle(){
     const double eps = 1e-5;
     double dloglike= eps+1;
-    double loglike = this->loglike();
+    double loglike = this->loglike(vectorize_params());
     double old = loglike;
-    Vec Nu(1, nu());
+    Vector Nu(1, nu());
     while(dloglike > eps){
       EStep();
       wreg_->mle();
@@ -212,16 +215,16 @@ namespace BOOM{
   }
 
   double TRM::complete_data_loglike()const{
-    Vec g;
-    Mat h;
+    Vector g;
+    Matrix h;
     return complete_data_Loglike(g,h,0);
   }
-  double TRM::complete_data_Loglike(Vec &g, Mat &h, uint nd)const{
+  double TRM::complete_data_Loglike(Vector &g, Matrix &h, uint nd)const{
 
     uint p = Beta().size();
 
-    Vec g_reg, g_wgt;
-    Mat h_reg, h_wgt;
+    Vector g_reg, g_wgt;
+    Matrix h_reg, h_wgt;
     if(nd>0){
       g_reg.resize(p+1);
       g_wgt.resize(1);
@@ -230,8 +233,15 @@ namespace BOOM{
 	h_reg.resize(p+1, p+1);
 	h_wgt.resize(1,1);}}
 
-    double ans = wreg_->Loglike(g_reg,h_reg,nd);
-    ans+= wgt_->Loglike(g_wgt,h_wgt,nd);
+    Vector beta_sigsq = Beta();
+    beta_sigsq.push_back(sigsq());
+    double ans = wreg_->Loglike(
+        beta_sigsq,
+        g_reg,
+        h_reg,nd);
+
+    Vector nu_vector(1, nu());
+    ans += wgt_->Loglike(nu_vector, g_wgt, h_wgt, nd);
 
     if(nd>0){
       g = concat(g_reg, g_wgt);
@@ -287,12 +297,12 @@ namespace BOOM{
 
   Ptr<RegressionData>  TRM::simdat()const{
     uint p = Beta().size();
-    Vec x(p);
+    Vector x(p);
     for(uint i=0; i<p; ++i) x[i] = rnorm();
     return simdat(x);
   }
 
-  Ptr<RegressionData> TRM::simdat(const Vec &x)const{
+  Ptr<RegressionData> TRM::simdat(const Vector &x)const{
     double nu = this->nu();
     double w = rgamma(nu/2, nu/2);
     double yhat = predict(x);

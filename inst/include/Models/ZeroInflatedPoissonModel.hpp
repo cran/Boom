@@ -67,10 +67,10 @@ namespace BOOM {
   };
 
   class ZeroInflatedPoissonModel
-      : public ParamPolicy_2<UnivParams, UnivParams>,
+      : virtual public MixtureComponent,
+        public ParamPolicy_2<UnivParams, UnivParams>,
         public SufstatDataPolicy<IntData, ZeroInflatedPoissonSuf>,
-        public PriorPolicy,
-        public MixtureComponent
+        public PriorPolicy
   {
    public:
     ZeroInflatedPoissonModel(double lambda = 1.0, double zero_prob = 0.5);

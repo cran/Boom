@@ -72,9 +72,13 @@ namespace BOOM{
 
     //----- operations for both included and excluded variables ----
     const Vector & Beta()const;    // reports 0 for excluded positions
+    // Consider whether to call infer_sparsity after calling set_Beta.
     void set_Beta(const Vector &);
     double &  Beta(uint I);        // I indexes possible covariates
     double Beta(uint I)const;      // I indexes possible covariates
+
+    // Drop all coefficients with value 0.  Add all others.
+    void infer_sparsity();
 
     virtual Vector vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(

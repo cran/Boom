@@ -32,20 +32,12 @@
 
 namespace BOOM{
 
-  double MvnModel::loglike()const{
-    const double log2pi = 1.83787706641;
-    double dim = mu().size();
-    double n = suf()->n();
-    const Vec ybar = suf()->ybar();
-    const Spd sumsq = suf()->center_sumsq();
-
-    double qform = n*(siginv().Mdist(ybar, mu()));
-    qform+= traceAB(siginv(), sumsq);
-
-    double nc = 0.5*n*( -dim*log2pi + ldsi());
-
-    double ans = nc - .5*qform;
-    return ans;
+  double MvnModel::loglike(const Vector &mu_siginv)const{
+    const ConstVectorView mu(mu_siginv, 0, dim());
+    SpdMatrix siginv(dim());
+    Vector::const_iterator b = mu_siginv.cbegin() + dim();
+    siginv.unvectorize(b, true);
+    return MvnBase::log_likelihood(mu, siginv, *suf());
   }
 
   void MvnModel::add_raw_data(const Vec &y){
@@ -113,7 +105,6 @@ namespace BOOM{
   MvnModel::MvnModel(const MvnModel &rhs)
     : Model(rhs),
       VectorModel(rhs),
-      MLE_Model(rhs),
       Base(rhs),
       LoglikeModel(rhs),
       DataPolicy(rhs),
@@ -123,32 +114,13 @@ namespace BOOM{
 
   MvnModel * MvnModel::clone() const{return new MvnModel(*this);}
 
-  //  const Ptr<MvnSuf> MvnModel::suf()const{ return DataPolicy::suf();}
-
-//   Ptr<VectorParams> MvnModel::Mu_prm(){
-//     return ParamPolicy::prm1();}
-//   const Ptr<VectorParams> MvnModel::Mu_prm()const{
-//     return ParamPolicy::prm1();}
-
-//   Ptr<SpdParams> MvnModel::Sigma_prm(){
-//     return ParamPolicy::prm2();}
-//   const Ptr<SpdParams> MvnModel::Sigma_prm()const{
-//     return ParamPolicy::prm2();}
-
-//   const Vec & MvnModel::mu()const{return Mu_prm()->value();}
-//   const Spd & MvnModel::Sigma()const{return Sigma_prm()->var();}
-//   const Spd & MvnModel::siginv()const{return Sigma_prm()->ivar();}
-//   double MvnModel::ldsi()const{return Sigma_prm()->ldsi();}
-
-//   void MvnModel::set_mu(const Vec &v){Mu_prm()->set(v);}
-//   void MvnModel::set_Sigma(const Spd &s){Sigma_prm()->set_var(s);}
-//   void MvnModel::set_siginv(const Spd &ivar){Sigma_prm()->set_ivar(ivar);}
-//   void MvnModel::set_S_Rchol(const Vec &sd, const Mat &L){
-//     Sigma_prm()->set_S_Rchol(sd,L); }
-
   void MvnModel::mle(){
     set_mu(suf()->ybar());
     set_Sigma(suf()->var_hat());
+  }
+
+  void MvnModel::initialize_params() {
+    mle();
   }
 
   void MvnModel::add_mixture_data(Ptr<Data> dp, double prob){

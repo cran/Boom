@@ -63,35 +63,35 @@ double lbeta(double a, double b)
 
 #ifdef IEEE_754
     if(ISNAN(a) || ISNAN(b))
-	return a + b;
+        return a + b;
 #endif
 
     /* both arguments must be >= 0 */
 
     if (p < 0)
-	ML_ERR_return_NAN
+        ML_ERR_return_NAN
     else if (p == 0) {
-	return BOOM::infinity();
+        return BOOM::infinity();
     }
     else if (!R_FINITE(q)) {
-	return BOOM::negative_infinity();
+        return BOOM::negative_infinity();
     }
 
     if (p >= 10) {
-	/* p and q are big. */
-	corr = lgammacor(p) + lgammacor(q) - lgammacor(p + q);
-	return log(q) * -0.5 + M_LN_SQRT_2PI + corr
-		+ (p - 0.5) * log(p / (p + q)) + q * log1p(-p / (p + q));
+        /* p and q are big. */
+        corr = lgammacor(p) + lgammacor(q) - lgammacor(p + q);
+        return log(q) * -0.5 + M_LN_SQRT_2PI + corr
+                + (p - 0.5) * log(p / (p + q)) + q * log1p(-p / (p + q));
     }
     else if (q >= 10) {
-	/* p is small, but q is big. */
-	corr = lgammacor(q) - lgammacor(p + q);
-	return lgammafn(p) + corr + p - p * log(p + q)
-		+ (q - 0.5) * log1p(-p / (p + q));
+        /* p is small, but q is big. */
+        corr = lgammacor(q) - lgammacor(p + q);
+        return lgammafn(p) + corr + p - p * log(p + q)
+                + (q - 0.5) * log1p(-p / (p + q));
     }
     else
-	/* p and q are small: p <= q > 10. */
-	return log(gammafn(p) * (gammafn(q) / gammafn(p + q)));
+        /* p and q are small: p <= q > 10. */
+        return log(gammafn(p) * (gammafn(q) / gammafn(p + q)));
 }
 }
 

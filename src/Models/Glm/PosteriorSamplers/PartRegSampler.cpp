@@ -26,26 +26,6 @@ namespace BOOM{
   typedef PartRegSampler PRS;
 
   PRS::PartRegSampler(uint Npart,
-                      const string &data_fname,
-                      const Vec & prior_mean,
-                      const Spd & prior_ivar,
-                      double prior_df,
-                      double prior_sigma_guess,
-                      double inc_prob)
-    : suf_(get_reg_suf(data_fname)),
-      prior_mean_(prior_mean),
-      prior_ivar_(prior_ivar),
-      prior_df_(prior_df),
-      prior_ss_(pow(prior_sigma_guess,2)*prior_df),
-      inc_probs_(prior_mean.size(), inc_prob),
-      Nmcmc_(1)
-  {
-    indices_ = seq<uint>(0,Nvars()-1);
-    draw_initial_particles(Npart);
-  }
-
-
-  PRS::PartRegSampler(uint Npart,
                       const Spd & xtx,
                       const Vec & xty,
                       double yty,
@@ -54,7 +34,12 @@ namespace BOOM{
                       double prior_df,
                       double prior_sigma_guess,
                       double inc_prob)
-      : suf_(new NeRegSuf(xtx,xty,yty, xtx(0, 0))),
+      : suf_(new NeRegSuf(
+            xtx,
+            xty,
+            yty,
+            xtx(0, 0),
+            xtx.col(0) / xtx(0, 0))),
         prior_mean_(prior_mean),
         prior_ivar_(prior_ivar),
         prior_df_(prior_df),
@@ -76,7 +61,12 @@ namespace BOOM{
                       double prior_df,
                       double prior_sigma_guess,
                       const Vec & inc_probs)
-      : suf_(new NeRegSuf(xtx,xty,yty, xtx(0, 0))),
+      : suf_(new NeRegSuf(
+            xtx,
+            xty,
+            yty,
+            xtx(0, 0),
+            xtx.col(0) / xtx(0, 0))),
         prior_mean_(prior_mean),
         prior_ivar_(prior_ivar),
         prior_df_(prior_df),
@@ -241,32 +231,6 @@ namespace BOOM{
     uint N = mod.nvars_possible();
     uint pos = random_int(0, N-1);
     mcmc_one_flip(mod,pos);
-  }
-
-  Ptr<NeRegSuf> PRS::get_reg_suf(const string &fname){
-
-    ifstream in(fname.c_str());
-    double y;
-    Vec x;
-    in >> y >> x;
-    uint p = x.size();
-    in.close();
-
-    in.open(fname.c_str());
-    Spd xtx(p);
-    Vec xty(p);
-    double yty(0);
-    while(in){
-      in >> y >> x;
-      if(!in) break;
-      xtx.add_outer(x);
-      xty.axpy(x,y);
-      yty+= y*y;
-    }
-    double n = xtx(0, 0);
-
-    NEW(NeRegSuf,ans)(xtx, xty, yty, n);
-    return ans;
   }
 
   uint PRS::Nparticles()const{ return models_.size(); }

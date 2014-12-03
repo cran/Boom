@@ -24,6 +24,7 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
+#include <LinAlg/SubMatrix.hpp>
 #include <LinAlg/Types.hpp>
 
 #include <Models/CategoricalData.hpp>
@@ -137,13 +138,20 @@ namespace BOOM{
   // an exception will be thrown.
   std::string GetStringFromList(SEXP my_list, const std::string &name);
 
-  // If 'my_vector' is a numeric vector, it is converted to a BOOM::Vector.
-  // Otherwise an exception will be thrown.
+  // If 'my_vector' is a numeric vector, it is converted to a
+  // BOOM::Vector.  Otherwise an exception will be thrown.
+  // ToBoomVector makes a copy of the underlying memory.
+  // ToBoomVectorView accesses the memory in the R object, without
+  // making a copy.
   Vector ToBoomVector(SEXP my_vector);
+  ConstVectorView ToBoomVectorView(const SEXP my_vector);
 
   // If 'r_matrix' is an R matrix, it is converted to a BOOM::Matrix.
-  // Otherwise an exception will be thrown.
+  // Otherwise an exception will be thrown.  ToBoomMatrix makes a copy
+  // of the underlying memory.  ToBoomMatrixView accesses the memory
+  // in the R object, without making a copy.
   Matrix ToBoomMatrix(SEXP r_matrix);
+  ConstSubMatrix ToBoomMatrixView(SEXP r_matrix);
 
   // If 'my_matrix' is an R matrix, it is converted to a BOOM::Spd.  If
   // the conversion fails then an exception will be thrown.
@@ -152,6 +160,10 @@ namespace BOOM{
   // If 'my_vector' is an R logical vector, then it is converted to a
   // std::vector<bool>.  Otherwise an exception will be thrown.
   std::vector<bool> ToVectorBool(SEXP my_vector);
+
+  // If r_int_vector is an R vector of integers then it is converted
+  // to a std::vector<int>.  Otherwise an exception is thrown.
+  std::vector<int> ToIntVector(SEXP r_int_vector);
 
   // Convert a BOOM vector or matrix to its R equivalent.  Less type
   // checking is needed for these functions than in the other
@@ -168,6 +180,11 @@ namespace BOOM{
                  const std::vector<std::string> &col_names);
   SEXP ToRMatrix(const LabeledMatrix &boom_labeled_matrix);
 
+  // Convert a "scalar" string to a C++ string.
+  // Args:
+  //   r_string: Either a CHARSXP or a STRINGSXP.  Any other input
+  //     will result in an exception being thrown.  If the input is a
+  //     STRINGSXP then the first element is returned.
   std::string ToString(SEXP r_string);
 
   // A Factor object is intended to be intialized with an R factor.
@@ -187,6 +204,11 @@ namespace BOOM{
 
     // Returns a BOOM::CategoricalData corresponding to observation i.
     CategoricalData to_cateogrical_data(int i)const;
+
+    // The names of the factor levels.
+    const std::vector<std::string> labels() const {
+      return levels_->labels();
+    }
 
    private:
     std::vector<int> values_;

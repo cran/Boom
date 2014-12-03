@@ -126,12 +126,6 @@ namespace BOOM{
     double IrtModel::pdf(Ptr<Data> dp, bool logscale)const{
       return pdf(DAT(dp), logscale); }
     //------------------------------------------------------------
-    void IrtModel::initialize_params(){
-      for(ItemIt it = item_begin(); it!=item_end(); ++it){
-        (*it)->initialize_params();
-      }
-    }
-    //------------------------------------------------------------
     void IrtModel::set_subscale_names(const StringVec &names){
       subscale_names_ = names;}
 

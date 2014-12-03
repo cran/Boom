@@ -23,14 +23,13 @@
 namespace BOOM{
   typedef RegressionConjSampler RCS;
   RCS::RegressionConjSampler(RegressionModel *M,
-			     Ptr<MvnGivenXandSigma> Mu,
-			     Ptr<GammaModelBase> Siginv)
+                             Ptr<MvnGivenXandSigma> Mu,
+                             Ptr<GammaModelBase> Siginv)
     : m_(M),
       mu_(Mu),
-      siginv_(Siginv)
-  {
-  }
-
+      siginv_(Siginv),
+      sigsq_sampler_(siginv_)
+  {}
 
   const Vec & RCS::b0()const{return mu_->mu();}
   double RCS::kappa()const{return mu_->prior_sample_size();}
@@ -55,11 +54,14 @@ namespace BOOM{
 
   void RCS::draw(){
     set_posterior_suf();
-    double siginv = rgamma(DF/2, SS/2);
-    ivar *= siginv;
+    double sigsq = sigsq_sampler_.draw(
+        rng(),
+        DF - prior_df(),
+        SS - prior_ss());
+    ivar /= sigsq;
     beta_tilde = rmvn_ivar(beta_tilde, ivar);
     m_->set_Beta(beta_tilde);
-    m_->set_sigsq(1.0/siginv);
+    m_->set_sigsq(sigsq);
   }
 
   void RCS::find_posterior_mode(){

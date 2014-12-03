@@ -119,7 +119,6 @@ namespace BOOM {
         sigma_(n),
         weights_(n),
         log_weights_(n),
-        wsp_(n),
         force_zero_mu_(false),
         kullback_leibler_(negative_infinity()),
         number_of_function_evaluations_(-1)
@@ -134,7 +133,6 @@ namespace BOOM {
       : mu_(mu),
         sigma_(sigma),
         weights_(weights),
-        wsp_(mu.size()),
         force_zero_mu_(false),
         kullback_leibler_(negative_infinity()),
         number_of_function_evaluations_(-1)
@@ -157,7 +155,6 @@ namespace BOOM {
         sigma_(initial_sigma),
         weights_(initial_weights),
         log_weights_(weights_),
-        wsp_(mu_.size()),
         force_zero_mu_(force_zero_mu)
   {
     check_sizes();
@@ -227,14 +224,12 @@ namespace BOOM {
           ConstVectorView(theta, dimension, dimension - 1));
       mu_.resize(dimension);
       mu_ = 0;
-      wsp_.resize(dimension);
       order_by_sigma();
     } else {
       int dimension = (theta.size() + 1) / 3;
       mu_ = ConstVectorView(theta, 0, dimension);
       sigma_ = exp(ConstVectorView(theta, dimension, dimension));
       weights_ = inverse_logit(ConstVectorView(theta, 2*dimension, dimension - 1));
-      wsp_.resize(mu_.size());
       order_by_mu();
     }
     log_weights_ = log(weights_);
@@ -252,7 +247,6 @@ namespace BOOM {
     mu_ = mu;
     sigma_ = sigma;
     weights_ = weights;
-    wsp_.resize(mu_.size());
     if (force_zero_mu_) {
       mu_ = 0;
       order_by_sigma();
@@ -279,21 +273,21 @@ namespace BOOM {
   }
 
   double NormalMixtureApproximation::logp(double y)const{
-    wsp_ = log_weights_;
+    Vector wsp = log_weights_;
     for (int s = 0; s < mu_.size(); ++s) {
-      wsp_[s] += dnorm(y, mu_[s], sigma_[s], true);
+      wsp[s] += dnorm(y, mu_[s], sigma_[s], true);
     }
-    return lse(wsp_);
+    return lse(wsp);
   }
 
   void NormalMixtureApproximation::unmix(
       RNG &rng, double u, double *mu, double *sigsq) const {
-    wsp_ = log_weights_;
+    Vector wsp = log_weights_;
     for (int s = 0; s < dim(); ++s) {
-      wsp_[s] += dnorm(u, mu_[s], sigma_[s], true);
+      wsp[s] += dnorm(u, mu_[s], sigma_[s], true);
     }
-    wsp_.normalize_logprob();
-    int mixture_indicator = rmulti_mt(rng, wsp_);
+    wsp.normalize_logprob();
+    int mixture_indicator = rmulti_mt(rng, wsp);
     *mu = mu_[mixture_indicator];
     *sigsq = square(sigma_[mixture_indicator]);
   }
@@ -319,7 +313,11 @@ namespace BOOM {
       fhi = target(++upper_limit);
     }
 
-    KullbackLeiblerDivergence kl(target, *this, lower_limit, upper_limit, guess_at_mode);
+    KullbackLeiblerDivergence kl(target,
+                                 *this,
+                                 lower_limit,
+                                 upper_limit,
+                                 guess_at_mode);
     kullback_leibler_ = kl.current_distance();
     return kullback_leibler_;
   }
@@ -331,15 +329,14 @@ namespace BOOM {
     int n = mu_.size();
     if(sigma_.size() != n ||
        weights_.size() != n ||
-       log_weights_.size() != n ||
-       wsp_.size() != n) {
+       log_weights_.size() != n) {
       ostringstream err;
-      err << "Error in NormalMixtureApproximation:  vectors have different sizes." << endl
+      err << "Error in NormalMixtureApproximation:  "
+          << "vectors have different sizes." << endl
           << "mu_           : " << mu_.size() << endl
           << "sigma_        : " << sigma_.size() << endl
           << "weights_      : " << sigma_.size() << endl
-          << "log_weights_  : " << sigma_.size() << endl
-          << "wsp_          : " << sigma_.size() << endl;
+          << "log_weights_  : " << sigma_.size() << endl;
       report_error(err.str());
     }
   }

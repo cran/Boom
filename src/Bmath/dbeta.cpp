@@ -22,7 +22,7 @@
  *    October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000, The R Core Development Team
+ *      Copyright (C) 2000, The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,38 +70,38 @@ double dbeta(double x, double a, double b, int give_log)
     if (a <= 0 || b <= 0) ML_ERR_return_NAN;
     if (x < 0 || x > 1) return(R_D__0);
     if (x == 0) {
-	if(a > 1) return(R_D__0);
-	if(a < 1) return(BOOM::infinity());
-	/* a == 1 : */ return(R_D_val(b));
+        if(a > 1) return(R_D__0);
+        if(a < 1) return(BOOM::infinity());
+        /* a == 1 : */ return(R_D_val(b));
     }
     if (x == 1) {
-	if(b > 1) return(R_D__0);
-	if(b < 1) return(BOOM::infinity());
-	/* b == 1 : */ return(R_D_val(a));
+        if(b > 1) return(R_D__0);
+        if(b < 1) return(BOOM::infinity());
+        /* b == 1 : */ return(R_D_val(a));
     }
     if (a < 1) {
-	if (b < 1) {		/* a,b < 1 */
-	    f = a*b/((a+b)*x*(1-x));
-	    p = dbinom_raw(a,a+b, x,1-x, give_log);
-	}
-	else {			/* a < 1 <= b */
-	    f = a/x;
-	    bm1 = b - 1;
-	    p = dbinom_raw(a,a+bm1, x,1-x, give_log);
-	}
+        if (b < 1) {            /* a,b < 1 */
+            f = a*b/((a+b)*x*(1-x));
+            p = dbinom_raw(a,a+b, x,1-x, give_log);
+        }
+        else {                  /* a < 1 <= b */
+            f = a/x;
+            bm1 = b - 1;
+            p = dbinom_raw(a,a+bm1, x,1-x, give_log);
+        }
     }
     else {
-	if (b < 1) {		/* a >= 1 > b */
-	    f = b/(1-x);
-	    am1 = a - 1;
-	    p = dbinom_raw(am1,am1+b, x,1-x, give_log);
-	}
-	else {			/* a,b >= 1 */
-	    f = a+b-1;
-	    am1 = a - 1;
-	    bm1 = b - 1;
-	    p = dbinom_raw(am1,am1+bm1, x,1-x, give_log);
-	}
+        if (b < 1) {            /* a >= 1 > b */
+            f = b/(1-x);
+            am1 = a - 1;
+            p = dbinom_raw(am1,am1+b, x,1-x, give_log);
+        }
+        else {                  /* a,b >= 1 */
+            f = a+b-1;
+            am1 = a - 1;
+            bm1 = b - 1;
+            p = dbinom_raw(am1,am1+bm1, x,1-x, give_log);
+        }
     }
     return( (give_log) ? p + log(f) : p*f );
 }

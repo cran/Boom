@@ -42,10 +42,10 @@ namespace BOOM{
     void combine(Ptr<WishartSuf>);
     void combine(const WishartSuf &);
     WishartSuf * abstract_combine(Sufstat *s);
-    virtual Vec vectorize(bool minimal=true)const;
+    virtual Vector vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
 					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
+    virtual Vec::const_iterator unvectorize(const Vector &v,
 					    bool minimal=true);
     virtual ostream &print(ostream &out)const;
   private:
@@ -87,9 +87,9 @@ namespace BOOM{
     void mle1();
 
     virtual double logp(const Spd &W) const;
-    double loglike() const;
-    double dloglike(Vec &g)const;
-    double Loglike(Vec &g, uint  nd)const;
+    virtual double loglike(const Vector &sumsq_triangle_nu) const;
+    virtual double dloglike(const Vector &sumsq_triangle_nu, Vector &g)const;
+    double Loglike(const Vector &sumsq_triangle_nu, Vector &g, uint nd)const;
   };
   //======================================================================
 

@@ -191,7 +191,6 @@ namespace BOOM{
 
     PCR::PartialCreditModel(const PCR &rhs)
       : Model(rhs),
-        MLE_Model(rhs),
 	Item(rhs),
 	ParamPolicy(rhs),
 	PriorPolicy(rhs),

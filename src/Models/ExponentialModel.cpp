@@ -103,7 +103,6 @@ namespace BOOM{
 
   EM::ExponentialModel(const EM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       ConjPriorPolicy(rhs),
@@ -135,8 +134,12 @@ namespace BOOM{
   void EM::set_conjugate_prior(Ptr<ExponentialGammaSampler> pri){
     ConjPriorPolicy::set_conjugate_prior(pri);  }
 
-  double ExponentialModel::Loglike(Vec &g, Mat &h, uint nd) const{
-    double lam = this->lam();
+  double ExponentialModel::Loglike(const Vector &lambda_vector,
+                                   Vec &g, Mat &h, uint nd) const{
+    if (lambda_vector.size() != 1) {
+      report_error("Wrong size argument.");
+    }
+    double lam = lambda_vector[0];
     double ans=0;
     if(lam<=0){
       ans = negative_infinity();
@@ -154,6 +157,12 @@ namespace BOOM{
       if(nd>1) h(0,0) = -n/(lam*lam);
     }
     return ans;
+  }
+
+  void ExponentialModel::mle() {
+    double number_of_observations = suf()->n();
+    double sum_of_durations = suf()->sum();
+    set_lam(number_of_observations / sum_of_durations);
   }
 
   double ExponentialModel::pdf(Ptr<Data> dp, bool logscale)const{

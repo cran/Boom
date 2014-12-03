@@ -22,7 +22,7 @@
  *    October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000, The R Core Development Team
+ *      Copyright (C) 2000, The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -59,20 +59,20 @@ double dt(double x, double n, int give_log)
     double t, u;
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
-	return x + n;
+        return x + n;
 #endif
 
     if (n <= 0) ML_ERR_return_NAN;
     if(!R_FINITE(x))
-	return R_D__0;
+        return R_D__0;
     if(!R_FINITE(n))
-	return dnorm(x, 0., 1., give_log);
+        return dnorm(x, 0., 1., give_log);
 
     t = -bd0(n/2.,(n+1)/2.) + stirlerr((n+1)/2.) - stirlerr(n/2.);
     if ( x*x > 0.2*n )
-	u = log( 1+ x*x/n ) * n/2;
+        u = log( 1+ x*x/n ) * n/2;
     else
-	u = -bd0(n/2.,(n+x*x)/2.) + x*x/2.;
+        u = -bd0(n/2.,(n+x*x)/2.) + x*x/2.;
 
     return R_D_fexp(M_2PI*(1+x*x/n), t-u);
 }

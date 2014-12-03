@@ -47,7 +47,7 @@
 #include <distributions/rng.hpp>
 namespace Rmath{
 
-#define expmax	(numeric_limits<double>::max_exponent * M_LN2)/* = log(numeric_limits<double>::max()) */
+#define expmax  (numeric_limits<double>::max_exponent * M_LN2)/* = log(numeric_limits<double>::max()) */
 
   double rbeta_mt(BOOM::RNG & rng, double aa, double bb);
 
@@ -91,7 +91,7 @@ namespace Rmath{
     b = std::max(aa, bb); /* a <= b */
     alpha = a + b;
 
-#define v_w_from__u1_bet(AA)			\
+#define v_w_from__u1_bet(AA)                    \
     v = beta * log(u1 / (1.0 - u1));            \
     if (v <= expmax)                            \
       w = AA * exp(v);                          \
@@ -99,7 +99,7 @@ namespace Rmath{
       w = numeric_limits<double>::max()
 
 
-    if (a <= 1.0) {	/* --- Algorithm BC --- */
+    if (a <= 1.0) {     /* --- Algorithm BC --- */
 
       /* changed notation, now also a <= b (was reversed) */
 
@@ -111,8 +111,8 @@ namespace Rmath{
         //      }
       /* FIXME: "do { } while()", but not trivially because of "continue"s:*/
       for(;;) {
-        // 	    u1 = unif_rand();
-        // 	    u2 = unif_rand();
+        //          u1 = unif_rand();
+        //          u2 = unif_rand();
         u1 = rng();
         u2 = rng();
         if (u1 < 0.5) {
@@ -138,7 +138,7 @@ namespace Rmath{
       return (aa == a) ? a / (a + w) : w / (a + w);
 
     }
-    else {		/* Algorithm BB */
+    else {              /* Algorithm BB */
 
       //      if (!qsame) { /* initialize */
       beta = sqrt((alpha - 2.0) / (2.0 * a * b - alpha));
@@ -147,8 +147,8 @@ namespace Rmath{
       do {
         u1 = rng();
         u2 = rng();
-        // 	    u1 = unif_rand();
-        // 	    u2 = unif_rand();
+        //          u1 = unif_rand();
+        //          u2 = unif_rand();
 
         v_w_from__u1_bet(a);
 

@@ -113,11 +113,9 @@ namespace BOOM{
 
   PDM::ProductDirichletModel(const PDM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      //      DiffVectorModel(rhs),
       dLoglikeModel(rhs)
   {}
 
@@ -145,8 +143,8 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  double PDM::loglike()const{
-    const Mat & Nu(this->Nu());
+  double PDM::loglike(const Vector &Nu_columns)const{
+    Matrix Nu(dim(), dim(), Nu_columns.data());
     const Mat & sumlog(suf()->sumlog());
     double n=  suf()->n();
 
@@ -156,8 +154,8 @@ namespace BOOM{
     return ans;
   }
 
-  double PDM::dloglike(Vec &g)const{
-    const Mat & Nu(this->Nu());
+  double PDM::dloglike(const Vector &Nu_columns, Vec &g)const{
+    Matrix Nu(dim(), dim(), Nu_columns.data());
     const Mat & sumlog(suf()->sumlog());
     double n=  suf()->n();
 

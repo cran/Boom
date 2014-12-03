@@ -43,9 +43,9 @@
  *
  *    This function computes the  'signum(.)' function:
  *
- *    	sign(x) =  1  if x > 0
- *    	sign(x) =  0  if x == 0
- *    	sign(x) = -1  if x < 0
+ *      sign(x) =  1  if x > 0
+ *      sign(x) =  0  if x == 0
+ *      sign(x) = -1  if x < 0
  */
 
 #include "nmath.hpp"
@@ -54,7 +54,7 @@ namespace Rmath{
 double sign(double x)
 {
     if (ISNAN(x))
-	return x;
+        return x;
     return ((x > 0) ? 1 : ((x == 0)? 0 : -1));
 }
 }

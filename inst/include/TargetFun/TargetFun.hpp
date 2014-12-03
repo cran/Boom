@@ -20,16 +20,16 @@
 #define TARGET_FUN_H
 
 #include <LinAlg/Types.hpp>
-#include <cpputil/ThrowException.hpp>
-#include <cpputil/RefCounted.hpp>
 #include <LinAlg/Vector.hpp>
+#include <boost/function.hpp>
+#include <cpputil/RefCounted.hpp>
+#include <cpputil/ThrowException.hpp>
 
 namespace BOOM{
-  // function object which can be passed to optimization routines
-
+  // A suite function object which can be passed to optimization
+  // routines.
   class TargetFun : private RefCounted{
   public:
-
     virtual double operator()(const Vec &x)const=0;
     virtual ~TargetFun(){}
     friend void intrusive_ptr_add_ref(TargetFun *);
@@ -54,6 +54,52 @@ namespace BOOM{
     virtual double operator()(const Vec &x, Vec &g)const=0;
     virtual double operator()(const Vec &x, Vec &g, Mat &h)const=0;
   };
+
+  //----------------------------------------------------------------------
+  // A common (and superior) pattern for writing functions and
+  // derivatives is to pass the derivatives as pointers.  This class
+  // is an adapter to convert that pattern to the one expected by
+  // various function optimizers.
+  //
+  // This object evaluates to the sum of one or more functions with
+  // the signature specified by TargetType.  The function arguments
+  // are as follows.
+  //   beta: The function argument.
+  //   gradient: If non-NULL the gradient is computed and output
+  //     here.  If NULL then no derivative computations are made.
+  //   Hessian: If Hessian and gradient are both non-NULL the
+  //     Hessian is computed and output here.  If NULL then the
+  //     Hessian is not computed.
+  //   reset_derivatives: If true then a non-NULL gradient or
+  //     Hessian will be resized and set to zero.  If false then a
+  //     non-NULL gradient or Hessian will have derivatives of
+  //     log-liklihood added to its input value.  It is an error if
+  //     reset_derivatives is false and the wrong-sized non-NULL
+  //     argument is passed.
+  class d2TargetFunPointerAdapter : public d2TargetFun {
+   public:
+    typedef boost::function<double(const Vector &x,
+                                   Vector *gradient,
+                                   Matrix *Hessian,
+                                   bool reset_derivatives)> TargetType;
+    d2TargetFunPointerAdapter() {}
+    d2TargetFunPointerAdapter(const TargetType &target);
+    d2TargetFunPointerAdapter(const TargetType &prior,
+                              const TargetType &likelihood);
+    void add_function(const TargetType &target);
+
+    virtual double operator()(const Vector &x) const;
+    virtual double operator()(const Vector &x, Vector &gradient) const;
+    virtual double operator()(const Vector &x,
+                              Vector &gradient,
+                              Matrix &Hessian) const;
+    // If targets_ is empty then an error is reported (e.g. by
+    // throwing an exception).
+    void check_not_empty() const;
+   private:
+    std::vector<TargetType> targets_;
+  };
+
   //======================================================================
 
   class ScalarTargetFun : private RefCounted{

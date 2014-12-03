@@ -19,6 +19,7 @@
 #define BOOM_DYNAMIC_REGRESSION_POSTERIOR_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/StateSpace/StateModels/DynamicRegressionStateModel.hpp>
 #include <Models/GammaModel.hpp>
 
@@ -48,9 +49,11 @@ class DynamicRegressionPosteriorSampler : public PosteriorSampler {
   // statistics for siginv_prior_.  You still need to call
   // siginv_prior_->sample_posterior().
   virtual void draw();
+
  private:
   DynamicRegressionStateModel *model_;
   Ptr<GammaModel> siginv_prior_;
+  GenericGaussianVarianceSampler sigsq_sampler_;
   bool handle_siginv_prior_separately_;
 };
 

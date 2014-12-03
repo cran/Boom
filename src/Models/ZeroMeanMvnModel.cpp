@@ -52,17 +52,20 @@ namespace BOOM{
     return dmvn_zero_mean(dpp->value(), siginv(), ldsi(), logscale);
   }
 
-  double ZMMM::loglike()const{
+  double ZMMM::loglike(const Vector &siginv_triangle)const{
     const double log2pi = 1.83787706641;
     double dim = mu_.size();
     double n = suf()->n();
     const Vec ybar = suf()->ybar();
     const Spd sumsq = suf()->center_sumsq();
 
-    double qform = n*(siginv().Mdist(ybar));
-    qform+= traceAB(siginv(), sumsq);
+    SpdMatrix siginv(dim);
+    siginv.unvectorize(siginv_triangle, true);
 
-    double nc = 0.5*n*( -dim*log2pi + ldsi());
+    double qform = n*(siginv.Mdist(ybar));
+    qform+= traceAB(siginv, sumsq);
+
+    double nc = 0.5*n*( -dim*log2pi + siginv.logdet());
 
     double ans = nc - .5*qform;
     return ans;

@@ -39,25 +39,25 @@
  *
  *  SYNOPSIS
  *
- *	double qnorm5(double p, double mu, double sigma,
- *		      int lower_tail, int log_p)
+ *      double qnorm5(double p, double mu, double sigma,
+ *                    int lower_tail, int log_p)
  *            {qnorm (..) is synonymous and preferred inside R}
  *
  *  DESCRIPTION
  *
- *	Compute the quantile function for the normal distribution.
+ *      Compute the quantile function for the normal distribution.
  *
- *	For small to moderate probabilities, algorithm referenced
- *	below is used to obtain an initial approximation which is
- *	polished with a final Newton step.
+ *      For small to moderate probabilities, algorithm referenced
+ *      below is used to obtain an initial approximation which is
+ *      polished with a final Newton step.
  *
- *	For very large arguments, an algorithm of Wichura is used.
+ *      For very large arguments, an algorithm of Wichura is used.
  *
  *  REFERENCE
  *
- *	Beasley, J. D. and S. G. Springer (1977).
- *	Algorithm AS 111: The percentage points of the normal distribution,
- *	Applied Statistics, 26, 118-121.
+ *      Beasley, J. D. and S. G. Springer (1977).
+ *      Algorithm AS 111: The percentage points of the normal distribution,
+ *      Applied Statistics, 26, 118-121.
  *
  *      Wichura, M.J. (1988).
  *      Algorithm AS 241: The Percentage Points of the Normal Distribution.
@@ -74,14 +74,14 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
 
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(mu) || ISNAN(sigma))
-	return p + mu + sigma;
+        return p + mu + sigma;
 #endif
-    if (p == R_DT_0)	return BOOM::negative_infinity();
-    if (p == R_DT_1)	return BOOM::infinity();
+    if (p == R_DT_0)    return BOOM::negative_infinity();
+    if (p == R_DT_1)    return BOOM::infinity();
     R_Q_P01_check(p);
 
-    if(sigma  < 0)	ML_ERR_return_NAN;
-    if(sigma == 0)	return mu;
+    if(sigma  < 0)      ML_ERR_return_NAN;
+    if(sigma == 0)      return mu;
 
     p_ = R_DT_qIv(p);/* real lower_tail prob. p */
     q = p_ - 0.5;
@@ -90,56 +90,56 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
     /* --- use  AS 111 --- */
     if (fabs(q) <= 0.42) {
 
-	/* 0.08 <= p <= 0.92 */
+        /* 0.08 <= p <= 0.92 */
 
-	r = q * q;
-	val = q * (((-25.44106049637 * r + 41.39119773534) * r
-		    - 18.61500062529) * r + 2.50662823884)
-	    / ((((3.13082909833 * r - 21.06224101826) * r
-		 + 23.08336743743) * r + -8.47351093090) * r + 1.0);
+        r = q * q;
+        val = q * (((-25.44106049637 * r + 41.39119773534) * r
+                    - 18.61500062529) * r + 2.50662823884)
+            / ((((3.13082909833 * r - 21.06224101826) * r
+                 + 23.08336743743) * r + -8.47351093090) * r + 1.0);
     }
     else {
 
-	/* p < 0.08 or p > 0.92, set r = min(p, 1 - p) */
+        /* p < 0.08 or p > 0.92, set r = min(p, 1 - p) */
 
-	if (q > 0)
-	    r = R_DT_CIv(p);/* 1-p */
-	else
-	    r = p_;/* = R_DT_Iv(p) ^=  p */
+        if (q > 0)
+            r = R_DT_CIv(p);/* 1-p */
+        else
+            r = p_;/* = R_DT_Iv(p) ^=  p */
 
-	if(r > numeric_limits<double>::epsilon()) {
-	    r = sqrt(- ((log_p &&
-			 ((lower_tail && q <= 0) || (!lower_tail && q > 0))) ?
-			p : /* else */ log(r)));
-	    val = (((2.32121276858 * r + 4.85014127135) * r
-		    - 2.29796479134) * r - 2.78718931138)
-		/ ((1.63706781897 * r + 3.54388924762) * r + 1.0);
-	    if (q < 0)
-		val = -val;
-	}
-	else if(r >= numeric_limits<double>::min()) { /* r = p <= eps : Use Wichura */
-	    val = -2 * (log_p ? R_D_Lval(p) : log(R_D_Lval(p)));
-	    r = log(2 * M_PI * val);
-	    p = val * val;
-	    r = r/val + (2 - r)/p + (-14 + 6 * r - r * r)/(2 * p * val);
-	    val = sqrt(val * (1 - r));
-	    if(q < 0.0)
-		val = -val;
-	    return mu + sigma * val;
-	}
-	else {
+        if(r > numeric_limits<double>::epsilon()) {
+            r = sqrt(- ((log_p &&
+                         ((lower_tail && q <= 0) || (!lower_tail && q > 0))) ?
+                        p : /* else */ log(r)));
+            val = (((2.32121276858 * r + 4.85014127135) * r
+                    - 2.29796479134) * r - 2.78718931138)
+                / ((1.63706781897 * r + 3.54388924762) * r + 1.0);
+            if (q < 0)
+                val = -val;
+        }
+        else if(r >= numeric_limits<double>::min()) { /* r = p <= eps : Use Wichura */
+            val = -2 * (log_p ? R_D_Lval(p) : log(R_D_Lval(p)));
+            r = log(2 * M_PI * val);
+            p = val * val;
+            r = r/val + (2 - r)/p + (-14 + 6 * r - r * r)/(2 * p * val);
+            val = sqrt(val * (1 - r));
+            if(q < 0.0)
+                val = -val;
+            return mu + sigma * val;
+        }
+        else {
           report_error("range error in qnorm");
           if(q < 0.0) return BOOM::negative_infinity();
-          else	return BOOM::infinity();
-	}
+          else  return BOOM::infinity();
+        }
     }
 /* FIXME: This could be improved when log_p or !lower_tail ?
- *	  (using p, not p_ , and a different derivative )
+ *        (using p, not p_ , and a different derivative )
  */
     /* Final Newton step: */
     val = val -
-	(pnorm(val, 0., 1., /*lower*/true, /*log*/false) - p_) /
-	 dnorm(val, 0., 1., /*log*/false);
+        (pnorm(val, 0., 1., /*lower*/true, /*log*/false) - p_) /
+         dnorm(val, 0., 1., /*log*/false);
 
 #else
 /*-- use AS 241 --- */
@@ -154,7 +154,7 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
 */
     if (fabs(q) <= .425) {/* 0.075 <= p <= 0.925 */
         r = .180625 - q * q;
-	val =
+        val =
             q * (((((((r * 2509.0809287301226727 +
                        33430.575583588128105) * r + 67265.770927008700853) * r +
                      45921.953931549871457) * r + 13731.693765509461125) * r +
@@ -167,15 +167,15 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
     }
     else { /* closer than 0.075 from {0,1} boundary */
 
-	/* r = min(p, 1-p) < 0.075 */
-	if (q > 0)
-	    r = R_DT_CIv(p);/* 1-p */
-	else
-	    r = p_;/* = R_DT_Iv(p) ^=  p */
+        /* r = min(p, 1-p) < 0.075 */
+        if (q > 0)
+            r = R_DT_CIv(p);/* 1-p */
+        else
+            r = p_;/* = R_DT_Iv(p) ^=  p */
 
-	r = sqrt(- ((log_p &&
-		     ((lower_tail && q <= 0) || (!lower_tail && q > 0))) ?
-		    p : /* else */ log(r)));
+        r = sqrt(- ((log_p &&
+                     ((lower_tail && q <= 0) || (!lower_tail && q > 0))) ?
+                    p : /* else */ log(r)));
         /* r = sqrt(-log(r))  <==>  min(p, 1-p) = exp( - r^2 ) */
 
         if (r <= 5.) { /* <==> min(p,1-p) >= exp(-25) ~= 1.3888e-11 */
@@ -209,8 +209,8 @@ double qnorm(double p, double mu, double sigma, int lower_tail, int log_p)
                     .59983220655588793769) * r + 1.);
         }
 
-	if(q < 0.0)
-	    val = -val;
+        if(q < 0.0)
+            val = -val;
         /* return (q >= 0.)? r : -r ;*/
     }
 

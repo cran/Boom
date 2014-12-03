@@ -28,8 +28,8 @@ namespace BOOM{
         : model_(model),
           siginv_prior_(siginv_prior),
           max_number_of_regression_proposals_(3),
-          upper_sigma_truncation_point_(infinity())
-    {}
+          sigsq_sampler_(siginv_prior)
+  {}
 
   void ArPosteriorSampler::draw(){
     draw_phi();
@@ -49,20 +49,10 @@ namespace BOOM{
     const Vec &phi(model_->phi());
     const Vec &xty(model_->suf()->xty());
     const Spd &xtx(model_->suf()->xtx());
-    double ss = 2 * siginv_prior_->beta();
-    ss += xtx.Mdist(phi) - 2 * phi.dot(xty) + model_->suf()->yty();
-
-    double df = 2 * siginv_prior_->alpha();
-    df += model_->suf()->n();
-
-    double siginv;
-    if (upper_sigma_truncation_point_ == BOOM::infinity()) {
-      siginv = rgamma_mt(rng(), df/2, ss/2);
-    } else {
-      siginv = rtrun_gamma_mt(rng(), df/2, ss/2,
-                           1.0/pow(upper_sigma_truncation_point_, 2));
-    }
-    model_->set_sigsq(1.0 / siginv);
+    double ss = xtx.Mdist(phi) - 2 * phi.dot(xty) + model_->suf()->yty();
+    double df = model_->suf()->n();
+    double sigsq = sigsq_sampler_.draw(rng(), df, ss);
+    model_->set_sigsq(sigsq);
   }
 
   void ArPosteriorSampler::draw_phi(){
@@ -131,14 +121,7 @@ namespace BOOM{
   }
 
   void ArPosteriorSampler::set_sigma_upper_limit(double max_sigma){
-    if(max_sigma <= 0) {
-      ostringstream err;
-      err << "ArPosteriorSampler::set_sigma_upper_limit expects "
-          << "a positive argument.  It was given "
-          << max_sigma << "." << endl;
-      report_error(err.str());
-    }
-    upper_sigma_truncation_point_ = max_sigma;
+    sigsq_sampler_.set_sigma_max(max_sigma);
   }
 
 }

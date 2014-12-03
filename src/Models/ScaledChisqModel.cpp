@@ -34,7 +34,6 @@ namespace BOOM{
 
   ScaledChisqModel::ScaledChisqModel(const ScaledChisqModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GammaModelBase(rhs),
       ParamPolicy(rhs),
       PriorPolicy(rhs)
@@ -49,7 +48,7 @@ namespace BOOM{
   void SCM::set_nu(double nu){Nu_prm()->set(nu);}
 
   // probability calculations
-  double SCM::Loglike(Vector &g, Matrix &h, uint nd) const {
+  double SCM::Loglike(const Vector &nu_vector, Vector &g, Matrix &h, uint nd) const {
 
     // loglike is a function of nu, derivatives are with respect to
     // nu.  however the model is w~Ga(nu/2, nu/2)
@@ -58,7 +57,7 @@ namespace BOOM{
     double sum =suf()->sum();
     double sumlog = suf()->sumlog();
 
-    double nu = this->nu();
+    double nu = nu_vector[0];
     if(nu <=0){
       double ans = negative_infinity();
       if(nd>0){

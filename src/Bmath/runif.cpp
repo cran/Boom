@@ -44,12 +44,12 @@ namespace Rmath{
 
 double runif_mt(BOOM::RNG & rng, double a, double b)
 {
-    if (!R_FINITE(a) || !R_FINITE(b) || b < a)	ML_ERR_return_NAN;
+    if (!R_FINITE(a) || !R_FINITE(b) || b < a)  ML_ERR_return_NAN;
 
     if (a == b)
-	return a;
+        return a;
     else
-	return a + (b - a) * unif_rand(rng);
+        return a + (b - a) * unif_rand(rng);
 }
 
 double runif(double a, double b){

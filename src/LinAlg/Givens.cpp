@@ -22,34 +22,32 @@
 #include <LinAlg/Matrix.hpp>
 #include <cmath>
 #include <LinAlg/Selector.hpp>
-
-extern "C"{
-#include <cblas.h>
-}
+#include <LinAlg/blas.hpp>
 
 namespace BOOM{
     using std::setw;
     using std::endl;
+    using blas::drot;
     typedef GivensRotation GR;
 
     void givens(double a, double b, double &c, double &s);
     void givens(double a, double b, double & c, double & s){
       if(b==0){
-	c=1;
-	s=0;
-	return;
+        c=1;
+        s=0;
+        return;
       }
       double ab = std::fabs(b);
       double aa = std::fabs(a);
       if(ab>aa){
-	double r = -a/b;
-	s = 1.0/std::sqrt(1+r*r);
-	c = s *r;
-	return;
+        double r = -a/b;
+        s = 1.0/std::sqrt(1+r*r);
+        c = s *r;
+        return;
       }else{
-	double r = -b/a;
-	c = 1/std::sqrt(1+r*r);
-	s  = c * r;
+        double r = -b/a;
+        c = 1/std::sqrt(1+r*r);
+        s  = c * r;
       }
     }
 
@@ -63,7 +61,6 @@ namespace BOOM{
     {
       double a(A(j,j));
       double b(A(i,j));
-      //      cblas_drotg(&a,&b,&c,&s); // ATLAS has a bug
       givens(a,b,c,s);
     }
 
@@ -75,26 +72,20 @@ namespace BOOM{
       VectorView x(A.row(G.i));
       VectorView y(A.row(G.j));
 
-      cblas_drot(x.size(),
-		 x.data(), x.stride(),
-		 y.data(), y.stride(),
-		 G.c,G.s);
+      drot(x.size(), x.data(), x.stride(), y.data(), y.stride(), G.c,G.s);
       return A;
     }
     Matrix & operator*( Matrix &A, const GR &G){
       VectorView x(A.col(G.i));
       VectorView y(A.col(G.j));
-      cblas_drot(x.size(),
-		 x.data(), x.stride(),
-		 y.data(), y.stride(),
-		 G.c,-G.s);
+      drot(x.size(), x.data(), x.stride(), y.data(), y.stride(), G.c,-G.s);
       return A;
     }
 
 
     ostream & GR::print(ostream &out)const{
       out << setw(10) << c  << " " << setw(10) << s << endl
-	  << setw(10) << -s  << " " << setw(10) << c << endl;
+          << setw(10) << -s  << " " << setw(10) << c << endl;
       return out;
     }
 
@@ -102,17 +93,18 @@ namespace BOOM{
       return G.print(out); }
 
 
-    Matrix triangulate(const Matrix &U, const Selector &inc, bool chop_zero_rows){
+    Matrix triangulate(const Matrix &U, const Selector &inc,
+                       bool chop_zero_rows){
       //U is an upper triangular matrix.  inc selects columns of U.
       //Then we apply Givens rotations to the subdiagonal elements to
       //produce a rectangular upper triangular matrix.
       Matrix R = inc.select_cols(U);
       uint nvars = inc.nvars();
       for(uint c=0; c <nvars; ++c){
-	uint nr = inc.indx(c);
-	for(uint r = nr; r>c; --r){
-	  GivensRotation G(R,r,c);
-	  R = G*R;}}
+        uint nr = inc.indx(c);
+        for(uint r = nr; r>c; --r){
+          GivensRotation G(R,r,c);
+          R = G*R;}}
       if(!chop_zero_rows) return R;
 
       Matrix ans(nvars, nvars);

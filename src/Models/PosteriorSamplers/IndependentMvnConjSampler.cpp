@@ -17,6 +17,7 @@
 */
 
 #include <Models/PosteriorSamplers/IndependentMvnConjSampler.hpp>
+#include <Models/ChisqModel.hpp>
 #include <distributions.hpp>
 #include <distributions/trun_gamma.hpp>
 #include <cpputil/report_error.hpp>
@@ -34,10 +35,16 @@ namespace BOOM {
         mean_prior_guess_(mean_guess),
         mean_prior_sample_size_(mean_sample_size),
         prior_ss_(sd_guess * sd_guess * sd_sample_size),
-        prior_df_(sd_sample_size),
-        sigma_upper_limit_(sigma_upper_limit)
+        prior_df_(sd_sample_size)
   {
-    check_sizes();
+    check_sizes(sigma_upper_limit);
+    int dim = mean_guess.size();
+    for (int i = 0; i < dim; ++i) {
+      GenericGaussianVarianceSampler sigsq_sampler(
+          new ChisqModel(sd_sample_size[i], sd_guess[i]),
+          sigma_upper_limit[i]);
+      sigsq_samplers_.push_back(sigsq_sampler);
+    }
   }
 
   IndependentMvnConjSampler::IndependentMvnConjSampler(
@@ -51,10 +58,14 @@ namespace BOOM {
         mean_prior_guess_(model->dim(), mean_guess),
         mean_prior_sample_size_(model->dim(), mean_sample_size),
         prior_ss_(model->dim(), sd_guess * sd_guess * sd_sample_size),
-        prior_df_(model->dim(), sd_sample_size),
-        sigma_upper_limit_(model->dim(), sigma_upper_limit)
+        prior_df_(model->dim(), sd_sample_size)
   {
-    check_sizes();
+    Ptr<ChisqModel> siginv_prior(new ChisqModel(sd_sample_size, sd_guess));
+    for (int i = 0; i < model_->dim(); ++i) {
+      GenericGaussianVarianceSampler sigsq_sampler(
+          siginv_prior, sigma_upper_limit);
+      sigsq_samplers_.push_back(sigsq_sampler);
+    }
   }
 
   double IndependentMvnConjSampler::logpri()const{
@@ -72,12 +83,12 @@ namespace BOOM {
     return ans;
   }
 
-  void IndependentMvnConjSampler::check_sizes(){
+  void IndependentMvnConjSampler::check_sizes(const Vector &sigma_upper_limit){
     check_vector_size(mean_prior_guess_, "mean_prior_guess_");
     check_vector_size(mean_prior_sample_size_, "mean_prior_sample_size_");
     check_vector_size(prior_ss_, "prior_ss_");
     check_vector_size(prior_df_, "prior_df_");
-    check_vector_size(sigma_upper_limit_, "sigma_upper_limit_");
+    check_vector_size(sigma_upper_limit, "sigma_upper_limit");
   }
 
   void IndependentMvnConjSampler::check_vector_size(
@@ -104,18 +115,10 @@ namespace BOOM {
 
       double kappa = mean_prior_sample_size_[i];
       double mu0 = mean_prior_guess_[i];
-      double df = prior_df_[i];
-      double ss = prior_ss_[i];
 
-      df += n;
       double mu_hat = (n * ybar + kappa * mu0) / (n + kappa);
-      ss += (n-1)*v  +  n * kappa * pow(ybar - mu0, 2) / (n + kappa);
-      if (sigma_upper_limit_[i] == infinity()) {
-        sigsq[i] = 1.0/rgamma_mt(rng(), df/2, ss/2);
-      } else {
-        sigsq[i] = 1.0 / rtrun_gamma_mt(rng(), df/2, ss/2,
-                                        1.0/pow(sigma_upper_limit_[i], 2));
-      }
+      double ss = (n-1)*v  +  n * kappa * pow(ybar - mu0, 2) / (n + kappa);
+      sigsq[i] = sigsq_samplers_[i].draw(rng(), n, ss);
       v = sigsq[i] / (n+kappa);
       mu[i] = rnorm_mt(rng(), mu_hat, sqrt(v));
     }

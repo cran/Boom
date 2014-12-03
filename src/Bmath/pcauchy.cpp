@@ -37,7 +37,7 @@
  *
  *  DESCRIPTION
  *
- *	The distribution function of the Cauchy distribution.
+ *      The distribution function of the Cauchy distribution.
  */
 
 #include "nmath.hpp"
@@ -45,11 +45,11 @@
 namespace Rmath{
 
 double pcauchy(double x, double location, double scale,
-	       int lower_tail, int log_p)
+               int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
-	return x + location + scale;
+        return x + location + scale;
 #endif
     if (scale <= 0) ML_ERR_return_NAN;
 
@@ -57,8 +57,8 @@ double pcauchy(double x, double location, double scale,
     if (ISNAN(x)) ML_ERR_return_NAN;
 #ifdef IEEE_754
     if(!R_FINITE(x)) {
-	if(x < 0) return R_DT_0;
-	else return R_DT_1;
+        if(x < 0) return R_DT_0;
+        else return R_DT_1;
     }
 #endif
     return R_DT_val(0.5 + atan(x) / M_PI);

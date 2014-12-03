@@ -38,10 +38,7 @@ namespace BOOM{
       pri_(new MvnModel(mu, Ominv, true))
   {}
 
-
-
   void MLR::draw(){
-
     // random walk metropolis centered on current beta, with inverse
     // variance matrix given by current hessian of log posterior
 
@@ -49,32 +46,28 @@ namespace BOOM{
     uint p = inc.nvars();
     H.resize(p);
     g.resize(p);
-    b = inc.select(mlm_->beta());
+    Vector nonzero_beta = mlm_->coef().included_coefficients();
     mu = inc.select(pri_->mu());
     ivar = inc.select(pri_->siginv());
 
-    double logp_old = mlm_->Loglike(g,H,2); // + dmvn(b,mu,ivar,0,true);
+    double logp_old = mlm_->Loglike(nonzero_beta, g, H, 2)
+        + dmvn(nonzero_beta, mu, ivar, 0, true);
 
     H*= -1;
     H += ivar;  // now H is inverse posterior variance
-    bstar = rmvt_ivar(b, H, 3);
+    bstar = rmvt_ivar(nonzero_beta, H, 3);
     Spd Sigma = H.inv();
-    //    cout << "sd's:  " << sqrt(Sigma.diag()) <<endl;
-    mlm_->set_beta(inc.expand(bstar));
 
-    double logp_new = mlm_->loglike(); // + dmvn(bstar,mu,ivar,0, true);
-
+    double logp_new = mlm_->loglike(bstar)
+        + dmvn(bstar, mu, ivar, 0, true);
     double log_alpha = logp_new - logp_old;
-    //    cout << logp_old << " " << logp_new << " ";
-
     double logu = log(runif(0,1));
     while(!std::isfinite(logu)) logu = log(runif(0,1));
-    if(logu > log_alpha){  // reject the draw
-      mlm_->set_beta(inc.expand(b));
-      //      cout << "reject" << endl;
-    }else{
-      //      cout << "accept" << endl;
-    }// otherwise accept, in which case nothing needs to be done.
+    if(logu > log_alpha){
+      // Reject the draw.  Do nothing here.
+    }else{  // Accept the draw
+      mlm_->coef().set_included_coefficients(bstar);
+    }
   }
 
 

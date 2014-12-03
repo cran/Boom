@@ -69,7 +69,7 @@ namespace BOOM{
 
     double Logp(double x, double &g, double &h, uint nd)const;
     double Logp(const Vec & x, Vec &g, Mat &h, uint nd)const;
-    double Loglike(Vec &g, Mat &h, uint nd)const;
+    double Loglike(const Vector &mu_kappa, Vec &g, Mat &h, uint nd)const;
 
     void set_semi_conj_prior(double mu0, double v_mu0,
 			     double pdf, double sigma_guess);

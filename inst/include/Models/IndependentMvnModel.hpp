@@ -63,7 +63,7 @@ namespace BOOM{
         public ParamPolicy_2<VectorParams, VectorParams>,
         public SufstatDataPolicy<VectorData, IndependentMvnSuf>,
         public PriorPolicy,
-        public MixtureComponent
+        virtual public MixtureComponent
   {
   public:
     IndependentMvnModel(int dim);

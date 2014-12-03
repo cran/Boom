@@ -222,10 +222,22 @@ namespace BOOM{
     included_coefficients_current_ = false;
     return VectorParams::operator[](i);}
 
-
   void GlmCoefs::set_Beta(const Vector &tmp){
     included_coefficients_current_ = false;
     VectorParams::set(tmp);
+  }
+
+  // Drop coefficients whose value is zero.  Add coefficients whose
+  // value is nonzero.
+  void GlmCoefs::infer_sparsity() {
+    const Vector &beta(Beta());
+    for (int i = 0; i < beta.size(); ++i) {
+      if (beta[i] == 0.0) {
+        drop(i);
+      } else {
+        add(i);
+      }
+    }
   }
 
   //------- virtual function overloads ---------------

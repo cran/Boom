@@ -64,7 +64,8 @@ namespace BOOM{
 
     //--- estimation and probability calculations
     virtual void mle();
-    virtual double loglike()const;
+    virtual double loglike(
+        const Vector &beta_columns_siginv_triangle_nu)const;
     virtual double pdf(dPtr,bool)const;
     virtual Vec predict(const Vec &x)const;
 

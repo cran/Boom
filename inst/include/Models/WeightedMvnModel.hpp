@@ -85,6 +85,7 @@ namespace BOOM{
     Ptr<SpdParams> Sigma_prm();
     const Ptr<SpdParams> Sigma_prm()const;
 
+    int dim() const {return mu().size();}
     const Vec & mu() const;
     const Spd & Sigma()const;
     const Spd & siginv() const;
@@ -94,7 +95,7 @@ namespace BOOM{
     void set_Sigma(const Spd &);
     void set_siginv(const Spd &);
     void mle();
-    double loglike() const;
+    double loglike(const Vector &mu_siginv_triangle) const;
 
     double pdf(Ptr<Data>, bool logscale)const;
     double pdf(Ptr<DataType>, bool logscale)const;

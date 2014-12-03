@@ -53,7 +53,7 @@
 /*-- Mathlib as part of R --  define this for standalone : */
 /* #undef MATHLIB_STANDALONE */
 
-	/* Undo SGI Madness */
+        /* Undo SGI Madness */
 
 #ifdef ftrunc
 # undef ftrunc
@@ -75,104 +75,104 @@
 /* Names from Solaris math.h */
 
 #ifndef M_E
-#define M_E		2.718281828459045235360287471353	/* e */
+#define M_E             2.718281828459045235360287471353        /* e */
 #endif
 
 #ifndef M_LOG2E
-#define M_LOG2E		1.442695040888963407359924681002	/* log2(e) */
+#define M_LOG2E         1.442695040888963407359924681002        /* log2(e) */
 #endif
 
 #ifndef M_LOG10E
-#define M_LOG10E	0.434294481903251827651128918917	/* log10(e) */
+#define M_LOG10E        0.434294481903251827651128918917        /* log10(e) */
 #endif
 
 #ifndef M_LN2
-#define M_LN2		0.693147180559945309417232121458	/* ln(2) */
+#define M_LN2           0.693147180559945309417232121458        /* ln(2) */
 #endif
 
 #ifndef M_LN10
-#define M_LN10		2.302585092994045684017991454684	/* ln(10) */
+#define M_LN10          2.302585092994045684017991454684        /* ln(10) */
 #endif
 
 #ifndef M_PI
-#define M_PI		3.141592653589793238462643383280	/* pi */
+#define M_PI            3.141592653589793238462643383280        /* pi */
 #endif
 
 #ifndef M_2PI
-#define M_2PI		6.283185307179586476925286766559	/* 2*pi */
+#define M_2PI           6.283185307179586476925286766559        /* 2*pi */
 #endif
 
 #ifndef M_PI_2
-#define M_PI_2		1.570796326794896619231321691640	/* pi/2 */
+#define M_PI_2          1.570796326794896619231321691640        /* pi/2 */
 #endif
 
 #ifndef M_PI_4
-#define M_PI_4		0.785398163397448309615660845820	/* pi/4 */
+#define M_PI_4          0.785398163397448309615660845820        /* pi/4 */
 #endif
 
 #ifndef M_1_PI
-#define M_1_PI		0.318309886183790671537767526745	/* 1/pi */
+#define M_1_PI          0.318309886183790671537767526745        /* 1/pi */
 #endif
 
 #ifndef M_2_PI
-#define M_2_PI		0.636619772367581343075535053490	/* 2/pi */
+#define M_2_PI          0.636619772367581343075535053490        /* 2/pi */
 #endif
 
 #ifndef M_2_SQRTPI
-#define M_2_SQRTPI	1.128379167095512573896158903122	/* 2/sqrt(pi) */
+#define M_2_SQRTPI      1.128379167095512573896158903122        /* 2/sqrt(pi) */
 #endif
 
 #ifndef M_SQRT2
-#define M_SQRT2		1.414213562373095048801688724210	/* sqrt(2) */
+#define M_SQRT2         1.414213562373095048801688724210        /* sqrt(2) */
 #endif
 
 #ifndef M_SQRT1_2
-#define M_SQRT1_2	0.707106781186547524400844362105	/* 1/sqrt(2) */
+#define M_SQRT1_2       0.707106781186547524400844362105        /* 1/sqrt(2) */
 #endif
 
 /* R-Specific Constants */
 
 #ifndef M_SQRT_3
-#define M_SQRT_3	1.732050807568877293527446341506	/* sqrt(3) */
+#define M_SQRT_3        1.732050807568877293527446341506        /* sqrt(3) */
 #endif
 
 #ifndef M_SQRT_32
-#define M_SQRT_32	5.656854249492380195206754896838	/* sqrt(32) */
+#define M_SQRT_32       5.656854249492380195206754896838        /* sqrt(32) */
 #endif
 
 #ifndef M_LOG10_2
-#define M_LOG10_2	0.301029995663981195213738894724	/* log10(2) */
+#define M_LOG10_2       0.301029995663981195213738894724        /* log10(2) */
 #endif
 
 #ifndef M_SQRT_PI
-#define M_SQRT_PI	1.772453850905516027298167483341	/* sqrt(pi) */
+#define M_SQRT_PI       1.772453850905516027298167483341        /* sqrt(pi) */
 #endif
 
 #ifndef M_1_SQRT_2PI
-#define M_1_SQRT_2PI	0.398942280401432677939946059934	/* 1/sqrt(2pi) */
+#define M_1_SQRT_2PI    0.398942280401432677939946059934        /* 1/sqrt(2pi) */
 #endif
 
 #ifndef M_SQRT_2dPI
-#define M_SQRT_2dPI	0.797884560802865355879892119869	/* sqrt(2/pi) */
+#define M_SQRT_2dPI     0.797884560802865355879892119869        /* sqrt(2/pi) */
 #endif
 
 
 #ifndef M_LN_SQRT_PI
-#define M_LN_SQRT_PI	0.572364942924700087071713675677	/* log(sqrt(pi)) */
+#define M_LN_SQRT_PI    0.572364942924700087071713675677        /* log(sqrt(pi)) */
 #endif
 
 #ifndef M_LN_SQRT_2PI
-#define M_LN_SQRT_2PI	0.918938533204672741780329736406	/* log(sqrt(2*pi)) */
+#define M_LN_SQRT_2PI   0.918938533204672741780329736406        /* log(sqrt(2*pi)) */
 #endif
 
 #ifndef M_LN_SQRT_PId2
-#define M_LN_SQRT_PId2	0.225791352644727432363097614947        /* log(sqrt(pi/2)) */
+#define M_LN_SQRT_PId2  0.225791352644727432363097614947        /* log(sqrt(pi/2)) */
 #endif
 
-#define	rround	fround
-#define	prec	fprec
+#define rround  fround
+#define prec    fprec
 
-	/* R's versions with !R_FINITE checks */
+        /* R's versions with !R_FINITE checks */
 
 namespace Rmath{
 
@@ -185,9 +185,9 @@ namespace Rmath{
 
   /* Random Number Generators */
 
-  double	norm_rand(BOOM::RNG &);
-  double	unif_rand(BOOM::RNG &);
-  double	exp_rand(BOOM::RNG &);
+  double        norm_rand(BOOM::RNG &);
+  double        unif_rand(BOOM::RNG &);
+  double        exp_rand(BOOM::RNG &);
 
   void set_seed(unsigned int, unsigned int);
 
@@ -198,83 +198,83 @@ namespace Rmath{
 // #define qnorm qnorm5
 // #define dnorm dnorm4
 
-  double	dnorm(double, double, double, int);
-  double	pnorm(double, double, double, int, int);
-  double	qnorm(double, double, double, int, int);
-  double	rnorm(double, double);
-  double	rnorm_mt(RNG &, double, double);
-  void	pnorm_both(double, double *, double *, int, int);/* both tails */
+  double        dnorm(double, double, double, int);
+  double        pnorm(double, double, double, int, int);
+  double        qnorm(double, double, double, int, int);
+  double        rnorm(double, double);
+  double        rnorm_mt(RNG &, double, double);
+  void  pnorm_both(double, double *, double *, int, int);/* both tails */
 
   /* Uniform Distribution */
 
-  double	dunif(double, double, double, int);
-  double	punif(double, double, double, int, int);
-  double	qunif(double, double, double, int, int);
-  double	runif(double, double);
-  double	runif_mt(RNG &, double, double);
+  double        dunif(double, double, double, int);
+  double        punif(double, double, double, int, int);
+  double        qunif(double, double, double, int, int);
+  double        runif(double, double);
+  double        runif_mt(RNG &, double, double);
 
   /* Gamma Distribution */
 
-  double	dgamma(double, double, double, int);
-  double	pgamma(double, double, double, int, int);
-  double	qgamma(double, double, double, int, int);
-  double	rgamma(double, double);
-  double	rgamma_mt(BOOM::RNG &, double, double);
+  double        dgamma(double, double, double, int);
+  double        pgamma(double, double, double, int, int);
+  double        qgamma(double, double, double, int, int);
+  double        rgamma(double, double);
+  double        rgamma_mt(BOOM::RNG &, double, double);
 
   /* Beta Distribution */
 
-  double	dbeta(double, double, double, int);
-  double	pbeta(double, double, double, int, int);
-  double	qbeta(double, double, double, int, int);
-  double	pbeta_raw(double, double, double, int, int);
-  double	rbeta(double, double);
-  double	rbeta_mt(RNG &, double, double);
+  double        dbeta(double, double, double, int);
+  double        pbeta(double, double, double, int, int);
+  double        qbeta(double, double, double, int, int);
+  double        pbeta_raw(double, double, double, int, int);
+  double        rbeta(double, double);
+  double        rbeta_mt(RNG &, double, double);
 
   /* Lognormal Distribution */
 
-  double	dlnorm(double, double, double, int);
-  double	plnorm(double, double, double, int, int);
-  double	qlnorm(double, double, double, int, int);
-  double	rlnorm(double, double);
-  double	rlnorm_mt(RNG &, double, double);
+  double        dlnorm(double, double, double, int);
+  double        plnorm(double, double, double, int, int);
+  double        qlnorm(double, double, double, int, int);
+  double        rlnorm(double, double);
+  double        rlnorm_mt(RNG &, double, double);
 
   /* Chi-squared Distribution */
 
-  double	dchisq(double, double, int);
-  double	pchisq(double, double, int, int);
-  double	qchisq(double, double, int, int);
-  double	rchisq(double);
-  double	rchisq_mt(BOOM::RNG &, double);
+  double        dchisq(double, double, int);
+  double        pchisq(double, double, int, int);
+  double        qchisq(double, double, int, int);
+  double        rchisq(double);
+  double        rchisq_mt(BOOM::RNG &, double);
 
   /* Non-central Chi-squared Distribution */
 
-  double	dnchisq(double, double, double, int);
-  double	pnchisq(double, double, double, int, int);
-  double	qnchisq(double, double, double, int, int);
-  double	rnchisq(double, double);
-  double	rnchisq_mt(RNG &, double, double);
+  double        dnchisq(double, double, double, int);
+  double        pnchisq(double, double, double, int, int);
+  double        qnchisq(double, double, double, int, int);
+  double        rnchisq(double, double);
+  double        rnchisq_mt(RNG &, double, double);
 
   /* F Distibution */
 
-  double	df(double, double, double, int);
-  double	pf(double, double, double, int, int);
-  double	qf(double, double, double, int, int);
-  double	rf(double, double);
-  double	rf_mt(RNG &, double, double);
+  double        df(double, double, double, int);
+  double        pf(double, double, double, int, int);
+  double        qf(double, double, double, int, int);
+  double        rf(double, double);
+  double        rf_mt(RNG &, double, double);
 
   /* Student t Distibution */
 
-  double	dt(double, double, int);
-  double	pt(double, double, int, int);
-  double	qt(double, double, int, int);
-  double	rt(double);
-  double	rt_mt(RNG &, double);
+  double        dt(double, double, int);
+  double        pt(double, double, int, int);
+  double        qt(double, double, int, int);
+  double        rt(double);
+  double        rt_mt(RNG &, double);
 
   /* Binomial Distribution */
 
-  double	dbinom(double, double, double, int);
-  double	pbinom(double, double, double, int, int);
-  double	qbinom(double, double, double, int, int);
+  double        dbinom(double, double, double, int);
+  double        pbinom(double, double, double, int, int);
+  double        qbinom(double, double, double, int, int);
   unsigned int rbinom(int, double);
   unsigned int rbinom_mt(RNG &, int, double);
 
@@ -288,88 +288,88 @@ namespace Rmath{
 
   /* Cauchy Distribution */
 
-  double	dcauchy(double, double, double, int);
-  double	pcauchy(double, double, double, int, int);
-  double	qcauchy(double, double, double, int, int);
-  double	rcauchy(double, double);
-  double	rcauchy_mt(RNG &, double, double);
+  double        dcauchy(double, double, double, int);
+  double        pcauchy(double, double, double, int, int);
+  double        qcauchy(double, double, double, int, int);
+  double        rcauchy(double, double);
+  double        rcauchy_mt(RNG &, double, double);
 
   /* Exponential Distribution */
 
-  double	dexp(double, double, int);
-  double	pexp(double, double, int, int);
-  double	qexp(double, double, int, int);
-  double	rexp(double);
-  double	rexp_mt(RNG &, double);
+  double        dexp(double, double, int);
+  double        pexp(double, double, int, int);
+  double        qexp(double, double, int, int);
+  double        rexp(double);
+  double        rexp_mt(RNG &, double);
 
   /* Geometric Distribution */
 
-  double	dgeom(double, double, int);
-  double	pgeom(double, double, int, int);
-  double	qgeom(double, double, int, int);
-  double	rgeom(double);
-  double	rgeom_mt(RNG &, double);
+  double        dgeom(double, double, int);
+  double        pgeom(double, double, int, int);
+  double        qgeom(double, double, int, int);
+  double        rgeom(double);
+  double        rgeom_mt(RNG &, double);
 
   /* Hypergeometric Distibution */
 
-  double	dhyper(double, double, double, double, int);
-  double	phyper(double, double, double, double, int, int);
-  double	qhyper(double, double, double, double, int, int);
-  double	rhyper(double, double, double);
-  double	rhyper_mt(RNG &, double, double, double);
+  double        dhyper(double, double, double, double, int);
+  double        phyper(double, double, double, double, int, int);
+  double        qhyper(double, double, double, double, int, int);
+  double        rhyper(double, double, double);
+  double        rhyper_mt(RNG &, double, double, double);
 
   /* Negative Binomial Distribution */
 
-  double	dnbinom(double, double, double, int);
-  double	pnbinom(double, double, double, int, int);
-  double	qnbinom(double, double, double, int, int);
-  double	rnbinom(double, double);
-  double	rnbinom_mt(RNG &, double, double);
+  double        dnbinom(double, double, double, int);
+  double        pnbinom(double, double, double, int, int);
+  double        qnbinom(double, double, double, int, int);
+  double        rnbinom(double, double);
+  double        rnbinom_mt(RNG &, double, double);
 
   /* Poisson Distribution */
 
-  double	dpois(double, double, int);
-  double	ppois(double, double, int, int);
-  double	qpois(double, double, int, int);
-  double	rpois(double);
-  double	rpois_mt(BOOM::RNG &, double);
+  double        dpois(double, double, int);
+  double        ppois(double, double, int, int);
+  double        qpois(double, double, int, int);
+  double        rpois(double);
+  double        rpois_mt(BOOM::RNG &, double);
 
   /* Weibull Distribution */
 
-  double	dweibull(double, double, double, int);
-  double	pweibull(double, double, double, int, int);
-  double	qweibull(double, double, double, int, int);
-  double	rweibull(double, double);
-  double	rweibull_mt(RNG &, double, double);
+  double        dweibull(double, double, double, int);
+  double        pweibull(double, double, double, int, int);
+  double        qweibull(double, double, double, int, int);
+  double        rweibull(double, double);
+  double        rweibull_mt(RNG &, double, double);
 
   /* Logistic Distribution */
 
-  double	dlogis(double, double, double, int);
-  double	plogis(double, double, double, int, int);
-  double	qlogis(double, double, double, int, int);
-  double	rlogis(double, double);
-  double	rlogis_mt(RNG &, double, double);
+  double        dlogis(double, double, double, int);
+  double        plogis(double, double, double, int, int);
+  double        qlogis(double, double, double, int, int);
+  double        rlogis(double, double);
+  double        rlogis_mt(RNG &, double, double);
 
   /* Non-central Beta Distribution */
 
-  double	dnbeta(double, double, double, double, int);
-  double	pnbeta(double, double, double, double, int, int);
-  double	qnbeta(double, double, double, double, int, int);
+  double        dnbeta(double, double, double, double, int);
+  double        pnbeta(double, double, double, double, int, int);
+  double        qnbeta(double, double, double, double, int, int);
 
   /* Non-central F Distribution */
 
-  double	pnf(double, double, double, double, int, int);
-  double	qnf(double, double, double, double, int, int);
+  double        pnf(double, double, double, double, int, int);
+  double        qnf(double, double, double, double, int, int);
 
   /* Non-central Student t Distribution */
 
-  double	pnt(double, double, double, int, int);
-  double	qnt(double, double, double, int, int);
+  double        pnt(double, double, double, int, int);
+  double        qnt(double, double, double, int, int);
 
   /* Studentized Range Distribution */
 
-  double	ptukey(double, double, double, double, int, int);
-  double	qtukey(double, double, double, double, int, int);
+  double        ptukey(double, double, double, double, int, int);
+  double        qtukey(double, double, double, double, int, int);
 
   /* Wilcoxon Rank Sum Distribution */
 
@@ -386,9 +386,9 @@ namespace Rmath{
   double rsignrank(double);
 
   /* Gamma and Related Functions */
-  inline double	gammafn(double x){return ::tgamma(x);}
-  inline double	lgammafn(double x){return ::lgamma(x);}
-  inline double	lgammafn2(double x, int &i){
+  inline double gammafn(double x){return ::tgamma(x);}
+  inline double lgammafn(double x){return ::lgamma(x);}
+  inline double lgammafn2(double x, int &i){
     int ix(lround(-x));
     // boost::numeric_cast<int>(-x));
     i = (x<=0 && (ix%2==0)) ? -1 : 1;
@@ -399,34 +399,34 @@ namespace Rmath{
   // used when Gamma(x) might be negative.  The second argument
   // returns the sign of Gamma(x)
 
-  double	digamma(double);
-  double	trigamma(double);
-  double	tetragamma(double);
-  double	pentagamma(double);
+  double        digamma(double);
+  double        trigamma(double);
+  double        tetragamma(double);
+  double        pentagamma(double);
 
-  double	beta(double, double);
-  double	lbeta(double, double);
+  double        beta(double, double);
+  double        lbeta(double, double);
 
-  double	choose(double, double);
-  double	lchoose(double, double);
+  double        choose(double, double);
+  double        lchoose(double, double);
 
   /* General Support Functions */
 
-  double 	pythag(double, double);
+  double        pythag(double, double);
   using ::expm1;
   using ::log1p;
 
-  double	sign(double);
-  double	fprec(double, double);
-  double	fround(double, double);
-  double	fsign(double, double);
-  double	ftrunc(double);
+  double        sign(double);
+  double        fprec(double, double);
+  double        fround(double, double);
+  double        fsign(double, double);
+  double        ftrunc(double);
   inline double trunc(double x){return ftrunc(x);}
 
 /* ----------------- Private part of the header file ------------------- */
 
-  double	d1mach(int);
-  double	gamma_cody(double);
+  double        d1mach(int);
+  double        gamma_cody(double);
 }
 #ifdef MATHLIB_STANDALONE
 #ifndef MATHLIB_PRIVATE_H
@@ -436,7 +436,7 @@ namespace Rmath{
 int R_IsNaNorNA(double);
 int R_finite(double);
 
-#ifdef WIN32
+#ifdef _WIN32
 # define NA_REAL (*_imp__NA_REAL)
 # define R_NegInf (*_imp__R_NegInf)
 # define R_PosInf (*_imp__R_PosInf)

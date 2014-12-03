@@ -42,7 +42,7 @@ namespace BOOM{
 
   inline double TIM_empty_target(const Vec &){ return 1.0; }
 
-  typedef boost::function<double(const Vec &,Vec &, Mat &,int)> FullTarget;
+  typedef boost::function<double(const Vec &,Vec &, Matrix &,int)> FullTarget;
 
   TIM::TIM(FullTarget logf,
            double nu)
@@ -105,6 +105,14 @@ namespace BOOM{
     prop_->set_ivar(H_);
     return true;
   }
+
+  void TIM::set_mode(const Vector &mode_location, const Matrix &precision){
+    prop_->set_mu(mode_location);
+    prop_->set_ivar(precision);
+    mode_has_been_found_ = true;
+    mode_is_fixed_ = true;
+  }
+
   const Vec & TIM::mode()const{
     if(!prop_){
       report_error("need to call TIM::locate_mode() before calling TIM::mode");
@@ -112,16 +120,17 @@ namespace BOOM{
     return prop_->mode();
   }
 
-  const Spd & TIM::ivar()const{
+  const SpdMatrix & TIM::ivar()const{
     if(!prop_){
-      report_error("need to call TIM::locate_mode() before calling TIM::ivar()");
+      report_error(
+          "need to call TIM::locate_mode() before calling TIM::ivar()");
     }
     return prop_->ivar();
   }
 
   Ptr<MvtIndepProposal> TIM::create_proposal(int dim, double nu){
     Vec mu(dim);
-    Spd Sigma(dim);
+    SpdMatrix Sigma(dim);
     Sigma.set_diag(1.0);
     return new MvtIndepProposal(mu, Sigma, nu);
   }

@@ -26,47 +26,40 @@ namespace BOOM{
   typedef ChisqModel CSM;
   typedef GammaModelBase GMB;
 
-  CSM::ChisqModel(double df, double sigsq)
+  CSM::ChisqModel(double df, double sigma_estimate)
     : GMB(),
-      ParamPolicy(new UnivParams(df), new UnivParams(sigsq)),
+      ParamPolicy(new UnivParams(df),
+                  new UnivParams(square(sigma_estimate))),
       PriorPolicy()
   { }
-
-  CSM::ChisqModel(const CSM & rhs)
-    : Model(rhs),
-      MLE_Model(rhs),
-      GMB(rhs),
-      ParamPolicy(rhs),
-      PriorPolicy(rhs)
-  {}
 
   CSM * CSM::clone()const{return new CSM(*this);}
 
   Ptr<UnivParams> CSM::Df_prm(){return ParamPolicy::prm1();}
   Ptr<UnivParams> CSM::Sigsq_prm(){return ParamPolicy::prm2();}
-  const Ptr<UnivParams> CSM::Df_prm()const{return ParamPolicy::prm1();}
-  const Ptr<UnivParams> CSM::Sigsq_prm()const{return ParamPolicy::prm2();}
 
-  double CSM::df()const{return Df_prm()->value();}
-  double CSM::sigsq()const{return Sigsq_prm()->value();}
+  // Use parameter references instead of smart pointer calls to avoid
+  // tweaking reference counts.
+  double CSM::df()const{return prm1_ref().value();}
+  double CSM::sigsq()const{return prm2_ref().value();}
   double CSM::sum_of_squares()const{return sigsq() * df();}
 
   double CSM::alpha()const{return df()/2.0;}
   double CSM::beta()const{return sigsq()*df()/2.0;}
-  double CSM::Loglike(Vec &g, Mat &h, uint nd)const{
+  double CSM::Loglike(const Vector &nu_sigsq, Vector &g, Matrix &h, uint nd)const{
 
     double n = suf()->n();
     double sum = suf()->sum();
     double sumlog = suf()->sumlog();
 
-    double d = df();
-    double s = sigsq();
+    double d = nu_sigsq[0];
+    double s = nu_sigsq[1];
 
     if(d<=0 || s<=0){
       if(nd>0){
-	g[0] = (d <=0) ? d : 0;
-	g[1] = (s <= 0) ? s : 0;
-	if(nd>1) h.set_diag(-1);
+        g[0] = (d <=0) ? d : 0;
+        g[1] = (s <= 0) ? s : 0;
+        if(nd>1) h.set_diag(-1);
       }
       return BOOM::negative_infinity();
     }
@@ -84,12 +77,16 @@ namespace BOOM{
       g[1] = halfn*d/s  - halfd*sum;
 
       if(nd>1){
-	h(0,0) = halfn/d - trigamma(halfd)*n/4;
-	h(0,1) = h(1,0) = halfn/s - .5*sum;
-	h(1,1) = -halfn*d/pow(s,2);
+        h(0,0) = halfn/d - trigamma(halfd)*n/4;
+        h(0,1) = h(1,0) = halfn/s - .5*sum;
+        h(1,1) = -halfn*d/pow(s,2);
       }
     }
     return ans;
+  }
+
+  void ChisqModel::mle() {
+    d2LoglikeModel::mle();
   }
 
 }

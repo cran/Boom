@@ -52,38 +52,38 @@ namespace Rmath{
 
 double lfastchoose(double n, double k)
 {
-	return lgammafn(n + 1.0) - lgammafn(k + 1.0) - lgammafn(n - k + 1.0);
+        return lgammafn(n + 1.0) - lgammafn(k + 1.0) - lgammafn(n - k + 1.0);
 }
 
 double fastchoose(double n, double k)
 {
-	return exp(lfastchoose(n, k));
+        return exp(lfastchoose(n, k));
 }
 
 double lchoose(double n, double k)
 {
-	n = FLOOR(n + 0.5);
-	k = FLOOR(k + 0.5);
+        n = FLOOR(n + 0.5);
+        k = FLOOR(k + 0.5);
 #ifdef IEEE_754
-	/* NaNs propagated correctly */
-	if(ISNAN(n) || ISNAN(k)) return n + k;
+        /* NaNs propagated correctly */
+        if(ISNAN(n) || ISNAN(k)) return n + k;
 #endif
-	if (k < 0 || n < k) ML_ERR_return_NAN;
+        if (k < 0 || n < k) ML_ERR_return_NAN;
 
-	return lfastchoose(n, k);
+        return lfastchoose(n, k);
 }
 
 double choose(double n, double k)
 {
-	n = FLOOR(n + 0.5);
-	k = FLOOR(k + 0.5);
+        n = FLOOR(n + 0.5);
+        k = FLOOR(k + 0.5);
 #ifdef IEEE_754
-	/* NaNs propagated correctly */
-	if(ISNAN(n) || ISNAN(k)) return n + k;
+        /* NaNs propagated correctly */
+        if(ISNAN(n) || ISNAN(k)) return n + k;
 #endif
-	if (k < 0 || n < k) ML_ERR_return_NAN;
+        if (k < 0 || n < k) ML_ERR_return_NAN;
 
-	return FLOOR(exp(lfastchoose(n, k)) + 0.5);
+        return FLOOR(exp(lfastchoose(n, k)) + 0.5);
 }
 }
 

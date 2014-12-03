@@ -64,7 +64,8 @@ namespace BOOM{
 			     Ptr<GammaModel>);
     void set_conjugate_prior(Ptr<GaussianConjSampler>);
 
-    double Loglike(Vec &g, Mat &h, uint nd)const;
+    virtual double Loglike(const Vector &mu_sigsq,
+                           Vec &g, Mat &h, uint nd)const;
 
     virtual void find_posterior_mode();
   };

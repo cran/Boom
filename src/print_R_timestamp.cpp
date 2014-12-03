@@ -26,7 +26,7 @@ namespace BOOM {
     if ( (iteration_number % ping) == 0) {
       time_t rawtime;
       time(&rawtime);
-#ifdef WIN32
+#ifdef _WIN32
       // mingw does not include the re-entrant versions localtime_r
       // and asctime_r.
       std::string time_str(asctime(localtime(&rawtime)));

@@ -66,7 +66,6 @@ namespace BOOM{
   MGS::MvnGivenSigma(const MGS & rhs)
     : Model(rhs),
       VectorModel(rhs),
-      MLE_Model(rhs),
       MvnBase(rhs),
       LoglikeModel(rhs),
       ParamPolicy(rhs),
@@ -109,16 +108,14 @@ namespace BOOM{
     set_kappa(np/ss);
   }
 
-  double MGS::loglike()const{
+  double MGS::loglike(const Vector &mu_kappa)const{
     check_Sigma();
-    const double log2pi = 1.83787706641;
-    double n = suf()->n();
-    double nd = n*dim();
-    double k = kappa();
-    double ss =  k * traceAB(suf()->center_sumsq(mu()), Sigma_->ivar());
-    double ldsi = Sigma_->ldsi();
-    double ans  = .5*(nd*(log(k)-log2pi) + n* ldsi - ss);
-    return ans;
+    const ConstVectorView mu(mu_kappa, 0, dim());
+    double kappa = mu_kappa.back();
+    return MvnBase::log_likelihood(
+        mu,
+        Sigma_->ivar() * kappa,
+        *suf());
   }
 
   double MGS::pdf(Ptr<Data> dp, bool logsc)const{

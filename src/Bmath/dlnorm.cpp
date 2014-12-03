@@ -50,7 +50,7 @@ double dlnorm(double x, double logmean, double logsd, int give_log)
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(logmean) || ISNAN(logsd))
-	return x + logmean + logsd;
+        return x + logmean + logsd;
 #endif
     if(logsd <= 0) ML_ERR_return_NAN;
 
@@ -58,8 +58,8 @@ double dlnorm(double x, double logmean, double logsd, int give_log)
 
     y = (log(x) - logmean) / logsd;
     return (give_log ?
-	    -(M_LN_SQRT_2PI   + 0.5 * y * y + log(x * logsd)) :
-	    M_1_SQRT_2PI * exp(-0.5 * y * y)  /	 (x * logsd));
+            -(M_LN_SQRT_2PI   + 0.5 * y * y + log(x * logsd)) :
+            M_1_SQRT_2PI * exp(-0.5 * y * y)  /  (x * logsd));
     /* M_1_SQRT_2PI = 1 / sqrt(2 * pi) */
 
 }

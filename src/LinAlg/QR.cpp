@@ -16,26 +16,25 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <LinAlg/QR.hpp>
+#include <LinAlg/blas.hpp>
 #include <LinAlg/SubMatrix.hpp>
 #include <cpputil/report_error.hpp>
 #include <cstring>
 
 extern "C"{
-#include <cblas.h>
-
   void dgeqrf_(int *, int *, double *, int *, double *,
-	       double *, int *, int *);
+               double *, int *, int *);
   void dorgqr_(int *, int *, int *, double *, int *, const double *,
-	       const double *, const int *, int *);
+               const double *, const int *, int *);
   void dormqr_(const char *, const char *, int *, int *, int *, const double *,
-	       int *, const double *, double *, int *, double *, int *, int *);
-
+               int *, const double *, double *, int *, double *, int *, int *);
   void dtrtrs_(const char *,const char *,const char *, int *, int *,
-	       const double *, int *, double *, int *, int *);
-
+               const double *, int *, double *, int *, int *);
 }
 
 namespace BOOM{
+  using namespace blas;
+
   QR::QR(const Matrix &mat)
     : dcmp(mat),
       tau(std::min(mat.nrow(), mat.ncol())),
@@ -57,10 +56,31 @@ namespace BOOM{
     Matrix ans(dcmp);
     int m = ans.nrow();
     int n = ans.ncol();
+    // If *this = Q * R is wider than it is tall, then R is actually a
+    // trapezoidal matrix (zero entries below the diagonal), and Q is
+    // square, with dimension nrow(ans).  If *this is taller and
+    // skinny then the dimensions of Q match those of *this, and R is
+    // square with dimension ncol(ans).
+
+    // k is the number "elementary reflectors" determining the matrix
+    // Q.  The documentation for dgeqrf specifies k = min(#rows, #cols).
     int k = std::min(m,n);
     int info=0;
-    dorgqr_(&m, &n, &k, ans.data(), &m, tau.data(), work.data(),
-            &lwork, &info);
+    dorgqr_(&m,    // number of rows in Q
+            &k,    // number of columns in Q.
+            &k,    // number of elementary reflections defining Q
+            ans.data(),  // Data from the QR decomposition.
+            &m,          // leading dimension of ans
+            tau.data(),  // scalar factors of the elementary
+                         // reflectors returned by dgeqrf
+            work.data(), // workspace
+            &lwork,      // dimension of workspace
+            &info);      // info
+    if (n > m) {
+      // If the number of columns is greater than the nubmer of rows,
+      // then we just want the square part of the result.
+      ans = SubMatrix(ans, 0, m-1, 0, m-1);
+    }
     return ans;
   }
 
@@ -72,16 +92,16 @@ namespace BOOM{
     if(m>=n){  // usual case
       for(uint i=0; i<n; ++i)
         std::copy(dcmp.col_begin(i), dcmp.col_begin(i)+i+1,
-      	    ans.col_begin(i));
+            ans.col_begin(i));
     }else{
       for(uint i=0; i<m; ++i)
         std::copy(dcmp.col_begin(i),     // triangular part
-      	    dcmp.col_begin(i)+i+1,
-      	    ans.col_begin(i));
+            dcmp.col_begin(i)+i+1,
+            ans.col_begin(i));
       for(uint i=m; i<n; ++i)
         std::copy(dcmp.col_begin(i),     // rectangular part
-      	    dcmp.col_begin(i)+m,
-      	    ans.col_begin(i));
+            dcmp.col_begin(i)+m,
+            ans.col_begin(i));
     }
     return ans;
   }
@@ -109,7 +129,6 @@ namespace BOOM{
             ans.data(), &n, &info);
     return ans;
   }
-
 
   Vector QR::Qty(const Vector &y)const{
     if (length(y) != dcmp.nrow()) {
@@ -162,7 +181,6 @@ namespace BOOM{
     }
     return ans;
   }
-
 
   Matrix QR::QtY(const Matrix &Y)const{
     Matrix ans(Y);
@@ -268,8 +286,8 @@ namespace BOOM{
   Vector QR::Rsolve(const Vector &Qty)const{
     Vector ans(Qty);
     Matrix R(getR());
-    cblas_dtrsv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit,
-      	  R.nrow(), R.data(), R.nrow(), ans.data(), ans.stride());
+    dtrsv(Upper, NoTrans, NonUnit, R.nrow(), R.data(), R.nrow(),
+          ans.data(), ans.stride());
     return ans;
   }
 
@@ -278,14 +296,17 @@ namespace BOOM{
     Matrix R(getR());
     int m = ans.nrow();
     int n = ans.ncol();
-    cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans, CblasNonUnit,
-      	  m,
-      	  n,
-      	  1.0,
-      	  R.data(),
-      	  R.nrow(),
-      	  ans.data(),
-      	  ans.nrow());
+    dtrsm(Left,
+          Upper,
+          NoTrans,
+          NonUnit,
+          m,
+          n,
+          1.0,
+          R.data(),
+          R.nrow(),
+          ans.data(),
+          ans.nrow());
     return ans;
   }
 
@@ -334,5 +355,4 @@ namespace BOOM{
     return dp;
   }
 
-
-}
+}  // namespace BOOM

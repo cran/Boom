@@ -26,47 +26,50 @@ namespace BOOM {
   MvnIndependentVarianceSampler::MvnIndependentVarianceSampler(
       MvnModel * model,
       const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-      const Vec & upper_sigma_truncation_point)
+      const Vec & sigma_max_values)
       : model_(model),
-        priors_(siginv_priors),
-        upper_sigma_truncation_point_(upper_sigma_truncation_point)
+        priors_(siginv_priors)
   {
     if (model->dim() != siginv_priors.size()) {
       report_error("The model and siginv_priors arguments do not conform in "
                    "the MvnIndependentVarianceSampler constructor.");
     }
 
-    if (model->dim() != upper_sigma_truncation_point.size()) {
-      report_error("The model and upper_sigma_truncation_point arguments do "
+    if (model->dim() != sigma_max_values.size()) {
+      report_error("The model and sigma_max_values arguments do "
                    "not conform in the MvnIndependentVarianceSampler "
                    "constructor.");
     }
 
     for (int i  = 0; i < model->dim(); ++i) {
-      if (upper_sigma_truncation_point_[i] < 0) {
-        report_error("All elements of upper_sigma_truncation_point must be "
+      if (sigma_max_values[i] < 0) {
+        report_error("All elements of sigma_max_values must be "
                      "non-negative in "
                      "MvnIndependentVarianceSampler constructor.");
       }
     }
+
+    for (int i = 0; i < model->dim(); ++i) {
+      GenericGaussianVarianceSampler sampler(
+          priors_[i],
+          sigma_max_values[i]);
+      sigsq_samplers_.push_back(sampler);
+    }
   }
 
   void MvnIndependentVarianceSampler::draw(){
-    Spd siginv = model_->siginv();
+    Spd diagonal_inverse_variance = model_->siginv();
     Spd sumsq = model_->suf()->center_sumsq(model_->mu());
+    // Because the variance matrix is diagonal, we can simply draw its
+    // diagonal elements one at a time.
     for (int i = 0; i < model_->dim(); ++i) {
-      double df = 2 * priors_[i]->alpha() + model_->suf()->n();
-      double ss = 2 * priors_[i]->beta() + sumsq(i, i);
-      if (upper_sigma_truncation_point_[i] == 0.0) {
-        siginv(i, i) = 0.0;
-      } else if(upper_sigma_truncation_point_[i] == infinity()) {
-        siginv(i, i) = rgamma_mt(rng(), df/2, ss/2);
-      } else {
-        double cutpoint = 1.0/pow(upper_sigma_truncation_point_[i], 2);
-        siginv(i, i) = rtrun_gamma_mt(rng(), df/2, ss/2, cutpoint);
-      }
+      double sigsq = sigsq_samplers_[i].draw(
+          rng(),
+          model_->suf()->n(),
+          sumsq(i, i));
+      diagonal_inverse_variance(i, i) = 1.0 / sigsq;
     }
-    model_->set_siginv(siginv);
+    model_->set_siginv(diagonal_inverse_variance);
   }
 
   double MvnIndependentVarianceSampler::logpri()const{
@@ -77,6 +80,5 @@ namespace BOOM {
     }
     return ans;
   }
-
 
 } // namespace BOOM

@@ -49,13 +49,13 @@ double qexp(double p, double scale, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(scale))
-	return p + scale;
+        return p + scale;
 #endif
     R_Q_P01_check(p);
     if (scale < 0) ML_ERR_return_NAN;
 
     if (p == R_DT_0)
-	return 0;
+        return 0;
 
     return - scale * R_DT_Clog(p);
 }

@@ -52,9 +52,10 @@ namespace BOOM{
 
       template <class FwdIt>
       Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
-      Matrix(const Matrix &);             // reference semantics
 
-      Matrix & operator=(const Matrix &); // value semantics
+      explicit Matrix(const SubMatrix &rhs);
+      explicit Matrix(const ConstSubMatrix &rhs);
+
       Matrix & operator=(const SubMatrix &);
       Matrix & operator=(const ConstSubMatrix &);
       Matrix & operator=(const double &);
@@ -202,7 +203,8 @@ namespace BOOM{
       Matrix t() const;       // SpdMatrix and DiagonalMatrix
       Matrix & transpose_inplace_square(); // asserts (is_square())
       Matrix inv() const;
-      virtual SpdMatrix inner() const;   // returns X^tX
+      virtual SpdMatrix inner() const;   // X^T * X
+      SpdMatrix outer() const;           // X * X^T
 
       virtual Matrix solve(const Matrix &mat) const;
       virtual Vector solve(const Vector &v) const;
@@ -259,6 +261,14 @@ namespace BOOM{
 
     class LabeledMatrix : public Matrix {
      public:
+      // Args:
+      //   m:  The matrix to which row and/or column names should be attached.
+      //   row_names: Can be an empty vector if no row_names are
+      //     desired.  If non-empty, row_names.size() == m.nrow() must
+      //     be true.
+      //   col_names: Can be an empty vector if no col_names are
+      //     desired.  If non-empty, col_names.size() == m.ncol() must
+      //     be true.
       LabeledMatrix(const Matrix &m,
                     const std::vector<std::string> &row_names,
                     const std::vector<std::string> &col_names);
@@ -268,6 +278,8 @@ namespace BOOM{
         return col_names_;}
 
       virtual ostream & display(ostream &out, int precision = 5) const;
+      Matrix drop_labels()const;
+
      private:
       std::vector<std::string> row_names_;
       std::vector<std::string> col_names_;
@@ -305,6 +317,9 @@ namespace BOOM{
     inline bool Matrix::inrange(uint i, uint j)const{
       return  i< nr_ &&  j< nc_; }
     ostream & operator<<(ostream & out, const Matrix &x);
+
+    // Print the matrix to stdout.
+    void print(const Matrix &m);
     istream & operator>>(istream &in, Matrix &m);
     // reads until a blank line is found or the end of a line
 

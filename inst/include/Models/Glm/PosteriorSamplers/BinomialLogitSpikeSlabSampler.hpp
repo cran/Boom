@@ -50,6 +50,12 @@ namespace BOOM{
     // random order.  If max_flips <= 0 then all available variables
     // will be sampled.
     void limit_model_selection(int max_flips);
+
+    // Locate and set model paramters to the posterior mode of the
+    // included variables, given inclusion.  Returns the un-normalized
+    // log posterior (the objective function).
+    double find_posterior_mode();
+
    private:
     double mcmc_one_flip(Selector &mod, uint which_var, double logp_old);
     BinomialLogitModel *m_;

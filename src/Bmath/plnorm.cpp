@@ -48,12 +48,12 @@ double plnorm(double x, double logmean, double logsd, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(logmean) || ISNAN(logsd))
-	return x + logmean + logsd;
+        return x + logmean + logsd;
 #endif
     if (logsd <= 0) ML_ERR_return_NAN;
 
     if (x > 0)
-	return pnorm(log(x), logmean, logsd, lower_tail, log_p);
+        return pnorm(log(x), logmean, logsd, lower_tail, log_p);
     return 0;
 }
 }

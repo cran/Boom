@@ -37,7 +37,6 @@ namespace BOOM{
 
   GMGS * GMGS::clone()const{return new GMGS(*this);}
 
-
   Ptr<UnivParams> GMGS::Mu_prm(){ return prm1(); }
   Ptr<UnivParams> GMGS::Kappa_prm(){ return prm2(); }
   const Ptr<UnivParams> GMGS::Mu_prm()const{ return prm1(); }
@@ -86,17 +85,20 @@ namespace BOOM{
     return ans;
   }
 
-  double GMGS::Loglike(Vec &g, Mat &h, uint nd) const {
+  double GMGS::Loglike(const Vector &mu_kappa, Vec &g, Mat &h, uint nd) const {
+    if (mu_kappa.size() != 2 || mu_kappa[1] <= 0) {
+      report_error("Illegal argument passed to GaussianModelGivenSigma::Loglike.");
+    }
     double sigsq = this->sigsq();
     if(sigsq<0) return BOOM::negative_infinity();
 
-    double mu = this->mu();
+    double mu = mu_kappa[0];
     const double log2pi = 1.8378770664093453;
     double n = suf()->n();
     double sumsq = suf()->sumsq();
     double sum = suf()->sum();
     double SS = (sumsq + ( -2*sum + n*mu)*mu);
-    double k = kappa();
+    double k = mu_kappa[1];
     double ans = -0.5*(n*(log2pi + log(sigsq) - log(k) + k*SS/sigsq));
 
     if(nd>0){

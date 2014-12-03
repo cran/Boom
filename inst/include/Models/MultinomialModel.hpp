@@ -90,7 +90,7 @@ namespace BOOM{
     void set_pi(const Vec &probs);
 
     uint size()const;         // number of potential outcomes;
-    double loglike()const;
+    double loglike(const Vector &probs)const;
     void mle();
     double pdf(const Data * dp, bool logscale) const;
     double pdf(Ptr<Data> dp, bool logscale) const;

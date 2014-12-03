@@ -20,6 +20,7 @@
 
 #include <Models/TimeSeries/NonzeroMeanAr1Model.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/GaussianModelBase.hpp>
 
@@ -56,7 +57,7 @@ namespace BOOM{
     bool truncate_phi_;  // truncate the support of phi to (-1, 1) to
                          // ensure stationarity.
     bool force_ar1_positive_;
-    double sigma_upper_limit_;
+    GenericGaussianVarianceSampler sigsq_sampler_;
   };
 
 }

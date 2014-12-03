@@ -42,42 +42,42 @@ namespace Rmath{
 
 double pt(double x, double n, int lower_tail, int log_p)
 {
-/* return  P[ T <= x ]	where
+/* return  P[ T <= x ]  where
  * T ~ t_{n}  (t distrib. with n degrees of freedom).
 
- *	--> ./pnt.c for NON-central
+ *      --> ./pnt.c for NON-central
  */
     double val;
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
-	return x + n;
+        return x + n;
 #endif
     if (n <= 0.0) ML_ERR_return_NAN;
 
     if(!R_FINITE(x))
-	return (x < 0) ? R_DT_0 : R_DT_1;
+        return (x < 0) ? R_DT_0 : R_DT_1;
     if(!R_FINITE(n))
-	return pnorm(x, 0.0, 1.0, lower_tail, log_p);
+        return pnorm(x, 0.0, 1.0, lower_tail, log_p);
     if (n > 4e5) { /*-- Fixme(?): test should depend on `n' AND `x' ! */
-	/* Approx. from	 Abramowitz & Stegun 26.7.8 (p.949) */
-	val = 1./(4.*n);
-	return pnorm(x*(1. - val)/sqrt(1. + x*x*2.*val), 0.0, 1.0,
-		     lower_tail, log_p);
+        /* Approx. from  Abramowitz & Stegun 26.7.8 (p.949) */
+        val = 1./(4.*n);
+        return pnorm(x*(1. - val)/sqrt(1. + x*x*2.*val), 0.0, 1.0,
+                     lower_tail, log_p);
     }
 
     val = pbeta(n / (n + x * x), n / 2.0, 0.5, /*lower_tail*/1, log_p);
 
-    /* Use "1 - v"  if	lower_tail  and	 x > 0 (but not both):*/
+    /* Use "1 - v"  if  lower_tail  and  x > 0 (but not both):*/
     if(x <= 0.)
-	lower_tail = !lower_tail;
+        lower_tail = !lower_tail;
 
     if(log_p) {
-	if(lower_tail) return log1p(-0.5*exp(val));
-	else return val - M_LN2; /* = log(.5* pbeta(....)) */
+        if(lower_tail) return log1p(-0.5*exp(val));
+        else return val - M_LN2; /* = log(.5* pbeta(....)) */
     }
     else {
-	val /= 2.;
-	return R_D_Cval(val);
+        val /= 2.;
+        return R_D_Cval(val);
     }
 }
 }

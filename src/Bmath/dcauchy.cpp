@@ -50,14 +50,14 @@ double dcauchy(double x, double location, double scale, int give_log)
 #ifdef IEEE_754
     /* NaNs propagated correctly */
     if (ISNAN(x) || ISNAN(location) || ISNAN(scale))
-	return x + location + scale;
+        return x + location + scale;
 #endif
     if (scale <= 0) ML_ERR_return_NAN;
 
     y = (x - location) / scale;
     return give_log ?
-	- log(M_PI * scale * (1. + y * y)) :
-	1. / (M_PI * scale * (1. + y * y));
+        - log(M_PI * scale * (1. + y * y)) :
+        1. / (M_PI * scale * (1. + y * y));
 }
 }
 

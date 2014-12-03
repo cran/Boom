@@ -68,8 +68,7 @@ namespace BOOM{
 
   class VariableSelectionPrior
     : public SufstatDataPolicy<GlmCoefs, VsSuf>,
-      public PriorPolicy,
-      public LoglikeModel
+      public PriorPolicy
   {
     typedef ModelSelection::Variable Variable;
     typedef ModelSelection::MainEffect MainEffect;
@@ -84,7 +83,7 @@ namespace BOOM{
     VariableSelectionPrior(const VariableSelectionPrior &rhs);
     VariableSelectionPrior * clone()const;
 
-    virtual double loglike()const;
+    //    double loglike()const;
     virtual void mle();
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     double logp(const Selector &inc)const;

@@ -38,8 +38,21 @@ namespace BOOM{
   // the inverse of Omega as an argument.  Omega is a fixed constant in
   // this model, which might make it a poor fit for hierarchical models
   // where the degree of shrinkage is to be learned across groups.
+  class MvnGivenScalarSigmaBase
+      : public MvnBase {
+   public:
+    MvnGivenScalarSigmaBase(Ptr<UnivParams> sigsq);
+    double sigsq() const;
+   private:
+    // sigsq_ is a pointer to the residual variance parameter, e.g. in
+    // a regression model.
+    Ptr<UnivParams> sigsq_;
+  };
+
+  //======================================================================
+  // The concrete class to use with arbitrary "Omega" values.
   class MvnGivenScalarSigma
-      : public MvnBase,
+      : public MvnGivenScalarSigmaBase,
         public LoglikeModel,
         public ParamPolicy_1<VectorParams>,
         public SufstatDataPolicy<VectorData, MvnSuf>,
@@ -77,13 +90,9 @@ namespace BOOM{
 
     void set_mu(const Vec &);
     void mle();
-    double loglike()const;
+    double loglike(const Vector &mu_ominv)const;
     double pdf(Ptr<Data>, bool)const;
    private:
-    // sigsq_ is a pointer to the residual variance parameter, e.g. in
-    // a regression model.
-    Ptr<UnivParams> sigsq_;
-
     // ominv_ is stored as SpdParams instead of as a raw Spd because
     // SpdParams keeps track of the matrix, its inverse, and its log
     // determinant.

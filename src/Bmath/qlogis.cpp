@@ -44,24 +44,24 @@ double qlogis(double p, double location, double scale, int lower_tail, int log_p
 {
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(location) || ISNAN(scale))
-	return p + location + scale;
+        return p + location + scale;
 #endif
     R_Q_P01_check(p);
-    if (scale <	 0.) ML_ERR_return_NAN;
+    if (scale <  0.) ML_ERR_return_NAN;
     if (scale == 0.) return location;
 
     if(R_DT_qIv(p) <= 0) return BOOM::negative_infinity();
     if(p == R_DT_1) return BOOM::infinity();
 
-    /* p := logit(p) = log( p / (1-p) )	 : */
+    /* p := logit(p) = log( p / (1-p) )  : */
     if(log_p) {
-	if(lower_tail)
-	    p = p - log1p(- exp(p));
-	else
-	    p = log1p(- exp(p)) - p;
+        if(lower_tail)
+            p = p - log1p(- exp(p));
+        else
+            p = log1p(- exp(p)) - p;
     }
     else
-	p = log(lower_tail ? (p / (1. - p)) : ((1. - p) / p));
+        p = log(lower_tail ? (p / (1. - p)) : ((1. - p) / p));
 
     return location + scale * p;
 }

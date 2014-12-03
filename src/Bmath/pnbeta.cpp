@@ -28,7 +28,7 @@
  *  beta distribution with parameters a, b and non-centrality ncp.
  *
  *  Auxiliary routines required:
- *	lgamma - log-gamma function
+ *      lgamma - log-gamma function
  *      pbeta  - incomplete-beta function {nowadays: pbeta_raw() -> bratio()}
  */
 
@@ -45,7 +45,7 @@ pnbeta_raw(double x, double o_x, double a, double b, double ncp)
      * original (AS 226, R84) had  (errmax; itrmax) = (1e-6; 100) */
     const static double errmax = 1.0e-9;
     const int    itrmax = 10000;  /* 100 is not enough for pf(ncp=200)
-				     see PR#11277 */
+                                     see PR#11277 */
 
     double a0, ax, lbeta, c, errbd, temp, x0, tmp_c;
     int j, ierr;
@@ -59,7 +59,7 @@ pnbeta_raw(double x, double o_x, double a, double b, double ncp)
 
     c = ncp / 2.;
 
-	/* initialize the series */
+        /* initialize the series */
 
     x0 = floor(std::max<double>(c - 7. * sqrt(c), 0.));
     a0 = a + x0;
@@ -68,26 +68,26 @@ pnbeta_raw(double x, double o_x, double a, double b, double ncp)
     bratio(a0, b, x, o_x, &temp, &tmp_c, &ierr, false);
 
     gx = exp(a0 * log(x) + b * (x < .5 ? log1p(-x) : log(o_x))
-	     - lbeta - log(a0));
+             - lbeta - log(a0));
     if (a0 > a)
-	q = exp(-c + x0 * log(c) - lgammafn(x0 + 1.));
+        q = exp(-c + x0 * log(c) - lgammafn(x0 + 1.));
     else
-	q = exp(-c);
+        q = exp(-c);
 
     sumq = 1. - q;
     ans = ax = q * temp;
 
-	/* recurse over subsequent terms until convergence is achieved */
+        /* recurse over subsequent terms until convergence is achieved */
     j = x0;
     do {
-	j++;
-	temp -= gx;
-	gx *= x * (a + b + j - 1.) / (a + j);
-	q *= c / j;
-	sumq -= q;
-	ax = temp * q;
-	ans += ax;
-	errbd = (temp - gx) * sumq;
+        j++;
+        temp -= gx;
+        gx *= x * (a + b + j - 1.) / (a + j);
+        q *= c / j;
+        sumq -= q;
+        ax = temp * q;
+        ans += ax;
+        errbd = (temp - gx) * sumq;
     }
     while (errbd > errmax && j < itrmax + x0);
 
@@ -102,13 +102,13 @@ pnbeta_raw(double x, double o_x, double a, double b, double ncp)
 }
 
 double pnbeta2(double x, double o_x, double a, double b, double ncp,
-	/* o_x  == 1 - x  but maybe more accurate */
-	int lower_tail, int log_p)
+        /* o_x  == 1 - x  but maybe more accurate */
+        int lower_tail, int log_p)
 {
     long double ans= pnbeta_raw(x, o_x, a,b, ncp);
 
     /* return R_DT_val(ans), but we want to warn about cancellation here */
-    if(lower_tail) return log_p	? log(ans) : ans;
+    if(lower_tail) return log_p ? log(ans) : ans;
     else {
       if(ans > 1 - 1e-10){
        report_error("full precision was not achieved in pnbeta");
@@ -119,10 +119,10 @@ double pnbeta2(double x, double o_x, double a, double b, double ncp,
 }
 
 double pnbeta(double x, double a, double b, double ncp,
-	      int lower_tail, int log_p)
+              int lower_tail, int log_p)
 {
     if (isnan(x) || isnan(a) || isnan(b) || isnan(ncp))
-	return x + a + b + ncp;
+        return x + a + b + ncp;
 
     R_P_bounds_01(x, 0., 1.);
     return pnbeta2(x, 1-x, a, b, ncp, lower_tail, log_p);

@@ -123,7 +123,6 @@ namespace BOOM {
     Vector sigma_;
     Vector weights_;
     Vector log_weights_;
-    mutable Vector wsp_;
     bool force_zero_mu_;
 
     // The kl distance between the approximation and the target.  This

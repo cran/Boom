@@ -45,8 +45,8 @@ namespace BOOM{
       : mod_(Mod),
         pri(Pri),
         vpri(Vpri),
-        suf(new MLVSS(mod_->beta_size(false))),
-        data_imputer_(new MlvsDataImputer(mod_, suf, nthreads)),
+        suf_(mod_->beta_size(false)),
+        parallel_imputer_(suf_, mod_),
         log_sampling_probs_(mod_->log_sampling_probs()),
         downsampling_(log_sampling_probs_.size() == mod_->Nchoices()),
         select_(true),
@@ -62,6 +62,7 @@ namespace BOOM{
         report_error(err.str());
       }
     }
+    set_number_of_workers(nthreads);
   }
   //______________________________________________________________________
   // public interface
@@ -72,8 +73,19 @@ namespace BOOM{
     draw_beta();
   }
 
+  void MLVS::set_number_of_workers(int n) {
+    if (n < 1) {
+      report_error("You need at least one worker.");
+    }
+    parallel_imputer_.clear_workers();
+    for (int i = 0; i < n; ++i) {
+      parallel_imputer_.add_worker(new MlvsDataImputer(mod_));
+    }
+    parallel_imputer_.assign_data();
+  }
+
   void MLVS::impute_latent_data() {
-    data_imputer_->draw();
+    suf_ = parallel_imputer_.impute();
   }
 
   double MLVS::logpri()const{
@@ -98,8 +110,8 @@ namespace BOOM{
     Vec Beta(N, 0.);
     if (inc.nvars() > 0) {
       Spd Ominv = inc.select(pri->siginv());
-      Spd ivar = Ominv + inc.select(suf->xtwx());
-      Vec b = inc.select(suf->xtwu()) + Ominv *inc.select(pri->mu());
+      Spd ivar = Ominv + inc.select(suf_.xtwx());
+      Vec b = inc.select(suf_.xtwu()) + Ominv *inc.select(pri->mu());
       b = ivar.solve(b);
       Vec beta = rmvn_ivar(b,ivar);
       uint n = b.size();
@@ -156,7 +168,7 @@ namespace BOOM{
     double num = vpri->logp(g);
     if (num==BOOM::negative_infinity()) return num;
     if (g.nvars() == 0) {
-      num -= -.5 * suf->weighted_sum_of_squares();
+      num -= -.5 * suf_.weighted_sum_of_squares();
       return num;
     }
 
@@ -169,12 +181,12 @@ namespace BOOM{
     num -= .5*mu.dot(Ominv_mu);
 
     bool ok=true;
-    iV_tilde_ = Ominv + g.select(suf->xtwx());
+    iV_tilde_ = Ominv + g.select(suf_.xtwx());
     Mat L = iV_tilde_.chol(ok);
     if (!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv|
 
-    Vec S = g.select(suf->xtwu()) + Ominv_mu;
+    Vec S = g.select(suf_.xtwu()) + Ominv_mu;
     Lsolve_inplace(L,S);
     denom-= .5*S.normsq();  // S.normsq =  beta_tilde ^T V_tilde beta_tilde
 

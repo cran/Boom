@@ -50,7 +50,6 @@ namespace BOOM{
 
       virtual double pdf(Ptr<Data> dp, bool logsc)const;
       virtual double pdf(Ptr<Subject> dp, bool logsc)const;
-      virtual void initialize_params();
 
       void set_subscale_names(const StringVec &);
       const StringVec & subscale_names();

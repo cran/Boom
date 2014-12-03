@@ -57,6 +57,7 @@ namespace BOOM{
     const Ptr<SpdParams> Sigma_prm()const;
     const Ptr<UnivParams> Nu_prm()const;
 
+    int dim()const;
     const Vec &mu()const;
     const Spd &Sigma()const;
     const Spd &siginv()const;
@@ -79,7 +80,7 @@ namespace BOOM{
     virtual void add_data(Ptr<VectorData>);
 
     void mle();  // ECME
-    virtual double loglike()const;
+    virtual double loglike(const Vector &mu_siginv_triangle_nu)const;
     virtual void impute_latent_data(RNG &rng);
     void Estep();  // E step for EM/ECME
 

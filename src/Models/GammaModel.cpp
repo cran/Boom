@@ -124,7 +124,6 @@ namespace BOOM{
 
   GMB::GammaModelBase(const GMB &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       DataPolicy(rhs),
       DiffDoubleModel(rhs),
       NumOptModel(rhs),
@@ -158,8 +157,7 @@ namespace BOOM{
   //======================================================================
 
   GammaModel::GammaModel(double a, double b)
-    : MLE_Model(),
-      GMB(),
+    : GMB(),
       ParamPolicy(new UnivParams(a), new UnivParams(b)),
       PriorPolicy()
   {
@@ -170,8 +168,7 @@ namespace BOOM{
   }
 
   GammaModel::GammaModel(double shape, double mean, int)
-      : MLE_Model(),
-        GMB(),
+      : GMB(),
         ParamPolicy(new UnivParams(shape), new UnivParams(shape / mean)),
         PriorPolicy()
   {
@@ -183,7 +180,6 @@ namespace BOOM{
 
   GammaModel::GammaModel(const GammaModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GMB(rhs),
       ParamPolicy(rhs),
       PriorPolicy(rhs)
@@ -267,12 +263,15 @@ namespace BOOM{
     return negative_infinity();
   }
 
-  double GammaModel::Loglike(Vec &g, Mat &h, uint nd) const{
+  double GammaModel::Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const{
+    if (ab.size() != 2) {
+      report_error("Wrong size argument.");
+    }
     double n = suf()->n();
     double sum =suf()->sum();
     double sumlog = suf()->sumlog();
-    double a = alpha();
-    double b = beta();
+    double a = ab[0];
+    double b = ab[1];
     if(a<=0 || b<=0) return bad_gamma_loglike(a, b,g,h,nd);
 
     double logb = log(b);

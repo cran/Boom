@@ -21,7 +21,6 @@
 
 #include <cpputil/Ptr.hpp>
 #include <TargetFun/Loglike.hpp>
-#include <TargetFun/LoglikeSubset.hpp>
 #include <numopt.hpp>
 
 namespace BOOM{

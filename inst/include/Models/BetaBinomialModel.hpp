@@ -83,8 +83,9 @@ namespace BOOM{
     // The likelihood contribution for observation i is
     // int Pr(y_i | theta_i, n_i) p(theta_i) dtheta_i
     virtual double loglike()const;
+    virtual double loglike(const Vector &ab)const;
     double loglike(double a, double b)const;
-    virtual double Loglike(Vec &g, Mat &H, uint nd)const;
+    virtual double Loglike(const Vector &ab, Vec &g, Mat &H, uint nd)const;
     double logp(int n, int y, double a, double b)const;
 
     Ptr<UnivParams> SuccessPrm();

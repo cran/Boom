@@ -48,14 +48,11 @@ namespace BOOM{
     virtual double beta()const{return nu()/2;}
 
     // probability calculations
-    double Loglike(Vec &g, Mat &h, uint nd) const ;
-//     double pdf(dPtr dp, bool logscale) const;
-//     double pdf(double x, bool logscale) const;
-//     double Logp(double x, double &g, double &h, uint nd) const ;
-//     double simdat() const;
+    double Loglike(const Vector &nu, Vec &g, Mat &h, uint nd) const ;
+    void mle() {d2LoglikeModel::mle();}
+
   };
 
 
 };
 #endif // BOOM_SCALED_CHISQ_MODEL_HPP
-

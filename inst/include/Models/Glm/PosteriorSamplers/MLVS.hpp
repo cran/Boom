@@ -23,6 +23,7 @@
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/Glm/VariableSelectionPrior.hpp>
 #include <Models/Glm/PosteriorSamplers/MLVS_data_imputer.hpp>
+#include <Models/PosteriorSamplers/Imputer.hpp>
 
 namespace BOOM{
 
@@ -73,6 +74,11 @@ namespace BOOM{
     void impute_latent_data();
     void draw_beta();
 
+    // Sets the number of workers to use for multi-threaded data
+    // augmentation.  Implementations are permitted to use less than
+    // this number of threads.
+    void set_number_of_workers(int n);
+
     // Functions to control Bayesian variable selection.  If
     // supress_model_selection is called then the current
     // include/exclude state of the coefficients will not be modified
@@ -97,8 +103,11 @@ namespace BOOM{
     MultinomialLogitModel *mod_;
     Ptr<MvnBase> pri;
     Ptr<VariableSelectionPrior> vpri;
-    Ptr<MultinomialLogitCompleteDataSufficientStatistics> suf;
-    Ptr<MlvsDataImputer> data_imputer_;
+    typedef MultinomialLogitCompleteDataSufficientStatistics LocalSuf;
+    LocalSuf suf_;
+    ParallelLatentDataImputer<ChoiceData,
+                              LocalSuf,
+                              MultinomialLogitModel> parallel_imputer_;
 
     const Vec & log_sampling_probs_;
     const bool downsampling_;

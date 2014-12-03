@@ -21,6 +21,7 @@
 
 #include <Models/IndependentMvnModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <cpputil/math_utils.hpp>
 
 namespace BOOM {
@@ -47,7 +48,7 @@ namespace BOOM {
     virtual void draw();
     virtual double logpri()const;
    private:
-    void check_sizes();
+    void check_sizes(const Vector &sigma_upper_limit);
     void check_vector_size(const Vec &v, const char *vector_name);
 
     IndependentMvnModel *model_;
@@ -55,7 +56,7 @@ namespace BOOM {
     Vec mean_prior_sample_size_;
     Vec prior_ss_;
     Vec prior_df_;
-    Vec sigma_upper_limit_;
+    std::vector<GenericGaussianVarianceSampler> sigsq_samplers_;
   };
 
 }

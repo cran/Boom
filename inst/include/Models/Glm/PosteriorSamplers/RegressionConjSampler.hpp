@@ -23,6 +23,7 @@
 #include <Models/Glm/MvnGivenXandSigma.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
   class RegressionConjSampler
@@ -31,12 +32,10 @@ namespace BOOM{
     // for drawing p(beta, sigma^2 | y)
     // prior is p(beta | sigma^2, X) = N(b0, sigsq * XTX/kappa)
     //          p(sigsq | X) = Gamma(prior_df/2, prior_ss/2)
-
-
   public:
     RegressionConjSampler(RegressionModel *,
                           Ptr<MvnGivenXandSigma>,
-			  Ptr<GammaModelBase>);
+                          Ptr<GammaModelBase>);
     virtual void draw();
     virtual double logpri()const;
 
@@ -53,6 +52,7 @@ namespace BOOM{
     Vec beta_tilde;
     Spd ivar;
     double SS, DF;
+    GenericGaussianVarianceSampler sigsq_sampler_;
     void set_posterior_suf();
   };
 }

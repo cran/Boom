@@ -91,25 +91,40 @@ namespace BOOM{
     // Args:
     //   x_subset: A subset (determined by 'inclusion') of the vector
     //     of random variables measured by this model.
-    //   gradient: If nderiv > 0 then gradient will be filled with the
+    //   gradient: If non-NULL then *gradient will be filled with the
     //     gradient of this function with respect to the dimensions of
-    //     x determined by 'inclusion.'  Otherwise 'gradient' is not
+    //     x determined by 'inclusion.'  In this case the gradient
+    //     should have dimension equal to the number of included
+    //     variables.  A NULL 'gradient' signals that the gradient
+    //     should not be computed.
+    //   Hessian: If gradient and Hessian are non-NULL then Hessian be
+    //     filled with the matrix of second derivatives with respect
+    //     to the dimensions of x determined by 'inclusion.'  In this
+    //     case the Hessian should have rows and columns equal to the
+    //     number of included varaibles.  Otherwise 'Hessian' is not
     //     used.
-    //   Hessian: If nderiv > 1 then Hessian will be filled with the
-    //     matrix of second derivatives with respect to the dimensions
-    //     of x determined by 'inclusion.'  Otherwise 'Hessian' is not
-    //     used.
-    //   nderiv:  The number of derivatives to take.
-    //   inclusion:  The 'included' positions.
+    //   inclusion:  A Selector identifying which positions are 'included'.
+    //   reset_derivatives: If true then gradient and Hessian are
+    //     resized and set to zero before the derivatives are
+    //     computed.  If false then the derivatives are added to
+    //     whatever gradient and Hessian contain when they are passed
+    //     in.
     //
     // Returns:
     //   The log of the normal density with mean mu[inclusion] and
     //   precision siginv[inclusion] evalueated at x_subset.
     virtual double logp_given_inclusion(const Vector &x_subset,
-                                        Vector &gradient,
-                                        Matrix &Hessian,
-                                        int nderiv,
-                                        const Selector &inclusion)const;
+                                        Vector *gradient,
+                                        Matrix *Hessian,
+                                        const Selector &inclusion,
+                                        bool reset_derivatives) const;
+
+    // Returns the multivariate normal log likelihood.  Assumes all
+    // variables are included.
+    double log_likelihood(const Vector &mu,
+                          const Spd &siginv,
+                          const MvnSuf &suf)const;
+
     virtual const Vec & mu() const=0;
     virtual const Spd & Sigma()const=0;
     virtual const Spd & siginv() const=0;
@@ -127,7 +142,7 @@ namespace BOOM{
     MvnBaseWithParams(uint p, double mu=0.0, double sig=1.0);
     // N(mu,V)... if(ivar) then V is the inverse variance.
     MvnBaseWithParams(const Vec &mean, const Spd &V,
-		      bool ivar=false);
+                      bool ivar=false);
     MvnBaseWithParams(Ptr<VectorParams>, Ptr<SpdParams>);
     MvnBaseWithParams(const MvnBaseWithParams &);
     MvnBaseWithParams * clone()const=0;

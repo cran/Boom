@@ -19,7 +19,7 @@
 #include <Models/Glm/OrdinalCutpointModel.hpp>
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 #include <stats/Design.hpp>
 #include <TargetFun/TargetFun.hpp>
 #include <LinAlg/Types.hpp>
@@ -41,7 +41,7 @@ namespace BOOM{
      }else if(m==maxscore+1){
        return BOOM::infinity();
      }
-    throw_exception<std::runtime_error>("m out of bounds in OrdinalCutpointModel::delta");
+    report_error("m out of bounds in OrdinalCutpointModel::delta");
     return 0.0;
   }
 
@@ -96,7 +96,6 @@ namespace BOOM{
 
   OCM::OrdinalCutpointModel(const OCM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -119,8 +118,9 @@ namespace BOOM{
 
   double OCM::pdf(uint y, const Vec &X, bool logscale)const{
     uint M = maxscore();
-    if(y>M) throw_exception<std::runtime_error>
-	      ("ordinal data out of bounds in OrdinalCutpointModel::pdf");
+    if(y > M) {
+      report_error("ordinal data out of bounds in OrdinalCutpointModel::pdf");
+    }
     double btx = predict(X);  // X may or may not contain intercept
     double F1 = y==M ? 1.0 : link_inv(delta(y+1)-btx);
     double F0 = y==0 ? 0.0 : link_inv(delta(y) - btx);
@@ -279,32 +279,34 @@ namespace BOOM{
     return ans;
   }
 
-  double OCM::Loglike(Vec &g, Mat &h, uint nd)const{
-     // model is parameterized so that Pr(y = m) = F(delta(m+1)|eta) -
-     // F(delta(m)|eta) if you draw a picture of F with cutpoints
-     // delta, the area corresponding to the event Y=m lies to the
-     // RIGHT of delta(m)
+  double OCM::Loglike(const Vector &beta_delta,
+                      Vector &g, Matrix &h, uint nd)const{
+    // model is parameterized so that Pr(y = m) = F(delta(m+1)|eta) -
+    // F(delta(m)|eta) if you draw a picture of F with cutpoints
+    // delta, the area corresponding to the event Y=m lies to the
+    // RIGHT of delta(m)
 
-     Vec beta(this->included_coefficients());
-     const Vec &delta(this->delta());
+    int beta_dim = inc().nvars();
+    Vector beta(ConstVectorView(beta_delta, 0, beta_dim));
+    Vector delta(ConstVectorView(beta_delta, beta_dim));
 
-     Vec gbeta, gdelta;
-     Mat Hbeta, Hdelta, Hbd;
-     if(nd>0){
-       gbeta = beta;
-       gdelta = delta;
-       if(nd>1){
-	 Hbeta = Mat(beta.size(), beta.size());
-	 Hdelta = Mat(delta.size(), delta.size());
-	 Hbd = Mat(beta.size(), delta.size());}}
-     double ans = bd_loglike(gbeta, gdelta, Hbeta,
-                             Hdelta, Hbd, nd, nd>0, nd>0);
+    Vec gbeta, gdelta;
+    Mat Hbeta, Hdelta, Hbd;
+    if(nd>0){
+      gbeta = beta;
+      gdelta = delta;
+      if(nd>1){
+        Hbeta = Mat(beta.size(), beta.size());
+        Hdelta = Mat(delta.size(), delta.size());
+        Hbd = Mat(beta.size(), delta.size());}}
+    double ans = bd_loglike(gbeta, gdelta, Hbeta,
+                            Hdelta, Hbd, nd, nd>0, nd>0);
 
-     if(nd>0){
-       g = concat(gbeta, gdelta);
-       if(nd>1) h = unpartition(Hbeta, Hbd, Hdelta);
-     }
-     return ans;
+    if(nd>0){
+      g = concat(gbeta, gdelta);
+      if(nd>1) h = unpartition(Hbeta, Hbd, Hdelta);
+    }
+    return ans;
   }
 
   //======================================================================

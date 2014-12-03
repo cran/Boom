@@ -54,8 +54,8 @@ namespace BOOM {
                                  prior_tree_depth_beta,
                                  log_prior_on_number_of_trees),
         model_(model),
-        siginv_prior_(new ChisqModel(prior_residual_sd_weight,
-                                     prior_residual_sd_guess))
+        sigsq_sampler_(new ChisqModel(prior_residual_sd_weight,
+                                      prior_residual_sd_guess))
   {}
 
   void GaussianBartPosteriorSampler::draw() {
@@ -209,16 +209,13 @@ namespace BOOM {
   }
 
   void GaussianBartPosteriorSampler::draw_residual_variance() {
-    double ss = siginv_prior_->beta() / 2.0;
-    double df = siginv_prior_->alpha() / 2.0;
     int n = residuals_.size();
-    df += n;
+    double ss = 0;
     for (int i = 0; i < n; ++i) {
       ss += square(residuals_[i]->residual());
     }
-
-    double siginv = rgamma_mt(rng(), df / 2.0, ss / 2.0);
-    model_->set_sigsq(1.0 / siginv);
+    double sigsq = sigsq_sampler_.draw(rng(), n, ss);
+    model_->set_sigsq(sigsq);
   }
 
   const std::vector<const Bart::GaussianResidualRegressionData *>

@@ -77,8 +77,9 @@ namespace BOOM {
     virtual PoissonGammaModel * clone()const;
 
     virtual double loglike()const;
+    virtual double loglike(const Vector &ab)const;
     double loglike(double a, double b)const;
-    virtual double Loglike(Vec &g, Mat &H, uint nd)const;
+    virtual double Loglike(const Vector &ab, Vec &g, Mat &H, uint nd)const;
 
     Ptr<UnivParams> Alpha_prm();
     Ptr<UnivParams> Beta_prm();

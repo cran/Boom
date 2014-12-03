@@ -78,13 +78,15 @@ namespace BOOM{
       Ptr<VariableSelectionPrior> vpri,
       int clt_threshold,
       double tdf,
-      int max_chunk_size,
+      int max_tim_chunk_size,
+      int max_rwm_chunk_size,
       double rwm_variance_scale_factor)
       : BinomialLogitSpikeSlabSampler(model, prior, vpri, clt_threshold),
         m_(model),
         pri_(prior),
         tdf_(tdf),
-        max_chunk_size_(max_chunk_size),
+        max_tim_chunk_size_(max_tim_chunk_size),
+        max_rwm_chunk_size_(max_rwm_chunk_size),
         rwm_variance_scale_factor_(rwm_variance_scale_factor),
         auxmix_tries_(0),
         auxmix_times_(0.0),
@@ -126,7 +128,7 @@ namespace BOOM{
   //----------------------------------------------------------------------
   void BLCSSS::rwm_draw(){
     if(m_->coef().nvars() == 0) return;
-    int total_number_of_chunks = compute_number_of_chunks();
+    int total_number_of_chunks = compute_number_of_chunks(max_rwm_chunk_size_);
     for(int chunk = 0; chunk < total_number_of_chunks; ++chunk) {
       rwm_draw_chunk(chunk);
     }
@@ -136,7 +138,7 @@ namespace BOOM{
     clock_t start = clock();
     const Selector &inc(m_->coef().inc());
     int nvars = inc.nvars();
-    Vec full_nonzero_beta = m_->included_coefficients();   // only nonzero components
+    Vec full_nonzero_beta = m_->included_coefficients();
     // Compute information matrix for proposal distribution.  For
     // efficiency, also compute the log-posterior of the current beta.
     Vec mu(inc.select(pri_->mu()));
@@ -146,7 +148,7 @@ namespace BOOM{
     const std::vector<Ptr<BinomialRegressionData> > &data(m_->dat());
     int nobs = data.size();
 
-    int full_chunk_size = compute_chunk_size();
+    int full_chunk_size = compute_chunk_size(max_rwm_chunk_size_);
     int chunk_start = chunk * full_chunk_size;
     int elements_remaining = nvars - chunk_start;
     int this_chunk_size = std::min(elements_remaining, full_chunk_size);
@@ -196,14 +198,14 @@ namespace BOOM{
   void BLCSSS::tim_draw(){
     int nvars = m_->coef().nvars();
     if(nvars == 0) return;
-    int chunk_size = compute_chunk_size();
-    int number_of_chunks = compute_number_of_chunks();
+    int chunk_size = compute_chunk_size(max_tim_chunk_size_);
+    int number_of_chunks = compute_number_of_chunks(max_tim_chunk_size_);
     assert(number_of_chunks * chunk_size >= nvars);
 
     for(int chunk = 0; chunk < number_of_chunks; ++chunk) {
       ++tim_chunk_attempts_;
       clock_t mode_start = clock();
-      TIM tim_sampler(log_posterior(chunk), tdf_);
+      TIM tim_sampler(log_posterior(chunk, max_tim_chunk_size_), tdf_);
       Vec beta = m_->included_coefficients();
       int start = chunk_size * chunk;
       int elements_remaining = nvars - start;
@@ -230,26 +232,27 @@ namespace BOOM{
     }
   }
   //----------------------------------------------------------------------
-  BinomialLogitLogPostChunk BLCSSS::log_posterior(int chunk)const{
+  BinomialLogitLogPostChunk BLCSSS::log_posterior(
+      int chunk, int max_chunk_size)const{
     return BinomialLogitLogPostChunk(
-        m_, pri_.get(), compute_chunk_size(), chunk);
+        m_, pri_.get(), compute_chunk_size(max_chunk_size), chunk);
   }
   //----------------------------------------------------------------------
-  int BLCSSS::compute_chunk_size()const{
+  int BLCSSS::compute_chunk_size(int max_chunk_size)const{
     int nvars = m_->coef().nvars();
-    if(max_chunk_size_ <= 0) return nvars;
-    int number_of_full_chunks = nvars / max_chunk_size_;
-    bool has_partial_chunk = number_of_full_chunks * max_chunk_size_ < nvars;
+    if(max_chunk_size <= 0) return nvars;
+    int number_of_full_chunks = nvars / max_chunk_size;
+    bool has_partial_chunk = number_of_full_chunks * max_chunk_size < nvars;
     int total_chunks = number_of_full_chunks + has_partial_chunk;
     int full_chunk_size = divide_rounding_up(nvars, total_chunks);
     return full_chunk_size;
   }
   //----------------------------------------------------------------------
-  int BLCSSS::compute_number_of_chunks()const{
-    if(max_chunk_size_ <= 0) return 1;
+  int BLCSSS::compute_number_of_chunks(int max_chunk_size)const{
+    if(max_chunk_size <= 0) return 1;
     int nvars = m_->coef().nvars();
-    int number_of_full_chunks = nvars / max_chunk_size_;
-    bool has_partial_chunk = number_of_full_chunks * max_chunk_size_ < nvars;
+    int number_of_full_chunks = nvars / max_chunk_size;
+    bool has_partial_chunk = number_of_full_chunks * max_chunk_size < nvars;
     return number_of_full_chunks + has_partial_chunk;
   }
 

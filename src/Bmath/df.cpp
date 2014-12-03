@@ -22,7 +22,7 @@
  *    October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000, The R Core Development Team
+ *      Copyright (C) 2000, The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ double df(double x, double m, double n, int give_log)
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(m) || ISNAN(n))
-	return x + m + n;
+        return x + m + n;
 #endif
     if (m <= 0 || n <= 0) ML_ERR_return_NAN;
     if (x <= 0.) return(R_D__0);
@@ -70,12 +70,12 @@ double df(double x, double m, double n, int give_log)
     p = x*m*f;
 
     if (m >= 2) {
-	f = m*q/2;
-	dens = dbinom_raw((m-2)/2, (m+n-2)/2, p, q, give_log);
+        f = m*q/2;
+        dens = dbinom_raw((m-2)/2, (m+n-2)/2, p, q, give_log);
     }
     else {
-	f = m*m*q / (2*p*(m+n));
-	dens = dbinom_raw(m/2, (m+n)/2, p, q, give_log);
+        f = m*m*q / (2*p*(m+n));
+        dens = dbinom_raw(m/2, (m+n)/2, p, q, give_log);
     }
     return(give_log ? log(f)+dens : f*dens);
 }

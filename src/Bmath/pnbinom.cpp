@@ -37,11 +37,11 @@
  *
  *  DESCRIPTION
  *
- *	The distribution function of the negative binomial distribution.
+ *      The distribution function of the negative binomial distribution.
  *
  *  NOTES
  *
- *	x = the number of failures before the n-th success
+ *      x = the number of failures before the n-th success
  */
 
 #include "nmath.hpp"
@@ -52,10 +52,10 @@ double pnbinom(double x, double n, double p, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n) || ISNAN(p))
-	return x + n + p;
-    if(!R_FINITE(n) || !R_FINITE(p))	ML_ERR_return_NAN;
+        return x + n + p;
+    if(!R_FINITE(n) || !R_FINITE(p))    ML_ERR_return_NAN;
 #endif
-    if (n <= 0 || p <= 0 || p >= 1)	ML_ERR_return_NAN;
+    if (n <= 0 || p <= 0 || p >= 1)     ML_ERR_return_NAN;
 
     x = FLOOR(x + 1e-7);
     if (x < 0) return R_DT_0;

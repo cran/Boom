@@ -26,10 +26,24 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 
-// #include <loki/static_check.h>
-
-
 namespace BOOM{
+
+  // A SweptVarianceMatrix is a matrix that has been operated on by
+  // the SWEEP operator.  The SWEEP operator operates on multivariate
+  // normal parameters (or sufficient statistics).  If Sigma is the
+  // variance matrix of a zero-mean multivariate normal, then
+  // SWP[k](Sigma) moves element k from the unobserved, random 'Y'
+  // side of the equation, to the observed, conditional, 'X' side.
+  //
+  // Suppose the matrix A is  A = (A_11  A_12)
+  //                              (A_21  A_22)
+  //
+  // Then sweeping on the _1 elements of A (you only ever sweep on
+  // diagonal elements) yields
+  //    SWP[1](A) = ( -A_11^{-1}             A_11^{-1} * A_{12}              )
+  //                ( A_{21} * A_{11}^{-1}   A_22 - A_{21} A_{11}^{-1} A_{12})
+  //
+
   class SweptVarianceMatrix{
     // sweeping a variable is equivalent to conditioning on it.
     // i.e. when a variable is swept it changes from 'y' to 'x'.

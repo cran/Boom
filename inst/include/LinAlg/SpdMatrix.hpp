@@ -41,10 +41,12 @@ namespace BOOM{
     SpdMatrix(const SpdMatrix &sm);  // reference semantics
     SpdMatrix(const Matrix &m, bool check=true);
     SpdMatrix(const SubMatrix &m, bool check=true);
+    SpdMatrix(const ConstSubMatrix &m, bool check=true);
 
     SpdMatrix & operator=(const SpdMatrix &); // value semantics
     SpdMatrix & operator=(const Matrix &);
     SpdMatrix & operator=(const SubMatrix &);
+    SpdMatrix & operator=(const ConstSubMatrix &);
     SpdMatrix & operator=(double x);
     bool operator==(const SpdMatrix &)const;
 
@@ -180,8 +182,44 @@ namespace BOOM{
 
   SpdMatrix sum_self_transpose(const Matrix &A);  // A + A.t()
 
-  Vector eigen(const SpdMatrix &X);
-  Vector eigen(const SpdMatrix &X, Matrix & evec);
+  // Returns the vector of eigenvalues of X, sorted from smallest to
+  // largest.
+  Vector eigenvalues(const SpdMatrix &X);
+
+  // Args:
+  //   V:  The matrix to decompose.
+  //   eigenvectors:  On return the columns of 'eigenvectors' are the
+  //     eigenvectors coresponding to the eigenvalues in the same
+  //     position.
+  // Returns: the vector of eigenvalues of V, sorted from smallest to
+  //   largest.
+  //
+  // The relationship is V = Q^T Lambda Q, or Q * V = Lambda * Q,
+  // where Q^T = eigenvectors.
+  Vector eigen(const SpdMatrix &V, Matrix & eigenvectors);
+
+  // Returns the largest eigenvalue of X.
   double largest_eigenvalue(const SpdMatrix &X);
+
+  // An SpdMatrix X can be written X = Q^T Lambda Q, where the columns
+  // of Q^T contain the eigenvectors (i.e. the eigenvectors are the
+  // rows of Q), and Lambda is a diagonal matrix containing the
+  // eigenvalues.
+  //
+  // The symmetric square root of X is Q^T Lambda^{1/2} Q.
+  SpdMatrix symmetric_square_root(const SpdMatrix &X);
+
+  // An SpdMatrix X can be written X = Q^T Lambda Q, where the columns
+  // of Q^T contain the eigenvectors (i.e. the eigenvectors are the
+  // rows of Q), and Lambda is a diagonal matrix containing the
+  // eigenvalues.  The "eigen_root" is a matrix square root of X
+  // defined as Z = Lambda^{1/2} * Q.  It is a matrix square root in
+  // the sense that Z^T * Z = Q^T * Lambda^{1/2} * Lambda^{1/2} * Q =
+  // X.
+  //
+  // Note that the eigen_root can be multiplied by any orthogonal
+  // matrix A to produce W = A * Lambda^{1/2} * Q, which preserves the
+  // relationship W^T * W = X.
+  Matrix eigen_root(const SpdMatrix &X);
 }
 #endif // NEW_LA_SPD_MATRIX_H

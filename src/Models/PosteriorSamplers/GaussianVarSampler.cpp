@@ -16,6 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/PosteriorSamplers/GaussianVarSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
@@ -29,7 +30,7 @@ namespace BOOM{
   GVS::GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g)
     : gam(g),
       mod(m),
-      upper_truncation_point_(BOOM::infinity())
+      sampler_(g)
   {}
 
   inline double sumsq(double nu, double sig){ return nu*sig*sig;}
@@ -39,38 +40,20 @@ namespace BOOM{
                           double prior_sigma_guess)
     : gam(new GammaModel(prior_df/2.0, sumsq(prior_df,prior_sigma_guess)/2.0)),
       mod(m),
-      upper_truncation_point_(BOOM::infinity())
+      sampler_(gam)
   {}
 
   void GVS::set_sigma_upper_limit(double max_sigma){
-    if(max_sigma <= 0) {
-      ostringstream err;
-      err << "GaussianVarSampler::set_sigma_upper_limit expects a "
-          << "positive argument.  It was given " << max_sigma;
-      report_error(err.str());
-    }
-    upper_truncation_point_ = max_sigma;
+    sampler_.set_sigma_max(max_sigma);
   }
 
   void GVS::draw(){
     double n = mod->suf()->n();
     double ybar = mod->suf()->ybar();
     double mu = mod->mu();
-
     double sumsq = mod->suf()->sumsq() - 2*n*ybar*mu + n*mu*mu;
-
-    double df = n + 2*gam->alpha();  // alpha = df/2
-    double ss = sumsq + 2*gam->beta();
-
-    double ans;
-    if(upper_truncation_point_ == BOOM::infinity()){
-      ans = rgamma_mt(rng(), df/2,ss/2);
-    }else{
-      ans = rtrun_gamma_mt(rng(), df/2, ss/2,
-                           1.0/pow(upper_truncation_point_, 2));
-    }
-
-    mod->set_sigsq(1.0/ans);
+    double sigsq = sampler_.draw(rng(), n, sumsq);
+    mod->set_sigsq(sigsq);
   }
 
   double GVS::logpri()const{

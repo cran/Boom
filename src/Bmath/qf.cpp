@@ -48,21 +48,21 @@ double qf(double p, double n1, double n2, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(n1) || ISNAN(n2))
-	return p + n1 + n2;
+        return p + n1 + n2;
 #endif
     if (n1 <= 0. || n2 <= 0.) ML_ERR_return_NAN;
 
     R_Q_P01_check(p);
     if (p == R_DT_0)
-	return 0;
+        return 0;
 
     /* fudge the extreme DF cases -- qbeta doesn't do this well */
 
     if (n2 > 4e5)
-	return qchisq(p, n1, lower_tail, log_p) / n1;
+        return qchisq(p, n1, lower_tail, log_p) / n1;
 
     if (n1 > 4e5)
-	return 1/qchisq(p, n2, !lower_tail, log_p) * n2;
+        return 1/qchisq(p, n2, !lower_tail, log_p) * n2;
 
     p = (1. / qbeta(R_DT_CIv(p), n2/2, n1/2, true, false) - 1.) * (n2 / n1);
     return ML_VALID(p) ? p : numeric_limits<double>::quiet_NaN();

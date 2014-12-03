@@ -65,7 +65,7 @@ namespace BOOM{
 
   BLM::BinomialLogitModel(const BLM &rhs)
       : Model(rhs),
-        MLE_Model(rhs),
+        MixtureComponent(rhs),
         GlmModel(rhs),
         NumOptModel(rhs),
         ParamPolicy(rhs),
@@ -102,10 +102,10 @@ namespace BOOM{
     return dbinom(y, n, p, logscale);
   }
 
-  double BLM::Loglike(Vector &g, Matrix &h, uint nd)const{
-    if(nd>=2) return log_likelihood(included_coefficients(), &g, &h);
-    if(nd==1) return log_likelihood(included_coefficients(), &g, 0);
-    return log_likelihood(included_coefficients(), 0, 0);
+  double BLM::Loglike(const Vector &beta, Vector &g, Matrix &h, uint nd)const{
+    if(nd>=2) return log_likelihood(beta, &g, &h);
+    if(nd==1) return log_likelihood(beta, &g, 0);
+    return log_likelihood(beta, 0, 0);
   }
 
   double BLM::log_likelihood(const Vector & beta, Vector *g, Matrix *h,

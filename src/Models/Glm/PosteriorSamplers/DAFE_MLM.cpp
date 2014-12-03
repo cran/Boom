@@ -27,7 +27,6 @@
 
 #include <LinAlg/VectorView.hpp>
 #include <TargetFun/TargetFun.hpp>
-#include <TargetFun/LoglikeSubset.hpp>
 #include <TargetFun/LogPost.hpp>
 
 namespace BOOM{
@@ -274,7 +273,6 @@ namespace BOOM{
 
   //______________________________________________________________________
 
-
   class DafeLoglike{
   public:
     DafeLoglike(MLM *, uint m, bool choice=false);
@@ -287,30 +285,24 @@ namespace BOOM{
     bool choice;
   };
 
-
   DafeLoglike::DafeLoglike(MLM *mod, uint which_choice, bool is_choice)
     : mlm_(mod),
       m(which_choice),
       choice(is_choice)
   {}
 
-//   DafeLoglike * DafeLoglike::clone()const{
-//     return new DafeLoglike(*this);}
-
   double DafeLoglike::operator()(const Vec &beta)const{
-    double ans=0;
-    if(choice){
-      x = mlm_->beta_choice();
-      mlm_->set_beta_choice(beta);
-      ans = mlm_->loglike();
-      mlm_->set_beta_choice(x);
-    }else{
-      x = mlm_->beta_subject(m);
-      mlm_->set_beta_subject(beta,m);
-      ans = mlm_->loglike();
-      mlm_->set_beta_subject(x,m);
+    Vector full_beta = mlm_->beta();
+    int begin = 0;
+    int length = choice ? mlm_->choice_nvars() : mlm_->subject_nvars();
+    if (choice) {
+      begin = (m-1) * mlm_->choice_nvars();
+    } else {
+      begin = (mlm_->Nchoices()-1) * mlm_->choice_nvars();
     }
-    return ans;
+    VectorView subset(full_beta, begin, length);
+    subset = beta;
+    return mlm_->loglike(full_beta);
   }
 
   struct Logp{

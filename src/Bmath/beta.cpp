@@ -64,8 +64,8 @@ namespace Rmath{
 //       static double lnsml = 0;/*-> typically = -708.3964185 */
 
 //       if (xmax == 0) {
-// 	gammalims(&xmin, &xmax);
-// 	lnsml = log(d1mach(1));
+//      gammalims(&xmin, &xmax);
+//      lnsml = log(d1mach(1));
 //       }
 // #else
       /* For IEEE double precision numeric_limits<double>::epsilon() = 2^-52 = 2.220446049250313e-16 :
@@ -84,22 +84,22 @@ namespace Rmath{
 #endif
 
       if (a < 0 || b < 0)
-	ML_ERR_return_NAN
-	  else if (a == 0 || b == 0) {
-	    return BOOM::infinity();
-	  }
+        ML_ERR_return_NAN
+          else if (a == 0 || b == 0) {
+            return BOOM::infinity();
+          }
       else if (!R_FINITE(a) || !R_FINITE(b)) {
-	return 0;
+        return 0;
       }
 
       if (a + b < xmax) /* ~= 171.61 for IEEE */
-	return gammafn(a) * gammafn(b) / gammafn(a+b);
+        return gammafn(a) * gammafn(b) / gammafn(a+b);
 
       val = lbeta(a, b);
       if (val < lnsml) {
-	/* a and/or b so big that beta underflows */
-	ML_ERROR(ME_UNDERFLOW);
-	return ML_UNDERFLOW;
+        /* a and/or b so big that beta underflows */
+        ML_ERROR(ME_UNDERFLOW);
+        return ML_UNDERFLOW;
       }
       return exp(val);
     }

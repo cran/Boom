@@ -133,7 +133,6 @@ namespace BOOM{
 
   UM::UniformModel(const UM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -179,9 +178,11 @@ namespace BOOM{
     return outside ? BOOM::negative_infinity() : log(nc());
   }
 
-  double UM::loglike()const{
-    bool hi_ok = suf()->hi()  <= this->hi();
-    bool lo_ok = suf()->lo()  >= this->lo();
+  double UM::loglike(const Vector &ab)const{
+    double lo = ab[0];
+    double hi = ab[1];
+    bool hi_ok = suf()->hi() <= hi;
+    bool lo_ok = suf()->lo() >= lo;
     if(hi_ok && lo_ok) return log(nc());
     return BOOM::negative_infinity();
   }

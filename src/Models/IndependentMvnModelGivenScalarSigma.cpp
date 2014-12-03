@@ -29,17 +29,17 @@ namespace BOOM {
       const Vector &prior_mean,
       const Vector &unscaled_prior_variance,
       Ptr<UnivParams> sigsq)
-      : ParamPolicy(new VectorParams(prior_mean),
-                    new VectorParams(unscaled_prior_variance)),
-        sigsq_(sigsq)
+      : MvnGivenScalarSigmaBase(sigsq),
+        ParamPolicy(new VectorParams(prior_mean),
+                    new VectorParams(unscaled_prior_variance))
   {}
 
   IMMGS::IndependentMvnModelGivenScalarSigma(
       Ptr<VectorParams> prior_mean,
       Ptr<VectorParams> unscaled_prior_variance,
       Ptr<UnivParams> sigsq)
-      : ParamPolicy(prior_mean, unscaled_prior_variance),
-        sigsq_(sigsq)
+      : MvnGivenScalarSigmaBase(sigsq),
+        ParamPolicy(prior_mean, unscaled_prior_variance)
   {}
 
   IndependentMvnModelGivenScalarSigma *
@@ -60,7 +60,7 @@ namespace BOOM {
       }
     }
     const Vector &mu(this->mu());
-    Vector v = unscaled_variance_diagonal() * sigsq_->value();
+    Vector v = unscaled_variance_diagonal() * sigsq();
     for (int i = 0; i < x.size(); ++i) {
       ans += dnorm(x[i], mu[i], sqrt(v[i]), true);
       if (nderiv > 0)  {
@@ -115,8 +115,8 @@ namespace BOOM {
     return prm2_ref().value();
   }
 
-  double IMMGS::sigsq() const {
-    return sigsq_->value();
+  double IMMGS::sd_for_element(int i) const {
+    return sqrt(sigsq() * unscaled_variance_diagonal()[i]);
   }
 
 }  // namespace BOOM

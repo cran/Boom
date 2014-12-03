@@ -70,16 +70,16 @@ int chebyshev_init(double *dos, int nos, double eta)
     double err;
 
     if (nos < 1)
-	return 0;
+        return 0;
 
     err = 0.0;
-    i = 0;			/* just to avoid compiler warnings */
+    i = 0;                      /* just to avoid compiler warnings */
     for (ii=1; ii<=nos; ii++) {
-	i = nos - ii;
-	err += fabs(dos[i]);
-	if (err > eta) {
-	    return i;
-	}
+        i = nos - ii;
+        err += fabs(dos[i]);
+        if (err > eta) {
+            return i;
+        }
     }
     return i;
 }
@@ -98,9 +98,9 @@ double chebyshev_eval(double x, const double *a, const int n)
     b2 = b1 = 0;
     b0 = 0;
     for (i = 1; i <= n; i++) {
-	b2 = b1;
-	b1 = b0;
-	b0 = twox * b1 - b2 + a[n - i];
+        b2 = b1;
+        b1 = b0;
+        b0 = twox * b1 - b2 + a[n - i];
     }
     return (b0 - b2) * 0.5;
 }

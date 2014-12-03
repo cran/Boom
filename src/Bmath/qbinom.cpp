@@ -37,15 +37,15 @@
  *
  *  DESCRIPTION
  *
- *	The quantile function of the binomial distribution.
+ *      The quantile function of the binomial distribution.
  *
  *  METHOD
  *
- *	Uses the Cornish-Fisher Expansion to include a skewness
- *	correction to a normal approximation.  This gives an
- *	initial value which never seems to be off by more than
- *	1 or 2.	 A search is then conducted of values close to
- *	this initial start point.
+ *      Uses the Cornish-Fisher Expansion to include a skewness
+ *      correction to a normal approximation.  This gives an
+ *      initial value which never seems to be off by more than
+ *      1 or 2.  A search is then conducted of values close to
+ *      this initial start point.
  */
 #include "nmath.hpp"
 #include "dpq.hpp"
@@ -58,15 +58,15 @@ double qbinom(double p, double n, double pr, int lower_tail, int log_p)
 
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(n) || ISNAN(pr))
-	return p + n + pr;
+        return p + n + pr;
 #endif
     if(!R_FINITE(p) || !R_FINITE(n) || !R_FINITE(pr))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
     R_Q_P01_check(p);
 
     if(n != FLOOR(n + 0.5)) ML_ERR_return_NAN;
     if (pr <= 0 || pr >= 1 || n <= 0)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if (p == R_DT_0) return 0.;
     if (p == R_DT_1) return n;
@@ -79,9 +79,9 @@ double qbinom(double p, double n, double pr, int lower_tail, int log_p)
     /* Note : "same" code in qpois.c, qbinom.c, qnbinom.c --
      * FIXME: This is far from optimal [cancellation for p ~= 1, etc]: */
     if(!lower_tail || log_p) {
-	p = R_DT_qIv(p); /* need check again (cancellation!): */
-	if (p == 0.) return 0.;
-	if (p == 1.) return n;
+        p = R_DT_qIv(p); /* need check again (cancellation!): */
+        if (p == 0.) return 0.;
+        if (p == 1.) return n;
     }
     /* temporary hack --- FIXME --- */
     if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return n;
@@ -104,21 +104,21 @@ double qbinom(double p, double n, double pr, int lower_tail, int log_p)
 #else
     if(z >= p) {
 #endif
-			/* search to the left */
-	for(;;) {
-	    if(y == 0 ||
-	       (z = pbinom(y - 1, n, pr, /*l._t.*/true, /*log_p*/false)) < p)
-		return y;
-	    y = y - 1;
-	}
+                        /* search to the left */
+        for(;;) {
+            if(y == 0 ||
+               (z = pbinom(y - 1, n, pr, /*l._t.*/true, /*log_p*/false)) < p)
+                return y;
+            y = y - 1;
+        }
     }
-    else {		/* search to the right */
-	for(;;) {
-	    y = y + 1;
-	    if(y == n ||
-	       (z = pbinom(y, n, pr, /*l._t.*/true, /*log_p*/false)) >= p)
-		return y;
-	}
+    else {              /* search to the right */
+        for(;;) {
+            y = y + 1;
+            if(y == n ||
+               (z = pbinom(y, n, pr, /*l._t.*/true, /*log_p*/false)) >= p)
+                return y;
+        }
     }
 }
 }

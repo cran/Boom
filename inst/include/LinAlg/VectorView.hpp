@@ -149,6 +149,8 @@ namespace BOOM{
 
   // IO
   std::ostream & operator<<(std::ostream & out, const VectorView &x);
+  // prints to stdout.  This function is here so it can be called from gdb.
+  void print(const VectorView &v);
   std::istream & operator>>(std::istream &, VectorView &);
   // Vector view size is known from construction
 
@@ -181,8 +183,11 @@ namespace BOOM{
     // View an aribtrary chunk of memory
     ConstVectorView(const double *first_elem, uint Nelem, int Stride);
 
-    // View from first_element to the end
-    explicit ConstVectorView(const Vector &v, uint first_element = 0);
+    // View from first_element to the end.  This constructor is
+    // non-explicit because I want automatic conversions from Vector
+    // and VectorView to ConstVectorView to be legal.
+    ConstVectorView(const Vector &v, uint first_element = 0);
+    ConstVectorView(const VectorView &rhs, uint first_element = 0);
 
     // View from first_element to first_lement + length - 1
     ConstVectorView(const Vector &v, uint first_element, uint length);
@@ -190,13 +195,12 @@ namespace BOOM{
     ConstVectorView(const ConstVectorView &v, uint first_element);
     ConstVectorView(const ConstVectorView &v, uint first_element, uint length);
 
-    ConstVectorView(const VectorView &rhs);
 
     template <class V>
     explicit ConstVectorView(const V &rhs)
-	: V(rhs.data()),
-	  nelem_(rhs.size()),
-	  stride_(rhs.stride())
+        : V(rhs.data()),
+          nelem_(rhs.size()),
+          stride_(rhs.stride())
     {}
     // default copy constructor
 
@@ -239,8 +243,9 @@ namespace BOOM{
     double dot(const VectorView &y)const;
     double dot(const ConstVectorView &y)const;
 
-    template<class VEC>
-    double affdot(const VEC &y)const;
+    double affdot(const Vector &y)const;
+    double affdot(const VectorView &y)const;
+    double affdot(const ConstVectorView &y)const;
     // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
     // Returns a ConstVectorView that points to the same elements as
@@ -252,6 +257,8 @@ namespace BOOM{
 
   // IO
   std::ostream & operator<<(std::ostream & out, const ConstVectorView &x);
+  // prints to stdout.  This function is here so it can be called from gdb.
+  void print(const ConstVectorView &v);
 
   template<class VEC>
       ConstVectorView subvector(const VEC &v, uint start){
@@ -265,27 +272,6 @@ namespace BOOM{
     return ConstVectorView(v.data()+ start, size, v.stride());
   }
 
-  template <class VEC>
-      double ConstVectorView::affdot(const VEC &y)const{
-    uint n = size();
-    uint m = y.size();
-    if(m==n) return dot(y);
-    double ans=0.0;
-    const double *v1=0, *v2=0;
-    if(m==n+1){    // y is one unit longer than x
-      ans= y.front();
-      v1 = y.data()+1;
-      v2 = data();
-    }else if (n==m+1){   // x is one unit longer than y
-      ans = front();
-      v1 = y.data();
-      v2 = data()+1;
-    }else{
-      assert(0 && "x and y do not conform in affdot");
-    }
-    const int i(std::min(m,n));
-    return cblas_ddot(i, v1, y.stride(), v2, stride());
-  }
 
   inline Vector operator+(const VectorView &x, const VectorView &y){
     Vector ans(x); ans+=y; return ans; }

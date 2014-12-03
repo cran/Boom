@@ -76,14 +76,14 @@ namespace Rmath{
   inline bool R_FINITE(double x){return R_finite(x);}
 
 #ifdef IEEE_754
-#define ML_ERROR(x)	/* nothing */
-#define ML_UNDERFLOW	(DBL_MIN * DBL_MIN)
-#define ML_VALID(x)	(!ISNAN(x))
+#define ML_ERROR(x)     /* nothing */
+#define ML_UNDERFLOW    (DBL_MIN * DBL_MIN)
+#define ML_VALID(x)     (!ISNAN(x))
 #else/*--- NO IEEE: No +/-Inf, NAN,... ---*/
   void ml_error(int n);
-#define ML_ERROR(x)	ml_error(x)
-#define ML_UNDERFLOW	0
-#define ML_VALID(x)	(errno == 0)
+#define ML_ERROR(x)     ml_error(x)
+#define ML_UNDERFLOW    0
+#define ML_VALID(x)     (errno == 0)
 #endif
 
   const int ME_NONE       = 0;
@@ -104,26 +104,26 @@ namespace Rmath{
 
   /* internal R functions */
   /* Chebyshev Series */
-  int	chebyshev_init(double*, int, double);
-  double	chebyshev_eval(double, const double *, const int);
+  int   chebyshev_init(double*, int, double);
+  double        chebyshev_eval(double, const double *, const int);
 
   /* Gamma and Related Functions */
 
-  void	gammalims(double*, double*);
-  double	lgammacor(double); /* log(gamma) correction */
+  void  gammalims(double*, double*);
+  double        lgammacor(double); /* log(gamma) correction */
   double  stirlerr(double);  /* Stirling expansion "error" */
 
-  double	fastchoose(double, double);
-  double	lfastchoose(double, double);
+  double        fastchoose(double, double);
+  double        lfastchoose(double, double);
 
   double  bd0(double, double);
 
   /* Consider adding these two to the API (Bmath.hpp): */
-  double	dbinom_raw(double, double, double, double, int);
-  double	dpois_raw (double, double, int);
+  double        dbinom_raw(double, double, double, double, int);
+  double        dpois_raw (double, double, int);
   double        pnchisq_raw(double, double, double, double, int);
 
-  int	i1mach(int);
+  int   i1mach(int);
 
   inline long FLOOR(double x){
     return static_cast<long>(std::floor(x));}

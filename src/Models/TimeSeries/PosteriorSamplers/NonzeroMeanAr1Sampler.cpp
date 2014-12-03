@@ -22,17 +22,18 @@
 
 namespace BOOM{
 
-  NonzeroMeanAr1Sampler::NonzeroMeanAr1Sampler(NonzeroMeanAr1Model *model,
-                                               Ptr<GaussianModelBase> mean_prior,
-                                               Ptr<GaussianModelBase> phi_prior,
-                                               Ptr<GammaModelBase> siginv_prior)
-      : m_(model),
-        mean_prior_(mean_prior),
-        phi_prior_(phi_prior),
-        siginv_prior_(siginv_prior),
-        truncate_phi_(false),
-        force_ar1_positive_(false),
-        sigma_upper_limit_(-1)
+  NonzeroMeanAr1Sampler::NonzeroMeanAr1Sampler(
+      NonzeroMeanAr1Model *model,
+      Ptr<GaussianModelBase> mean_prior,
+      Ptr<GaussianModelBase> phi_prior,
+      Ptr<GammaModelBase> siginv_prior)
+  : m_(model),
+    mean_prior_(mean_prior),
+    phi_prior_(phi_prior),
+    siginv_prior_(siginv_prior),
+    truncate_phi_(false),
+    force_ar1_positive_(false),
+    sigsq_sampler_(siginv_prior_)
   {}
   //----------------------------------------------------------------------
   void NonzeroMeanAr1Sampler::force_stationary(){truncate_phi_ = true;}
@@ -40,7 +41,7 @@ namespace BOOM{
   void NonzeroMeanAr1Sampler::force_ar1_positive(){force_ar1_positive_ = true;}
   //----------------------------------------------------------------------
   void NonzeroMeanAr1Sampler::set_sigma_upper_limit(double sigma_upper_limit){
-    sigma_upper_limit_ = sigma_upper_limit;
+    sigsq_sampler_.set_sigma_max(sigma_upper_limit);
   }
   //----------------------------------------------------------------------
   void NonzeroMeanAr1Sampler::draw(){
@@ -145,20 +146,11 @@ namespace BOOM{
     double mu = m_->mu();
     double phi = m_->phi();
     Ptr<Ar1Suf> suf = m_->suf();
-    double n = suf->n();
-
-    // start with the prior
-    double sumsq = 2 * siginv_prior_->beta() + suf->model_sumsq(mu, phi);
-    double df = n + 2 * siginv_prior_->alpha();
-
-    double ivar;
-    if(sigma_upper_limit_ <= 0) {
-      ivar = rgamma_mt(rng(), df/2, sumsq/2);
-    }else{
-      double lo = 1.0 / pow(sigma_upper_limit_, 2);
-      ivar = rtrun_gamma_mt(rng(), df/2, sumsq/2, lo);
-    }
-    m_->set_sigsq(1.0/ivar);
+    double sigsq = sigsq_sampler_.draw(
+        rng(),
+        suf->n(),
+        suf->model_sumsq(mu, phi));
+    m_->set_sigsq(sigsq);
   }
 
 }

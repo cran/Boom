@@ -122,8 +122,10 @@ namespace BOOM{
     double sigma()const;
 
     void mle();
-
-    double Loglike(Vec &g, Mat &h, uint nd)const;
+    // The argument is a vector with leading coefficients 'beta' and
+    // final element sigsq.
+    double Loglike(const Vector &beta_sigsq,
+                   Vec &g, Mat &h, uint nd)const;
     double pdf(dPtr, bool)const;
     double pdf(Ptr<data_type>, bool)const;
 

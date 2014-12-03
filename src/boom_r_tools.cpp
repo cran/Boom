@@ -225,41 +225,38 @@ namespace BOOM{
     return CHAR(STRING_ELT(elt, 0));
   }
 
-  Vec ToBoomVector(SEXP v){
-    if(!Rf_isNumeric(v)){
-      report_error("ToBoomVector called with a non-numeric argument");
+  ConstVectorView ToBoomVectorView(SEXP v) {
+    if (!Rf_isNumeric(v)) {
+      report_error("ToBoomVectorView called with a non-numeric argument.");
     }
     PROTECT(v = Rf_coerceVector(v, REALSXP));
     int n = Rf_length(v);
     double *data = REAL(v);
-    Vec ans(data, data + n);
+    UNPROTECT(1);
+    return ConstVectorView(data, n, 1);
+  }
+
+  Vector ToBoomVector(SEXP v){
+    return Vector(ToBoomVectorView(v));
+  }
+
+  ConstSubMatrix ToBoomMatrixView(SEXP m) {
+    if (!Rf_isMatrix(m)) {
+      report_error("ToBoomMatrix called with a non-matrix argument");
+    }
+    std::pair<int,int> dims = GetMatrixDimensions(m);
+    PROTECT(m = Rf_coerceVector(m, REALSXP));
+    ConstSubMatrix ans(REAL(m), dims.first, dims.second);
     UNPROTECT(1);
     return ans;
   }
 
   Matrix ToBoomMatrix(SEXP m){
-    if(!Rf_isMatrix(m)){
-      report_error("ToBoomMatrix called with a non-matrix argument");
-    }
-    std::pair<int,int> dims = GetMatrixDimensions(m);
-    PROTECT(m = Rf_coerceVector(m, REALSXP));
-    Matrix ans(dims.first, dims.second, REAL(m));
-    UNPROTECT(1);
-    return ans;
+    return Matrix(ToBoomMatrixView(m));
   }
 
   Spd ToBoomSpd(SEXP m){
-    if(!Rf_isMatrix(m)){
-      report_error("ToBoomSpd called with a non-matrix argument");
-    }
-    std::pair<int,int> dims = GetMatrixDimensions(m);
-    if(dims.first != dims.second){
-      report_error("Need a square matrix");
-    }
-    PROTECT(m = Rf_coerceVector(m, REALSXP));
-    Spd ans(dims.first, REAL(m));
-    UNPROTECT(1);
-    return ans;
+    return SpdMatrix(ToBoomMatrixView(m));
   }
 
   std::vector<bool> ToVectorBool(SEXP logical_vector){
@@ -275,7 +272,16 @@ namespace BOOM{
     return ans;
   }
 
-  SEXP ToRVector(const Vec &v){
+  std::vector<int> ToIntVector(SEXP r_int_vector) {
+    if (!Rf_isInteger(r_int_vector)) {
+      report_error("Argument to ToIntVector must be a vector of integers.");
+    }
+    int *values = INTEGER(r_int_vector);
+    int length = Rf_length(r_int_vector);
+    return std::vector<int>(values, values + length);
+  }
+
+  SEXP ToRVector(const Vector &v){
     int n = v.size();
     SEXP ans;
     PROTECT(ans = Rf_allocVector(REALSXP, n));
@@ -329,10 +335,14 @@ namespace BOOM{
   }
 
   std::string ToString(SEXP r_string) {
-    if(!Rf_isString(r_string)){
+    if (TYPEOF(r_string) == CHARSXP) {
+      return CHAR(r_string);
+    } else if(Rf_isString(r_string)){
+      return CHAR(STRING_ELT(r_string, 0));
+    } else {
       report_error("ToString could not convert its argument to a string");
     }
-    return CHAR(STRING_ELT(r_string, 0));
+    return "";
   }
 
   Factor::Factor(SEXP r_factor)

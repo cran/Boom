@@ -42,10 +42,10 @@ namespace BOOM {
       ostream &out,
       int number_of_trials,
       int number_of_successes,
-      double eta) const {
+      double linear_predictor) const {
     out << "number_of_trials:    " << number_of_trials << endl
         << "number_of_successes: " << number_of_successes << endl
-        << "eta:                 " << eta << endl;
+        << "linear_predictor:    " << linear_predictor << endl;
   }
 
   BinomialLogitPartialAugmentationDataImputer::
@@ -54,12 +54,16 @@ namespace BOOM {
   {}
 
   std::pair<double, double> BinomialLogitPartialAugmentationDataImputer::impute(
-      RNG &rng, int number_of_trials, int number_of_successes, double eta) {
+      RNG &rng,
+      int number_of_trials,
+      int number_of_successes,
+      double linear_predictor) const {
     if (number_of_successes > number_of_trials) {
       ostringstream err;
       err << "The number of successes must not exceed the number of trials "
           << "in BinomialLogitPartialAugmentationDataImputer::impute()." << endl;
-      debug_status_message(err, number_of_trials, number_of_successes, eta);
+      debug_status_message(
+          err, number_of_trials, number_of_successes, linear_predictor);
       report_error(err.str());
     }
     if (number_of_successes < 0 || number_of_trials < 0) {
@@ -67,7 +71,8 @@ namespace BOOM {
       err << "The number of successes and the number of trials must both "
           << "be non-negative in "
           << "BinomialLogitPartialAugmentationDataImputer::impute()." << endl;
-      debug_status_message(err, number_of_trials, number_of_successes, eta);
+      debug_status_message(
+          err, number_of_trials, number_of_successes, linear_predictor);
       report_error(err.str());
     }
     const double pi_squared_over_3 = 3.289868133696452872;
@@ -76,11 +81,12 @@ namespace BOOM {
     if (number_of_trials < clt_threshold_) {
       for (int i = 0; i < number_of_trials; ++i) {
         bool success = i < number_of_successes;
-        double latent_logit = rtrun_logit_mt(rng, eta, 0, success);
+        double latent_logit = rtrun_logit_mt(rng, linear_predictor, 0, success);
         // mu is unused because the mixture is a scale-mixture only,
         // but we need it for the API.
         double mu, sigsq;
-        mixture_approximation.unmix(rng, latent_logit - eta, &mu, &sigsq);
+        mixture_approximation.unmix(
+            rng, latent_logit - linear_predictor, &mu, &sigsq);
         double current_weight = 1.0 / sigsq;
         information += current_weight;
         information_weighted_sum += latent_logit * current_weight;
@@ -92,15 +98,17 @@ namespace BOOM {
       double mean_of_logit_sum = 0;
       double variance_of_logit_sum = 0;
       if (number_of_successes > 0) {
-        mean_of_logit_sum += number_of_successes * trun_logit_mean(eta, 0, true);
-        variance_of_logit_sum +=
-            number_of_successes * trun_logit_variance(eta, 0, true);
+        mean_of_logit_sum += number_of_successes *
+            trun_logit_mean(linear_predictor, 0, true);
+        variance_of_logit_sum += number_of_successes *
+            trun_logit_variance(linear_predictor, 0, true);
       }
       int number_of_failures = number_of_trials - number_of_successes;
       if (number_of_failures > 0) {
-        mean_of_logit_sum += number_of_failures * trun_logit_mean(eta, 0, false);
-        variance_of_logit_sum +=
-            number_of_failures * trun_logit_variance(eta, 0, false);
+        mean_of_logit_sum += number_of_failures *
+            trun_logit_mean(linear_predictor, 0, false);
+        variance_of_logit_sum += number_of_failures *
+            trun_logit_variance(linear_predictor, 0, false);
       }
       // The information_weighted_sum is the sum of the latent logits
       // (approximated by a normal), divided by the weight that each
@@ -131,25 +139,31 @@ namespace BOOM {
       RNG & rng,
       int number_of_trials,
       int number_of_successes,
-      double eta) {
+      double linear_predictor) const {
     if (number_of_trials > clt_threshold()) {
-      return impute_large_sample(rng, number_of_trials, number_of_successes, eta);
+      return impute_large_sample(
+          rng, number_of_trials, number_of_successes, linear_predictor);
     } else {
-      return impute_small_sample(rng, number_of_trials, number_of_successes, eta);
+      return impute_small_sample(
+          rng, number_of_trials, number_of_successes, linear_predictor);
     }
   }
 
   std::pair<double, double> BinomialLogitCltDataImputer::impute_small_sample(
-      RNG & rng, int number_of_trials, int number_of_successes, double eta) {
+      RNG & rng,
+      int number_of_trials,
+      int number_of_successes,
+      double linear_predictor) const{
     double information_weighted_sum = 0;
     double information = 0;
     for (int i = 0; i < number_of_trials; ++i) {
       bool success = i < number_of_successes;
-      double latent_logit = rtrun_logit_mt(rng, eta, 0, success);
+      double latent_logit = rtrun_logit_mt(rng, linear_predictor, 0, success);
       // mu is unused because the mixture is a scale-mixture only,
       // but we need it for the API.
       double mu, sigsq;
-      mixture_approximation.unmix(rng, latent_logit - eta, &mu, &sigsq);
+      mixture_approximation.unmix(
+          rng, latent_logit - linear_predictor, &mu, &sigsq);
       double current_weight = 1.0 / sigsq;
       information += current_weight;
       information_weighted_sum += latent_logit * current_weight;
@@ -162,33 +176,38 @@ namespace BOOM {
       RNG &rng,
       int number_of_trials,
       int number_of_successes,
-      double eta) {
+      double linear_predictor) const {
     double information = 0.0;
     const Vector & mixing_weights(mixture_approximation.weights());
     const Vector & sigma(mixture_approximation.sigma());
-    double negative_logit_support = plogis(0, eta, 1, true);
-    double positive_logit_support = plogis(0, eta, 1, false);
-    p0_ = mixing_weights / negative_logit_support;
-    p1_ = mixing_weights / positive_logit_support;
+    double negative_logit_support = plogis(0, linear_predictor, 1, true);
+    double positive_logit_support = plogis(0, linear_predictor, 1, false);
+    Vector p0 = mixing_weights / negative_logit_support;
+    Vector p1 = mixing_weights / positive_logit_support;
     for (int m = 0; m < mixture_approximation.dim(); ++m) {
-      p0_[m] *= pnorm(0, eta, sigma[m], true);
-      p1_[m] *= pnorm(0, eta, sigma[m], false);
+      p0[m] *= pnorm(0, linear_predictor, sigma[m], true);
+      p1[m] *= pnorm(0, linear_predictor, sigma[m], false);
     }
 
     // p0 is the probability distribution over the mixture component
-    // indicators for the failures.  N0_ is the count of the number of
+    // indicators for the failures.  N0 is the count of the number of
     // failures belonging to each mixture component.
-    rmultinom_mt(rng, number_of_trials - number_of_successes, p0_/sum(p0_), N0_);
+    std::vector<int> N0 = rmultinom_mt(rng,
+                                       number_of_trials - number_of_successes,
+                                       p0/sum(p0));
+
 
     // p1 is the probability distribution over the mixture component
-    // indicators for the successes.  N1_ is the count of the number
+    // indicators for the successes.  N1 is the count of the number
     // of successes in each mixture component.
-    rmultinom_mt(rng, number_of_successes, p1_/sum(p1_), N1_);
+    std::vector<int> N1 = rmultinom_mt(rng,
+                                       number_of_successes,
+                                       p1/sum(p1));
 
     double simulation_mean = 0;
     double simulation_variance = 0;
-    for (int m = 0; m < N0_.size(); ++m) {
-      int total_obs = N0_[m] + N1_[m];
+    for (int m = 0; m < N0.size(); ++m) {
+      int total_obs = N0[m] + N1[m];
       if (total_obs == 0) {
         continue;
       }
@@ -198,19 +217,24 @@ namespace BOOM {
       double truncated_normal_mean;
       double truncated_normal_variance;
       double cutpoint = 0;
-      if (N0_[m] > 0) {
-        trun_norm_moments(eta, sigma[m],
+      if (N0[m] > 0) {
+        trun_norm_moments(linear_predictor,
+                          sigma[m],
                           cutpoint, false,
-                          &truncated_normal_mean, &truncated_normal_variance);
-        simulation_mean += N0_[m] * truncated_normal_mean / sigsq;
-        simulation_variance += N0_[m] * truncated_normal_variance / sig4;
+                          &truncated_normal_mean,
+                          &truncated_normal_variance);
+        simulation_mean += N0[m] * truncated_normal_mean / sigsq;
+        simulation_variance += N0[m] * truncated_normal_variance / sig4;
       }
-      if (N1_[m] > 0) {
-        trun_norm_moments(eta, sigma[m],
-                          cutpoint, true,
-                          &truncated_normal_mean, &truncated_normal_variance);
-        simulation_mean += N1_[m] * truncated_normal_mean / sigsq;
-        simulation_variance += N1_[m] * truncated_normal_variance / sig4;
+      if (N1[m] > 0) {
+        trun_norm_moments(linear_predictor,
+                          sigma[m],
+                          cutpoint,
+                          true,
+                          &truncated_normal_mean,
+                          &truncated_normal_variance);
+        simulation_mean += N1[m] * truncated_normal_mean / sigsq;
+        simulation_variance += N1[m] * truncated_normal_variance / sig4;
       }
     }
     double information_weighted_sum =

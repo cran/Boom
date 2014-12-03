@@ -87,29 +87,9 @@ namespace BOOM{
   }
 
   void d2LoglikeModel::mle(){
-    d2LoglikeTF loglike(this);
-    Vec parameters = vectorize_params(true);
-    Vec gradient(parameters);
-    uint p = gradient.size();
-    Mat Hessian(p,p);
-    string error_message;
-    double max_loglike_value;
-    bool ok = max_nd2_careful(
-        parameters,
-        gradient,
-        Hessian,
-        max_loglike_value,
-        Target(loglike),
-        dTarget(loglike),
-        d2Target(loglike),
-        1e-5,
-        error_message);
-    if (ok) {
-      unvectorize_params(parameters, true);
-      MLE_Model::set_status(SUCCESS, error_message);
-    } else {
-      MLE_Model::set_status(FAILURE, error_message);
-    }
+    Vector gradient;
+    Matrix Hessian;
+    mle_result(gradient, Hessian);
   }
 
   double d2LoglikeModel::mle_result(Vec &gradient, Mat &Hessian){

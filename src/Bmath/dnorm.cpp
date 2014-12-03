@@ -37,12 +37,12 @@
  *
  *  SYNOPSIS
  *
- *	double dnorm4(double x, double mu, double sigma, int give_log)
- *	      {dnorm (..) is synonymous and preferred inside R}
+ *      double dnorm4(double x, double mu, double sigma, int give_log)
+ *            {dnorm (..) is synonymous and preferred inside R}
  *
  *  DESCRIPTION
  *
- *	Compute the density of the normal distribution.
+ *      Compute the density of the normal distribution.
  */
 
 #include "nmath.hpp"
@@ -53,15 +53,15 @@ double dnorm(double x, double mu, double sigma, int give_log)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(mu) || ISNAN(sigma))
-	return x + mu + sigma;
+        return x + mu + sigma;
 #endif
     if (sigma <= 0) ML_ERR_return_NAN;
 
     x = (x - mu) / sigma;
 
     return (give_log ?
-	    -(M_LN_SQRT_2PI  +	0.5 * x * x + log(sigma)) :
-	    M_1_SQRT_2PI * exp(-0.5 * x * x)  /	  sigma);
+            -(M_LN_SQRT_2PI  +  0.5 * x * x + log(sigma)) :
+            M_1_SQRT_2PI * exp(-0.5 * x * x)  /   sigma);
     /* M_1_SQRT_2PI = 1 / sqrt(2 * pi) */
 }
 }

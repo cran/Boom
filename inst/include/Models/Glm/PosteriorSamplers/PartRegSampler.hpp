@@ -32,15 +32,6 @@ namespace BOOM{
     typedef std::map<Selector,uint> ModelCount;
     typedef std::pair<Selector,double> Mlike;
 
-    // read the data from a file
-    PartRegSampler(uint Npart,
-		   const string &data_fname,
-		   const Vec & prior_mean,
-		   const Spd & prior_ivar,
-		   double prior_df,
-		   double prior_sigma_guess,
-		   double inc_prob);
-
     // user supplies sufficient statistics
     PartRegSampler(uint Npart,
 		   const Spd & xtx,
@@ -109,9 +100,6 @@ namespace BOOM{
     ModelCount model_counts_;
 
     double compute_log_model_prob(const Selector &g)const;
-    Vec get_prior_mean(const string &fname);
-    Spd get_prior_ivar(const string &fname);
-    Ptr<NeRegSuf> get_reg_suf(const string & fname);
     void mcmc_one_var(Selector &mod);
     void mcmc_all_vars(Selector &mod);
     void mcmc_one_flip(Selector &mod, uint which_var);

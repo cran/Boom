@@ -70,8 +70,8 @@ double rnbinom(double n /* size */, double p /* prob */){
 double rnbinom_mt(RNG & rng, double n /* size */, double p /* prob */)
 {
     if(!R_FINITE(n) || !R_FINITE(p) || n <= 0 || p <= 0 || p > 1)
-	/* p = 1 is ok, PR#1218 */
-	ML_ERR_return_NAN;
+        /* p = 1 is ok, PR#1218 */
+        ML_ERR_return_NAN;
 
     return rpois_mt(rng, rgamma_mt(rng, n, (1 - p) / p));
 }

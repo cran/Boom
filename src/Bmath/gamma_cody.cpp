@@ -16,11 +16,11 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-/* From http://www.netlib.org/specfun/gamma	Fortran translated by f2c,...
- *	------------------------------#####	Martin Maechler, ETH Zurich
+/* From http://www.netlib.org/specfun/gamma     Fortran translated by f2c,...
+ *      ------------------------------#####     Martin Maechler, ETH Zurich
  *
- *=========== was part of	ribesl (Bessel I(.))
- *===========			~~~~~~
+ *=========== was part of       ribesl (Bessel I(.))
+ *===========                   ~~~~~~
  */
 #include "nmath.hpp"
 namespace Rmath{
@@ -31,7 +31,7 @@ namespace Rmath{
     This routine calculates the GAMMA function for a float argument X.
     Computation is based on an algorithm outlined in reference [1].
     The program uses rational functions that approximate the GAMMA
-    function to at least 20 significant decimal digits.	Coefficients
+    function to at least 20 significant decimal digits. Coefficients
     for the approximation over the interval (1,2) are unpublished.
     Those for the approximation for X >= 12 are from reference [2].
     The accuracy achieved depends on the arithmetic system, the
@@ -43,7 +43,7 @@ namespace Rmath{
     Error returns
 
     The program returns the value XINF for singularities or
-    when overflow would occur.	 The computation is believed
+    when overflow would occur.   The computation is believed
     to be free of underflow and overflow.
 
     Intrinsic functions required are:
@@ -75,44 +75,44 @@ namespace Rmath{
 
     Explanation of machine-dependent constants
 
-    beta	- radix for the floating-point representation
+    beta        - radix for the floating-point representation
     maxexp - the smallest positive power of beta that overflows
-    XBIG	- the largest argument for which GAMMA(X) is representable
+    XBIG        - the largest argument for which GAMMA(X) is representable
     in the machine, i.e., the solution to the equation
     GAMMA(XBIG) = beta**maxexp
-    XINF	- the largest machine representable floating-point number;
+    XINF        - the largest machine representable floating-point number;
     approximately beta**maxexp
-    EPS	- the smallest positive floating-point number such that  1.0+EPS > 1.0
+    EPS - the smallest positive floating-point number such that  1.0+EPS > 1.0
     XMININ - the smallest positive floating-point number such that
     1/XMININ is machine representable
 
     Approximate values for some important machines are:
 
-    beta	      maxexp	     XBIG
+    beta              maxexp         XBIG
 
-    CRAY-1		(S.P.)	      2		8191	    966.961
+    CRAY-1              (S.P.)        2         8191        966.961
     Cyber 180/855
-    under NOS	(S.P.)	      2		1070	    177.803
+    under NOS   (S.P.)        2         1070        177.803
     IEEE (IBM/XT,
-    SUN, etc.)	(S.P.)	      2		 128	    35.040
+    SUN, etc.)  (S.P.)        2          128        35.040
     IEEE (IBM/XT,
-    SUN, etc.)	(D.P.)	      2		1024	    171.624
-    IBM 3033	(D.P.)	     16		  63	    57.574
-    VAX D-Format	(D.P.)	      2		 127	    34.844
-    VAX G-Format	(D.P.)	      2		1023	    171.489
+    SUN, etc.)  (D.P.)        2         1024        171.624
+    IBM 3033    (D.P.)       16           63        57.574
+    VAX D-Format        (D.P.)        2          127        34.844
+    VAX G-Format        (D.P.)        2         1023        171.489
 
-    XINF	 EPS	    XMININ
+    XINF         EPS        XMININ
 
-    CRAY-1		(S.P.)	 5.45E+2465   7.11E-15	  1.84E-2466
+    CRAY-1              (S.P.)   5.45E+2465   7.11E-15    1.84E-2466
     Cyber 180/855
-    under NOS	(S.P.)	 1.26E+322    3.55E-15	  3.14E-294
+    under NOS   (S.P.)   1.26E+322    3.55E-15    3.14E-294
     IEEE (IBM/XT,
-    SUN, etc.)	(S.P.)	 3.40E+38     1.19E-7	  1.18E-38
+    SUN, etc.)  (S.P.)   3.40E+38     1.19E-7     1.18E-38
     IEEE (IBM/XT,
-    SUN, etc.)	(D.P.)	 1.79D+308    2.22D-16	  2.23D-308
-    IBM 3033	(D.P.)	 7.23D+75     2.22D-16	  1.39D-76
-    VAX D-Format	(D.P.)	 1.70D+38     1.39D-17	  5.88D-39
-    VAX G-Format	(D.P.)	 8.98D+307    1.11D-16	  1.12D-308
+    SUN, etc.)  (D.P.)   1.79D+308    2.22D-16    2.23D-308
+    IBM 3033    (D.P.)   7.23D+75     2.22D-16    1.39D-76
+    VAX D-Format        (D.P.)   1.70D+38     1.39D-17    5.88D-39
+    VAX G-Format        (D.P.)   8.98D+307    1.11D-16    1.12D-308
 
     *******************************************************************
 
@@ -163,18 +163,18 @@ namespace Rmath{
     y = x;
     if (y <= 0.) {
       /* -------------------------------------------------------------
-	 Argument is negative
-	 ------------------------------------------------------------- */
+         Argument is negative
+         ------------------------------------------------------------- */
       y = -x;
       yi = ftrunc(y);
       res = y - yi;
       if (res != 0.) {
-	if (yi != ftrunc(yi * .5) * 2.)
-	  parity = (1);
-	fact = -M_PI / sin(M_PI * res);
-	y += 1.;
+        if (yi != ftrunc(yi * .5) * 2.)
+          parity = (1);
+        fact = -M_PI / sin(M_PI * res);
+        y += 1.;
       } else {
-	return(BOOM::infinity());
+        return(BOOM::infinity());
       }
     }
     /* -----------------------------------------------------------------
@@ -182,68 +182,68 @@ namespace Rmath{
        -----------------------------------------------------------------*/
     if (y < numeric_limits<double>::epsilon()) {
       /* --------------------------------------------------------------
-	 Argument < EPS
-	 -------------------------------------------------------------- */
+         Argument < EPS
+         -------------------------------------------------------------- */
       if (y >= numeric_limits<double>::min()) {
-	res = 1. / y;
+        res = 1. / y;
       } else {
-	return(BOOM::infinity());
+        return(BOOM::infinity());
       }
     } else if (y < 12.) {
       yi = y;
       if (y < 1.) {
-	/* ---------------------------------------------------------
-	   EPS < argument < 1
-	   --------------------------------------------------------- */
-	z = y;
-	y += 1.;
+        /* ---------------------------------------------------------
+           EPS < argument < 1
+           --------------------------------------------------------- */
+        z = y;
+        y += 1.;
       } else {
-	/* -----------------------------------------------------------
-	   1 <= argument < 12, reduce argument if necessary
-	   ----------------------------------------------------------- */
-	n = (long) y - 1;
-	y -= (double) n;
-	z = y - 1.;
+        /* -----------------------------------------------------------
+           1 <= argument < 12, reduce argument if necessary
+           ----------------------------------------------------------- */
+        n = (long) y - 1;
+        y -= (double) n;
+        z = y - 1.;
       }
       /* ---------------------------------------------------------
-	 Evaluate approximation for 1. < argument < 2.
-	 ---------------------------------------------------------*/
+         Evaluate approximation for 1. < argument < 2.
+         ---------------------------------------------------------*/
       xnum = 0.;
       xden = 1.;
       for (i = 0; i < 8; ++i) {
-	xnum = (xnum + p[i]) * z;
-	xden = xden * z + q[i];
+        xnum = (xnum + p[i]) * z;
+        xden = xden * z + q[i];
       }
       res = xnum / xden + 1.;
       if (yi < y) {
-	/* --------------------------------------------------------
-	   Adjust result for case  0. < argument < 1.
-	   -------------------------------------------------------- */
-	res /= yi;
+        /* --------------------------------------------------------
+           Adjust result for case  0. < argument < 1.
+           -------------------------------------------------------- */
+        res /= yi;
       } else if (yi > y) {
-	/* ----------------------------------------------------------
-	   Adjust result for case  2. < argument < 12.
-	   ---------------------------------------------------------- */
-	for (i = 0; i < n; ++i) {
-	  res *= y;
-	  y += 1.;
-	}
+        /* ----------------------------------------------------------
+           Adjust result for case  2. < argument < 12.
+           ---------------------------------------------------------- */
+        for (i = 0; i < n; ++i) {
+          res *= y;
+          y += 1.;
+        }
       }
     } else {
       /* -------------------------------------------------------------
-	 Evaluate for argument >= 12.,
-	 ------------------------------------------------------------- */
+         Evaluate for argument >= 12.,
+         ------------------------------------------------------------- */
       if (y <= xbig) {
-	ysq = y * y;
-	sum = c[6];
-	for (i = 0; i < 6; ++i) {
-	  sum = sum / ysq + c[i];
-	}
-	sum = sum / y - y + sqrtpi;
-	sum += (y - .5) * log(y);
-	res = exp(sum);
+        ysq = y * y;
+        sum = c[6];
+        for (i = 0; i < 6; ++i) {
+          sum = sum / ysq + c[i];
+        }
+        sum = sum / y - y + sqrtpi;
+        sum += (y - .5) * log(y);
+        res = exp(sum);
       } else {
-	return(BOOM::infinity());
+        return(BOOM::infinity());
       }
     }
     /* ----------------------------------------------------------------------

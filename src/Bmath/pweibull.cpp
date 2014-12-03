@@ -48,18 +48,18 @@ double pweibull(double x, double shape, double scale, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(shape) || ISNAN(scale))
-	return x + shape + scale;
+        return x + shape + scale;
 #endif
     if(shape <= 0 || scale <= 0) ML_ERR_return_NAN;
 
     if (x <= 0)
-	return R_DT_0;
+        return R_DT_0;
     x = -pow(x / scale, shape);
     if (lower_tail)
-	return (log_p
-		/* log(1 - exp(x))  for x < 0 : */
-		? (x > -M_LN2 ? log(-expm1(x)) : log1p(-exp(x)))
-		: -expm1(x));
+        return (log_p
+                /* log(1 - exp(x))  for x < 0 : */
+                ? (x > -M_LN2 ? log(-expm1(x)) : log1p(-exp(x)))
+                : -expm1(x));
     /* else:  !lower_tail */
     return R_D_exp(x);
 }

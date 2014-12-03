@@ -31,7 +31,6 @@
 #include <vector>
 #include <stdexcept>
 #include <LinAlg/Types.hpp>
-#include <stats/Design.hpp>
 #include <cpputil/Ptr.hpp>
 
 namespace BOOM{
@@ -168,12 +167,12 @@ namespace BOOM{
   //------------------------------------------------------------
   uint DataTable::nvars()const{ return vtypes.size();}
 
-  DesignMatrix DataTable::design(bool add_int)const{
+  LabeledMatrix DataTable::design(bool add_int)const{
     std::vector<bool> include(nvars(),true);
     return design(include, add_int);  }
 
   //------------------------------------------------------------
-  DesignMatrix DataTable::design
+  LabeledMatrix DataTable::design
   (const std::vector<bool> &include, bool add_int)const{
 
     if(include.size()!=nvars())
@@ -204,7 +203,6 @@ namespace BOOM{
           }else unknown_type(); }}}  //--- done filling matrix
 
     std::vector<string> dimnames;
-    std::vector<string> basenames;
     if(add_int) dimnames.push_back("Intercept");
     for(uint j=0; j<nvars(); ++j){
       if(include[j]){
@@ -214,15 +212,14 @@ namespace BOOM{
           string stub=vnames_[j];
           const Ptr<CategoricalData> x(cat_vars[j][0]);
           std::vector<string> labs = x->labels();
-          basenames.push_back(stub + ":" + labs[0]);
           for(uint i = 1; i<labs.size(); ++i)
             dimnames.push_back(stub+":"+labs[i]);}}}
 
-    return DesignMatrix(X,dimnames, basenames);
+    return LabeledMatrix(X, std::vector<std::string>(), dimnames);
   }
 
   //----------------------------------------------------------------------
-  DesignMatrix DataTable::design
+  LabeledMatrix DataTable::design
   (std::vector<uint> indx, bool add_int, uint count_from)const{
 
     uint n=nobs();
@@ -253,7 +250,6 @@ namespace BOOM{
 
     std::vector<string> dimnames;
     if(add_int) dimnames.push_back("Intercept");
-    std::vector<string> basenames;
     for(uint j=0; j<indx.size(); ++j){
       uint J = indx[j];
       if(vtypes[J]==continuous) dimnames.push_back(vnames_[J]);
@@ -261,10 +257,9 @@ namespace BOOM{
         const Ptr<CategoricalData> x(cat_vars[J][0]);
         string stub = vnames_[J];
         std::vector<string> labs = x->labels();
-        basenames.push_back(stub+":"+labs[0]);
         for(uint i=1; i<labs.size(); ++i)
           dimnames.push_back(stub+":"+labs[i]);}}
-    return DesignMatrix(X, dimnames, basenames);
+    return LabeledMatrix(X, std::vector<std::string>(), dimnames);
   }
 
   //============================================================

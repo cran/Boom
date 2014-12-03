@@ -48,18 +48,18 @@
  *
  *    [1] Shape parameter a >= 1.  Algorithm GD in:
  *
- *	  Ahrens, J.H. and Dieter, U. (1982).
- *	  Generating gamma variates by a modified
- *	  rejection technique.
- *	  Comm. ACM, 25, 47-54.
+ *        Ahrens, J.H. and Dieter, U. (1982).
+ *        Generating gamma variates by a modified
+ *        rejection technique.
+ *        Comm. ACM, 25, 47-54.
  *
  *
  *    [2] Shape parameter 0 < a < 1. Algorithm GS in:
  *
- *	  Ahrens, J.H. and Dieter, U. (1974).
- *	  Computer methods for sampling from gamma, beta,
- *	  poisson and binomial distributions.
- *	  Computing, 12, 223-246.
+ *        Ahrens, J.H. and Dieter, U. (1974).
+ *        Computer methods for sampling from gamma, beta,
+ *        poisson and binomial distributions.
+ *        Computing, 12, 223-246.
  *
  *    Input: a = parameter (mean) of the standard gamma distribution.
  *    Output: a variate from the gamma(a)-distribution
@@ -140,7 +140,7 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
 
   /* Step 1: Recalculations of s2, s, d if a has changed */
   //     if (a != aa) {
-  // 	aa = a;
+  //    aa = a;
   s2 = a - 0.5;
   s = sqrt(s2);
   d = sqrt32 - s * 12.0;
@@ -163,7 +163,7 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
   /* Step 4: recalculations of q0, b, si, c if necessary */
 
   //     if (a != aaa) {
-  // 	aaa = a;
+  //    aaa = a;
   r = 1.0 / a;
   q0 = ((((((q7 * r + q6) * r + q5) * r + q4) * r + q3) * r
          + q2) * r + q1) * r;
@@ -205,8 +205,8 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
 
   repeat {
     /* Step 8: e = standard exponential deviate
-     *	u =  0,1 -uniform deviate
-     *	t = (b,si)-double exponential (laplace) sample */
+     *  u =  0,1 -uniform deviate
+     *  t = (b,si)-double exponential (laplace) sample */
     e = exp_rand(rng);
     u = rng();
     u = u + u - 1.0;
@@ -214,9 +214,9 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
       t = b - si * e;
     else
       t = b + si * e;
-    /* Step	 9:  rejection if t < tau(1) = -0.71874483771719 */
+    /* Step      9:  rejection if t < tau(1) = -0.71874483771719 */
     if (t >= -0.71874483771719) {
-      /* Step 10:	 calculation of v and quotient q */
+      /* Step 10:        calculation of v and quotient q */
       v = t / (s + s);
       if (fabs(v) <= 0.25)
         q = q0 + 0.5 * t * t *
@@ -224,7 +224,7 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
               + a2) * v + a1) * v;
       else
         q = q0 - s * t + 0.25 * t * t + (s2 + s2) * log(1.0 + v);
-      /* Step 11:	 hat acceptance (h) */
+      /* Step 11:        hat acceptance (h) */
       /* (if q not positive go to step 8) */
       if (q > 0.0) {
         w = expm1(q);

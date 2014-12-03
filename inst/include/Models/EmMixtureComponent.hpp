@@ -24,7 +24,7 @@
 namespace BOOM{
   class EmMixtureComponent:
       virtual public MixtureComponent,
-      virtual public MLE_Model{
+      public MLE_Model {
   public:
     virtual EmMixtureComponent * clone()const=0;
     virtual void add_mixture_data(Ptr<Data>, double wgt)=0;

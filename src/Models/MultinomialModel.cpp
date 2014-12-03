@@ -136,7 +136,6 @@ namespace BOOM{
 
   MM::MultinomialModel(const MM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       ConjPriorPolicy(rhs),
@@ -168,11 +167,10 @@ namespace BOOM{
 
   uint MM::size()const{return pi().size();}
 
-  double MM::loglike()const{
+  double MM::loglike(const Vector &probs)const{
     double ans(0.0);
     const Vec &n(suf()->n());
-    const Vec &p(pi());
-    for(uint i=0; i<size(); ++i)ans+= n[i]*log(p[i]);
+    for(uint i=0; i<size(); ++i)ans+= n[i]*log(probs[i]);
     return ans;
   }
 

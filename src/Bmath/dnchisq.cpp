@@ -54,18 +54,18 @@ double dnchisq(double x, double df, double lambda, int give_log)
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(df) || ISNAN(lambda))
-	return x + df + lambda;
+        return x + df + lambda;
 #endif
     if (lambda < 0 || df <= 0) ML_ERR_return_NAN;
 
     if (!R_FINITE(df) || !R_FINITE(lambda))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if(x < 0) return R_D__0;
 
 
     if(lambda == 0)
-	return dchisq(x, df, give_log);
+        return dchisq(x, df, give_log);
 
     lambda2 = 0.5 * lambda;
 
@@ -81,25 +81,25 @@ double dnchisq(double x, double df, double lambda, int give_log)
     i = imax;
     df = dfmid;
     do {
-	i++;
-	q = x * lambda2 / i / df;
-	df += 2;
-	term = q * term;
-	sum += term;
-	errorbound = term * q / (1-q);
+        i++;
+        q = x * lambda2 / i / df;
+        df += 2;
+        term = q * term;
+        sum += term;
+        errorbound = term * q / (1-q);
     } while (errorbound > eps || q >= 1);
     /* lower tail */
     term = mid;
     df = dfmid;
     i = imax;
     while ( i ){
-	df -= 2;
-	q = i * df / x / lambda2;
-	i--;
-	term = q * term;
-	sum += term;
-	errorbound = term * q / (1-q);
-	if (errorbound <= eps && q < 1) break;
+        df -= 2;
+        q = i * df / x / lambda2;
+        i--;
+        term = q * term;
+        sum += term;
+        errorbound = term * q / (1-q);
+        if (errorbound <= eps && q < 1) break;
     }
     return R_D_val(sum);
 }

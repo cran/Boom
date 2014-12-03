@@ -66,7 +66,8 @@ namespace BOOM{
         Ptr<VariableSelectionPrior> vpri,
         int clt_threshold,
         double tdf,
-        int max_chunk_size,
+        int max_tim_chunk_size,
+        int max_rwm_chunk_size = 1,
         double rwm_variance_scale_factor = 1.0);
     virtual void draw();
     void rwm_draw();
@@ -75,7 +76,9 @@ namespace BOOM{
     // Draw the specified chunk using a random walk proposal.
     void rwm_draw_chunk(int chunk);
 
-    BinomialLogitLogPostChunk log_posterior(int chunk)const;
+    BinomialLogitLogPostChunk log_posterior(
+        int chunk_number,
+        int max_chunk_size)const;
 
     ostream & time_report(ostream &out)const;
 
@@ -83,7 +86,8 @@ namespace BOOM{
     BinomialLogitModel *m_;
     Ptr<MvnBase> pri_;
     double tdf_;
-    int max_chunk_size_;
+    int max_tim_chunk_size_;
+    int max_rwm_chunk_size_;
     double rwm_variance_scale_factor_;
 
     int auxmix_tries_;
@@ -106,8 +110,8 @@ namespace BOOM{
     double tim_mode_finding_wasted_time_;
 
     // Compute the size of the largest chunk
-    int compute_chunk_size()const;
-    int compute_number_of_chunks()const;
+    int compute_chunk_size(int max_chunk_size)const;
+    int compute_number_of_chunks(int max_chunk_size)const;
   };
 }
 #endif //  BOOM_BINOMIAL_LOGIT_COMPOSITE_SPIKE_SLAB_SAMPLER_HPP_

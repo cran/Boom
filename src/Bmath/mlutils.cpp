@@ -48,8 +48,8 @@ void ml_error(int n)
     switch(n) {
 
     case ME_NONE:
-	errno = 0;
-	break;
+        errno = 0;
+        break;
 
     case ME_DOMAIN:
       report_error("Bmath domain error");
@@ -86,10 +86,10 @@ int R_IsNaNorNA(double x)
 
 /* Include the header file defining finite() */
 #ifdef HAVE_IEEE754_H
-# include <ieee754.h>		/* newer Linuxen */
+# include <ieee754.h>           /* newer Linuxen */
 #else
 # ifdef HAVE_IEEEFP_H
-#  include <ieeefp.h>		/* others [Solaris 2.5.x], .. */
+#  include <ieeefp.h>           /* others [Solaris 2.5.x], .. */
 # endif
 #endif
 #if defined(Win32) && defined(_MSC_VER)
@@ -142,7 +142,7 @@ static double myfmod(double x1, double x2)
 }
 
 #ifdef HAVE_WORKING_LOG
-# define R_log	log
+# define R_log  log
 #else
 double R_log(double x) { return(x > 0 ? log(x) : x < 0 ? numeric_limits<double>::quiet_NaN() : BOOM::negative_infinity()); }
 #endif
@@ -150,41 +150,41 @@ double R_log(double x) { return(x > 0 ? log(x) : x < 0 ? numeric_limits<double>:
 double R_pow(double x, double y) /* = x ^ y */
 {
     if(x == 1. || y == 0.)
-	return(1.);
+        return(1.);
     if(x == 0.) {
-	if(y > 0.) return(0.);
-	/* y < 0 */return(BOOM::infinity());
+        if(y > 0.) return(0.);
+        /* y < 0 */return(BOOM::infinity());
     }
     if (R_FINITE(x) && R_FINITE(y))
-	return(pow(x,y));
+        return(pow(x,y));
     if (ISNAN(x) || ISNAN(y)) {
 #ifdef IEEE_754
-	return(x + y);
+        return(x + y);
 #else
-	return(
-	       // NA_REAL
-	       numeric_limits<double>::quiet_NaN()
-	       );
+        return(
+               // NA_REAL
+               numeric_limits<double>::quiet_NaN()
+               );
 #endif
     }
     if(!R_FINITE(x)) {
-	if(x > 0)		/* Inf ^ y */
-	    return((y < 0.)? 0. : BOOM::infinity());
-	else {			/* (-Inf) ^ y */
-	    if(R_FINITE(y) && y == FLOOR(y)) /* (-Inf) ^ n */
-		return((y < 0.) ? 0. : (myfmod(y,2.) ? x  : -x));
-	}
+        if(x > 0)               /* Inf ^ y */
+            return((y < 0.)? 0. : BOOM::infinity());
+        else {                  /* (-Inf) ^ y */
+            if(R_FINITE(y) && y == FLOOR(y)) /* (-Inf) ^ n */
+                return((y < 0.) ? 0. : (myfmod(y,2.) ? x  : -x));
+        }
     }
     if(!R_FINITE(y)) {
-	if(x >= 0) {
-	    if(y > 0)		/* y == +Inf */
-		return((x >= 1)? BOOM::infinity() : 0.);
-	    else		/* y == -Inf */
-		return((x < 1) ? BOOM::infinity() : 0.);
-	}
+        if(x >= 0) {
+            if(y > 0)           /* y == +Inf */
+                return((x >= 1)? BOOM::infinity() : 0.);
+            else                /* y == -Inf */
+                return((x < 1) ? BOOM::infinity() : 0.);
+        }
     }
-    return(numeric_limits<double>::quiet_NaN());		/* all other cases: (-Inf)^{+-Inf,
-				   non-int}; (neg)^{+-Inf} */
+    return(numeric_limits<double>::quiet_NaN());                /* all other cases: (-Inf)^{+-Inf,
+                                   non-int}; (neg)^{+-Inf} */
 }
 
 double R_pow_di(double x, int n)
@@ -193,12 +193,12 @@ double R_pow_di(double x, int n)
 
     if (ISNAN(x)) return x;
     if (n != 0) {
-	if (!R_FINITE(x)) return R_pow(x, (double)n);
-	if (n < 0) { n = -n; x = 1/x; }
-	for(;;) {
-	    if(n & 01) pow *= x;
-	    if(n >>= 1) x *= x; else break;
-	}
+        if (!R_FINITE(x)) return R_pow(x, (double)n);
+        if (n < 0) { n = -n; x = 1/x; }
+        for(;;) {
+            if(n & 01) pow *= x;
+            if(n >>= 1) x *= x; else break;
+        }
     }
     return pow;
 }

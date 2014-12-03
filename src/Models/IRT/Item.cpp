@@ -65,9 +65,7 @@ namespace BOOM{
 
     Item::Item(const Item &rhs)
       : Model(rhs),
-        MLE_Model(rhs),
 	DataPolicy(rhs),
-	LoglikeModel(rhs),
 	subscales_(rhs.subscales_),
 	id_(rhs.id_),
 	possible_responses_(rhs.possible_responses_)

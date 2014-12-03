@@ -405,7 +405,6 @@ namespace BOOM{
   MarkovModel::MarkovModel(const MarkovModel &rhs)
     : Model(rhs),
       DataInfoPolicy(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       ConjPriorPolicy(rhs),
@@ -503,9 +502,12 @@ namespace BOOM{
   }
 
 
-  double MarkovModel::loglike()const{
+  double MarkovModel::loglike(const Vector &serialized_params)const{
     const Vec &icount(suf()->init());
     const Mat &tcount(suf()->trans());
+
+    int S = state_space_size();
+    TransitionProbabilityMatrix transition_probabilities(S);
 
     Vec logpi0(log(pi0()));
     Mat logQ(log(Q()));

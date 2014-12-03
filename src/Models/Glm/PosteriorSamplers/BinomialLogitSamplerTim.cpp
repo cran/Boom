@@ -30,12 +30,18 @@ BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
         sam_(boost::bind(&BLST::logp, this, _1),
              boost::bind(&BLST::dlogp, this, _1, _2),
              boost::bind(&BLST::d2logp, this, _1, _2, _3),
-             nu)
+             nu),
+        save_modes_(mode_is_stable)
   {
     if(mode_is_stable) sam_.fix_mode();
   }
 
   void BLST::draw(){
+    if (save_modes_) {
+      const Selector &inc(m_->inc());
+      const Mode &mode(locate_mode(inc));
+      sam_.set_mode(mode.location, mode.precision);
+    }
     Vector beta = sam_.draw(m_->included_coefficients());
     m_->set_included_coefficients(beta);
   }
@@ -67,4 +73,16 @@ BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
     return Logp(beta, g, h, 2);
   }
 
-}
+  const BLST::Mode & BLST::locate_mode(const Selector &inc) {
+    Mode &mode(modes_[inc]);
+    if (mode.empty()) {
+      bool ok = sam_.locate_mode(m_->included_coefficients());
+      if (ok) {
+        mode.location = sam_.mode();
+        mode.precision = sam_.ivar();
+      }
+    }
+    return mode;
+  }
+
+}  // namespace BOOM

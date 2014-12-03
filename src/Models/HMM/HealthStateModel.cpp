@@ -75,7 +75,6 @@ namespace BOOM{
         DataPolicy(rhs),
         ParamPolicy(rhs),
         PriorPolicy(rhs),
-        LoglikeModel(rhs),
         one_(rhs.one_)
   {
     for(int i = 0; i < rhs.mix_.size(); ++i){

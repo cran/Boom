@@ -25,21 +25,22 @@
 #include <distributions.hpp>
 #include <numopt.hpp>
 
-// shamelessly adapted from R by Steven Scott.
+// Shamelessly adapted from R by Steven Scott.  The original comment
+// below mentions an argument 'trace', which I removed.
 
 namespace BOOM{
   const double E1 =  1.7182818;  /* exp(1.0)-1.0 */
   const double big =  1.0e+35;    /*a very large number*/
 
   double simulated_annealing(Vec & pb, Target target, int maxit,
-			     int tmax, double ti, bool){
+			     int tmax, double ti){
 
-    /* Given a starting point pb[0..n-1], simulated annealing minimization
-       is performed on the function fminfn. The starting temperature
-       is input as ti. To make sann work silently set trace to zero.
-       sann makes in total maxit function evaluations, tmax
-       evaluations at each temperature. Returned quantities are pb
-       (the location of the minimum), and yb (the minimum value of
+    /* Given a starting point pb[0..n-1], simulated annealing
+       minimization is performed on the function fminfn. The starting
+       temperature is input as ti. To make sann work silently set
+       trace to zero.  sann makes in total maxit function evaluations,
+       tmax evaluations at each temperature. Returned quantities are
+       pb (the location of the minimum), and yb (the minimum value of
        the function func).  Author: Adrian Trapletti
     */
     long i, j;
@@ -51,20 +52,11 @@ namespace BOOM{
     Vec p(n);
     Vec dp(n);
     Vec ptry(n);
-    //    p = vect (n); dp = vect (n); ptry = vect (n);
-    //    GetRNGstate();
-    //    *yb = fminfn (n, pb, ex);  /* init best system state pb, *yb */
     double yb = target(pb);
-    //    if (!R_FINITE(*yb)) *yb = big;
     if(!std::isfinite(yb)) yb = big;
 
     for (j = 0; j < n; j++) p[j] = pb[j];
     y = yb;  /* init system state p, y */
-    //     if (trace)
-    //       {
-    // 	Rprintf ("sann objective function values\n");
-    // 	Rprintf ("initial       value %f\n", yb);
-    //       }
     scale = 1.0/ti;
     its = itdoc = 1;
     while (its < maxit) { /* cool down system */
@@ -78,7 +70,6 @@ namespace BOOM{
  	    ptry[i] = p[i] + dp[i];  /* new candidate point */
  	  ytry = target(ptry);         //fminfn (n, ptry, ex);
  	  if(!std::isfinite(ytry)) ytry = big;
- 	  //	    if (!R_FINITE(ytry)) ytry = big;
  	  dy = ytry - y;
  	  if ((dy <= 0.0) || (runif(0,1) < exp(-dy/t))) {  /* accept new point? */
  	    for (j = 0; j < n; j++) p[j] = ptry[j];

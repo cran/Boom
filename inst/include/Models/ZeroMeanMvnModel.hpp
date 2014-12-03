@@ -46,7 +46,7 @@ namespace BOOM{
     virtual double ldsi()const;
 
     virtual void mle();
-    virtual double loglike()const;
+    virtual double loglike(const Vector &siginv_triangle)const;
     virtual double pdf(Ptr<Data>, bool logscale)const;
 
     Ptr<SpdParams> Sigma_prm();

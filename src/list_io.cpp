@@ -281,6 +281,7 @@ namespace BOOM {
     VectorListElement::stream();
     beta_ = coefs_->Beta();
     coefs_->set_Beta(beta_);
+    coefs_->infer_sparsity();
   }
 
   //======================================================================

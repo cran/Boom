@@ -17,6 +17,7 @@
 */
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/GaussianModelBase.hpp>
 #include <Models/GammaModel.hpp>
 
@@ -39,6 +40,7 @@ namespace BOOM{
     std::vector<GaussianModelBase*> models_;
     Ptr<UnivParams> sigsq_;
     Ptr<GammaModelBase> pri_;
+    GenericGaussianVarianceSampler sigsq_sampler_;
   };
 
 }

@@ -20,6 +20,7 @@
 #define BOOM_MVN_INDEPENDENT_VARIANCE_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/MvnModel.hpp>
 #include <vector>
@@ -33,14 +34,14 @@ namespace BOOM {
     MvnIndependentVarianceSampler(
         MvnModel *model,
         const std::vector<Ptr<GammaModelBase> > &siginv_priors,
-        const Vec & upper_sigma_truncation_point);
+        const Vec & sigma_max_values);
     void draw();
     double logpri()const;
 
    private:
     MvnModel *model_;
     std::vector<Ptr<GammaModelBase> > priors_;
-    std::vector<double> upper_sigma_truncation_point_;
+    std::vector<GenericGaussianVarianceSampler> sigsq_samplers_;
   };
 
 }  // namespace BOOM

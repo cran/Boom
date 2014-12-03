@@ -77,7 +77,9 @@ namespace BOOM{
     void set_mu(const Vec &);
     void set_kappa(double k);
     void mle();
-    double loglike()const;
+    // The argument is a vector with the mean vector first, and then
+    // the proportionalyity facctor 'kappa' second.
+    double loglike(const Vector &mu_kappa)const;
     double pdf(Ptr<Data>, bool)const;
     double pdf(Ptr<DataType>, bool)const;
 

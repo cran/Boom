@@ -19,7 +19,7 @@
 #ifndef BOOM_INDEPENDENT_MVN_MODEL_GIVEN_SCALAR_SIGMA_HPP_
 #define BOOM_INDEPENDENT_MVN_MODEL_GIVEN_SCALAR_SIGMA_HPP_
 
-#include <Models/MvnBase.hpp>
+#include <Models/MvnGivenScalarSigma.hpp>
 #include <Models/IndependentMvnModel.hpp>
 
 namespace BOOM {
@@ -33,7 +33,7 @@ namespace BOOM {
   // The class stores 'sigsq' using a Ptr, which must be obtained from
   // the linear regression model.
   class IndependentMvnModelGivenScalarSigma
-      : public MvnBase,
+      : public MvnGivenScalarSigmaBase,
         public ParamPolicy_2<VectorParams, VectorParams>,
         public IID_DataPolicy<VectorData>,
         public PriorPolicy
@@ -79,11 +79,11 @@ namespace BOOM {
     virtual double ldsi()const;
     virtual Vector sim()const;
 
+    // unscaled_variance_diagonal() * sigsq() is the diagonal of
+    // Sigma().
     const Vector & unscaled_variance_diagonal()const;
-    double sigsq()const;
-
+    double sd_for_element(int i) const;
    private:
-    Ptr<UnivParams> sigsq_;
     mutable SpdMatrix sigma_scratch_;
   };
 

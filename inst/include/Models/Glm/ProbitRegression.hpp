@@ -35,9 +35,9 @@ namespace BOOM{
   class ProbitRegressionTarget : public d2TargetFun{
    public:
     ProbitRegressionTarget(const ProbitRegressionModel *m);
-    double operator()(const Vec &beta)const;
-    double operator()(const Vec &beta, Vec &g)const;
-    double operator()(const Vec &beta, Vec &g, Mat &h)const;
+    double operator()(const Vector &beta)const;
+    double operator()(const Vector &beta, Vector &g)const;
+    double operator()(const Vector &beta, Vector &g, Matrix &h)const;
    private:
     const ProbitRegressionModel *m_;
   };
@@ -50,8 +50,8 @@ namespace BOOM{
         public PriorPolicy
   {
   public:
-    ProbitRegressionModel(const Vec &beta);
-    ProbitRegressionModel(const Mat &X, const Vec &y);
+    ProbitRegressionModel(const Vector &beta);
+    ProbitRegressionModel(const Matrix &X, const Vector &y);
     ProbitRegressionModel(const ProbitRegressionModel &);
     ProbitRegressionModel *clone()const;
 
@@ -62,19 +62,22 @@ namespace BOOM{
 
     virtual double pdf(dPtr, bool)const;
     virtual double pdf(Ptr<BinaryRegressionData>, bool)const;
-    virtual double pdf(bool y, const Vec &x, bool logscale)const;
+    virtual double pdf(bool y, const Vector &x, bool logscale)const;
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    // The dimension here and in log_likelihood is the number of
+    // included variables.
+    virtual double Loglike(
+        const Vector &beta, Vector &g, Matrix &h, uint nd)const;
 
     // call with *g=0 if you don't want any derivatives.  Call with
     // *g!=0 and *h=0 if you only want first derivatives.
     // if(initialize_derivs) then *g and *h will be set to zero.
-    // Otherwise they will be incremented
-    double log_likelihood(const Vec & beta, Vec *g, Mat *h,
+    // Otherwise they will be incremented.
+    double log_likelihood(const Vector & beta, Vector *g, Matrix *h,
                           bool initialize_derivs = true)const;
     ProbitRegressionTarget log_likelihood_tf()const;
 
-    bool sim(const Vec &x)const;
+    bool sim(const Vector &x)const;
     Ptr<BinaryRegressionData> sim()const;
 
   };

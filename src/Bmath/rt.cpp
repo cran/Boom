@@ -50,15 +50,15 @@ namespace Rmath{
 double rt_mt(BOOM::RNG & rng, double df)
 {
     double num;
-    if (ISNAN(df) || df <= 0.0)	ML_ERR_return_NAN;
+    if (ISNAN(df) || df <= 0.0) ML_ERR_return_NAN;
 
     if(!R_FINITE(df))
-	return norm_rand(rng);
+        return norm_rand(rng);
     else {
 /* Some compilers (including MW6) evaluated this from right to left
-	return norm_rand(rng) / sqrt(rchisq(df) / df); */
-	num = norm_rand(rng);
-	return num / sqrt(rchisq_mt(rng, df) / df);
+        return norm_rand(rng) / sqrt(rchisq(df) / df); */
+        num = norm_rand(rng);
+        return num / sqrt(rchisq_mt(rng, df) / df);
     }
 }
 

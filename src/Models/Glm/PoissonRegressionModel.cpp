@@ -17,7 +17,12 @@
 */
 
 #include <Models/Glm/PoissonRegressionModel.hpp>
+#include <numopt/initialize_derivatives.hpp>
+#include <TargetFun/TargetFun.hpp>
+#include <boost/bind.hpp>
+#include <cpputil/report_error.hpp>
 #include <distributions.hpp>
+#include <numopt.hpp>
 
 namespace BOOM {
 
@@ -47,7 +52,7 @@ namespace BOOM {
 
 
   double PoissonRegressionModel::log_likelihood(
-      const Vec &beta, Vec *g, Mat *h)const{
+      const Vec &beta, Vec *g, Mat *h, bool reset_derivatives)const{
     // L = (E *lambda)^y exp(-E*lambda)
     //   ell = y * (log(E) + log(lambda)) - E*exp(x * beta)
     //       = yXbeta - E*exp(Xbeta)
@@ -55,25 +60,30 @@ namespace BOOM {
     // ddell = -lambda * x * x'
     double ans = 0;
     const std::vector<Ptr<PoissonRegressionData> > &data(dat());
-    if (g) {
-      g->resize(xdim());
-      (*g) = 0.0;
-      if (h) {
-        h->resize(xdim(), xdim());
-        (*h) = 0.0;
-      }
+    const Selector &included(inc());
+    int nvars = included.nvars();
+    if (beta.size() != nvars) {
+      ostringstream err;
+      err << "Error in PoissonRegressionModel::log_likelihood.  Argument beta "
+          << "is of dimension " << beta.size() << " but there are " << nvars
+          << " included predictors." << endl;
+      report_error(err.str());
     }
+    initialize_derivatives(g, h, nvars, reset_derivatives);
 
     for(int i = 0; i < data.size(); ++i){
-      const Vec &x(data[i]->x());
-      double eta = beta.dot(x);
+      const Vector x = included.select(data[i]->x());
       int y = data[i]->y();
-      double lambda = exp(eta);
+      double lambda = 1.0;
+      if (nvars > 0) {
+        double eta = nvars > 0 ? beta.dot(x) : 0.0;
+        lambda = exp(eta);
+      }
       double exposure = data[i]->exposure();
       ans += dpois(y, exposure * lambda, true);
-      if(g){
+      if (g) {
         g->axpy(x, (y - exposure * lambda));
-        if(h){
+        if (h) {
           h->add_outer(x, x, -lambda);
         }
       }
@@ -81,12 +91,36 @@ namespace BOOM {
     return ans;
   }
 
-  double PoissonRegressionModel::Loglike(Vec &g, Mat &h, uint nd)const{
+  double PoissonRegressionModel::Loglike(const Vector &beta,
+                                         Vec &g, Mat &h, uint nd)const{
     Vec *gp = NULL;
     Mat *hp = NULL;
     if (nd > 0) gp = &g;
     if (nd > 1) hp = &h;
-    return log_likelihood(Beta(), gp, hp);
+    return log_likelihood(beta, gp, hp, true);
+  }
+
+  void PoissonRegressionModel::mle() {
+    Vector beta = included_coefficients();
+    d2TargetFunPointerAdapter target(boost::bind(
+        &PoissonRegressionModel::log_likelihood, this, _1, _2, _3, _4));
+    Vector gradient;
+    Matrix hessian;
+    double function_value;
+    std::string error_message;
+    bool ok = max_nd2_careful(beta,
+                              gradient,
+                              hessian,
+                              function_value,
+                              Target(target),
+                              dTarget(target),
+                              d2Target(target),
+                              1e-5,
+                              error_message);
+    if (!ok) {
+      beta = 0;
+    }
+    set_included_coefficients(beta);
   }
 
   double PoissonRegressionModel::pdf(const Data *dp, bool logscale)const{

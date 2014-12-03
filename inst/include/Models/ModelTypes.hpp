@@ -38,7 +38,9 @@ namespace BOOM{
   // If the recommended set of policies are used, to inherit from
   // Model a class must provide:
   //   * clone()   (covariant return)
-
+  //
+  // Any class inheriting from model should do so virtually, because
+  // Model contains a reference count that should not be duplicated.
   class Model : private RefCounted{
   public:
     friend void intrusive_ptr_add_ref(Model *d){d->up_count();}
@@ -88,7 +90,7 @@ namespace BOOM{
   //============= mix-in classes =========================================
 
   // The model has parameters that can be estimated by maximum likelihood.
-  class MLE_Model: virtual public Model{
+  class MLE_Model : virtual public Model {
   public:
     MLE_Model() : status_(NOT_CALLED) {}
     // Set the paramters to their maximum likelihood estimates.
@@ -119,51 +121,59 @@ namespace BOOM{
     }
   };
 
-  class LoglikeModel : virtual public MLE_Model{
+  class LoglikeModel : public MLE_Model {
   public:
-    virtual double loglike()const=0;
+    virtual double loglike(const Vector &theta)const=0;
     virtual LoglikeModel * clone()const=0;
     virtual void mle();
   };
 
   class dLoglikeModel : public LoglikeModel{
   public:
-    virtual double dloglike(Vec &g)const=0;
+    virtual double dloglike(const Vector &x, Vec &g)const=0;
     virtual void mle();
     virtual dLoglikeModel *clone()const=0;
   };
 
   class d2LoglikeModel : public dLoglikeModel{
   public:
-    virtual double d2loglike(Vec &g, Mat &H)const=0;
+    virtual double d2loglike(const Vector &x, Vec &g, Mat &H)const=0;
     virtual void mle();
     virtual double mle_result(Vec &gradient, Mat &hessian);
     virtual d2LoglikeModel *clone()const=0;
   };
+
   class NumOptModel : public d2LoglikeModel{
   public:
-    virtual double Loglike(Vec &g, Mat &H, uint nd)const=0;
-    virtual double loglike()const{ Vec g; Mat h; return Loglike(g,h,0);}
-    virtual double dloglike(Vec &g)const{Mat h; return Loglike(g,h,1);}
-    virtual double d2loglike(Vec &g, Mat &h)const{return Loglike(g,h,2);}
+    virtual double Loglike(const Vector &x, Vec &g, Mat &H, uint nd)const=0;
+    virtual double loglike(const Vector &x)const{
+      Vec g;
+      Mat h;
+      return Loglike(x, g, h, 0);
+    }
+    virtual double dloglike(const Vector &x, Vec &g)const{
+      Mat h;
+      return Loglike(x, g, h, 1);
+    }
+    virtual double d2loglike(const Vector &x, Vec &g, Mat &h)const{
+      return Loglike(x, g, h, 2);
+    }
     virtual NumOptModel * clone()const=0;
   };
   //======================================================================
-  class LatentVariableModel : virtual public Model{
+  class LatentVariableModel {
   public:
     virtual void impute_latent_data(RNG &rng)=0;
     virtual LatentVariableModel * clone()const=0;
   };
   //======================================================================
-  class CorrModel
-    : virtual public Model{
+  class CorrModel : virtual public Model {
   public:
     virtual CorrModel * clone()const=0;
     virtual double logp(const Corr &)const=0;
   };
   //======================================================================
-  class MixtureComponent
-      : virtual public Model{
+  class MixtureComponent : virtual public Model {
    public:
     virtual double pdf(const Data *, bool logscale)const=0;
     virtual MixtureComponent * clone()const=0;

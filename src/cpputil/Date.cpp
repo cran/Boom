@@ -477,7 +477,7 @@ namespace BOOM{
     } else if (ans > 12) {
       ans -= 24;
     }
-#ifndef WIN32
+#ifndef _WIN32
     assert(ans == localtime(&now)->tm_gmtoff / seconds_in_an_hour_);
 #endif
     return ans;

@@ -23,6 +23,7 @@
 namespace BOOM {
   namespace {
     typedef BinomialLogitAuxmixSampler BLAMS;
+    typedef BinomialLogisticRegressionDataImputer BLRDI;
   }  // namespace
 
   BLAMS::SufficientStatistics::SufficientStatistics(int dim)
@@ -56,14 +57,24 @@ namespace BOOM {
     sym_ = false;
   }
 
+  void BLAMS::SufficientStatistics::combine(
+      const BLAMS::SufficientStatistics &rhs) {
+    xtx_ += rhs.xtx_;
+    xty_ += rhs.xty_;
+    sym_ = sym_ && rhs.sym_;
+  }
+
   BLAMS::BinomialLogitAuxmixSampler(BinomialLogitModel *model,
                                     Ptr<MvnBase> prior,
                                     int clt_threshold)
       : model_(model),
-        data_imputer_(new BinomialLogitCltDataImputer(clt_threshold)),
         prior_(prior),
-        suf_(model->xdim())
-  {}
+        suf_(model->xdim()),
+        clt_threshold_(clt_threshold),
+        parallel_data_imputer_(suf_, model_)
+  {
+    set_number_of_workers(1);
+  }
 
   double BLAMS::logpri() const {
     return prior_->logp(model_->Beta());
@@ -75,31 +86,21 @@ namespace BOOM {
   }
 
   void BLAMS::impute_latent_data() {
-    const std::vector<Ptr<BinomialRegressionData> > & data(model_->dat());
-    suf_.clear();
-    for (int i = 0; i < data.size(); ++i) {
-      const BinomialRegressionData &observation(*(data[i]));
-      const Vector &x(observation.x());
-      double eta = model_->predict(x);
-      double sum, weight;
-      try {
-        std::pair<double, double> imputed =
-            data_imputer_->impute(rng(), observation.n(), observation.y(), eta);
-        sum = imputed.first;
-        weight = imputed.second;
-        suf_.update(x, sum, weight);
-      } catch(std::exception &e) {
-        ostringstream err;
-        err << "BinomialLogitAuxmixSampler::impute_latent_data "
-            << "caught an exception "
-            << "with the following message:"
-            << e.what() << endl
-            << "n   = " << observation.n() << endl
-            << "y   = " << observation.y() << endl
-            << "eta = " << eta << endl;
-        report_error(err.str());
-      }
+    suf_ = parallel_data_imputer_.impute();
+  }
+
+  void BLAMS::set_number_of_workers(int n) {
+    if (n < 1) {
+      report_error("At least one data impute worker is needed.");
     }
+    parallel_data_imputer_.clear_workers();
+    for (int i = 0; i < n; ++i) {
+      parallel_data_imputer_.add_worker(
+          new BinomialLogisticRegressionDataImputer(
+              clt_threshold_,
+              model_->coef_prm().get()));
+    }
+    parallel_data_imputer_.assign_data();
   }
 
   void BLAMS::draw_params() {
@@ -109,15 +110,41 @@ namespace BOOM {
     model_->set_Beta(draw);
   }
 
-  void BLAMS::set_augmentation_method(ImputationMethod method,
-                                      int clt_threshold) {
-    if (method == Full) {
-      data_imputer_.reset(
-          new BinomialLogitCltDataImputer(clt_threshold));
-    } else if (method == Partial) {
-      data_imputer_.reset(
-          new BinomialLogitPartialAugmentationDataImputer(clt_threshold));
+  //======================================================================
+
+  BLRDI::BinomialLogisticRegressionDataImputer(int clt_threshold,
+                                               const GlmCoefs *coef)
+      : latent_data_imputer_(clt_threshold),
+        coefficients_(coef)
+  {}
+
+  void BLRDI::impute_latent_data(
+      const BinomialRegressionData &observation,
+      Suf *suf,
+      RNG &rng) const {
+    const Vector &x(observation.x());
+    double eta = coefficients_->predict(x);
+    double sum, weight;
+    try {
+      std::pair<double, double> imputed = latent_data_imputer_.impute(
+          rng,
+          observation.n(),
+          observation.y(),
+          eta);
+      sum = imputed.first;
+      weight = imputed.second;
+      suf->update(x, sum, weight);
+    } catch(std::exception &e) {
+      ostringstream err;
+      err << "caught an exception "
+          << "with the following message:"
+          << e.what() << endl
+          << "n   = " << observation.n() << endl
+          << "y   = " << observation.y() << endl
+          << "eta = " << eta << endl;
+      report_error(err.str());
     }
   }
+
 
 }  // namespace BOOM

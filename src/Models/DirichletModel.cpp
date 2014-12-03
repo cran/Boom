@@ -121,7 +121,6 @@ namespace BOOM{
   DM::DirichletModel(const DirichletModel &rhs)
     : Model(rhs),
       VectorModel(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -180,7 +179,8 @@ namespace BOOM{
 
 
   //======================================================================
-  double DirichletModel::Loglike(Vec & g, Mat &h, uint nd) const{
+  double DirichletModel::Loglike(
+      const Vector &nu, Vec & g, Mat &h, uint nd) const{
 
     /* returns log likelihood for the parameters of a Dirichlet
        distribution with sufficient statistic sumlogpi(lo..hi).  If
@@ -194,43 +194,11 @@ namespace BOOM{
 
     */
 
-    const Vec &nu(this->nu());
     const Vec &sumlogpi(suf()->sumlog());
     double nobs = suf()->n();
     Vec *G(nd>0 ? &g : 0);
     Mat *H(nd>1 ? &h : 0);
     return dirichlet_loglike(nu, G, H, sumlogpi, nobs);
-
-//     uint n = nu.size();
-
-//     double sum=0;
-//     bool flag=false;
-//     for(uint i=0; i<n; ++i){  /* check for illegal parameter values */
-//       sum+=nu(i);
-//       if(nu(i)<=0){
-//  	flag=true;
-//  	break;}}
-//     if(flag){
-//       for(uint i=0; i<n; ++i){
-//  	if(nd>0){
-//  	  g(i)= -nu(i);
-//  	  if(nd>1) for(uint j=0; j<n; ++j) h(i,j)= (i==j)?1:0;}}
-//       return negative_infinity();}
-
-//     double ans= nobs*lgamma(sum);
-//     double tmp=0.0, tmp1=0.0;
-//     if(nd>0) tmp= nobs*digamma(sum);
-//     if(nd>1) tmp1=nobs*trigamma(sum);
-
-//     for(uint i=0; i<n; ++i){
-//       ans+= (nu(i)-1)*sumlogpi(i)-nobs*lgamma(nu(i));
-//       if(nd>0){
-//  	g(i)= tmp + sumlogpi(i)-nobs*digamma(nu(i));
-//  	if(nd>1){
-//  	  for(uint j=0; j<n; ++j){
-//  	    h(i,j) =tmp1- (i==j? nobs*trigamma(nu(i)):0); }}}}
-
-//     return ans;
   }
 
   Vec DirichletModel::sim() const { return rdirichlet(nu()); }

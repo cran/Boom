@@ -22,7 +22,7 @@
  *   October 23, 2000.
  *
  *  Merge in to R:
- *	Copyright (C) 2000, The R Core Development Team
+ *      Copyright (C) 2000, The R Core Development Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -66,13 +66,13 @@ double dbinom_raw(double x, double n, double p, double q, int give_log)
     if (q == 0) return((x == n) ? R_D__1 : R_D__0);
 
     if (x == 0) {
-	if(n == 0) return R_D__1;
-	lc = (p < 0.1) ? -bd0(n,n*q) - n*p : n*log(q);
-	return( R_D_exp(lc) );
+        if(n == 0) return R_D__1;
+        lc = (p < 0.1) ? -bd0(n,n*q) - n*p : n*log(q);
+        return( R_D_exp(lc) );
     }
     if (x == n) {
-	lc = (q < 0.1) ? -bd0(n,n*p) - n*q : n*log(p);
-	return( R_D_exp(lc) );
+        lc = (q < 0.1) ? -bd0(n,n*p) - n*q : n*log(p);
+        return( R_D_exp(lc) );
     }
     if (x < 0 || x > n) return( R_D__0 );
 

@@ -48,7 +48,7 @@ namespace BOOM{
         public ParamPolicy_1<GlmCoefs>,
         public IID_DataPolicy<BinomialRegressionData>,
         public PriorPolicy,
-        public MixtureComponent
+        virtual public MixtureComponent
   {
    public:
     BinomialLogitModel(uint beta_dim, bool include_all=true);
@@ -68,7 +68,10 @@ namespace BOOM{
     virtual double logp(uint y, uint n, const Vec &x, bool logscale)const;
     virtual double logp_1(bool y, const Vec &x, bool logscale)const;
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    // In the following, beta refers to the set of nonzero "included"
+    // coefficients.
+    virtual double Loglike(const Vector &beta,
+                           Vector &g, Matrix &h, uint nd)const;
     virtual double log_likelihood(const Vec &beta, Vec *g, Mat *h,
                                   bool initialize_derivs = true)const;
 

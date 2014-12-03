@@ -234,15 +234,31 @@ namespace BOOM{
     return ans;
   }
 
-  double WP::loglike()const{
+  double WP::loglike(const Vector &lam0_delta_weekday_weekend)const{
     const Mat &exposure(suf()->exposure());
     const Mat & count(suf()->count());
-    double lambda0 = average_daily_rate();
-    const Vec &delta(day_of_week_pattern());
+
+    double lambda0 = lam0_delta_weekday_weekend[0];
+    Vector delta(7, 0.0);
+    int pos = 1;
+    VectorView(delta, 0, 6) = ConstVectorView(lam0_delta_weekday_weekend, pos, 6);
+    delta[6] = 7.0 - sum(delta);
+    pos += 6;
+
+    Vector eta_weekday(24, 0.0);
+    VectorView(eta_weekday, 0, 23) =
+        ConstVectorView(lam0_delta_weekday_weekend, pos, 23);
+    eta_weekday[23] = 24.0 - sum(eta_weekday);
+    pos += 23;
+
+    Vector eta_weekend(24, 0.0);
+    VectorView(eta_weekend, 0, 23) =
+        ConstVectorView(lam0_delta_weekday_weekend, pos, 23);
+    eta_weekend[23] = 24.0 - sum(eta_weekend);
 
     double ans = 0;
     for(int d = 0; d < 7; ++d){
-      const Vec &eta(hourly_pattern(d));
+      const Vec &eta( (d==Sat || d==Sun) ? eta_weekend : eta_weekday);
       for(int h = 0; h < 24; ++h){
         double lam = lambda0 * delta[d] * eta[h] * exposure(d, h);
         ans += dpois(count(d, h), lam, true);
@@ -256,14 +272,54 @@ namespace BOOM{
     return weekday_hourly_pattern();
   }
 
+  namespace {
+    // Copies all but the last element of 'from' to the sequence
+    // pointed at by 'to'.  Returns the next available position in the
+    // 'to' sequence.
+    inline Vector::iterator copy_all_but_last_element(
+        const Vector &from,
+        Vector::iterator to) {
+      return std::copy(from.begin(), from.end() - 1, to);
+    }
+  }
+
+  Vector WP::concatenate_params(
+      double lambda,
+      const Vector &daily,
+      const Vector &weekday_hourly,
+      const Vector &weekend_hourly) {
+    if (daily.size() != 7 ||
+        weekday_hourly.size() != 24 ||
+        weekend_hourly.size() != 24) {
+      report_error("Wrong size inputs to WeeklyCyclePoissonProcess::"
+                   "concatenate_params()");
+    }
+    Vector ans(1 + 6 + 23 + 23);
+    ans[0] = lambda;
+    Vector::iterator it = copy_all_but_last_element(daily, ans.begin() + 1);
+    it = copy_all_but_last_element(weekday_hourly, it);
+    copy_all_but_last_element(weekend_hourly, it);
+    return ans;
+  }
+
   void WP::mle(){
-    double old_loglike = loglike();
+    double old_loglike = loglike(
+        concatenate_params(
+            average_daily_rate(),
+            day_of_week_pattern(),
+            weekday_hourly_pattern(),
+            weekend_hourly_pattern()));
     double dloglike = 1.0;
     while(dloglike > 1e-5){
       maximize_average_daily_rate();
       maximize_daily_pattern();
       maximize_hourly_pattern();
-      double new_loglike = loglike();
+      double new_loglike = loglike(
+          concatenate_params(
+              average_daily_rate(),
+              day_of_week_pattern(),
+              weekday_hourly_pattern(),
+              weekend_hourly_pattern()));
       dloglike = new_loglike - old_loglike;
       old_loglike = new_loglike;
     }

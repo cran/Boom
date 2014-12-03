@@ -47,7 +47,7 @@ double pbinom(double x, double n, double p, int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n) || ISNAN(p))
-	return x + n + p;
+        return x + n + p;
     if (!R_FINITE(n) || !R_FINITE(p)) ML_ERR_return_NAN;
 
 #endif

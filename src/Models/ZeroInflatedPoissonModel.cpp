@@ -154,10 +154,10 @@ namespace BOOM {
   ZeroInflatedPoissonModel::ZeroInflatedPoissonModel(
       const ZeroInflatedPoissonModel &rhs)
       : Model(rhs),
+        MixtureComponent(rhs),
         ParamPolicy(rhs),
         DataPolicy(rhs),
         PriorPolicy(rhs),
-        MixtureComponent(rhs),
         log_zero_prob_current_(false)
       {}
 

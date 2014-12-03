@@ -35,15 +35,15 @@ namespace BOOM{
         max_flips_(-1)
   {}
 
-  void BLSSS::draw(){
+  void BLSSS::draw() {
     impute_latent_data();
     if(allow_model_selection_) draw_model_indicators();
     draw_beta();
   }
 
-  void BLSSS::draw_beta(){
+  void BLSSS::draw_beta() {
     Selector g = m_->coef().inc();
-    if(g.nvars() == 0){
+    if(g.nvars() == 0) {
       m_->drop_all();
       return;
     }
@@ -64,7 +64,7 @@ namespace BOOM{
     const Selector & g(m_->coef().inc());
     double ans = vpri_->logp(g);  // p(gamma)
     if(ans == BOOM::negative_infinity()) return ans;
-    if(g.nvars() > 0){
+    if(g.nvars() > 0) {
       ans += dmvn(m_->included_coefficients(),
                   g.select(pri_->mu()),
                   g.select(pri_->siginv()),
@@ -76,7 +76,7 @@ namespace BOOM{
   double BLSSS::log_model_prob(const Selector &g)const{
     // borrowed from MLVS.cpp
     double num = vpri_->logp(g);
-    if(num==BOOM::negative_infinity() || g.nvars() == 0){
+    if(num==BOOM::negative_infinity() || g.nvars() == 0) {
       // If num == -infinity then it is in a zero support point in the
       // prior.  If g.nvars()==0 then all coefficients are zero
       // because of the point mass.  The only entries remaining in the
@@ -104,15 +104,95 @@ namespace BOOM{
     return num-denom;
   }
 
-  void BLSSS::allow_model_selection(bool tf){
+  void BLSSS::allow_model_selection(bool tf) {
     allow_model_selection_ = tf;
   }
 
-  void BLSSS::limit_model_selection(int max_flips){
+  void BLSSS::limit_model_selection(int max_flips) {
     max_flips_ = max_flips;
   }
 
-  void BLSSS::draw_model_indicators(){
+  class BinomialLogitUnNormalizedLogPosterior
+      : public d2TargetFun {
+   public:
+    BinomialLogitUnNormalizedLogPosterior(BinomialLogitModel *model,
+                                          MvnBase *prior)
+        : model_(model),
+          prior_(prior)
+    {}
+
+    double operator()(const Vector &included_coefficients) const {
+      double ans = prior_->logp_given_inclusion(
+          included_coefficients, nullptr, nullptr, model_->coef().inc(), true);
+      ans += model_->log_likelihood(
+          included_coefficients, nullptr, nullptr, false);
+      return ans;
+    }
+
+    double operator()(const Vector &included_coefficients,
+                      Vector &gradient) const {
+      gradient.resize(included_coefficients.size());
+      double ans = prior_->logp_given_inclusion(
+          included_coefficients, &gradient, nullptr, model_->coef().inc(), true);
+      ans += model_->log_likelihood(
+          included_coefficients, &gradient, nullptr, false);
+      return ans;
+    }
+
+    double operator()(const Vector &included_coefficients,
+                      Vector &gradient,
+                      Matrix &hessian) const {
+      double ans = prior_->logp_given_inclusion(
+          included_coefficients,
+          &gradient,
+          &hessian,
+          model_->coef().inc(),
+          true);
+      ans += model_->log_likelihood(
+          included_coefficients, &gradient, &hessian, false);
+      return ans;
+    }
+
+   private:
+    BinomialLogitModel *model_;
+    MvnBase *prior_;
+    Selector inc_;
+  };
+
+  double BLSSS::find_posterior_mode() {
+    BinomialLogitUnNormalizedLogPosterior logpost(m_, pri_.get());
+    const Selector &inc(m_->coef().inc());
+    Vector beta(m_->included_coefficients());
+    int dim = beta.size();
+    if (dim == 0) {
+      return negative_infinity();
+      // TODO: This logic prohibits an empty model.  Better to return
+      // the actual value of the un-normalized posterior, which in
+      // this case would just be the likelihood portion.
+    } else {
+      Vector gradient(dim);
+      Matrix hessian(dim, dim);
+      double logf;
+      std::string error_message;
+      bool ok = max_nd2_careful(beta,
+                                gradient,
+                                hessian,
+                                logf,
+                                Target(logpost),
+                                dTarget(logpost),
+                                d2Target(logpost),
+                                1e-5,
+                                error_message);
+      if (ok) {
+        m_->set_included_coefficients(beta, inc);
+        return logf;
+      } else {
+        return negative_infinity();
+      }
+    }
+  }
+
+  void BLSSS::draw_model_indicators() {
     Selector g = m_->coef().inc();
     std::vector<int> indx = seq<int>(0, g.nvars_possible()-1);
     // I'd like to rely on std::random_shuffle for this, but I want
@@ -124,11 +204,11 @@ namespace BOOM{
 
     double logp = log_model_prob(g);
 
-    if(!std::isfinite(logp)){
+    if(!std::isfinite(logp)) {
       vpri_->make_valid(g);
       logp = log_model_prob(g);
     }
-    if(!std::isfinite(logp)){
+    if(!std::isfinite(logp)) {
       ostringstream err;
       err << "BinomialLogitSpikeSlabSampler did not start with a "
           << "legal configuration."
@@ -139,17 +219,17 @@ namespace BOOM{
 
     uint n = g.nvars_possible();
     if(max_flips_ > 0) n = std::min<int>(n, max_flips_);
-    for(uint i=0; i<n; ++i){
+    for(uint i=0; i<n; ++i) {
       logp = mcmc_one_flip(g, indx[i], logp);
     }
     m_->coef().set_inc(g);
   }
 
-  double BLSSS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old){
+  double BLSSS::mcmc_one_flip(Selector &mod, uint which_var, double logp_old) {
     mod.flip(which_var);
     double logp_new = log_model_prob(mod);
     double u = runif_mt(rng(), 0,1);
-    if(log(u) > logp_new - logp_old){
+    if(log(u) > logp_new - logp_old) {
       mod.flip(which_var);  // reject draw
       return logp_old;
     }

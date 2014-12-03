@@ -136,6 +136,10 @@ namespace BOOM {
     return this->loglike(a(), b());
   }
 
+  double PoissonGammaModel::loglike(const Vector &ab)const{
+    return loglike(ab[0], ab[1]);
+  }
+
   double PoissonGammaModel::loglike(double a, double b)const{
     const std::vector<Ptr<PoissonData> > &data(dat());
     int nobs = data.size();
@@ -148,9 +152,13 @@ namespace BOOM {
     return ans;
   }
 
-  double PoissonGammaModel::Loglike(Vec &g, Mat &H, uint nd)const{
-    double a = this->a();
-    double b = this->b();
+  double PoissonGammaModel::Loglike(
+      const Vector &ab, Vec &g, Mat &H, uint nd)const{
+    if (ab.size() != 2) {
+      report_error("Wrong size argument.");
+    }
+    double a = ab[0];
+    double b = ab[1];
     const std::vector<Ptr<PoissonData> > &data(dat());
     int nobs = data.size();
 

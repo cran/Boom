@@ -90,7 +90,8 @@ namespace BOOM{
     double pdf(const Data *, bool logscale) const;
     double pdf(const Vec &pi, bool logscale) const;
     double Logp(const Vec &p, Vec &g, Mat &h, uint lev) const ;
-    double Loglike(Vec &g, Mat &h, uint nderiv) const ;
+    double Loglike(const Vector &nu, Vec &g, Mat &h, uint nderiv) const;
+    virtual void mle() {return d2LoglikeModel::mle();}
 
     double nu_loglike(const Vec & nu)const;
 

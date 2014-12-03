@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005 Steven L. Scott
+  Copyright (C) 2005-2014 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -16,8 +16,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#ifndef REGRESSIION_MODEL_H
-#define REGRESSIION_MODEL_H
+#ifndef BOOM_REGRESSION_MODEL_H
+#define BOOM_REGRESSION_MODEL_H
 
 #include <BOOM.hpp>
 #include <Models/Glm/Glm.hpp>
@@ -67,12 +67,22 @@ namespace BOOM{
     virtual Vector xty(const Selector &)const=0;
     virtual Spd xtx(const Selector &)const=0;
 
+    // (X - Xbar)^T * (X - Xbar)
+    //  = xtx - n * xbar xbar^T
+    Spd centered_xtx() const;
+
     // return least squares estimates of regression params
     virtual Vector beta_hat()const=0;
     virtual double SSE()const=0;  // SSE measured from ols beta
     virtual double SST()const=0;
     virtual double ybar()const=0;
+    // Column means of the design matrix.
+    virtual Vector xbar()const=0;
     virtual double n()const=0;
+
+    // Compute the sum of square errors using the given set of
+    // coefficients, taking advantage of sparsity.
+    double relative_sse(const GlmCoefs &beta) const;
 
     AnovaTable anova()const;
 
@@ -90,19 +100,16 @@ namespace BOOM{
     public RegSuf,
     public SufstatDetails<RegressionData>
   {
-    mutable QR qr;
-    mutable Vector Qty;
-    mutable double sumsqy;
-    mutable bool current;
   public:
     QrRegSuf(const Mat &X, const Vector &y);
-    QrRegSuf(const QrRegSuf &rhs);  // value semantics
 
     QrRegSuf *clone()const;
     virtual void clear();
     virtual void Update(const DataType &);
-    virtual void add_mixture_data(double y, const Vector &x, double prob);
-    virtual void add_mixture_data(double y, const ConstVectorView &x, double prob);
+    virtual void add_mixture_data(
+        double y, const Vector &x, double prob);
+    virtual void add_mixture_data(
+        double y, const ConstVectorView &x, double prob);
     virtual uint size()const;  // dimension of beta
     virtual double yty()const;
     virtual Vector xty()const;
@@ -116,6 +123,7 @@ namespace BOOM{
     virtual double SSE()const;
     virtual double SST()const;
     virtual double ybar()const;
+    virtual Vector xbar()const;
     virtual double n()const;
     void refresh_qr(const std::vector<Ptr<DataType> > &) const ;
     //    void check_raw_data(const Mat &X, const Vector &y);
@@ -125,10 +133,16 @@ namespace BOOM{
 
     virtual Vector vectorize(bool minimal=true)const;
     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal = true);
+                                            bool minimal = true);
     virtual Vec::const_iterator unvectorize(const Vector &v,
-					    bool minimal = true);
+                                            bool minimal = true);
     virtual ostream &print(ostream &out)const;
+   private:
+    mutable QR qr;
+    mutable Vector Qty;
+    mutable double sumsqy;
+    mutable bool current;
+    mutable Vector x_column_sums_;
   };
   //------------------------------------------------------------------
   class NeRegSuf
@@ -144,11 +158,14 @@ namespace BOOM{
 
     // Build from the indiviudal sufficient statistic components.  The
     // 'n' is needed because X might not have an intercept term.
-    NeRegSuf(const Spd &xtx, const Vector &xty, double yty, double n);
+    NeRegSuf(const Spd &xtx,
+             const Vector &xty,
+             double yty,
+             double n,
+             const Vector &xbar);
 
     // Build from a sequence of Ptr<RegressionData>
     template <class Fwd> NeRegSuf(Fwd b, Fwd e);
-    NeRegSuf(const NeRegSuf &rhs);
     NeRegSuf *clone()const;
 
     // If fixed, then xtx will not be changed by a call to clear(),
@@ -171,6 +188,7 @@ namespace BOOM{
     virtual double SSE()const;
     virtual double SST()const;
     virtual double ybar()const;
+    virtual Vector xbar()const;
     virtual double n()const;
     virtual void combine(Ptr<RegSuf>);
     virtual void combine(const RegSuf &);
@@ -194,6 +212,7 @@ namespace BOOM{
     double sumsqy;
     double n_;
     double sumy_;
+    Vector x_column_sums_;
   };
 
   template <class Fwd>
@@ -283,7 +302,12 @@ namespace BOOM{
 
     //--- probability calculations ----
     virtual void mle();
-    virtual double Loglike(Vector &g, Mat &h, uint nd)const;
+    // The argument 'sigsq_beta' is a Vector with the first element
+    // corresponding to the residual variance parameter, and the
+    // remaining elements corresponding to the set of included
+    // coefficients.
+    virtual double Loglike(const Vector &sigsq_beta,
+                           Vector &g, Mat &h, uint nd)const;
     virtual double pdf(dPtr, bool)const;
     virtual double pdf(const Data *, bool)const;
 
@@ -306,7 +330,7 @@ namespace BOOM{
     //--- diagnostics ---
     AnovaTable anova()const{return suf()->anova();}
   };
-  //------------------------------------------------------------
 
-}// ends namespace BOOM
-#endif
+}  // namespace BOOM
+
+#endif  // BOOM_REGRESSION_MODEL_H

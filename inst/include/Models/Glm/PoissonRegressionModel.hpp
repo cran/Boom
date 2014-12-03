@@ -33,7 +33,7 @@ namespace BOOM {
   class PoissonRegressionModel
       : public GlmModel,
         public NumOptModel,
-        public MixtureComponent,
+        virtual public MixtureComponent,
         public ParamPolicy_1<GlmCoefs>,
         public IID_DataPolicy<PoissonRegressionData>,
         public PriorPolicy
@@ -48,8 +48,35 @@ namespace BOOM {
     virtual Ptr<GlmCoefs> coef_prm();
     virtual const Ptr<GlmCoefs> coef_prm()const;
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
-    double log_likelihood(const Vec &beta, Vec *g = NULL, Mat *h = NULL)const;
+    // The dimension of the arguments to Loglike and log_likelihood is
+    // the number of included coefficients.
+    virtual double Loglike(const Vector &beta, Vec &g, Mat &h, uint nd)const;
+
+    // Log likelihood function.
+    // Args:
+    //   beta: The vector of included coefficients (i.e. the dimension
+    //     matches that of included_coefficients()).
+    //   gradient: If non-NULL the gradient is computed and output
+    //     here.  If NULL then no derivative computations are made.
+    //   hessian: If hessian and gradient are both non-NULL the
+    //     hessian is computed and output here.  If NULL then the
+    //     hessian is not computed.
+    //   reset_derivatives: If true then a non-NULL gradient or
+    //     hessian will be resized and set to zero.  If false then a
+    //     non-NULL gradient or hessian will have derivatives of
+    //     log-liklihood added to its input value.  It is an error if
+    //     reset_derivatives is false and the wrong-sized non-NULL
+    //     argument is passed.
+    //
+    // Returns:
+    //   The value of log likelihood at the supplied beta.
+    double log_likelihood(const Vector &beta,
+                          Vector *gradient = nullptr,
+                          Matrix *hessian = nullptr,
+                          bool reset_derivatives = true) const;
+    // mle() optimizes over the set of included coefficients.
+    virtual void mle();
+
     virtual double pdf(const Data *, bool logscale)const;
     double logp(const PoissonRegressionData &data)const;
   };

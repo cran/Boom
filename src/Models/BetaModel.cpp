@@ -118,7 +118,6 @@ namespace BOOM{
 
   BM::BetaModel(const BM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -176,9 +175,12 @@ namespace BOOM{
     set_params(a, b);
   }
 
-  double BM::Loglike(Vec &g, Mat &h, uint nd) const{
-    double alpha = a();
-    double beta = b();
+  double BM::Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const{
+    if (ab.size() != 2) {
+      report_error("Wrong size argument.");
+    }
+    double alpha = ab[0];
+    double beta = ab[1];
     if (alpha <= 0 || beta <= 0) {
       if (nd > 0) {
         g[0] = (alpha <= 0) ? 1.0 : 0.0;

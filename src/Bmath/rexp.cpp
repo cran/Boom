@@ -53,7 +53,7 @@ namespace Rmath{
 double rexp_mt(BOOM::RNG & rng, double scale)
 {
     if (!R_FINITE(scale) || scale <= 0.0)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     return scale * exp_rand(rng);
 }

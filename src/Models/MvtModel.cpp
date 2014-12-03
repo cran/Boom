@@ -55,7 +55,6 @@ namespace BOOM{
 
   MVT::MvtModel(const MvtModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       VectorModel(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
@@ -74,13 +73,6 @@ namespace BOOM{
 
   void MVT::initialize_params(){
     mle();
-//     double n = suf()->n();
-//     Spd Sigma = suf()->sumsq() / n;
-//     Vec Mu = suf()->sum()/n;
-//     double nu = 30;
-//     set_mu(Mu);
-//     set_Sigma(Sigma);
-//     set_nu(nu);
   }
 
   Ptr<VectorParams> MVT::Mu_prm(){return mvn->Mu_prm();}
@@ -94,7 +86,7 @@ namespace BOOM{
   const Ptr<UnivParams> MVT::Nu_prm()const{
     return wgt->Nu_prm();}
 
-
+  int MVT::dim()const{return mu().size();}
   const Vec & MVT::mu()const{ return Mu_prm()->value();}
   const Spd & MVT::Sigma()const{return Sigma_prm()->var();}
   const Spd & MVT::siginv()const{return Sigma_prm()->ivar();}
@@ -133,14 +125,15 @@ namespace BOOM{
 
   //======================================================================
 
-  double MVT::loglike()const{
+  double MVT::loglike(const Vector &mu_siginv_triangle_nu)const{
     const DatasetType & dat(this->dat());
-
-    double ldsi = this->ldsi();
-    const Spd & Siginv(siginv());
-    double nu = this->nu();
+    const ConstVectorView mu(mu_siginv_triangle_nu, 0, dim());
+    SpdMatrix siginv(dim());
+    Vector::const_iterator it = mu_siginv_triangle_nu.cbegin() + dim();
+    siginv.unvectorize(it, true);
+    double ldsi = siginv.logdet();
+    double nu = mu_siginv_triangle_nu.back();
     double lognu = log(nu);
-    const Vec &mu(this->mu());
 
     const double logpi= 1.1447298858494;
     uint n = dat.size();
@@ -152,7 +145,7 @@ namespace BOOM{
     ans*=n;
 
     for(uint i=0; i<n; ++i){
-      double delta = Siginv.Mdist(mu, dat[i]->value());
+      double delta = siginv.Mdist(mu, dat[i]->value());
       ans -= half_npd*log(nu + delta/nu);
     }
 
@@ -196,13 +189,12 @@ namespace BOOM{
   double MvtNuTF::operator()(const Vec &Nu)const{
     Vec g;
     return Loglike(Nu, g, 0);}
+
   double MvtNuTF::operator()(const Vec &Nu, Vec &g)const{
     return Loglike(Nu,g,1);}
 
   double MvtNuTF::Loglike(const Vec &Nu, Vec &g, uint nd)const{
-
     const std::vector<Ptr<VectorData> > & dat(mod->dat());
-
     double ldsi = mod->ldsi();
     const Spd & Siginv(mod->siginv());
     const Vec &mu(mod->mu());
@@ -238,7 +230,7 @@ namespace BOOM{
   void MVT::mle(){
     const double eps = 1e-5;
     double dloglike= eps+1;
-    double loglike = this->loglike();
+    double loglike = this->loglike(vectorize_params());
     double old = loglike;
     Vec Nu(1, nu());
     while(dloglike > eps){
@@ -253,8 +245,11 @@ namespace BOOM{
   }
 
   double MVT::complete_data_loglike()const{
-    double ans = mvn->loglike();
-    ans+= wgt->loglike();
+    Vector params = vectorize_params();
+    params.pop_back();
+    double ans = mvn->loglike(params);
+    Vector nu_vector(1, nu());
+    ans+= wgt->loglike(nu_vector);
     return ans;
   }
 

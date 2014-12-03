@@ -26,21 +26,25 @@ namespace BOOM{
 
   class LoglikeTF{
   public:
-    LoglikeTF(LoglikeModel *);
-    double operator()(const Vec &x)const;
-    void swap_params(const Vec &x)const;   // puts x in model
-    void restore_params()const;            // puts stored params back in model
+    LoglikeTF(LoglikeModel *model) : mod(model) {}
+    double operator()(const Vec &x)const {
+      return mod->loglike(x);
+    }
   private:
-    LoglikeModel * mod;   // provides loglike();
-    mutable Vec wsp_;
+    LoglikeModel * mod;   // provides loglike(x);
   };
   //----------------------------------------------------------------------
 
   class dLoglikeTF : public LoglikeTF{
   public:
-    dLoglikeTF(dLoglikeModel * d);
+    dLoglikeTF(dLoglikeModel * d)
+        : LoglikeTF(d),
+          dmod(d)
+    {}
     double operator()(const Vec &x)const{return LoglikeTF::operator()(x);}
-    double operator()(const Vec &x, Vec &g)const;
+    double operator()(const Vec &x, Vec &g)const {
+      return dmod->dloglike(x, g);
+    }
   private:
     dLoglikeModel * dmod;
   };
@@ -48,16 +52,19 @@ namespace BOOM{
   //----------------------------------------------------------------------
   class d2LoglikeTF : public dLoglikeTF{
   public:
-    d2LoglikeTF(d2LoglikeModel * d2);
+    d2LoglikeTF(d2LoglikeModel * d2)
+        : dLoglikeTF(d2),
+          d2mod(d2)
+    {}
     double operator()(const Vec &x)const{ return LoglikeTF::operator()(x);}
     double operator()(const Vec &x, Vec &g)const{
       return dLoglikeTF::operator()(x,g);}
-    double operator()(const Vec &x, Vec &g, Mat &h)const;
+    double operator()(const Vec &x, Vec &g, Mat &h)const {
+      return d2mod->d2loglike(x, g, h);
+    }
   private:
     d2LoglikeModel * d2mod;
   };
   //------------------------------------------------------------
 }
 #endif // MODEL_TF_H
-
-

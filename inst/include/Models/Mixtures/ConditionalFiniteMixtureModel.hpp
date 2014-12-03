@@ -90,7 +90,7 @@ namespace BOOM {
   // can nest several layers of ConditionalFiniteMixtureModels
   // together to get a hierarchical mixture of experts.
   class ConditionalFiniteMixtureModel
-      : public MixtureComponent,
+      : virtual public MixtureComponent,
         public LatentVariableModel,
         public CompositeParamPolicy,
         public PriorPolicy

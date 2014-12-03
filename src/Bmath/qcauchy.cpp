@@ -37,7 +37,7 @@
  *
  *  DESCRIPTION
  *
- *	The quantile function of the Cauchy distribution.
+ *      The quantile function of the Cauchy distribution.
  */
 
 #include "nmath.hpp"
@@ -45,14 +45,14 @@
 namespace Rmath{
 
 double qcauchy(double p, double location, double scale,
-	       int lower_tail, int log_p)
+               int lower_tail, int log_p)
 {
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(location) || ISNAN(scale))
-	return p + location + scale;
+        return p + location + scale;
 #endif
     if(!R_FINITE(p) || !R_FINITE(location) || !R_FINITE(scale))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
     R_Q_P01_check(p);
     if (scale <= 0) ML_ERR_return_NAN;
 

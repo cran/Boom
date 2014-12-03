@@ -22,6 +22,7 @@
 #include <Models/ZeroMeanMvnModel.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
 
@@ -47,7 +48,7 @@ namespace BOOM{
     ZeroMeanMvnModel *m_;
     Ptr<GammaModelBase> prior_;
     int which_variable_;
-    double upper_truncation_point_;
+    GenericGaussianVarianceSampler sampler_;
   };
 
   // This class is a single sampler for all the diagonal elements of
@@ -64,7 +65,7 @@ namespace BOOM{
    private:
     ZeroMeanMvnModel *model_;
     std::vector<Ptr<GammaModelBase> > priors_;
-    Vec sigma_upper_truncation_point_;
+    std::vector<GenericGaussianVarianceSampler> samplers_;
   };
 
 

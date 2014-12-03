@@ -115,9 +115,7 @@ namespace BOOM{
   }
 
 //======================================================================
-  class EmFiniteMixtureModel
-      : public FiniteMixtureModel,
-        public LoglikeModel
+  class EmFiniteMixtureModel : public FiniteMixtureModel
   {
    public:
     EmFiniteMixtureModel(Ptr<EmMixtureComponent>, uint S);
@@ -141,8 +139,8 @@ namespace BOOM{
     EmFiniteMixtureModel(const EmFiniteMixtureModel &rhs);
     EmFiniteMixtureModel * clone()const;
 
-    virtual double loglike()const;
-    virtual void mle();
+    double loglike()const;
+    void mle();
 
     // The EStep returns the observed data likelihood
     double EStep();

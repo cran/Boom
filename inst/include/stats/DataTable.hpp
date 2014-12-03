@@ -30,15 +30,14 @@
 #include <limits>
 
 namespace BOOM{
-  class DesignMatrix;
-
    class DataTable{
      // A DataTable is created by reading a plain text file and
      // storing "variables" in a table.  Variables can be extracted
      // from the DataTable either individually (e.g. to get the y
      // variable for a regression/classification problem) or as a
-     // DesignMatrix.  When building the design matrix, special care
-     // is taken to properly name dummy variables.
+     // design matrix with column labels giving the variable names.
+     // When building the design matrix, special care is taken to
+     // properly name dummy variables.
 
    public:
      typedef CategoricalData catdat;
@@ -76,12 +75,12 @@ namespace BOOM{
      get_ordinal(uint n, const StringVec &ord, uint count_from=0)const;
 
      //--- build a design matrix ---
-     DesignMatrix design(bool add_icpt = false)const;
-     DesignMatrix design(const std::vector<bool> &include,
- 			 bool add_icpt = false)const;
-     DesignMatrix design(std::vector<uint> include,
- 			 bool add_icpt = false,
-			 uint counting_from=0)const;
+     LabeledMatrix design(bool add_icpt = false)const;
+     LabeledMatrix design(const std::vector<bool> &include,
+                          bool add_icpt = false)const;
+     LabeledMatrix design(std::vector<uint> include,
+                          bool add_icpt = false,
+                          uint counting_from=0)const;
 
    private: //--------------------------------------------------
      std::vector<Vec> cont_vars;

@@ -113,6 +113,10 @@ AddExternalLegend <- function(legend.labels,
     return(invisible(NULL))
   }
   legend.location <- match.arg(legend.location)
+  ## Regardless of the margins around the other plots, we don't want
+  ## any margins around the 'fake plot' containing the legend.
+  opar <- par(mar = rep(0, 4))
+  on.exit(par(opar))
   plot(1, xlim = c(0, 1),
        ylim = c(0, 1),
        xlab = "",

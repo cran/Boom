@@ -51,8 +51,9 @@ namespace BOOM{
     MvnModel *clone() const;
 
     virtual void mle();
+    virtual void initialize_params();
     virtual void add_mixture_data(Ptr<Data>, double prob);
-    double loglike() const;
+    double loglike(const Vector &mu_siginv) const;
 
     void add_raw_data(const Vec &y);
     double pdf(Ptr<Data>, bool logscale)const;

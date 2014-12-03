@@ -22,6 +22,7 @@
 #include <LinAlg/Cholesky.hpp>
 #include <LinAlg/LU.hpp>
 #include <LinAlg/SubMatrix.hpp>
+#include <LinAlg/blas.hpp>
 
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
@@ -32,9 +33,8 @@
 #include <sstream>
 
 extern "C"{
-#include <cblas.h>
   void dpotrf_(const char *uplo, const int *n, double *data, const int *lda,
-	       int *info);
+               int *info);
   void dposv_(const char *uplo, const int *n, const int *nrhs, double *spd_a,
               const int *lda, double *rhs_b, const int *b, int *info);
   void dpotri_(const char *, int *, double *, int *, int *);
@@ -43,28 +43,30 @@ extern "C"{
                const char * RANGE,
                const char * UPLO,
                const int * N,
-	       double *A,
-	       const int *LDA,
-	       const double *VL,
-	       const double *VU,
-	       const int *IL,
-	       const int *IU,
-	       const double *abstol,
-	       const int *M,
-	       double *evals,
-	       double *evecs,
-	       const int *LDZ,
-	       int * isuppz,
-	       double *work,
-	       const int *lwork,
-	       int * iwork,
-	       const int *liwork,
-	       int *info);
+               double *A,
+               const int *LDA,
+               const double *VL,
+               const double *VU,
+               const int *IL,
+               const int *IU,
+               const double *abstol,
+               const int *M,
+               double *evals,
+               double *evecs,
+               const int *LDZ,
+               int * isuppz,
+               double *work,
+               const int *lwork,
+               int * iwork,
+               const int *liwork,
+               int *info);
   double dlamch_(const char *);
 }
 
 namespace BOOM{
    using namespace std;
+   using namespace blas;
+
    typedef std::vector<double> dVector;
 
    SpdMatrix::SpdMatrix(){}
@@ -100,6 +102,17 @@ namespace BOOM{
      operator=(rhs);
    }
 
+   SpdMatrix::SpdMatrix(const ConstSubMatrix &rhs, bool check)
+   {
+     if(check){
+       if(rhs.nrow() != rhs.ncol()){
+         report_error("SpdMatrix constructor was supplied a non-square"
+                      "SubMatrix argument");
+       }
+     }
+     operator=(rhs);
+   }
+
    SpdMatrix & SpdMatrix::operator=(const SpdMatrix &rhs){
      if(&rhs!= this){
        Matrix::operator=(rhs);
@@ -108,6 +121,15 @@ namespace BOOM{
    }
 
    SpdMatrix & SpdMatrix::operator=(const SubMatrix &rhs){
+     if(rhs.nrow() != rhs.ncol()){
+       report_error("SpdMatrix::operator= called with rectangular "
+                    "RHS argument");
+     }
+     Matrix::operator=(rhs);
+     return *this;
+   }
+
+   SpdMatrix & SpdMatrix::operator=(const ConstSubMatrix &rhs){
      if(rhs.nrow() != rhs.ncol()){
        report_error("SpdMatrix::operator= called with rectangular "
                     "RHS argument");
@@ -132,12 +154,11 @@ namespace BOOM{
 
    void SpdMatrix::swap(SpdMatrix &rhs){ Matrix::swap(rhs); }
 
-
    void SpdMatrix::randomize(){
      Matrix::randomize();
      SpdMatrix tmp(nrow());
-     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans, nrow(), nrow(),
-       	  1.0, data(), nrow(), 0.0, tmp.data(), tmp.nrow());
+     dsyrk(Upper, Trans, nrow(), nrow(),
+          1.0, data(), nrow(), 0.0, tmp.data(), tmp.nrow());
      swap(tmp);
      reflect();
    }
@@ -266,7 +287,7 @@ namespace BOOM{
        uint pos = i*n + i;
        double * row = d+pos;  // stride is n, length is n-i
        double * col = d+pos;  // stride is 1, length is n-i
-       cblas_dcopy(n-i, row, n, col, 1); // y is column, x is row
+       dcopy(n-i, row, n, col, 1); // y is column, x is row
      }
    }
 
@@ -286,8 +307,8 @@ namespace BOOM{
    template <class V>
    void local_add_outer(SpdMatrix &S, const V &v, double w){
      assert(v.size()==S.nrow());
-     cblas_dsyr(CblasColMajor, CblasUpper, v.size(), w, v.data(), v.stride(),
-       	 S.data(), S.nrow());
+     dsyr(Upper, v.size(), w, v.data(), v.stride(),
+          S.data(), S.nrow());
    }
 
    SpdMatrix & SpdMatrix::add_outer(const Vector &v, double w, bool force_sym){
@@ -296,13 +317,13 @@ namespace BOOM{
      return *this; }
 
    SpdMatrix & SpdMatrix::add_outer(const VectorView &v, double w,
-       			     bool force_sym){
+                             bool force_sym){
      local_add_outer<VectorView>(*this,v,w);
      if(force_sym) reflect();
      return *this; }
 
    SpdMatrix & SpdMatrix::add_outer(const ConstVectorView &v, double w,
-       			     bool force_sym){
+                             bool force_sym){
      local_add_outer<ConstVectorView>(*this,v,w);
      if(force_sym) reflect();
      return *this; }
@@ -312,23 +333,22 @@ namespace BOOM{
      int n = nrow();
      assert(X.ncol() == this->nrow());
      uint k = X.ncol();
-     cblas_dsyrk(CblasColMajor,  // order
-                 CblasUpper,     // uplo
-                 CblasNoTrans,   // trans
-       	  n,              // N      number of rows in *this
-                 k,              // k      number of columns in X
-                 w,              // alpha  scale factor for X * X^T
-                 X.data(),       // A
-                 n,              // lda
-                 1.0,            // beta   scale factor for *this
-                 this->data(),   // C
-                 n);             // ldc  (number of rows in C)
+     dsyrk( Upper,     // uplo
+            NoTrans,   // trans
+            n,              // N      number of rows in *this
+            k,              // k      number of columns in X
+            w,              // alpha  scale factor for X * X^T
+            X.data(),       // A
+            n,              // lda
+            1.0,            // beta   scale factor for *this
+            this->data(),   // C
+            n);             // ldc  (number of rows in C)
      if(force_sym) reflect();
      return *this;
    }
 
    SpdMatrix & SpdMatrix::add_inner(const Matrix &X, const Vec &w,
-       			     bool force_sym){
+                                    bool force_sym){
      assert(X.nrow()==w.size());
      assert(X.ncol()==this->ncol());
      uint n = w.size();
@@ -342,8 +362,8 @@ namespace BOOM{
      int n = nrow();
      assert(x.ncol() == this->nrow());
      uint k = x.nrow();
-     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans,
-       	  n,k, w, x.data(), k, 1.0, this->data(), n);
+     dsyrk(Upper, Trans, n, k, w, x.data(), k, 1.0,
+           this->data(), n);
      reflect();
      return *this;
    }
@@ -352,17 +372,18 @@ namespace BOOM{
      // adds w*(A^TB + B^TA)
      assert(A.ncol() == B.ncol() && A.ncol()==nrow());
      assert(A.nrow()==B.nrow());
-     cblas_dsyr2k(CblasColMajor, CblasUpper, CblasTrans,
-       	   nrow(),
-       	   A.nrow(),
-       	   w,
-       	   A.data(),
-       	   A.nrow(),
-       	   B.data(),
-       	   B.nrow(),
-       	   1.0,
-       	   data(),
-       	   nrow());
+     dsyr2k(Upper,
+            Trans,
+            nrow(),
+            A.nrow(),
+            w,
+            A.data(),
+            A.nrow(),
+            B.data(),
+            B.nrow(),
+            1.0,
+            data(),
+            nrow());
      reflect();
      return *this;
    }
@@ -372,27 +393,30 @@ namespace BOOM{
      // adds w*(AB^T + BA^T)
      assert(A.nrow()==B.nrow()  &&  B.nrow()==nrow());
      assert(B.ncol()==A.ncol());
-     cblas_dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans,
-       	   nrow(),
-       	   A.ncol(),
-       	   w,
-       	   A.data(),
-       	   A.nrow(),
-       	   B.data(),
-       	   B.nrow(),
-       	   1.0,
-       	   data(),
-       	   nrow());
+     dsyr2k(Upper,
+            NoTrans,
+            nrow(),
+            A.ncol(),
+            w,
+            A.data(),
+            A.nrow(),
+            B.data(),
+            B.nrow(),
+            1.0,
+            data(),
+            nrow());
      reflect();
      return *this;
    }
 
-   SpdMatrix & SpdMatrix::add_outer2(const Vector &x, const Vector &y, double w){
+   SpdMatrix & SpdMatrix::add_outer2(const Vector &x,
+                                     const Vector &y,
+                                     double w){
      assert(x.size()==nrow() && y.size()==ncol());
-     cblas_dsyr2(CblasColMajor, CblasUpper, nrow(), w,
-       	  x.data(), x.stride(),
-       	  y.data(), y.stride(),
-       	  data(), nrow());
+     dsyr2(Upper, nrow(), w,
+           x.data(), x.stride(),
+           y.data(), y.stride(),
+           data(), nrow());
      reflect();
      return *this;
    }
@@ -405,9 +429,8 @@ namespace BOOM{
      assert(can_mult(B,ans));
      uint m = nrow();
      uint n = B.ncol();
-     cblas_dsymm(CblasColMajor, CblasLeft, CblasUpper, m,n,
-       	  scal, data(), nrow(), B.data(), B.nrow(),
-       	  0.0, ans.data(), ans.nrow());
+     dsymm(Left, Upper, m, n, scal, data(), nrow(), B.data(), B.nrow(),
+           0.0, ans.data(), ans.nrow());
      return ans; }
 
    Matrix & SpdMatrix::Tmult(const Matrix &B, Matrix &ans, double scal)const{
@@ -430,19 +453,25 @@ namespace BOOM{
      return multT(A,ans, scal);}
 
    //--------- DiagonalMatrix this and B are both symmetric ---------
-   Matrix & SpdMatrix::mult(const DiagonalMatrix &B, Matrix &ans, double scal)const{
-     return Matrix::mult(B,ans, scal);}
-   Matrix & SpdMatrix::Tmult(const DiagonalMatrix &B, Matrix &ans, double scal)const{
-     return Matrix::mult(B,ans, scal);}
-   Matrix & SpdMatrix::multT(const DiagonalMatrix &B, Matrix &ans, double scal)const{
-     return Matrix::mult(B,ans, scal);}
+   Matrix & SpdMatrix::mult(
+       const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);
+   }
+   Matrix & SpdMatrix::Tmult(
+       const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);
+   }
+   Matrix & SpdMatrix::multT(
+       const DiagonalMatrix &B, Matrix &ans, double scal)const{
+     return Matrix::mult(B,ans, scal);
+   }
 
    //--------- Vector --------------
 
    Vector & SpdMatrix::mult(const Vector &v, Vector & ans, double scal)const{
      assert(ans.size()==nrow());
-     cblas_dsymv(CblasColMajor, CblasUpper, nrow(), scal, data(), nrow(),
-       	  v.data(), v.stride(), 0.0, ans.data(), ans.stride());
+     dsymv(Upper, nrow(), scal, data(), nrow(), v.data(), v.stride(), 0.0,
+           ans.data(), ans.stride());
      return ans;}
 
    Vector & SpdMatrix::Tmult(const Vector &v, Vector & ans, double scal)const{
@@ -508,10 +537,7 @@ namespace BOOM{
       SpdMatrix ans(L.nrow());
       int n = L.nrow();
       int k = L.ncol();
-      cblas_dsyrk(CblasColMajor, CblasUpper, CblasNoTrans,
-       	   n,k, a,
-       	   L.data(), n,
-       	   0.0, ans.data(), n);
+      dsyrk(Upper, NoTrans, n,k, a, L.data(), n, 0.0, ans.data(), n);
       ans.reflect();
       return ans;
     }
@@ -520,19 +546,15 @@ namespace BOOM{
      SpdMatrix ans(R.ncol());
      int n = R.nrow();
      int k = R.ncol();
-     cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans,
-       	  n,k, a,
-       	  R.data(), n,
-       	  0.0, ans.data(), n);
+     dsyrk(Upper, Trans, n, k, a, R.data(), n, 0.0, ans.data(), n);
      ans.reflect();
      return ans;
    }
 
    SpdMatrix LTL(const Matrix &L){
      Matrix ans(L);
-     cblas_dtrmm(CblasColMajor, CblasLeft, CblasLower, CblasTrans,
-       	  CblasNonUnit, L.nrow(), L.ncol(), 1.0,
-       	  L.data(), L.nrow(), ans.data(), ans.nrow());
+     dtrmm(Left, Lower, Trans, NonUnit, L.nrow(), L.ncol(), 1.0,
+           L.data(), L.nrow(), ans.data(), ans.nrow());
      return ans;
    }
 
@@ -555,17 +577,18 @@ namespace BOOM{
 
    SpdMatrix sandwich(const Matrix &A, const SpdMatrix &V){  // AVA^T
      Matrix tmp(A.nrow(), V.ncol());
-     cblas_dsymm(CblasColMajor, CblasRight, CblasUpper,
-       	  tmp.nrow(),
-       	  tmp.ncol(),
-       	  1.0,
-       	  V.data(),
-       	  V.nrow(),
-       	  A.data(),
-       	  A.nrow(),
-       	  0.0,
-       	  tmp.data(),
-       	  tmp.nrow());
+     dsymm(Right,
+           Upper,
+           tmp.nrow(),
+           tmp.ncol(),
+           1.0,
+           V.data(),
+           V.nrow(),
+           A.data(),
+           A.nrow(),
+           0.0,
+           tmp.data(),
+           tmp.nrow());
      return matmultT(tmp, A);
    }
 
@@ -576,17 +599,17 @@ namespace BOOM{
    }
 
    SpdMatrix select(const SpdMatrix &S, const std::vector<bool> &inc,
-		      uint nvars){
+                      uint nvars){
      SpdMatrix ans(nvars);
      uint I=0;
      for(uint i=0; i<nvars; ++i){
-	if(inc[i]){
-	  uint J=0;
-	  for(uint j=0; j<nvars; ++j){
-	    if(inc[j]){
-	      ans.unchecked(I,J) = S.unchecked(i,j);
-	      ++J; }}
-	  ++I;}}
+        if(inc[i]){
+          uint J=0;
+          for(uint j=0; j<nvars; ++j){
+            if(inc[j]){
+              ans.unchecked(I,J) = S.unchecked(i,j);
+              ++J; }}
+          ++I;}}
      return ans; }
 
    SpdMatrix as_symmetric(const Matrix &A){
@@ -607,7 +630,7 @@ namespace BOOM{
      return ans;
    }
 
-   Vector eigen(const SpdMatrix &X){
+   Vector eigenvalues(const SpdMatrix &X){
      SpdMatrix tmp(X);
      int n = tmp.nrow();
      int nfound=0;
@@ -669,16 +692,10 @@ namespace BOOM{
      return ans;
    }
 
-   inline bool checkZ(const Matrix &Z, int n){
-     const unsigned int m = n;
-     if(Z.nrow()!=m || Z.ncol()!=m) return false;
-     return true;
-   }
-
    Vector eigen(const SpdMatrix &X, Matrix & Z){
      SpdMatrix tmp(X);
      int n = tmp.nrow();
-     if(checkZ(Z,n)) Z = Matrix(n,n);
+     Z.resize(n, n);
      int nfound=0;
      Vector ans(n);
      double zero = 0.0;
@@ -814,5 +831,25 @@ namespace BOOM{
 
    SpdMatrix operator/(const SpdMatrix &v, double x){
      return v*(1.0/x); }
+
+  SpdMatrix symmetric_square_root(const SpdMatrix &V) {
+    Matrix eigenvectors(V.nrow(), V.nrow());
+    Vector eigenvalues = eigen(V, eigenvectors);
+    // We want Q^T Lambda^{1/2} Q.  We can get there by taking
+    // Lambda^1/4 and pre-multiplying rows of Q.
+    for (int i = 0; i < nrow(eigenvectors); ++i) {
+      eigenvectors.col(i) *= sqrt(sqrt(eigenvalues[i]));
+    }
+    return eigenvectors.outer();
+  }
+
+  Matrix eigen_root(const SpdMatrix &X) {
+    Matrix eigenvectors(X.nrow(), X.nrow());
+    Vector eigenvalues = eigen(X, eigenvectors);
+    for (int i = 0; i < nrow(eigenvectors); ++i) {
+      eigenvectors.col(i) *= sqrt(eigenvalues[i]);
+    }
+    return eigenvectors.t();
+  }
 
 } // namespace BOOM

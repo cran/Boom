@@ -46,10 +46,17 @@ namespace BOOM {
         RNG &rng,
         int number_of_trials,
         int number_of_successes,
-        double log_odds) = 0;
+        double log_odds) const = 0;
 
     // A finite mixture approximation to the logistic distribution.
     static const NormalMixtureApproximation mixture_approximation;
+
+    // Rather than impute the exact latent data for each trial,
+    // approximate methods can be used to draw the sum of the latent
+    // data based on a normal approximation.  The minimal number of
+    // trials at which the normal approximation should be used is the
+    // clt_threshold ("clt = central limit theorem").
+    virtual int clt_threshold() const = 0;
 
    protected:
     // Adds a human readable message to 'err'.
@@ -117,14 +124,13 @@ namespace BOOM {
     std::pair<double, double> impute(RNG &rng,
                                      int number_of_trials,
                                      int number_of_successes,
-                                     double log_odds);
+                                     double log_odds)const;
 
     // The smallest number_of_trials where approximate augmentation
     // takes place.
-    int clt_threshold() const;
+    virtual int clt_threshold() const;
 
    private:
-    static const NormalMixtureApproximation mixture_approximation_;
     int clt_threshold_;
   };
 
@@ -153,7 +159,6 @@ namespace BOOM {
     //     trial.
     //
     // Returns:
-
     //   Like the other classes documented above, the first element in
     //   the return pair is information_weighted_sum.  The second is
     //   information.  If number_of_trials < clt_threshold then each
@@ -175,35 +180,27 @@ namespace BOOM {
     std::pair<double, double> impute(RNG &rng,
                                      int number_of_trials,
                                      int number_of_successes,
-                                     double log_odds);
+                                     double log_odds) const;
 
     // The smallest number_of_trials for which approximate
     // augmentation takes place.
-    int clt_threshold()const;
+    virtual int clt_threshold()const;
    private:
     int clt_threshold_;
-
-    // Space to hold the multinomial probabilities used in impute_large_sample.
-    Vector p0_;
-    Vector p1_;
-
-    // Space to hold the multinomial draws used in impute_large_sample.
-    std::vector<int> N0_;
-    std::vector<int> N1_;
 
     // Specific cases used to implement the public impute() method.
     std::pair<double, double> impute_small_sample(
         RNG &rng,
         int number_of_trials,
         int number_of_successes,
-        double eta);
+        double eta) const;
+
     std::pair<double, double> impute_large_sample(
         RNG &rng,
         int number_of_trials,
         int number_of_successes,
-        double eta);
+        double eta) const;
   };
-
 
 }
 

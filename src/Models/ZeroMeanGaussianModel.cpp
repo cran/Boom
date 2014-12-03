@@ -72,8 +72,9 @@ namespace BOOM{
     ConjPriorPolicy::set_conjugate_prior(pri);
   }
 
-  double ZGM::Loglike(Vec &g, Mat &h, uint nd)const{
-    double sigsq = this->sigsq();
+  double ZGM::Loglike(const Vector &sigsq_vec,
+                      Vec &g, Mat &h, uint nd)const{
+    double sigsq = sigsq_vec[0];
     if(sigsq<0) return BOOM::negative_infinity();
 
     const double log2pi = 1.8378770664093453;

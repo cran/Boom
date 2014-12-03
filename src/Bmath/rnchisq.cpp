@@ -61,14 +61,14 @@
 
     rchisq0 <- function(n, ncp) {
     p <- 0 < (K <- rpois(n, lambda = ncp / 2))
-	r <- numeric(n)
-	r[p] <- rchisq(sum(p), df = 2*K[p])
-	r
+        r <- numeric(n)
+        r[p] <- rchisq(sum(p), df = 2*K[p])
+        r
     }
 
     rchisq <- function(n, df, ncp=0) {
-	if(missing(ncp)) .Internal(rchisq(n, df))
-	else rchisq0(n, ncp) + .Internal(rchisq(n, df))
+        if(missing(ncp)) .Internal(rchisq(n, df))
+        else rchisq0(n, ncp) + .Internal(rchisq(n, df))
     }
  */
 
@@ -82,17 +82,17 @@ double rnchisq(double df, double lambda){
 double rnchisq_mt(RNG & rng, double df, double lambda)
 {
     if (!R_FINITE(df) || !R_FINITE(lambda) || df < 0. || lambda < 0.)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if(lambda == 0.) {
-	if (df == 0.) ML_ERR_return_NAN;
-	return rgamma_mt(rng, df / 2., 2.);
+        if (df == 0.) ML_ERR_return_NAN;
+        return rgamma_mt(rng, df / 2., 2.);
     }
     else {
       double r = rpois_mt(rng,  lambda / 2.);
       if (r > 0.)  r = rchisq_mt(rng, 2. * r);
       if (df > 0.) r += rgamma_mt(rng, df / 2., 2.);
-	return r;
+        return r;
     }
 }
 }

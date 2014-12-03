@@ -116,7 +116,7 @@ namespace BOOM{
     double mean()const;
 
     // probability calculations
-    double Loglike(Vec &g, Mat &h, uint lev) const;
+    double Loglike(const Vector &ab, Vec &g, Mat &h, uint lev) const;
     double loglikelihood(double a, double b) const;
     double loglikelihood_full(const Vec &ab, Vec *g, Mat *h)const;
     void mle();

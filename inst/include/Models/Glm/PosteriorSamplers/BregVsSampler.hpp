@@ -20,6 +20,7 @@
 #define BOOM_BREG_VS_SAMPLER_HPP
 #include <Models/Glm/RegressionModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/MvnGivenScalarSigma.hpp>
 #include <Models/Glm/VariableSelectionPrior.hpp>
 #include <Models/MvnGivenSigma.hpp>
@@ -100,7 +101,7 @@ namespace BOOM{
     // values of the prior parameters can be modified.  This would be
     // useful in a hierarchical model, for example.
     BregVsSampler(RegressionModel *m,
-                  Ptr<MvnGivenScalarSigma> bpri,
+                  Ptr<MvnGivenScalarSigmaBase> bpri,
                   Ptr<GammaModelBase> sinv_pri,
                   Ptr<VariableSelectionPrior> vpri);
 
@@ -127,13 +128,39 @@ namespace BOOM{
 
     bool model_is_empty()const;
 
+    void set_sigma_upper_limit(double sigma_upper_limit);
+
+   protected:
+    double draw_sigsq_given_sufficient_statistics(double df, double ss) {
+      return sigsq_sampler_.draw(rng(), df, ss);
+    }
+
+    // Does one MCMC draw on a specific element of a vector of
+    // inclusion indicators, given all others.
+    // Args:
+    //   inclusion_indicators: The vector of inclusion indicators to
+    //     be sampled.
+    //   which_var: The position (element) in inclusion_indicators
+    //     that might be changed.
+    //   current_logp: The current log posterior evaluated at
+    //     inclusion_indicators.
+    //
+    // Returns:
+    //   inclusion_indicators[which_var] will be sampled from its full
+    //   conditional distribution.  The return value is the
+    //   (unnormalized) log posterior of the current
+    //   inclusion_indicators at function exit.
+    double mcmc_one_flip(Selector &inclusion_indicators,
+                         uint which_var,
+                         double current_logp);
+
    private:
     // The model whose paramaters are to be drawn.
     RegressionModel * m_;
 
     // A conditionally (given sigma) Gaussian prior distribution for
     // the coefficients of the full model (with all variables included).
-    Ptr<MvnGivenScalarSigma> bpri_;
+    Ptr<MvnGivenScalarSigmaBase> bpri_;
 
     // A marginal prior distribution for 1/sigma^2.
     Ptr<GammaModelBase> spri_;
@@ -151,8 +178,9 @@ namespace BOOM{
     mutable Spd iV_tilde_;        // posterior model probs
     mutable double DF_, SS_;
 
+    GenericGaussianVarianceSampler sigsq_sampler_;
+
     double set_reg_post_params(const Selector &g, bool do_ldoi)const;
-    double mcmc_one_flip(Selector &g, uint which_var, double logp_of_g);
 
     void draw_beta();
     void draw_model_indicators();

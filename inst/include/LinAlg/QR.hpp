@@ -22,9 +22,14 @@
 #include <LinAlg/Vector.hpp>
 
 namespace BOOM{
-  // The QR decomposition of a matrix X.  Logically, this is a pair of
-  // matrices, where Q is an orthogonal matrix with the same
-  // dimensions as X, and R is an upper triangular matrix.
+  // The QR decomposition of a matrix X.  In the case where the number
+  // of rows >= the number of columns, the dimension of Q matches that
+  // of X, and R is a square, upper triangular matrix with dimension
+  // number_of_columns.  Q satisfies Q^T * Q = I.
+  //
+  // If the number of columns > number of rows, then Q is a square
+  // matrix of dimension number_of_rows, and R is a trapezoidal
+  // matrix of dimension matching X.
   class QR{
    public:
     // An empty QR decomposition that can be used to decompose a
@@ -39,7 +44,6 @@ namespace BOOM{
     Matrix getQ()const;
     Matrix getR()const;
 
-    //
     Matrix solve(const Matrix &B)const;
     Vector solve(const Vector &b)const;
 

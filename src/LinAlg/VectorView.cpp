@@ -24,24 +24,22 @@
 
 #include <LinAlg/VectorView.hpp>
 #include <LinAlg/Vector.hpp>
+#include <LinAlg/blas.hpp>
 #include <distributions.hpp>
 #include <cpputil/report_error.hpp>
 
-extern "C"{
-#include <cblas.h>
-}
-
 namespace BOOM{
   using namespace std;
+  using namespace blas;
 
   namespace{
     template <class V1, class V2> double dot_impl(
         const V1 &v1, const V2 &v2) {
       assert(v1.size() == v2.size());
       if(v1.stride() > 0 && v2.stride() > 0){
-        return cblas_ddot(v1.size(),
-                          v1.data(), v1.stride(),
-                          v2.data(), v2.stride());
+        return ddot(v1.size(),
+                    v1.data(), v1.stride(),
+                    v2.data(), v2.stride());
       }else{
         double ans = 0;
         for(int i = 0; i < v1.size(); ++i){
@@ -143,65 +141,65 @@ namespace BOOM{
     return *this; }
 
   VV & VV::operator*=(const double & x){
-    cblas_dscal(size(), x, data(), stride());
+    dscal(size(), x, data(), stride());
     return *this; }
 
   VV & VV::operator/=(const double & x){
     assert(x!=0.0);
-    cblas_dscal(size(), 1.0/x, data(), stride());
+    dscal(size(), 1.0/x, data(), stride());
     return *this; }
 
   VV & VV::operator+=(const VectorView & y){
     assert(y.size()==size());
-    cblas_daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::operator+=(const ConstVectorView & y){
     assert(y.size()==size());
-    cblas_daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::operator+=(const Vector &y){
     assert(y.size()==size());
-    cblas_daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), 1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::operator-=(const Vector &y){
     assert(y.size()==size());
-    cblas_daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::operator-=(const VectorView &y){
     assert(y.size()==size());
-    cblas_daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::operator-=(const ConstVectorView &y){
     assert(y.size()==size());
-    cblas_daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
+    daxpy(size(), -1.0, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::axpy(const Vector &y, double a){
     assert(y.size()==size());
-    cblas_daxpy(size(), a, y.data(), y.stride(), data(), stride());
+    daxpy(size(), a, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::axpy(const VectorView &y, double a){
     assert(y.size()==size());
-    cblas_daxpy(size(), a, y.data(), y.stride(), data(), stride());
+    daxpy(size(), a, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
   VV & VV::axpy(const ConstVectorView &y, double a){
     assert(y.size()==size());
-    cblas_daxpy(size(), a, y.data(), y.stride(), data(), stride());
+    daxpy(size(), a, y.data(), y.stride(), data(), stride());
     return *this;
   }
 
@@ -256,12 +254,12 @@ namespace BOOM{
   }
 
   double VV::normsq()const{
-    double tmp = cblas_dnrm2(size(), data(), stride());
+    double tmp = dnrm2(size(), data(), stride());
     return tmp*tmp;
   }
 
   double VV::normalize_prob(){
-    double s = cblas_dasum(size(), data(), stride());
+    double s = dasum(size(), data(), stride());
     if(s==0) {
       report_error("normalizing constant is zero in VV::normalize_logprob");
     }
@@ -302,7 +300,7 @@ namespace BOOM{
     return accumulate(begin(), end(), 0.0); }
 
   double VV::abs_norm()const{
-    return cblas_dasum(size(), data(), stride());}
+    return dasum(size(), data(), stride());}
 
   inline double mul(double x, double y){return x*y;}
   double VV::prod()const{
@@ -312,51 +310,49 @@ namespace BOOM{
   double VV::dot(const VectorView &y)const{return dot_impl(*this, y); }
   double VV::dot(const ConstVectorView &y)const{return dot_impl(*this, y); }
 
-  double VV::affdot(const Vector &y)const{
-    uint n = size();
-    uint m = y.size();
-    if(m==n) return dot(y);
-    double ans=0.0;
-    const double *v1=0, *v2=0;
-    if(m==n+1){    // y is one unit longer than x
-      ans= y.front();
-      v1 = y.data()+1;
-      v2 = data();
-    }else if (n==m+1){   // x is one unit longer than y
-      ans = front();
-      v1 = y.data();
-      v2 = data()+1;
-    }else{
-      report_error("x and y do not conform in affdot");
+  namespace {
+    template <class V1, class V2>
+    double affdot_impl(const V1 &x, const V2 &y){
+      uint n = x.size();
+      uint m = y.size();
+      if(m==n) return x.dot(y);
+      double ans=0.0;
+      const double *v1=0, *v2=0;
+      if(m==n+1){    // y is one unit longer than x
+        ans= y.front();
+        v1 = y.data()+1;
+        v2 = x.data();
+      }else if (n==m+1){   // x is one unit longer than y
+        ans = x.front();
+        v1 = y.data();
+        v2 = x.data()+1;
+      }else{
+        assert(0 && "x and y do not conform in affdot");
+      }
+      const int i(std::min(m,n));
+      return ans + ddot(i, v1, y.stride(), v2, x.stride());
     }
-    const int i(std::min(m,n));
-    return ans + cblas_ddot(i, v1, y.stride(), v2, stride());
+  }
+
+  double VV::affdot(const Vector &y)const{
+    return affdot_impl(*this, y);
   }
 
   double VV::affdot(const VectorView &y)const{
-    uint n = size();
-    uint m = y.size();
-    if(m==n) return dot(y);
-    double ans=0.0;
-    const double *v1=0, *v2=0;
-    if(m==n+1){    // y is one unit longer than x
-      ans= y.front();
-      v1 = y.data()+1;
-      v2 = data();
-    }else if (n==m+1){   // x is one unit longer than y
-      ans = front();
-      v1 = y.data();
-      v2 = data()+1;
-    }else{
-      report_error("x and y do not conform in affdot");
-    }
-    const int i(std::min(m,n));
-    return ans + cblas_ddot(i, v1, y.stride(), v2, stride());
+    return affdot_impl(*this, y);
   }
 
   ostream & operator<<(ostream & out, const VV & v){
     for(uint i = 0; i<v.size(); ++i) out << v[i] << " ";
     return out; }
+
+  void print(const VectorView &v) {
+    std::cout << v << std::endl;
+  }
+
+  void print(const ConstVectorView &v) {
+    std::cout << v << std::endl;
+  }
 
   istream & operator<< (istream &in, VV &v){
     for(uint i=0; i<v.size(); ++i) in >> v[i];
@@ -378,48 +374,48 @@ namespace BOOM{
 
   CVV::ConstVectorView(const double *first, uint n, int s)
       : V(first),
-      nelem_(n),
-      stride_(s)
-      {}
+        nelem_(n),
+        stride_(s)
+  {}
 
   CVV::ConstVectorView(const Vector &v, uint first)
       : V(v.data() + first),
-      nelem_(v.size() - first),
-      stride_(1)
-      {}
+        nelem_(v.size() - first),
+        stride_(1)
+  {}
 
   CVV::ConstVectorView(const Vector &v, uint first, uint len)
       : V(v.data() + first),
-      nelem_(len),
-      stride_(1)
-      {}
+        nelem_(len),
+        stride_(1)
+  {}
 
   CVV::ConstVectorView(const CVV &v, uint first)
       : V(v.data() + first * v.stride()),
-      nelem_(v.size() - first),
-      stride_(v.stride())
-      {}
+        nelem_(v.size() - first),
+        stride_(v.stride())
+  {}
 
   CVV::ConstVectorView(const VectorView &v, uint first, uint len)
       : V(v.data() + first*v.stride()),
-      nelem_(len),
-      stride_(v.stride())
-      {}
+        nelem_(len),
+        stride_(v.stride())
+  {}
 
   CVV::ConstVectorView(const CVV &v, uint first, uint len)
       : V(v.data() + first*v.stride()),
-      nelem_(len),
-      stride_(v.stride())
-      {}
+        nelem_(len),
+        stride_(v.stride())
+  {}
 
-  CVV::ConstVectorView(const VectorView &v)
+  CVV::ConstVectorView(const VectorView &v, uint first)
       : V(v.data()),
-      nelem_(v.size()),
-      stride_(v.stride())
-      {}
+        nelem_(v.size() - first),
+        stride_(v.stride())
+  {}
 
   double CVV::normsq()const{
-    double tmp = cblas_dnrm2(size(), data(), stride());
+    double tmp = dnrm2(size(), data(), stride());
     return tmp*tmp;
   }
 
@@ -443,7 +439,7 @@ namespace BOOM{
     return accumulate(begin(), end(), 0.0); }
 
   double CVV::abs_norm()const{
-    return cblas_dasum(size(), data(), stride());}
+    return dasum(size(), data(), stride());}
 
   double CVV::prod()const{
     return accumulate(begin(), end(), 1.0, mul);}
@@ -451,6 +447,10 @@ namespace BOOM{
   double CVV::dot(const Vector &y)const{return dot_impl(*this, y); }
   double CVV::dot(const VectorView &y)const{return dot_impl(*this, y); }
   double CVV::dot(const ConstVectorView &y)const{return dot_impl(*this, y); }
+  double CVV::affdot(const Vector &y)const{return affdot_impl(*this, y);}
+  double CVV::affdot(const VectorView &y)const{return affdot_impl(*this, y);}
+  double CVV::affdot(const ConstVectorView &y)const{
+    return affdot_impl(*this, y);}
 
   CVV CVV::reverse()const{
     const double *start = V + (nelem_ - 1) * stride_;

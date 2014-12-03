@@ -33,7 +33,7 @@ namespace BOOM{
         public IID_DataPolicy<ChoiceData>,
         public PriorPolicy,
         public NumOptModel,
-        public MixtureComponent
+        virtual public MixtureComponent
   {
   public:
     // Initialize the model with a set of regression coefficients.
@@ -135,7 +135,9 @@ namespace BOOM{
     void drop_all_slopes(bool keep_intercepts = true);
     void add_all_slopes();
 
-    virtual double Loglike(Vec &g, Mat &H, uint nd)const;
+    // 'beta' refers to the vector of nonzero "included" coefficients.
+    virtual double Loglike(
+        const Vector &beta, Vector &g, Matrix &H, uint nd)const;
 
     // Args:
     //   beta: The vector of logistic regression coefficients, with
@@ -223,7 +225,6 @@ namespace BOOM{
     MultinomialLogitEMC(uint Nchoices, uint subject_xdim, uint choice_xdim);
     MultinomialLogitEMC * clone()const;
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
     virtual double pdf(Ptr<Data> dp, bool logscale)const{
       return MultinomialLogitModel::pdf(dp, logscale);}
     virtual double pdf(const Data * dp, bool logscale)const{
@@ -233,6 +234,9 @@ namespace BOOM{
     void clear_data();
 
     virtual void find_posterior_mode();
+    virtual void mle() {
+      MultinomialLogitModel::mle();
+    }
     void set_prior(Ptr<MvnBase>);
     // assumes a posterior sampler derived from MLVS_base
   private:

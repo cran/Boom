@@ -73,7 +73,7 @@ namespace BOOM{
 		       public SufstatDataPolicy<IntData, PoissonSuf>,
 		       public PriorPolicy,
 		       public NumOptModel,
-		       public MixtureComponent
+		       virtual public MixtureComponent
   {
   public:
 
@@ -83,7 +83,8 @@ namespace BOOM{
     PoissonModel *clone() const;
 
     virtual void mle();
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    virtual double Loglike(const Vector &lambda,
+                           Vec &g, Mat &h, uint nd)const;
 
     Ptr<UnivParams> Lam();
     const Ptr<UnivParams> Lam()const;

@@ -19,6 +19,7 @@
 #include <Models/MvnBase.hpp>
 #include <distributions.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
+#include <numopt/initialize_derivatives.hpp>
 
 namespace BOOM{
 
@@ -196,19 +197,35 @@ namespace BOOM{
     return ans;}
 
   double MB::logp_given_inclusion(const Vector &x_subset,
-                                  Vector &gradient,
-                                  Matrix &Hessian,
-                                  int nd,
-                                  const Selector &inc) const {
-    Vector mu0 = inc.select(mu());
-    SpdMatrix precision = inc.select(siginv());
+                                  Vector *gradient,
+                                  Matrix *Hessian,
+                                  const Selector &included,
+                                  bool reset_derivatives) const {
+    Vector mu0 = included.select(mu());
+    SpdMatrix precision = included.select(siginv());
     double ans = dmvn(x_subset, mu0, precision, precision.logdet(), true);
-    if (nd > 0) {
-      gradient = -precision * (x_subset - mu0);
-      if (nd > 1) {
-        Hessian = -precision;
+    initialize_derivatives(gradient, Hessian, included.nvars(),
+                           reset_derivatives);
+    if (gradient) {
+      *gradient -= precision * (x_subset - mu0);
+      if (Hessian) {
+        *Hessian -= precision;
       }
     }
+    return ans;
+  }
+
+  double MB::log_likelihood(const Vector &mu,
+                            const Spd &siginv,
+                            const MvnSuf &suf) const {
+    const double log2pi = 1.83787706641;
+    double n = suf.n();
+    const Vec ybar = suf.ybar();
+    const Spd sumsq = suf.center_sumsq();
+
+    double qform = n*(siginv.Mdist(ybar, mu)) + traceAB(siginv, sumsq);
+    double nc = 0.5 * n * (-dim() * log2pi + siginv.logdet());
+    double ans = nc - .5 * qform;
     return ans;
   }
 

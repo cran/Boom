@@ -82,8 +82,10 @@ namespace BOOM{
     double pdf(const Mat &Pi, bool logscale)const;
     //    double Logp(const Vec &, Vec &, Mat &, uint nd)const;
 
-    double loglike()const;
-    double dloglike(Vec &g)const;
+    // The argument is a vector created by stacking the columns of the
+    // parameter Nu.
+    double loglike(const Vector &Nu_columns)const;
+    double dloglike(const Vector &Nu_columns, Vector &g)const;
 
     Mat sim()const;
   };

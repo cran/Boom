@@ -63,8 +63,11 @@ namespace BOOM{
     double sigma()const;
     const double & nu()const;
 
-    // vectorization is beta(),sigsq()
-    double Loglike(Vec &g, Mat &h, uint nd)const;
+    // The argument to Loglike is a vector containing the included
+    // regression coefficients, followed by the residual 'dispersion'
+    // parameter sigsq, followed by the tail thickness parameter nu.
+    double Loglike(const Vector &beta_sigsq_nu,
+                   Vec &g, Mat &h, uint nd)const;
     void mle();
     double complete_data_Loglike(Vec &g, Mat &h, uint nd)const;
     virtual double complete_data_loglike()const;

@@ -350,7 +350,7 @@ namespace BOOM {
     //
     std::vector<int> UnpackKnownDataSource(SEXP rknown_source){
       std::vector<int> ans;
-      if(Rf_isList(rknown_source)){
+      if(Rf_isNewList(rknown_source)){
         // if it is a list, then unlist it
         int n = Rf_length(rknown_source);
         // We will need at least n elements in ans.  We might need

@@ -94,7 +94,7 @@ namespace BOOM{
     void set_mean(double a_over_a_plus_b);
 
     // probability calculations
-    double Loglike(Vec &, Mat &, uint) const ;
+    double Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const;
     double log_likelihood(double a, double b)const;
     double Logp(double x, double &d1, double &d2, uint nd) const ;
     double sim() const;

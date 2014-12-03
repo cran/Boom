@@ -72,8 +72,8 @@ namespace BOOM{
   WishartSuf * WishartSuf::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s);}
 
-  Vec WishartSuf::vectorize(bool minimal)const{
-    Vec ans = sumW_.vectorize(minimal);
+  Vector WishartSuf::vectorize(bool minimal)const{
+    Vector ans = sumW_.vectorize(minimal);
     ans.push_back(n_);
     ans.push_back(sumldw_);
     return ans;
@@ -87,7 +87,7 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator WishartSuf::unvectorize(const Vec &v, bool minimal){
+  Vec::const_iterator WishartSuf::unvectorize(const Vector &v, bool minimal){
     Vec::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
@@ -123,7 +123,6 @@ namespace BOOM{
 
   WM::WishartModel(const WM &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -134,14 +133,14 @@ namespace BOOM{
   WM *WM::clone() const{return new WM(*this);}
 
   void WishartModel::mle0(){
-    Vec theta = vectorize_params();
+    Vector theta = vectorize_params();
     LoglikeTF target(this);
     max_nd0(theta, Target(target));
     unvectorize_params(theta);
   }
 
   void WishartModel::mle1(){
-    Vec theta = vectorize_params();
+    Vector theta = vectorize_params();
     dLoglikeTF target(this);
     max_nd1(theta, Target(target), dTarget(target));
     unvectorize_params(theta);
@@ -170,16 +169,18 @@ namespace BOOM{
   void WM::set_nu(double Nu){Nu_prm()->set(Nu);}
   void WM::set_sumsq(const Spd &S){Sumsq_prm()->set(S);}
 
-
-
   Spd WishartModel::simdat(){ return rWish(nu(), sumsq()); }
 
-  double WishartModel::Loglike(Vec &g, uint nd)const{
+  double WishartModel::Loglike(const Vector &sumsq_triangle_nu,
+                               Vector &g, uint nd)const{
     const double log2 = 0.69314718055994529;
     const double logpi = 1.1447298858494002;
     int k=dim();
-    const Spd  &SS(sumsq());
-    double nu = this->nu();
+    SpdParams Sumsq_arg(dim());
+    Vector::const_iterator it = Sumsq_arg.unvectorize(sumsq_triangle_nu, true);
+    double nu = *it;
+    const Spd &SS(Sumsq_arg.var());
+
     if(nu <k) return negative_infinity();
     double ldSS = 0;
 
@@ -216,13 +217,12 @@ namespace BOOM{
     return ans;
   }
 
-
-  double WishartModel::loglike() const{
-    Vec g;
-    return Loglike(g, 0);
+  double WishartModel::loglike(const Vector &sumsq_triangle_nu) const{
+    Vector g;
+    return this->Loglike(sumsq_triangle_nu, g, 0);
   }
 
-  double WishartModel::dloglike(Vec &g)const{
-    return Loglike(g, 1);}
+  double WishartModel::dloglike(const Vector &sumsq_triangle_nu, Vector &g)const{
+    return this->Loglike(sumsq_triangle_nu, g, 1);}
 
 }

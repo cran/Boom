@@ -83,8 +83,11 @@ namespace BOOM{
     // probability calculations
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     virtual double pdf(const Data * dp, bool logscale)const;
-    double Loglike(Vec &g, Mat &h, uint lev) const ;
+    double Loglike(const Vector &lambda_as_vector,
+                   Vec &g, Mat &h, uint nd) const ;
     double Logp(double x, double &g, double &h, const uint lev) const ;
+    virtual void mle();
+
     double sim() const;
     void add_mixture_data(Ptr<Data>, double prob);
   };

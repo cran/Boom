@@ -32,14 +32,14 @@ namespace BOOM{
         log_alpha_(0)
   {}
 
-  LogisticRegressionModel::LogisticRegressionModel(const Vec &beta)
+  LogisticRegressionModel::LogisticRegressionModel(const Vector &beta)
       : ParamPolicy(new GlmCoefs(beta)),
         log_alpha_(0)
   {}
 
 
   LogisticRegressionModel::LogisticRegressionModel
-  (const Mat &X, const Vec &y, bool add_int)
+  (const Matrix &X, const Vector &y, bool add_int)
       : ParamPolicy(new GlmCoefs(X.ncol())),
         log_alpha_(0)
   {
@@ -54,7 +54,6 @@ namespace BOOM{
   LogisticRegressionModel::LogisticRegressionModel
   (const LogisticRegressionModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GlmModel(rhs),
       NumOptModel(rhs),
       ParamPolicy(rhs),
@@ -81,20 +80,20 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  double LRM::logp(bool y, const Vec &x)const{
+  double LRM::logp(bool y, const Vector &x)const{
     double btx = predict(x);
     double ans = -lope(btx);
     if(y) ans += btx;
     return ans;
   }
 
-  double LRM::Loglike(Vec &g, Mat &h, uint nd)const{
-    if(nd>=2) return log_likelihood(included_coefficients(), &g, &h);
-    if(nd==1) return log_likelihood(included_coefficients(), &g, 0);
-    return log_likelihood(included_coefficients(), 0, 0);
+  double LRM::Loglike(const Vector &beta, Vector &g, Matrix &h, uint nd)const{
+    if(nd>=2) return log_likelihood(beta, &g, &h);
+    if(nd==1) return log_likelihood(beta, &g, 0);
+    return log_likelihood(beta, 0, 0);
   }
 
-  double LRM::log_likelihood(const Vec & beta, Vec *g, Mat *h,
+  double LRM::log_likelihood(const Vector & beta, Vector *g, Matrix *h,
                              bool initialize_derivs)const{
     const LRM::DatasetType &data(dat());
     if(initialize_derivs){
@@ -111,7 +110,7 @@ namespace BOOM{
     const Selector &inc(coef().inc());
     for(int i = 0; i < n; ++i){
       bool y = data[i]->y();
-      const Vec & x(data[i]->x());
+      const Vector & x(data[i]->x());
       double eta = predict(x) + log_alpha_;
       double loglike = plogis(eta, 0, 1, y, true);
       ans += loglike;
@@ -169,13 +168,13 @@ namespace BOOM{
       : m_(m)
   {}
 
-  double LLL::operator()(const Vec &b)const{
+  double LLL::operator()(const Vector &b)const{
     return m_->log_likelihood(b, 0, 0);
   }
-  double LLL::operator()(const Vec &b, Vec &g)const{
+  double LLL::operator()(const Vector &b, Vector &g)const{
     return m_->log_likelihood(b, &g, 0);
   }
-  double LLL::operator()(const Vec &b, Vec &g, Mat &h)const{
+  double LLL::operator()(const Vector &b, Vector &g, Matrix &h)const{
     return m_->log_likelihood(b, &g, &h);
   }
 
@@ -185,7 +184,7 @@ namespace BOOM{
     : LRM(beta_dim, all)
   {}
 
-  LogitEMC::LogitEMC(const Vec &beta)
+  LogitEMC::LogitEMC(const Vector &beta)
     : LRM(beta)
   {}
 
@@ -193,8 +192,8 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
 
-  double logit_loglike_1(const Vec & beta, bool y, const Vec &x,
-			 Vec *g, Mat *h, double mix_wgt){
+  double logit_loglike_1(const Vector & beta, bool y, const Vector &x,
+			 Vector *g, Matrix *h, double mix_wgt){
     double eta = x.dot(beta);
     double lognc = lse2(0, eta);
     double ans = y?  eta : 0;
@@ -209,39 +208,6 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  double LogitEMC::Loglike(Vec &g, Mat &h, uint nd)const{
-    uint n = probs_.size();
-    if(n==0) return LRM::Loglike(g,h,nd);
-
-    const DatasetType &d(dat());
-    if(d.size()!=n){
-      ostringstream err;
-      err << "There is a mismatch between the data vector and the vector "
-	  << "of mixing weights in LogitEMC::Loglike." << endl;
-      report_error(err.str());
-    }
-
-    Vec * gp=0;
-    Mat * hp=0;
-    if(nd>0){
-      g=0;
-      gp = &g;
-      if(nd>1){
-	h=0;
-	hp = &h;}}
-
-    const Selector & inc(coef().inc());
-    Vec b(this->included_coefficients());
-
-    double ans=0;
-    for(uint i=0; i<n; ++i){
-      double w = probs_[i];
-      Vec x = inc.select(d[i]->x());
-      bool y = d[i]->y();
-      ans += logit_loglike_1(b, y, x, gp, hp, w);
-    }
-    return ans;
-  }
 
   void LogitEMC::add_mixture_data(Ptr<Data> dp, double prob){
     LRM::add_data(dp);
@@ -283,10 +249,10 @@ namespace BOOM{
 
     d2LoglikeTF loglike(this);
     d2LogPostTF logpost(loglike, pri_);
-    Vec b = this->Beta();
+    Vector b = this->Beta();
     uint dim = b.size();
-    Vec g(dim);
-    Mat h(dim,dim);
+    Vector g(dim);
+    Matrix h(dim,dim);
     b = max_nd2(b, g, h, Target(logpost), dTarget(logpost),
                 d2Target(logpost), 1e-5);
     this->set_Beta(b);

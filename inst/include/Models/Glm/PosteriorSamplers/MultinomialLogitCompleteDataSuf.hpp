@@ -23,23 +23,14 @@
 #include <Models/Glm/ChoiceData.hpp>
 
 namespace BOOM {
-  class MultinomialLogitCompleteDataSufficientStatistics
-      : private RefCounted{
+  class MultinomialLogitCompleteDataSufficientStatistics {
   public:
-    friend void intrusive_ptr_add_ref(
-        MultinomialLogitCompleteDataSufficientStatistics *d){
-      d->up_count();}
-    friend void intrusive_ptr_release(
-        MultinomialLogitCompleteDataSufficientStatistics *d){
-      d->down_count();
-      if(d->ref_count()==0) delete d;}
-
     MultinomialLogitCompleteDataSufficientStatistics(uint dim);
     MultinomialLogitCompleteDataSufficientStatistics * clone() const;
 
     void clear();
-    void update(const Ptr<ChoiceData> dp, const Vector &wgts, const Vector &u);
-    void add(Ptr<MultinomialLogitCompleteDataSufficientStatistics>);
+    void update(const ChoiceData &dp, const Vector &wgts, const Vector &u);
+    void combine(const MultinomialLogitCompleteDataSufficientStatistics &rhs);
 
     const Spd & xtwx()const;
     const Vector & xtwu()const;

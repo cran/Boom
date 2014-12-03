@@ -44,13 +44,13 @@
  *
  *  DESCRIPTION
  *
- *    dsignrank	   The density of the Wilcoxon Signed Rank distribution.
- *    psignrank	   The distribution function of the Wilcoxon Signed Rank
- *		   distribution.
- *    qsignrank	   The quantile function of the Wilcoxon Signed Rank
- *		   distribution.
- *    rsignrank	   Random variates from the Wilcoxon Signed Rank
- *		   distribution.
+ *    dsignrank    The density of the Wilcoxon Signed Rank distribution.
+ *    psignrank    The distribution function of the Wilcoxon Signed Rank
+ *                 distribution.
+ *    qsignrank    The quantile function of the Wilcoxon Signed Rank
+ *                 distribution.
+ *    rsignrank    Random variates from the Wilcoxon Signed Rank
+ *                 distribution.
  */
 
 #include "nmath.hpp"
@@ -98,13 +98,13 @@ static void
 w_init_maybe(double n)
 {
     if (w && (n > SIGNRANK_MAX))
-	w_free(SIGNRANK_MAX);
+        w_free(SIGNRANK_MAX);
 
     if (!w) {
       n = allocated_n = std::max(static_cast<int>(n), SIGNRANK_MAX);
-	w = (double **) calloc(allocated_n + 1, sizeof(double *));
-	if (!w)
-	    mathlib_error("signrank allocation error");
+        w = (double **) calloc(allocated_n + 1, sizeof(double *));
+        if (!w)
+            mathlib_error("signrank allocation error");
     }
 }
 
@@ -127,22 +127,22 @@ csignrank(int k, int n)
     c = (int) (u / 2);
 
     if ((k < 0) || (k > u))
-	return(0);
+        return(0);
     if (k > c)
-	k = u - k;
+        k = u - k;
     if (w[n] == 0) {
-	w[n] = (double *) calloc(c + 1, sizeof(double));
-	if (!w[n]) {
-	    mathlib_error("signrank allocation error");
-	}
-	for (i = 0; i <= c; i++)
-	    w[n][i] = -1;
+        w[n] = (double *) calloc(c + 1, sizeof(double));
+        if (!w[n]) {
+            mathlib_error("signrank allocation error");
+        }
+        for (i = 0; i <= c; i++)
+            w[n][i] = -1;
     }
     if (w[n][k] < 0) {
-	if (n == 0)
-	    w[n][k] = (k == 0);
-	else
-	    w[n][k] = csignrank(k - n, n - 1) + csignrank(k, n - 1);
+        if (n == 0)
+            w[n][k] = (k == 0);
+        else
+            w[n][k] = csignrank(k - n, n - 1) + csignrank(k, n - 1);
     }
     return(w[n][k]);
 }
@@ -163,13 +163,13 @@ double dsignrank(double x, double n, int give_log)
 #endif
     n = FLOOR(n + 0.5);
     if (n <= 0)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if (fabs(x - FLOOR(x + 0.5)) > 1e-7)
-	return(R_D__0);
+        return(R_D__0);
     x = FLOOR(x + 0.5);
     if ((x < 0) || (x > (n * (n + 1) / 2)))
-	return(R_D__0);
+        return(R_D__0);
 
     w_init_maybe(n);
     d = R_D_exp(log(CSIGNRANK(x, n)) - n * M_LN2);
@@ -192,22 +192,22 @@ double psignrank(double x, double n, int lower_tail, int log_p)
 
     x = FLOOR(x + 1e-7);
     if (x < 0.0)
-	return(R_DT_0);
+        return(R_DT_0);
     if (x >= n * (n + 1) / 2)
-	return(R_DT_1);
+        return(R_DT_1);
 
     w_init_maybe(n);
     f = exp(- n * M_LN2);
     p = 0;
     if (x <= (n * (n + 1) / 4)) {
-	for (i = 0; i <= x; i++)
-	    p += CSIGNRANK(i, n) * f;
+        for (i = 0; i <= x; i++)
+            p += CSIGNRANK(i, n) * f;
     }
     else {
-	x = n * (n + 1) / 2 - x;
-	for (i = 0; i < x; i++)
-	    p += CSIGNRANK(i, n) * f;
-	lower_tail = !lower_tail; /* p = 1 - p; */
+        x = n * (n + 1) / 2 - x;
+        for (i = 0; i < x; i++)
+            p += CSIGNRANK(i, n) * f;
+        lower_tail = !lower_tail; /* p = 1 - p; */
     }
 
     return(R_DT_val(p));
@@ -219,47 +219,47 @@ double qsignrank(double x, double n, int lower_tail, int log_p)
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(n))
-	return(x + n);
+        return(x + n);
 #endif
     if (!R_FINITE(x) || !R_FINITE(n))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
     R_Q_P01_check(x);
 
     n = FLOOR(n + 0.5);
     if (n <= 0)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     if (x == R_DT_0)
-	return(0);
+        return(0);
     if (x == R_DT_1)
-	return(n * (n + 1) / 2);
+        return(n * (n + 1) / 2);
 
     if(log_p || !lower_tail)
-	x = R_DT_qIv(x); /* lower_tail,non-log "p" */
+        x = R_DT_qIv(x); /* lower_tail,non-log "p" */
 
     w_init_maybe(n);
     f = exp(- n * M_LN2);
     p = 0;
     q = 0;
     if (x <= 0.5) {
-	x = x - 10 * numeric_limits<double>::epsilon();
-	for (;;) {
-	    p += CSIGNRANK(q, n) * f;
-	    if (p >= x)
-		break;
-	    q++;
-	}
+        x = x - 10 * numeric_limits<double>::epsilon();
+        for (;;) {
+            p += CSIGNRANK(q, n) * f;
+            if (p >= x)
+                break;
+            q++;
+        }
     }
     else {
-	x = 1 - x + 10 * numeric_limits<double>::epsilon();
-	for (;;) {
-	    p += CSIGNRANK(q, n) * f;
-	    if (p > x) {
-		q = n * (n + 1) / 2 - q;
-		break;
-	    }
-	    q++;
-	}
+        x = 1 - x + 10 * numeric_limits<double>::epsilon();
+        for (;;) {
+            p += CSIGNRANK(q, n) * f;
+            if (p > x) {
+                q = n * (n + 1) / 2 - q;
+                break;
+            }
+            q++;
+        }
     }
 
     return(q);
@@ -278,7 +278,7 @@ double rsignrank(double n)
     if (n < 0) ML_ERR_return_NAN;
 
     if (n == 0)
-	return(0);
+        return(0);
     r = 0.0;
     k = (int) n;
     for (i = 0; i < k; ) {

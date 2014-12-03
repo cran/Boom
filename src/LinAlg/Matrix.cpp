@@ -38,6 +38,7 @@
 #include <LinAlg/LU.hpp>
 #include <LinAlg/Cholesky.hpp>
 #include <LinAlg/QR.hpp>
+#include <LinAlg/blas.hpp>
 
 // other BOOM
 #include <distributions.hpp>
@@ -48,19 +49,17 @@
 // lapack and blas
 
 extern "C"{
-#include <cblas.h>
   void dgesv_(const int *n, const int *nrhs, double *A, const int *lda,
-	      int *ipiv, double *ans, const int *ldb, int *info);
+              int *ipiv, double *ans, const int *ldb, int *info);
   int ilaenv_( const int *, const char *, const char *, const int *,
-	       const int *, const int *, const int *);
+               const int *, const int *, const int *);
   void dgesdd_(const char *, const int *m, const int *n, double *A,
-	       const int *lda, double *values,
-	       double *u, const int *ldu, double *vt, const int *ldvt,
-	       double *wsp, const int *lwork, int *iwork, int *info);
+               const int *lda, double *values,
+               double *u, const int *ldu, double *vt, const int *ldvt,
+               double *wsp, const int *lwork, int *iwork, int *info);
   void dgeev_(const char *, const char *, const int *, double *,
-	      const int *, double *, double *, double *, const int *,
-	      double *, const int *, double *, const int *, int *);
-
+              const int *, double *, double *, double *, const int *,
+              double *, const int *, double *, const int *, int *);
 }
 
 typedef std::vector<double> dVector;
@@ -72,6 +71,7 @@ namespace BOOM{
 
 
   using namespace std;
+  using namespace blas;
   Matrix::Matrix()
     : V(),
       nr_(0),
@@ -86,7 +86,7 @@ namespace BOOM{
 
 
   Matrix::Matrix(uint nr, uint nc, const double *m,
-      	   bool byrow)
+           bool byrow)
     : V(&m[0], &m[nr*nc]),
       nr_(nr),
       nc_(nc)
@@ -141,20 +141,13 @@ namespace BOOM{
     for(uint i=0; i<nr_; ++i) set_row(i,v[i]);
   }
 
+  Matrix::Matrix(const SubMatrix &rhs) {
+    operator=(rhs);
+  }
 
-
-  Matrix::Matrix(const Matrix &rhs)
-    : V(rhs.V),  // value semantics
-      nr_(rhs.nr_),
-      nc_(rhs.nc_)
-  {}
-
-  Matrix & Matrix::operator=(const Matrix &rhs){
-    if(&rhs!=this){
-      nr_ = rhs.nr_;
-      nc_ = rhs.nc_;
-      V = rhs.V;}
-    return *this; }
+  Matrix::Matrix(const ConstSubMatrix &rhs) {
+    operator=(rhs);
+  }
 
   Matrix & Matrix::operator=(const SubMatrix & rhs){
     nr_ = rhs.nrow();
@@ -473,7 +466,11 @@ namespace BOOM{
   VectorViewConstIterator Matrix::dbegin()const{
     return VectorViewConstIterator(&(V.front()), &(V.back()), ncol()+1); }
   VectorViewConstIterator Matrix::dend()const{
-    return VectorViewConstIterator(&V.front(), &(V.back())+ ncol()+1, ncol()+1);}
+    return VectorViewConstIterator(
+        &V.front(),
+        &(V.back())+ ncol()+1,
+        ncol()+1);
+  }
 
   VectorViewIterator Matrix::row_begin(uint i){
     double *b = data()+i;
@@ -509,14 +506,13 @@ namespace BOOM{
   bool Matrix::can_multT(const Matrix &B, const Matrix &ans)const{
     return nrow()==ans.nrow() && B.nrow()==ans.ncol() && ncol() == B.ncol();}
 
-
   Matrix & Matrix::mult(const Matrix &B, Matrix &ans, double scal)const{
     assert(can_mult(B,ans));
     uint m =ans.nrow();
     uint n=ans.ncol();
     uint k = ncol();
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m,n,k, scal, data(),
-      	  nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
+    dgemm(NoTrans, NoTrans, m, n, k, scal, data(),
+          nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
     return ans; }
 
   Matrix & Matrix::Tmult(const Matrix &B, Matrix &ans, double scal)const{
@@ -524,8 +520,8 @@ namespace BOOM{
     uint m =ans.nrow();
     uint n=ans.ncol();
     uint k =nrow();
-    cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, m,n,k, scal, data(),
-      	  nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
+    dgemm(Trans, NoTrans, m, n, k, scal, data(),
+          nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
     return ans; }
 
   Matrix & Matrix::multT(const Matrix &B, Matrix &ans, double scal)const{
@@ -533,8 +529,8 @@ namespace BOOM{
     uint m =ans.nrow();
     uint n=ans.ncol();
     uint k =ncol();
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, m,n,k, scal, data(),
-      	  nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
+    dgemm(NoTrans, Trans, m, n, k, scal, data(),
+          nrow(), B.data(), B.nrow(), 0.0, ans.data(), ans.nrow());
     return ans; }
 
 
@@ -544,9 +540,9 @@ namespace BOOM{
     assert(can_mult(S,ans));
     uint m = nrow();
     uint n = S.ncol();
-    cblas_dsymm(CblasColMajor, CblasRight, CblasUpper, m,n,scal,
-      	  S.data(), S.nrow(), data(), nrow(),
-      	  0.0, ans.data(), ans.nrow());
+    dsymm(Right, Upper, m, n, scal,
+          S.data(), S.nrow(), data(), nrow(),
+          0.0, ans.data(), ans.nrow());
     return ans; }
 
 
@@ -558,64 +554,68 @@ namespace BOOM{
 
   //----------- diagonal matrices ----------
 
-  Matrix & Matrix::mult(const DiagonalMatrix &d, Matrix &ans, double scal)const{
+  Matrix & Matrix::mult(const DiagonalMatrix &d,
+                        Matrix &ans,
+                        double scal)const{
     assert(can_mult(d,ans));
     for(uint i=0; i<d.ncol(); ++i){
       double a = d[i]*scal;
       VectorView b(col(i));
       VectorView Ans(ans.col(i));
-      cblas_daxpy(ans.ncol(), a, b.data(), b.stride(), Ans.data(), Ans.stride());
+      daxpy(ans.ncol(), a, b.data(), b.stride(), Ans.data(), Ans.stride());
     }
     return ans;
   }
 
-  Matrix & Matrix::Tmult(const DiagonalMatrix &d, Matrix &ans, double scal)const{
+  Matrix & Matrix::Tmult(const DiagonalMatrix &d,
+                         Matrix &ans,
+                         double scal)const{
     assert(can_Tmult(d,ans));
     for(uint i=0; i<d.ncol(); ++i){
       double a = d[i]*scal;
       ConstVectorView b(row(i));
       VectorView Ans(ans.col(i));
-      cblas_daxpy(ans.ncol(), a, b.data(), b.stride(), Ans.data(), Ans.stride());
+      daxpy(ans.ncol(), a, b.data(), b.stride(), Ans.data(), Ans.stride());
     }
     return ans;
   }
 
-  Matrix & Matrix::multT(const DiagonalMatrix &d, Matrix & ans, double scal)const{
+  Matrix & Matrix::multT(const DiagonalMatrix &d,
+                         Matrix & ans,
+                         double scal)const{
     return mult(d,ans, scal);}
 
 
-template<class MATRIX, class VECTOR_IN, class VECTOR_OUT>
-VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
-                                  VECTOR_OUT &ans, bool transpose){
-  cblas_dgemv(CblasColMajor,
-              transpose ? CblasTrans : CblasNoTrans,
-              m.nrow(),
-              m.ncol(),
-              1.0,
-              m.data(),
-              m.nrow(),
-              v.data(),
-              v.stride(),
-              0.0,
-              ans.data(),
-              ans.stride());
-  return ans;
-}
-
+  template<class MATRIX, class VECTOR_IN, class VECTOR_OUT>
+  VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
+                                    VECTOR_OUT &ans, bool transpose){
+    dgemv(transpose ? Trans : NoTrans,
+          m.nrow(),
+          m.ncol(),
+          1.0,
+          m.data(),
+          m.nrow(),
+          v.data(),
+          v.stride(),
+          0.0,
+          ans.data(),
+          ans.stride());
+    return ans;
+  }
 
   //--------- Vector support
   Vector & Matrix::mult(const Vector &v, Vector &ans, double scal)const{
     assert(ncol()==v.size() && nrow()==ans.size());
-    cblas_dgemv(CblasColMajor, CblasNoTrans,nrow(),ncol(), scal, data(), nrow(),
-      	  v.data(), v.stride(), 0.0, ans.data(), ans.stride());
+    dgemv(NoTrans,nrow(),ncol(), scal, data(), nrow(),
+          v.data(), v.stride(), 0.0, ans.data(), ans.stride());
     return ans;
   }
 
   Vector & Matrix::Tmult(const Vector &v, Vector &ans, double scal)const{
     assert(nrow()==v.size()
            && ncol()==ans.size());
-    cblas_dgemv(CblasColMajor, CblasTrans,nrow(),ncol(), scal, data(), nrow(),
-      	  v.data(), v.stride(), 0.0, ans.data(), ans.stride());
+    dgemv(Trans,nrow(),ncol(), scal, data(), nrow(),
+          v.data(), v.stride(), 0.0, ans.data(), ans.stride());
     return ans;
   }
 
@@ -668,11 +668,29 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
 
   SpdMatrix Matrix::inner()const{  // eventually return type will be SpdMatrix
     SpdMatrix ans(nc_, 0.0);
-    // once we define an SpdMatrix we can use a more efficient inner product
-    cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans, nc_, nr_, 1.0, data(),
-      	  nr_, 0.0, ans.data(), nc_);
+    dsyrk(Upper, Trans, nc_, nr_, 1.0, data(),
+          nr_, 0.0, ans.data(), nc_);
     ans.reflect();
     return ans; }
+
+  SpdMatrix Matrix::outer() const {
+    SpdMatrix ans(nr_);
+    //
+    // C <- alpha * A A^T + beta * C
+    // where C is NxN and A is NxK.
+    dsyrk(Upper,
+          NoTrans,
+          nr_,            // N
+          nc_,            // K
+          1.0,            // alpha
+          data(),         // *A
+          nr_,            // LDA
+          0.0,            // beta
+          ans.data(),     // *C
+          nr_);           // LDC
+    ans.reflect();
+    return ans;
+  }
 
   Matrix Matrix::inv()const{
     assert(is_square());
@@ -787,58 +805,70 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
 
   Matrix & Matrix::add_outer(const Vector &x, const Vector &y, double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
 
   Matrix & Matrix::add_outer(const Vector &x, const VectorView &y, double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
 
   Matrix & Matrix::add_outer(const VectorView &x, const Vector &y, double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const VectorView &x, const VectorView &y, double w){
+  Matrix & Matrix::add_outer(const VectorView &x,
+                             const VectorView &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const ConstVectorView &x, const Vector &y, double w){
+  Matrix & Matrix::add_outer(const ConstVectorView &x,
+                             const Vector &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const Vector &x, const ConstVectorView &y, double w){
+  Matrix & Matrix::add_outer(const Vector &x,
+                             const ConstVectorView &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const ConstVectorView &x, const VectorView &y, double w){
+  Matrix & Matrix::add_outer(const ConstVectorView &x,
+                             const VectorView &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const VectorView &x, const ConstVectorView &y, double w){
+  Matrix & Matrix::add_outer(const VectorView &x,
+                             const ConstVectorView &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
-  Matrix & Matrix::add_outer(const ConstVectorView &x, const ConstVectorView &y, double w){
+  Matrix & Matrix::add_outer(const ConstVectorView &x,
+                             const ConstVectorView &y,
+                             double w){
     assert(nrow()==x.size() && ncol() == y.size());
-    cblas_dger(CblasColMajor, nrow(), ncol(), w, x.data(), x.stride(),
-      	 y.data(), y.stride(), data(), nrow());
+    dger(nrow(), ncol(), w, x.data(), x.stride(),
+         y.data(), y.stride(), data(), nrow());
     return *this;
   }
 
@@ -868,7 +898,7 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
   Matrix & Matrix::operator*=(double x){
     int n = size();
     double *d(data());
-    cblas_dscal(n,x,d,1);
+    dscal(n,x,d,1);
     return *this; }
 
   Matrix & Matrix::operator/=(double x){
@@ -936,6 +966,10 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
     return x.display(out, 5);
   }
 
+  void print(const Matrix &m) {
+    cout << m << endl;
+  }
+
   istream & operator>>(istream &in, Matrix &m){
     // reads until a blank line is found or the end of a line
 
@@ -977,7 +1011,7 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
   Matrix operator/(const double y, const Matrix &x){
     Matrix ans = x;
     transform(ans.begin(), ans.end(), ans.begin(),
-      	bind1st(std::divides<double>(), y) );
+        bind1st(std::divides<double>(), y) );
     return ans;
   }
 
@@ -993,17 +1027,17 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
   double el_mult_sum(const Matrix &A, const Matrix &B){
     assert(can_add(A,B));
     uint n = A.size();
-    return cblas_ddot(n, A.data(), 1, B.data(), 1);
+    return ddot(n, A.data(), 1, B.data(), 1);
   }
 
   double Matrix::sum()const{
     return accumulate(V.begin(), V.end(), 0.0);}
 
   double Matrix::abs_norm()const{
-    return cblas_dasum(size(), data(), 1);}
+    return dasum(size(), data(), 1);}
 
   double Matrix::sumsq()const{
-    return cblas_ddot(size(), data(), 1, data(), 1); }
+    return ddot(size(), data(), 1, data(), 1); }
 
   double Matrix::prod()const{
     return accumulate(V.begin(), V.end(), 1.0, mul);}
@@ -1022,11 +1056,13 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
         row_names_(row_names),
         col_names_(col_names)
       {
-        if (row_names.size() != m.nrow()) {
+        if (!row_names.empty() &&
+            row_names.size() != m.nrow()) {
           report_error("row_names was the wrong size in "
                        "LabeledMatrix constructor");
         }
-        if (col_names.size() != m.ncol()) {
+        if (!col_names.empty() &&
+            col_names.size() != m.ncol()) {
           report_error("col_names was the wrong size in "
                        "LabeledMatrix constructor");
         }
@@ -1034,21 +1070,31 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
 
   ostream & LabeledMatrix::display(ostream &out, int precision) const {
     int max_row_label = 0;
-    for (int i = 0; i < row_names_.size(); ++i) {
-      max_row_label = std::max<int>(max_row_label, row_names_[i].size());
+    bool have_row_names = !row_names_.empty();
+    if (have_row_names) {
+      for (int i = 0; i < row_names_.size(); ++i) {
+        max_row_label = std::max<int>(max_row_label, row_names_[i].size());
+      }
+      out << setw(max_row_label) << " " << " ";
     }
 
-    out << setw(max_row_label) << " " << " ";
-    for (int i = 0; i < col_names_.size(); ++i) {
-      int col_width = std::max<int>(col_names_[i].size(), 8);
-      out << setw(col_width) << col_names_[i] << " ";
+    bool have_col_names = !col_names_.empty();
+    if (have_col_names) {
+      for (int i = 0; i < col_names_.size(); ++i) {
+        int col_width = std::max<int>(col_names_[i].size(), 8);
+        out << setw(col_width) << col_names_[i] << " ";
+      }
+      out << endl;
     }
-    out << endl;
 
     for (int i = 0; i < nrow(); ++i) {
-      out << setw(max_row_label) << std::left << row_names_[i] << std::right << " ";
+      if (have_row_names) {
+        out << setw(max_row_label) << std::left
+            << row_names_[i] << std::right << " ";
+      }
       for (int j = 0; j < ncol(); ++j) {
-        int col_width = std::max<int>(col_names_[j].size(), 8);
+        int col_width =
+            have_col_names ? std::max<int>(col_names_[j].size(), 8) : 8;
         out << setw(col_width) << unchecked(i, j) << " ";
       }
       out << endl;
@@ -1056,16 +1102,20 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
     return out;
   }
 
+  Matrix LabeledMatrix::drop_labels() const {
+    return Matrix(*this);
+  }
+
   Matrix log(const Matrix &x){
     Matrix ans(x);
     std::transform(ans.begin(), ans.end(), ans.begin(),
-      	     pointer_to_unary_function<double,double>(std::log));
+             pointer_to_unary_function<double,double>(std::log));
     return ans; }
 
   Matrix exp(const Matrix &x){
     Matrix ans(x);
     std::transform(ans.begin(), ans.end(), ans.begin(),
-      	     pointer_to_unary_function<double,double>(std::exp));
+             pointer_to_unary_function<double,double>(std::exp));
     return ans; }
 
   Matrix matmult(const Matrix &A, const Matrix &B){
@@ -1222,7 +1272,7 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
   double traceAtB(const Matrix &A, const Matrix &B){
     uint n = A.size();
     assert(n==B.size());
-    return cblas_ddot(n,A.data(),1,B.data(),1);
+    return ddot(n,A.data(),1,B.data(),1);
   }
 
 
@@ -1266,11 +1316,11 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
     Matrix ans(n,n,0.0);
     for(uint i=0; i<n1; ++i){
       std::copy(A.col_begin(i), A.col_end(i),
-      	  ans.col_begin(i));
+          ans.col_begin(i));
     }
     for(uint i=n1; i<n; ++i){
       std::copy(B.col_begin(i-n1), B.col_end(i-n1),
-      	  ans.col_begin(i)+n1);
+          ans.col_begin(i)+n1);
     }
     return ans;
   }
@@ -1281,38 +1331,37 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
     assert(L.is_square() && (L.nrow() == B.nrow()));
     Matrix ans(B);
 
-    cblas_dtrmm(CblasColMajor,
-      	  CblasLeft,
-      	  CblasLower,
-      	  CblasTrans,
-      	  CblasNonUnit,
-      	  L.nrow(),
-      	  L.ncol(),
-      	  1.0,
-      	  L.data(),
-      	  L.nrow(),
-      	  ans.data(),
-      	  ans.nrow());
+    dtrmm(Left,
+          Lower,
+          Trans,
+          NonUnit,
+          L.nrow(),
+          L.ncol(),
+          1.0,
+          L.data(),
+          L.nrow(),
+          ans.data(),
+          ans.nrow());
     return ans;
   }
 
   Vector Lmult(const Matrix &L, const Vector &y){
     assert(L.is_square() && L.nrow()==y.size());
     Vector ans(y);
-    cblas_dtrmv(CblasColMajor, CblasLower, CblasNoTrans, CblasNonUnit,
-      	  L.nrow(), L.data(), L.nrow(), ans.data(), 1);
+    dtrmv(Lower, NoTrans, NonUnit, L.nrow(), L.data(), L.nrow(),
+          ans.data(), 1);
     return ans; }
 
   Vector& Lsolve_inplace(const Matrix &L, Vector &b){
     assert(L.is_square() && L.nrow()==b.size());
-    cblas_dtrsv(CblasColMajor, CblasLower, CblasNoTrans, CblasNonUnit,
-      	  L.nrow(), L.data(), L.nrow(), b.data(), 1);
+    dtrsv(Lower, NoTrans, NonUnit, L.nrow(), L.data(), L.nrow(),
+          b.data(), 1);
     return b; }
 
   Vector & LTsolve_inplace(const Matrix &L, Vector &b){
     assert(L.is_square() && L.nrow()==b.size());
-    cblas_dtrsv(CblasColMajor, CblasLower, CblasTrans, CblasNonUnit,
-      	  L.nrow(), L.data(), L.nrow(), b.data(), 1);
+    dtrsv(Lower, Trans, NonUnit, L.nrow(), L.data(), L.nrow(),
+          b.data(), 1);
     return b; }
 
 
@@ -1322,9 +1371,8 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
 
   Matrix &Lsolve_inplace(const Matrix &L, Matrix &B){
     assert(L.is_square() && L.ncol()==B.nrow());
-    cblas_dtrsm(CblasColMajor, CblasLeft, CblasLower, CblasNoTrans,
-      	  CblasNonUnit, B.nrow(), B.ncol(), 1.0,
-      	  L.data(), L.nrow(), B.data(), B.nrow());
+    dtrsm(Left, Lower, NoTrans, NonUnit, B.nrow(), B.ncol(), 1.0,
+          L.data(), L.nrow(), B.data(), B.nrow());
     return B; }
 
   Matrix Lsolve(const Matrix &L, const Matrix &B){
@@ -1340,23 +1388,22 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
   Vector Umult(const Matrix &U, const Vector &y){
     assert(U.is_square() && U.nrow()==y.size());
     Vector ans(y);
-    cblas_dtrmv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit,
-      	  U.nrow(), U.data(), U.nrow(), ans.data(), 1);
+    dtrmv(Upper, NoTrans, NonUnit, U.nrow(), U.data(), U.nrow(),
+          ans.data(), 1);
     return ans; }
 
   Matrix Umult(const Matrix &U, const Matrix &B){
     assert(U.is_square() && U.ncol()==B.nrow());
     Matrix ans(B);
-    cblas_dtrmm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans,
-      	  CblasNonUnit, B.nrow(), B.ncol(), 1.0, U.data(),
-      	  U.nrow(), ans.data(), ans.nrow());
+    dtrmm(Left, Upper, NoTrans, NonUnit, B.nrow(), B.ncol(), 1.0, U.data(),
+          U.nrow(), ans.data(), ans.nrow());
     return ans;
   }
 
   Vector& Usolve_inplace(const Matrix &U, Vector &b){
     assert(U.is_square() && U.nrow()==b.size());
-    cblas_dtrsv(CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit,
-      	  U.nrow(), U.data(), U.nrow(), b.data(), 1);
+    dtrsv(Upper, NoTrans, NonUnit,
+          U.nrow(), U.data(), U.nrow(), b.data(), 1);
     return b; }
 
   Vector Usolve(const Matrix &U, const Vector &b){
@@ -1365,9 +1412,8 @@ VECTOR_OUT & matrix_multiply_impl(const MATRIX &m, const VECTOR_IN &v,
 
   Matrix &Usolve_inplace(const Matrix &U, Matrix &B){
     assert(U.is_square() && U.ncol()==B.nrow());
-    cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasNoTrans,
-      	  CblasNonUnit, B.nrow(), B.ncol(), 1.0,
-      	  U.data(), U.nrow(), B.data(), B.nrow());
+    dtrsm(Left, Upper, NoTrans, NonUnit, B.nrow(), B.ncol(), 1.0,
+          U.data(), U.nrow(), B.data(), B.nrow());
     return B; }
 
   Matrix Usolve(const Matrix &U, const Matrix &B){

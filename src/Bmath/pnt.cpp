@@ -47,9 +47,9 @@
  *
  *    Requires the following auxiliary routines:
  *
- *	lgammafn(x)	- log gamma function
- *	pbeta(x, a, b)	- incomplete beta function
- *	pnorm(x)	- normal distribution function
+ *      lgammafn(x)     - log gamma function
+ *      pbeta(x, a, b)  - incomplete beta function
+ *      pnorm(x)        - normal distribution function
  *
  *  CONSTANTS
  *
@@ -63,16 +63,16 @@ namespace Rmath{
 
 /*----------- DEBUGGING -------------
  *
- *	make CFLAGS='-DDEBUG_pnt -g -I/usr/local/include -I../include'
+ *      make CFLAGS='-DDEBUG_pnt -g -I/usr/local/include -I../include'
 
  * -- Feb.3, 1999; M.Maechler:
-	- For 't > delta > 20' (or so)	the result is completely WRONG!
+        - For 't > delta > 20' (or so)  the result is completely WRONG!
  */
 
 double pnt(double t, double df, double delta, int lower_tail, int log_p)
 {
     double a, albeta, b, del, errbd, geven, godd,
-	lambda, p, q, rxb, s, tnc, tt, x, xeven, xodd;
+        lambda, p, q, rxb, s, tnc, tt, x, xeven, xodd;
     int it, negdel;
 
     /* note - itrmax and errmax may be changed to suit one's needs. */
@@ -83,22 +83,22 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
     if (df <= 0.) ML_ERR_return_NAN;
 
     if(!R_FINITE(t))
-	return (t < 0) ? R_DT_0 : R_DT_1;
+        return (t < 0) ? R_DT_0 : R_DT_1;
     if (t >= 0.) {
-	negdel = false;	tt = t;		del = delta;
+        negdel = false; tt = t;         del = delta;
     }
     else {
-	negdel = true;		tt = -t;	del = -delta;
+        negdel = true;          tt = -t;        del = -delta;
     }
 
     if (df > 4e5 || del*del > 2*M_LN2*(-(numeric_limits<double>::min_exponent))) {
-	/*-- 2nd part: if del > 37.62, then p=0 below
-	  FIXME: test should depend on `df', `tt' AND `del' ! */
-	/* Approx. from	 Abramowitz & Stegun 26.7.10 (p.949) */
-	s = 1./(4.*df);
+        /*-- 2nd part: if del > 37.62, then p=0 below
+          FIXME: test should depend on `df', `tt' AND `del' ! */
+        /* Approx. from  Abramowitz & Stegun 26.7.10 (p.949) */
+        s = 1./(4.*df);
 
-	return pnorm(tt*(1. - s), del, sqrt(1. + tt*tt*2.*s),
-		     lower_tail != negdel, log_p);
+        return pnorm(tt*(1. - s), del, sqrt(1. + tt*tt*2.*s),
+                     lower_tail != negdel, log_p);
     }
 
     /* initialize twin series */
@@ -107,48 +107,48 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
     x = t * t;
     x = x / (x + df);/* in [0,1) */
     if (x > 0.) {/* <==>  t != 0 */
-	lambda = del * del;
-	p = .5 * exp(-.5 * lambda);
-	if(p == 0.) { /* underflow! */
-	    /*========== really use an other algorithm for this case !!! */
-	    ML_ERROR(ME_UNDERFLOW);
-	    report_error("|delta| too large."); /* |delta| too large */
-	}
-	q = M_SQRT_2dPI * p * del;
-	s = .5 - p;
-	a = .5;
-	b = .5 * df;
-	rxb = pow(1. - x, b);
-	albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(.5 + b);
-	xodd = pbeta(x, a, b, /*lower*/true, /*log_p*/false);
-	godd = 2. * rxb * exp(a * log(x) - albeta);
-	xeven = 1. - rxb;
-	geven = b * x * rxb;
-	tnc = p * xodd + q * xeven;
+        lambda = del * del;
+        p = .5 * exp(-.5 * lambda);
+        if(p == 0.) { /* underflow! */
+            /*========== really use an other algorithm for this case !!! */
+            ML_ERROR(ME_UNDERFLOW);
+            report_error("|delta| too large."); /* |delta| too large */
+        }
+        q = M_SQRT_2dPI * p * del;
+        s = .5 - p;
+        a = .5;
+        b = .5 * df;
+        rxb = pow(1. - x, b);
+        albeta = M_LN_SQRT_PI + lgammafn(b) - lgammafn(.5 + b);
+        xodd = pbeta(x, a, b, /*lower*/true, /*log_p*/false);
+        godd = 2. * rxb * exp(a * log(x) - albeta);
+        xeven = 1. - rxb;
+        geven = b * x * rxb;
+        tnc = p * xodd + q * xeven;
 
-	/* repeat until convergence or iteration limit */
-	for(it = 1; it <= itrmax; it++) {
-	    a += 1.;
-	    xodd  -= godd;
-	    xeven -= geven;
-	    godd  *= x * (a + b - 1.) / a;
-	    geven *= x * (a + b - .5) / (a + .5);
-	    p *= lambda / (2 * it);
-	    q *= lambda / (2 * it + 1);
-	    tnc += p * xodd + q * xeven;
-	    s -= p;
-	    if(s <= 0.) { /* happens e.g. for (t,df,delta)=(40,10,38.5), after 799 it.*/
-		ML_ERROR(ME_PRECISION);
-		goto finis;
-	    }
-	    errbd = 2. * s * (xodd - godd);
-	    if(errbd < errmax) goto finis;/*convergence*/
-	}
-	/* non-convergence:*/
-	ML_ERROR(ME_PRECISION);
+        /* repeat until convergence or iteration limit */
+        for(it = 1; it <= itrmax; it++) {
+            a += 1.;
+            xodd  -= godd;
+            xeven -= geven;
+            godd  *= x * (a + b - 1.) / a;
+            geven *= x * (a + b - .5) / (a + .5);
+            p *= lambda / (2 * it);
+            q *= lambda / (2 * it + 1);
+            tnc += p * xodd + q * xeven;
+            s -= p;
+            if(s <= 0.) { /* happens e.g. for (t,df,delta)=(40,10,38.5), after 799 it.*/
+                ML_ERROR(ME_PRECISION);
+                goto finis;
+            }
+            errbd = 2. * s * (xodd - godd);
+            if(errbd < errmax) goto finis;/*convergence*/
+        }
+        /* non-convergence:*/
+        ML_ERROR(ME_PRECISION);
     }
     else { /* x = t = 0 */
-	tnc = 0.;
+        tnc = 0.;
     }
  finis:
     tnc += pnorm(- del, 0., 1., /*lower*/true, /*log_p*/false);

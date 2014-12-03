@@ -51,7 +51,7 @@ double qgeom(double p, double prob, int lower_tail, int log_p)
 
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(prob))
-	return p + prob;
+        return p + prob;
     if (p == R_DT_1) return BOOM::infinity();
 #else
     if (p == R_DT_1) ML_ERR_return_NAN;

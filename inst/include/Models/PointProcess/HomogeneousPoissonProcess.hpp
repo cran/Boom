@@ -91,7 +91,7 @@ namespace BOOM{
                                    const DateTime &t1);
     virtual void add_event(const DateTime &t);
 
-    virtual double loglike()const;
+    virtual double loglike(const Vector &scalar_lambda_vector)const;
     virtual void mle();
     virtual PointProcess simulate(
         const DateTime &t0,

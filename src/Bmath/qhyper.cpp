@@ -45,7 +45,7 @@
 namespace Rmath{
 
 double qhyper(double p, double NR, double NB, double n,
-	      int lower_tail, int log_p)
+              int lower_tail, int log_p)
 {
 /* This is basically the same code as  ./phyper.c -- keep in sync! */
     double N, xstart, xend, xr, xb, sum, term;
@@ -53,10 +53,10 @@ double qhyper(double p, double NR, double NB, double n,
 
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(NR) || ISNAN(NB) || ISNAN(n))
-	return p + NR + NB + n;
+        return p + NR + NB + n;
 #endif
     if(!R_FINITE(p) || !R_FINITE(NR) || !R_FINITE(NB) || !R_FINITE(n))
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
     R_Q_P01_check(p);
 
     NR = FLOOR(NR + 0.5);
@@ -64,7 +64,7 @@ double qhyper(double p, double NR, double NB, double n,
     N = NR + NB;
     n = FLOOR(n + 0.5);
     if (NR < 0 || NR < 0 || n < 0 || n > N)
-	ML_ERR_return_NAN;
+        ML_ERR_return_NAN;
 
     xstart = std::max(0., n - NB);
     xend = std::min(n, NR);
@@ -84,19 +84,19 @@ double qhyper(double p, double NR, double NB, double n,
 
     sum = term;
     if(!lower_tail || log_p) {
-	p = R_DT_qIv(p);
+        p = R_DT_qIv(p);
     }
     p *= 1 - 64*numeric_limits<double>::epsilon();
     sum = small_N ? term : exp(term);
 
     while(sum < p && xr < xend) {
-	xr++;
-	NB++;
-	if (small_N) term *= (NR / xr) * (xb / NB);
-	else term += log((NR / xr) * (xb / NB));
-	sum += small_N ? term : exp(term);
-	xb--;
-	NR--;
+        xr++;
+        NB++;
+        if (small_N) term *= (NR / xr) * (xb / NB);
+        else term += log((NR / xr) * (xb / NB));
+        sum += small_N ? term : exp(term);
+        xb--;
+        NR--;
     }
     return xr;
 }

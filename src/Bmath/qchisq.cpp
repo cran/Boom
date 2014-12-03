@@ -37,7 +37,7 @@
  *
  *  DESCRIPTION
  *
- *	The quantile function of the chi-squared distribution.
+ *      The quantile function of the chi-squared distribution.
  */
 
 #include "nmath.hpp"

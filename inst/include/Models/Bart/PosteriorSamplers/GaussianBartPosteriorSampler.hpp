@@ -22,6 +22,7 @@
 #include <Models/Bart/ResidualRegressionData.hpp>
 #include <Models/Bart/GaussianBartModel.hpp>
 #include <Models/Bart/PosteriorSamplers/BartPosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/ChisqModel.hpp>
 
 namespace BOOM {
@@ -145,7 +146,7 @@ namespace BOOM {
    private:
     static const double log_2_pi;
     GaussianBartModel *model_;
-    Ptr<ChisqModel> siginv_prior_;
+    GenericGaussianVarianceSampler sigsq_sampler_;
 
     // Residuals will be held by all the nodes in all the trees.
     // Local changes will be reflected in other trees, so they need to

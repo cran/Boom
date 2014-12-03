@@ -37,24 +37,24 @@
  *
  *  SYNOPSIS
  *
- *	#include <Bmath.hpp>
- *	double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
+ *      #include <Bmath.hpp>
+ *      double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
  *
  *  DESCRIPTION
  *
- *	The quantile function of the negative binomial distribution.
+ *      The quantile function of the negative binomial distribution.
  *
  *  NOTES
  *
- *	x = the number of failures before the n-th success
+ *      x = the number of failures before the n-th success
  *
  *  METHOD
  *
- *	Uses the Cornish-Fisher Expansion to include a skewness
- *	correction to a normal approximation.  This gives an
- *	initial value which never seems to be off by more than
- *	1 or 2.	 A search is then conducted of values close to
- *	this initial start point.
+ *      Uses the Cornish-Fisher Expansion to include a skewness
+ *      correction to a normal approximation.  This gives an
+ *      initial value which never seems to be off by more than
+ *      1 or 2.  A search is then conducted of values close to
+ *      this initial start point.
  */
 
 #include "nmath.hpp"
@@ -67,7 +67,7 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
 
 #ifdef IEEE_754
     if (ISNAN(p) || ISNAN(n) || ISNAN(pr))
-	return p + n + pr;
+        return p + n + pr;
 #endif
     R_Q_P01_check(p);
     if (pr <= 0 || pr >= 1 || n <= 0) ML_ERR_return_NAN;
@@ -83,9 +83,9 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
     /* Note : "same" code in qpois.c, qbinom.c, qnbinom.c --
      * FIXME: This is far from optimal [cancellation for p ~= 1, etc]: */
     if(!lower_tail || log_p) {
-	p = R_DT_qIv(p); /* need check again (cancellation!): */
-	if (p == R_DT_0) return 0;
-	if (p == R_DT_1) return BOOM::infinity();
+        p = R_DT_qIv(p); /* need check again (cancellation!): */
+        if (p == R_DT_0) return 0;
+        if (p == R_DT_1) return BOOM::infinity();
     }
     /* temporary hack --- FIXME --- */
     if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity();
@@ -107,21 +107,21 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
 #else
     if(z >= p) {
 #endif
-			/* search to the left */
-	for(;;) {
-	    if(y == 0 ||
-	       (z = pnbinom(y - 1, n, pr, /*l._t.*/true, /*log_p*/false)) < p)
-		return y;
-	    y = y - 1;
-	}
+                        /* search to the left */
+        for(;;) {
+            if(y == 0 ||
+               (z = pnbinom(y - 1, n, pr, /*l._t.*/true, /*log_p*/false)) < p)
+                return y;
+            y = y - 1;
+        }
     }
-    else {		/* search to the right */
+    else {              /* search to the right */
 
-	for(;;) {
-	    y = y + 1;
-	    if((z = pnbinom(y, n, pr, /*l._t.*/true, /*log_p*/false)) >= p)
-		return y;
-	}
+        for(;;) {
+            y = y + 1;
+            if((z = pnbinom(y, n, pr, /*l._t.*/true, /*log_p*/false)) >= p)
+                return y;
+        }
     }
 }
 }

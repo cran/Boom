@@ -26,12 +26,12 @@ namespace BOOM{
   typedef ProbitRegressionModel PRM;
   typedef BinaryRegressionData BRD;
 
-  PRM::ProbitRegressionModel(const Vec &beta)
+  PRM::ProbitRegressionModel(const Vector &beta)
       : ParamPolicy(new GlmCoefs(beta))
   {}
 
 
-  PRM::ProbitRegressionModel(const Mat &X, const Vec &y)
+  PRM::ProbitRegressionModel(const Matrix &X, const Vector &y)
     : ParamPolicy(new GlmCoefs(ncol(X)))
   {
     int n = nrow(X);
@@ -43,7 +43,6 @@ namespace BOOM{
 
   PRM::ProbitRegressionModel(const ProbitRegressionModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GlmModel(rhs),
       NumOptModel(rhs),
       ParamPolicy(rhs),
@@ -64,33 +63,47 @@ namespace BOOM{
   double PRM::pdf(Ptr<BinaryRegressionData> dp, bool logscale)const{
     return pdf(dp->y(), dp->x(), logscale);}
 
-  double PRM::pdf(bool y, const Vec &x, bool logscale)const{
+  double PRM::pdf(bool y, const Vector &x, bool logscale)const{
     double eta = predict(x);
     if(y) return pnorm(eta, 0, 1, true, logscale);
     return pnorm(eta, 0, 1, false, logscale);}
 
-  double PRM::Loglike(Vec &g, Mat &h, uint nd)const{
-    const Vec & b(Beta());
-    if(nd==0) return log_likelihood(b, 0, 0);
-    else if(nd==1) return log_likelihood(b,&g,0);
-    return log_likelihood(b,&g,&h);
+  double PRM::Loglike(
+      const Vector &beta, Vector &g, Matrix &h, uint nd)const{
+    if(nd==0) return log_likelihood(beta, 0, 0);
+    else if(nd==1) return log_likelihood(beta,&g,0);
+    return log_likelihood(beta,&g,&h);
   }
 
   // see probit_loglike.tex for the calculus
-  double PRM::log_likelihood(const Vec & beta, Vec * g, Mat * h, bool initialize_derivs)const{
+  double PRM::log_likelihood(
+      const Vector & beta,
+      Vector * g,
+      Matrix * h,
+      bool initialize_derivs)const{
     const PRM::DatasetType & data(dat());
     int n = data.size();
+    const Selector &inclusion_indicators(coef().inc());
+    int beta_dim = inclusion_indicators.nvars();
+    if (beta.size() != beta_dim) {
+      report_error("Wrong size argument supplied to log_likelihood.");
+    }
     if(initialize_derivs){
       if(g){
+        g->resize(beta_dim);
         *g=0;
-        if(h) *h=0;
+        if(h){
+          h->resize(beta_dim, beta_dim);
+          *h=0;
+        }
       }
     }
+    bool all_coefficients_included = beta_dim == xdim();
     double ans = 0;
     for(int i = 0; i < n; ++i){
       bool y = data[i]->y();
-      const Vec & x(data[i]->x());
-      double eta = beta.dot(x);
+      const Vector & x(data[i]->x());
+      double eta = predict(x);
       double increment = pnorm(eta, 0, 1, y, true);
       ans += increment;
       if(g){
@@ -100,10 +113,22 @@ namespace BOOM{
         double v = p * q;
         double resid = (static_cast<double>(y)-p)/v;
         double phi = dnorm(eta);
-        g->axpy(x, phi * resid);
+        Vector included_x;
+        if (all_coefficients_included) {
+          g->axpy(x, phi * resid);
+        } else {
+          included_x = inclusion_indicators.select(x);
+          g->axpy(included_x, phi * resid);
+        }
         if(h){
           double pe = phi * resid;
-          h->add_outer(x,x,-pe * (pe + eta));
+          if (all_coefficients_included) {
+            h->add_outer(x, x, -pe * (pe + eta));
+          } else {
+            h->add_outer(included_x,
+                         included_x,
+                         -pe * (pe + eta));
+          }
         }
       }
     }
@@ -115,12 +140,12 @@ namespace BOOM{
     return ans;
   }
 
-  bool PRM::sim(const Vec &x)const{
+  bool PRM::sim(const Vector &x)const{
     return runif() < pnorm(predict(x));
   }
 
   Ptr<BinaryRegressionData> PRM::sim()const{
-    Vec x(xdim());
+    Vector x(xdim());
     x.randomize(boost::bind(&rnorm, 0, 1));
     bool y = this->sim(x);
     NEW(BinaryRegressionData, ans)(y,x);
@@ -131,18 +156,19 @@ namespace BOOM{
       : m_(m)
   {}
 
-  double ProbitRegressionTarget::operator()(const Vec &beta)const{
-    Vec *g = 0;
-    Mat *h = 0;
+  double ProbitRegressionTarget::operator()(const Vector &beta)const{
+    Vector *g = 0;
+    Matrix *h = 0;
     return m_->log_likelihood(beta, g, h);
   }
 
-  double ProbitRegressionTarget::operator()(const Vec &beta, Vec &g)const{
-    Mat *h = 0;
+  double ProbitRegressionTarget::operator()(const Vector &beta, Vector &g)const{
+    Matrix *h = 0;
     return m_->log_likelihood(beta, &g, h);
   }
 
-  double ProbitRegressionTarget::operator()(const Vec &beta, Vec &g, Mat & h)const{
+  double ProbitRegressionTarget::operator()(
+      const Vector &beta, Vector &g, Matrix & h)const{
     return m_->log_likelihood(beta, &g, &h);
   }
 

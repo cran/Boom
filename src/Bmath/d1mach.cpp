@@ -41,7 +41,7 @@
 
 /*-- FIXME:  Eliminate calls to these
  *   =====   o   from C code when
- *	     o   it is only used to initialize "static" variables (threading)
+ *           o   it is only used to initialize "static" variables (threading)
  *  and use the DBL_... constants instead
  */
 
@@ -55,12 +55,12 @@ double d1mach(int i)
     case 2: return numeric_limits<double>::max();
 
     case 3: /* = FLT_RADIX  ^ - DBL_MANT_DIG
-	      for IEEE:  = 2^-53 = 1.110223e-16 = .5*numeric_limits<double>::epsilon() */
-	return pow((double)i1mach(10), -(double)i1mach(14));
+              for IEEE:  = 2^-53 = 1.110223e-16 = .5*numeric_limits<double>::epsilon() */
+        return pow((double)i1mach(10), -(double)i1mach(14));
 
     case 4: /* = FLT_RADIX  ^ (1- DBL_MANT_DIG) =
-	      for IEEE:  = 2^52 = 4503599627370496 = 1/numeric_limits<double>::epsilon() */
-	return pow((double)i1mach(10), 1-(double)i1mach(14));
+              for IEEE:  = 2^52 = 4503599627370496 = 1/numeric_limits<double>::epsilon() */
+        return pow((double)i1mach(10), 1-(double)i1mach(14));
 
     case 5: return log10(2.0);/* = M_LOG10_2 in Bmath.hpp */
 

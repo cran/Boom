@@ -150,9 +150,19 @@ namespace BOOM {
     return loglike(a(), b());
   }
 
-  double BetaBinomialModel::Loglike(Vec &g, Mat &h, uint nd)const{
-    double a = this->a();
-    double b = this->b();
+  double BetaBinomialModel::loglike(const Vector &ab) const {
+    Vector g;
+    Matrix h;
+    return Loglike(ab, g, h, 0);
+  }
+
+  double BetaBinomialModel::Loglike(
+      const Vector &ab, Vec &g, Mat &h, uint nd)const{
+    if (ab.size() != 2) {
+      report_error("Wrong size argument.");
+    }
+    double a = ab[0];
+    double b = ab[1];
     if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     const std::vector<Ptr<BinomialData> > &data(dat());
     int nobs = data.size();

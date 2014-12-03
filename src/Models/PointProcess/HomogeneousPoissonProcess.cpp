@@ -159,9 +159,10 @@ namespace BOOM{
     suf()->update_raw(data);
   }
 
-  double HomogeneousPoissonProcess::loglike()const{
+  double HomogeneousPoissonProcess::loglike(
+      const Vector &scalar_lambda_vector)const{
     int x = suf()->count();
-    double lam = lambda() * suf()->exposure();
+    double lam = scalar_lambda_vector[0] * suf()->exposure();
     return dpois(x, lam, true);
   }
 

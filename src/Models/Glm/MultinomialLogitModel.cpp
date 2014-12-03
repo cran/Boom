@@ -24,7 +24,7 @@
 #include <LinAlg/VectorView.hpp>
 #include <numopt.hpp>
 #include <TargetFun/Loglike.hpp>
-#include <TargetFun/LogPost.hpp>
+ #include <TargetFun/LogPost.hpp>
 
 #include <boost/bind.hpp>
 
@@ -126,7 +126,6 @@ namespace BOOM{
   //------------------------------------------------------------
   MLM::MultinomialLogitModel(const MultinomialLogitModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -246,8 +245,8 @@ namespace BOOM{
   }
 
   //------------------------------------------------------------
-  double MLM::Loglike(Vec &g, Mat &h, uint nd)const{
-    return log_likelihood(beta(), g, h, nd);
+  double MLM::Loglike(const Vector &beta, Vec &g, Mat &h, uint nd)const{
+    return log_likelihood(beta, g, h, nd);
   }
 
   //----------------------------------------------------------------------
@@ -435,53 +434,52 @@ namespace BOOM{
 
   MultinomialLogitEMC * MLEMC::clone()const{return new MLEMC(*this);}
 
+  // double MLEMC::Loglike(Vec &g, Mat &h, uint nd)const{
+  //   uint n = probs_.size();
+  //   if(n==0) return MLM::Loglike(g,h,nd);
+  //   const std::vector<Ptr<ChoiceData> > & d(dat());
+  //   if(d.size()!=n){
+  //     ostringstream err;
+  //     err << "mismatch between data and probs_ in "
+  //         << "MultinomialLogitEMC::Loglike." <<endl;
+  //     report_error(err.str());
+  //   }
 
-  double MLEMC::Loglike(Vec &g, Mat &h, uint nd)const{
-    uint n = probs_.size();
-    if(n==0) return MLM::Loglike(g,h,nd);
-    const std::vector<Ptr<ChoiceData> > & d(dat());
-    if(d.size()!=n){
-      ostringstream err;
-      err << "mismatch between data and probs_ in "
-          << "MultinomialLogitEMC::Loglike." <<endl;
-      report_error(err.str());
-    }
+  //   double ans=0;
+  //   if(nd>0){ g=0; if(nd>1) h=0; }
+  //   Vec xbar;
+  //   Vec probs;
+  //   Vec tmpx;
+  //   Vec wsp(Nchoices());
+  //   Mat X;
+  //   bool downsampling = log_sampling_probs().size()==Nchoices();
+  //   Selector inc(this->inc());
+  //   for(uint i=0; i<n; ++i){
+  //     double w = probs_[i];
+  //     Ptr<ChoiceData> dp = d[i];
+  //     uint y = dp->value();
+  //     fill_eta(*dp,wsp);
+  //     if(downsampling) wsp += log_sampling_probs();
+  //     double lognc = lse(wsp);
+  //     ans += w * (wsp[y] - lognc);
+  //     if(nd>0){
+  //       uint M = dp->nchoices();
+  //       X = inc.select_cols(dp->X(false));
+  //       probs = exp(wsp - lognc);
+  //       xbar = probs * X;
+  //       g.axpy(X.row(y) - xbar, w);
 
-    double ans=0;
-    if(nd>0){ g=0; if(nd>1) h=0; }
-    Vec xbar;
-    Vec probs;
-    Vec tmpx;
-    Vec wsp(Nchoices());
-    Mat X;
-    bool downsampling = log_sampling_probs().size()==Nchoices();
-    Selector inc(this->inc());
-    for(uint i=0; i<n; ++i){
-      double w = probs_[i];
-      Ptr<ChoiceData> dp = d[i];
-      uint y = dp->value();
-      fill_eta(*dp,wsp);
-      if(downsampling) wsp += log_sampling_probs();
-      double lognc = lse(wsp);
-      ans += w * (wsp[y] - lognc);
-      if(nd>0){
-        uint M = dp->nchoices();
-        X = inc.select_cols(dp->X(false));
-        probs = exp(wsp - lognc);
-        xbar = probs * X;
-        g.axpy(X.row(y) - xbar, w);
-
-        if(nd>1){
-          for(uint m=0; m<M; ++m){
-            tmpx = X.row(m);
-            h.add_outer(tmpx, tmpx, -probs[m]*w);
-          }
-          h.add_outer(xbar,xbar, w);
-        }
-      }
-    }
-    return ans;
-  }
+  //       if(nd>1){
+  //         for(uint m=0; m<M; ++m){
+  //           tmpx = X.row(m);
+  //           h.add_outer(tmpx, tmpx, -probs[m]*w);
+  //         }
+  //         h.add_outer(xbar,xbar, w);
+  //       }
+  //     }
+  //   }
+  //   return ans;
+  // }
   //----------------------------------------------------------------------
   void MLEMC::add_mixture_data(Ptr<Data> d, double prob){
     MLM::add_data(d);

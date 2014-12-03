@@ -86,7 +86,24 @@ namespace BOOM{
     WeeklyCyclePoissonProcess();
     WeeklyCyclePoissonProcess * clone()const;
 
-    virtual double loglike()const;
+    // Concatenate a collection of 4 parameters into a single vector
+    // that can be passed to loglike().
+    // Args:
+    //   lambda:  The average daily event rate (>0).
+    //   daily:  A 7-vector of non-negative elements that sum to 7.
+    //   weekday_hourly:  A 24-vector of non-negative elements that sums to 24.
+    //   weekend_hourly:  A 24-vector of non-negative elements that sums to 24.
+    //
+    // Returns:
+    //   A vector containing lambda, the first 6 elements of daily,
+    //   the first 23 elements of weekday_hourly, and the first 23
+    //   elements of weekend_hourly.
+    static Vector concatenate_params(
+        double lambda,
+        const Vector &daily,
+        const Vector &weekday_hourly,
+        const Vector &weekend_hourly);
+    virtual double loglike(const Vector &lam0_delta_weekday_weekend)const;
     virtual void mle();
 
     virtual double event_rate(const DateTime &t)const;

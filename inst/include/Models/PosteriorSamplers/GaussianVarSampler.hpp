@@ -19,6 +19,7 @@
 #define BOOM_GAUSSIAN_VARIANCE_METHOD_HPP
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
   class GaussianModelBase;
@@ -43,7 +44,7 @@ namespace BOOM{
    private:
     Ptr<GammaModelBase> gam;
     GaussianModelBase * mod;
-    double upper_truncation_point_;
+    GenericGaussianVarianceSampler sampler_;
   };
 
 

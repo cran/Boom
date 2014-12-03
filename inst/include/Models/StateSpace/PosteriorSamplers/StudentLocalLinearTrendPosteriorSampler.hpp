@@ -20,6 +20,7 @@
 #define BOOM_STUDENT_LOCAL_LINEAR_TREND_POSTERIOR_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/StateSpace/StateModels/StudentLocalLinearTrend.hpp>
 
 namespace BOOM {
@@ -52,8 +53,8 @@ namespace BOOM {
     Ptr<GammaModelBase> sigsq_slope_prior_;
     Ptr<DoubleModel> nu_slope_prior_;
 
-    double sigma_level_upper_limit_;
-    double sigma_slope_upper_limit_;
+    GenericGaussianVarianceSampler sigsq_level_sampler_;
+    GenericGaussianVarianceSampler sigsq_slope_sampler_;
   };
 
 } // namespace BOOM

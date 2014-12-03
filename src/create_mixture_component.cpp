@@ -41,8 +41,8 @@
 #include <r_interface/create_mixture_component.hpp>
 #include <r_interface/prior_specification.hpp>
 
-namespace BOOM{
-  namespace RInterface{
+namespace BOOM {
+  namespace RInterface {
 
     //======================================================================
     // An abstract class to manage the building of individual mixture
@@ -123,7 +123,7 @@ namespace BOOM{
       // numeric naming strategy (see 'create_name' above), and
       // specifies the index of the next mixture component to be
       // created.
-      void set_state_number(int n){
+      void set_state_number(int n) {
         if (n < -1) n = -1;
         state_number_ = n;
         component_name_prefix_ = "";
@@ -132,7 +132,7 @@ namespace BOOM{
       // Indicates that the MixtureComponentBuilder should use the text
       // naming strategy (see 'create_name' above), and specifies the
       // prefix of the next mixture component to be created.
-      void set_component_name_prefix(const string &prefix){
+      void set_component_name_prefix(const string &prefix) {
         state_number_ = -1;
         component_name_prefix_ = prefix;
       }
@@ -150,7 +150,6 @@ namespace BOOM{
         SEXP mixture_component,
         int state_number,
         RListIoManager *io_manager) {
-
       boost::scoped_ptr<MixtureComponentBuilder> builder(
           MixtureComponentBuilder::Create(mixture_component));
       builder->set_state_number(state_number);
@@ -188,21 +187,21 @@ namespace BOOM{
         double mu_prior_guess = Rf_asReal(getListElement(prior, "mu.guess"));
         double mu_prior_guess_weight = Rf_asReal(
             getListElement(prior, "mu.guess.weight"));
-        BOOM::RInterface::SdPrior sd_prior(getListElement(prior, "sigma.prior"));
-
-        Ptr<BOOM::GaussianModelGivenSigma> mu_prior(new GaussianModelGivenSigma(
-            model->Sigsq_prm(), mu_prior_guess, mu_prior_guess_weight));
-
-        Ptr<ChisqModel> sigma_prior(new ChisqModel(sd_prior.prior_df(),
-                                                   sd_prior.prior_guess()));
-
+        BOOM::RInterface::SdPrior sd_prior(getListElement(
+            prior, "sigma.prior"));
+        Ptr<BOOM::GaussianModelGivenSigma> mu_prior(
+            new GaussianModelGivenSigma(
+                model->Sigsq_prm(),
+                mu_prior_guess,
+                mu_prior_guess_weight));
+        Ptr<ChisqModel> sigma_prior(new ChisqModel(
+            sd_prior.prior_df(),
+            sd_prior.prior_guess()));
         Ptr<GaussianConjSampler> sampler(new GaussianConjSampler(
             model.get(),
             mu_prior,
             sigma_prior));
-
         model->set_method(sampler);
-
         io_manager->add_list_element(
             new BOOM::UnivariateListElement(
                 model->Mu_prm(), create_name("mu")));
@@ -281,28 +280,21 @@ namespace BOOM{
 
       virtual Ptr<MixtureComponent> Build(SEXP rmixture_component,
                                           RListIoManager *io_manager) const {
-
-        SEXP prior = getListElement(rmixture_component, "prior");
-        Vec prior_inclusion_probs(ToBoomVector(getListElement(
-            prior, "prior.inclusion.probabilities")));
-        Vec prior_beta_guess(ToBoomVector(getListElement(
-            prior, "mu")));
-        Spd prior_beta_precision(ToBoomSpd(getListElement(
-            prior, "siginv")));
-        double prior_sigma_guess(Rf_asReal(getListElement(
-            prior, "sigma.guess")));
-        double prior_sigma_df(Rf_asReal(getListElement(
-            prior, "prior.df")));
-
-        NEW(RegressionModel, model)(prior_beta_guess, prior_sigma_guess);
+        SEXP r_prior = getListElement(rmixture_component, "prior");
+        RegressionNonconjugateSpikeSlabPrior temporary_prior(r_prior);
+        int beta_dimension = temporary_prior.slab()->mu().size();
+        NEW(RegressionModel, model)(beta_dimension);
+        RegressionConjugateSpikeSlabPrior prior(r_prior, model->Sigsq_prm());
+        model->set_Beta(prior.slab()->mu());
+        model->set_sigsq(prior.siginv_prior()->sigsq());
         NEW(BregVsSampler, sampler)(model.get(),
-                                    prior_beta_guess,
-                                    prior_beta_precision,
-                                    prior_sigma_guess,
-                                    prior_sigma_df,
-                                    prior_inclusion_probs);
+                                    prior.slab(),
+                                    prior.siginv_prior(),
+                                    prior.spike());
+        if (prior.max_flips() > 0) {
+          sampler->limit_model_selection(prior.max_flips());
+        }
         model->set_method(sampler);
-
         io_manager->add_list_element(
             new GlmCoefsListElement(
                 model->coef_prm(), create_name("beta")));
@@ -322,32 +314,26 @@ namespace BOOM{
 
       virtual Ptr<MixtureComponent> Build(SEXP rmixture_component,
                                           RListIoManager *io_manager) const {
-        SEXP prior = getListElement(rmixture_component, "prior");
-        Vec prior_inclusion_probs(ToBoomVector(getListElement(
-            prior, "prior.inclusion.probabilities")));
-        Vec prior_beta_guess(ToBoomVector(getListElement(
-            prior, "mu")));
-        Spd prior_beta_precision(ToBoomSpd(getListElement(
-            prior, "siginv")));
-        NEW(BinomialLogitModel, model)(prior_beta_guess);
-
-        NEW(VariableSelectionPrior, variable_selection_prior)(
-            prior_inclusion_probs);
-        NEW(MvnModel, conditional_beta_prior)(
-            prior_beta_guess, prior_beta_precision, true);
+        SpikeSlabGlmPrior prior(getListElement(rmixture_component, "prior"));
+        NEW(BinomialLogitModel, model)(prior.slab()->mu());
         int clt_threshold = 5;
         int proposal_degrees_of_freedom = 3;
-        int max_chunk_size = 10;
+        int max_tim_chunk_size = 10;
+        int max_rwm_chunk_size = 1;
+        double rwm_proposal_variance_scale_factor = .025;
         NEW(BinomialLogitCompositeSpikeSlabSampler, sampler)(
             model.get(),
-            conditional_beta_prior,
-            variable_selection_prior,
+            prior.slab(),
+            prior.spike(),
             clt_threshold,
             proposal_degrees_of_freedom,
-            max_chunk_size);
-
+            max_tim_chunk_size,
+            max_rwm_chunk_size,
+            rwm_proposal_variance_scale_factor);
+        if (prior.max_flips() > 0) {
+          sampler->limit_model_selection(prior.max_flips());
+        }
         model->set_method(sampler);
-
         io_manager->add_list_element(new GlmCoefsListElement(
             model->coef_prm(), create_name("beta")));
 
@@ -407,7 +393,6 @@ namespace BOOM{
 
       virtual Ptr<MixtureComponent> Build(SEXP rmixture_component,
                                           RListIoManager *io_manager)const{
-
         NormalInverseWishartPrior prior_spec(
             getListElement(rmixture_component, "prior"));
 
@@ -440,7 +425,6 @@ namespace BOOM{
 
       virtual Ptr<MixtureComponent> Build(SEXP rmixture_component,
                                           RListIoManager *io_manager) const {
-
         Vec prior_mean_guess(ToBoomVector(getListElement(
             rmixture_component, "prior.mean.guess")));
 
@@ -560,15 +544,18 @@ namespace BOOM{
             mixture_component);
       } else if (Rf_inherits(mixture_component, "MvnMixtureComponent")) {
         return new MvnMixtureComponentBuilder(mixture_component);
-      } else if (Rf_inherits(mixture_component, "IndependentMvnMixtureComponent")) {
+      } else if (Rf_inherits(mixture_component,
+                             "IndependentMvnMixtureComponent")) {
         return new IndependentMvnMixtureComponentBuilder(mixture_component);
-      } else if (Rf_inherits(mixture_component, "MultinomialMixtureComponent")) {
+      } else if (Rf_inherits(mixture_component,
+                             "MultinomialMixtureComponent")) {
         return new MultinomialMixtureComponentBuilder(mixture_component);
       } else if (Rf_inherits(mixture_component, "MarkovMixtureComponent")) {
         return new MarkovMixtureComponentBuilder(mixture_component);
       } else if (Rf_inherits(mixture_component,
                              "ZeroInflatedPoissonMixtureComponent")) {
-        return new ZeroInflatedPoissonMixtureComponentBuilder(mixture_component);
+        return new ZeroInflatedPoissonMixtureComponentBuilder(
+            mixture_component);
       }
       report_error("Unknown mixture component");
       return NULL;

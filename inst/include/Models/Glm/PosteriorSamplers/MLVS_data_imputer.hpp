@@ -22,110 +22,54 @@
 #include <Models/Glm/ChoiceData.hpp>
 #include <Models/Glm/MultinomialLogitModel.hpp>
 #include <Models/Glm/PosteriorSamplers/MultinomialLogitCompleteDataSuf.hpp>
-#include <distributions/rng.hpp>
+#include <Models/PosteriorSamplers/Imputer.hpp>
 
 namespace BOOM{
 
-  namespace mlvs_impute{
-    class MDI_base;
-    class MDI_worker;
-  }
-
-  class MlvsDataImputer : private RefCounted{
+  class MlvsDataImputer
+      : public LatentDataImputer<ChoiceData,
+                                 MultinomialLogitCompleteDataSufficientStatistics> {
   public:
-    MlvsDataImputer(MultinomialLogitModel *Mod,
-                    Ptr<MultinomialLogitCompleteDataSufficientStatistics> Suf,
-                    uint nthreads);
-    void draw();
+    typedef MultinomialLogitCompleteDataSufficientStatistics LocalSuf;
 
-    friend void intrusive_ptr_add_ref(MlvsDataImputer *d){
-      d->up_count();}
-    friend void intrusive_ptr_release(MlvsDataImputer *d){
-      d->down_count(); if(d->ref_count()==0) delete d;}
+    // Args:
+    //   Mod:  A pointer to the model being data-agumented.
+    MlvsDataImputer(MultinomialLogitModel *Mod);
+
+    // Impute latent data for a single observation, and add the
+    // results to the complete data sufficient statistics.
+    virtual void impute_latent_data(const ChoiceData &observed_data,
+                                    LocalSuf *suf,
+                                    RNG &rng) const;
+
+    // Used to decompose latent utilities into a mixture of Gaussians.
+    // Args:
+    //   rng: Random number genrerator.  Must not be shared by any
+    //     other threads.
+    //   u:  Latent utility.
+    // Returns:
+    //   The index of the imputed Gaussian mixture component
+    //   responsible for u.
+    uint unmix(RNG &rng, double u) const;
 
   private:
-    Ptr<mlvs_impute::MDI_base> imp;
+    MultinomialLogitModel * model_;
+
+    const Vec mu_;                   // mean for EV approx
+    const Vec sigsq_inv_;            // inverse variance for EV approx
+    const Vec sd_;                   // standard deviations for EV approx
+    const Vec log_mixing_weights_;   // log of mixing weights for EV approx
+    const Vec & log_sampling_probs_;
+    const bool downsampling_;
+
+    // Workspace for impute_latent_data, to avoid reallocating space
+    // each time.
+    mutable Vec post_prob_;
+    mutable Vec u;
+    mutable Vec eta;
+    mutable Vec wgts;
   };
 
-  //______________________________________________________________________
-
-  namespace mlvs_impute{
-
-    class MDI_worker : private RefCounted {
-    public:
-
-      friend void intrusive_ptr_add_ref(MDI_worker *d){d->up_count();}
-      friend void intrusive_ptr_release(MDI_worker *d){
-        d->down_count(); if(d->ref_count()==0) delete d;}
-
-      MDI_worker(MultinomialLogitModel *mod,
-                 Ptr<MultinomialLogitCompleteDataSufficientStatistics> s,
-                 uint Thread_id=0,
-                 uint Nthreads=1);
-      void impute_u(Ptr<ChoiceData> dp);
-      uint unmix(double u);
-      const Ptr<MultinomialLogitCompleteDataSufficientStatistics> suf()const;
-      void operator()();
-      void seed(unsigned long);
-
-    private:
-      MultinomialLogitModel *mlm;
-      Ptr<MultinomialLogitCompleteDataSufficientStatistics> suf_;
-
-      const uint thread_id;
-      const uint nthreads;
-      const Vec mu_;        // mean for EV approx
-      const Vec sigsq_inv_; // inverse variance for EV approx
-      const Vec sd_;        // standard deviations for EV approx
-      const Vec logpi_;     // log of mixing weights for EV approx
-      const Vec & log_sampling_probs_;
-      const bool downsampling_;
-
-      Vec post_prob_;
-      Vec u;
-      Vec eta;
-      Vec wgts;
-
-      boost::shared_ptr<Mat> thisX;
-      RNG rng;
-    };
-    //======================================================================
-    class MDI_base : private RefCounted{
-    public:
-      friend void intrusive_ptr_add_ref(MDI_base *d){d->up_count();}
-      friend void intrusive_ptr_release(MDI_base *d){
-        d->down_count(); if(d->ref_count()==0) delete d;}
-
-      virtual void draw()=0;
-      virtual ~MDI_base(){}
-    };
-
-    //======================================================================
-    class MDI_unthreaded : public MDI_base {
-    public:
-      MDI_unthreaded(MultinomialLogitModel *m,
-                     Ptr<MultinomialLogitCompleteDataSufficientStatistics> s);
-      virtual void draw();
-    private:
-      MultinomialLogitModel *mlm;
-      Ptr<MultinomialLogitCompleteDataSufficientStatistics> suf;
-      MDI_worker imp;
-    };
-
-    //======================================================================
-    class MDI_threaded : public MDI_base {
-    public:
-      MDI_threaded(MultinomialLogitModel *m,
-                   Ptr<MultinomialLogitCompleteDataSufficientStatistics> s,
-                   uint nthreads);
-      virtual void draw();
-    private:
-      MultinomialLogitModel *mlm;
-      Ptr<MultinomialLogitCompleteDataSufficientStatistics> suf;
-      std::vector<Ptr<MDI_worker> > crew;
-    };
-
-  }
-}
+}  // namespace BOOM
 
 #endif// BOOM_MLVS_DATA_IMPUTER_HPP

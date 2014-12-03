@@ -23,6 +23,7 @@ namespace BOOM{
 
   namespace{
     typedef WeeklyCyclePoissonProcessSampler SAM;
+    typedef WeeklyCyclePoissonProcess WP;
   }
 
   SAM::WeeklyCyclePoissonProcessSampler(
@@ -53,6 +54,7 @@ namespace BOOM{
     return ans;
   }
 
+
   void SAM::draw_average_daily_rate(){
     double a = sum(model_->suf()->count()) +
         average_daily_rate_prior_->alpha();
@@ -71,54 +73,99 @@ namespace BOOM{
     model_->set_average_daily_rate(lambda);
   }
 
+  //----------------------------------------------------------------------
   void SAM::draw_daily_pattern(){
     Vec nu = model_->suf()->daily_event_count() + day_of_week_prior_->nu();
     Vec cand = rdirichlet_mt(rng(), nu);
     Vec orig = model_->day_of_week_pattern() / 7;
-    double denom = model_->loglike() - ddirichlet(orig, nu, true);
-    model_->set_day_of_week_pattern(cand * 7);
-    double num = model_->loglike() - ddirichlet(cand, nu, true);
+
+    double num = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            cand * 7,
+            model_->weekday_hourly_pattern(),
+            model_->weekend_hourly_pattern()))
+        - ddirichlet(cand, nu, true);
+
+    double denom = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            model_->day_of_week_pattern(),
+            model_->weekday_hourly_pattern(),
+            model_->weekend_hourly_pattern()))
+        - ddirichlet(orig, nu, true);
+
     ++daily_pattern_attempts_;
     double logu = log(runif_mt(rng()));
     if(logu > num - denom){
       // MH step failed
-      model_->set_day_of_week_pattern(orig * 7);
     }else{
+      model_->set_day_of_week_pattern(cand * 7);
       ++daily_pattern_successes_;
     }
   }
 
+  //----------------------------------------------------------------------
   void SAM::draw_weekend_hourly_pattern(){
     Vec nu = model_->suf() -> weekend_hourly_event_count() +
         weekend_hourly_prior_->nu();
+
     Vec cand = rdirichlet_mt(rng(), nu);
     Vec orig = model_->weekend_hourly_pattern() / 24;
-    double denom = model_->loglike() - ddirichlet(orig, nu, true);
-    model_->set_weekend_hourly_pattern(cand * 24);
-    double num = model_->loglike() - ddirichlet(cand, nu, true);
+
+    double num = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            model_->day_of_week_pattern(),
+            model_->weekday_hourly_pattern(),
+            cand * 24)) - ddirichlet(cand, nu, true);
+
+    double denom = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            model_->day_of_week_pattern(),
+            model_->weekday_hourly_pattern(),
+            model_->weekend_hourly_pattern())) - ddirichlet(orig, nu, true);
+
     ++weekend_hourly_attempts_;
     double logu = log(runif_mt(rng()));
     if(logu > num - denom){
-      model_->set_weekend_hourly_pattern(orig * 24);
+      // Do nothing.. MH failed
     }else{
       ++weekend_hourly_successes_;
+      model_->set_weekend_hourly_pattern(cand * 24);
     }
   }
 
+  //----------------------------------------------------------------------
   void SAM::draw_weekday_hourly_pattern(){
     Vec nu = model_->suf() -> weekday_hourly_event_count() +
         weekday_hourly_prior_->nu();
     Vec cand = rdirichlet_mt(rng(), nu);
     Vec orig = model_->weekday_hourly_pattern() / 24;
-    double denom = model_->loglike() - ddirichlet(orig, nu, true);
-    model_->set_weekday_hourly_pattern(cand * 24);
-    double num = model_->loglike() - ddirichlet(cand, nu, true);
+
+    double num = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            model_->day_of_week_pattern(),
+            cand * 24,
+            model_->weekend_hourly_pattern())) - ddirichlet(cand, nu, true);
+
+
+    double denom = model_->loglike(
+        WP::concatenate_params(
+            model_->average_daily_rate(),
+            model_->day_of_week_pattern(),
+            model_->weekday_hourly_pattern(),
+            model_->weekend_hourly_pattern())) - ddirichlet(orig, nu, true);
+
     ++weekday_hourly_attempts_;
     double logu = log(runif_mt(rng()));
     if(logu > num - denom){
-      model_->set_weekday_hourly_pattern(orig * 24);
+      // Do nothing
     }else{
       ++weekday_hourly_successes_;
+      model_->set_weekday_hourly_pattern(cand * 24);
     }
   }
 

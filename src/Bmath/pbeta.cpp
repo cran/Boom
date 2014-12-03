@@ -40,22 +40,22 @@
  * #include <Bmath.hpp>
  *
  * double pbeta_raw(double x, double pin, double qin, int lower_tail)
- * double pbeta	   (double x, double pin, double qin, int lower_tail, int log_p)
+ * double pbeta    (double x, double pin, double qin, int lower_tail, int log_p)
  *
  *  DESCRIPTION
  *
- *	Returns distribution function of the beta distribution.
- *	( = The incomplete beta ratio I_x(p,q) ).
+ *      Returns distribution function of the beta distribution.
+ *      ( = The incomplete beta ratio I_x(p,q) ).
  *
  *  NOTES
  *
- *	This routine is a translation into C of a Fortran subroutine
- *	by W. Fullerton of Los Alamos Scientific Laboratory.
+ *      This routine is a translation into C of a Fortran subroutine
+ *      by W. Fullerton of Los Alamos Scientific Laboratory.
  *
  *  REFERENCE
  *
- *	Bosten and Battiste (1974).
- *	Remark on Algorithm 179, CACM 17, p153, (1974).
+ *      Bosten and Battiste (1974).
+ *      Remark on Algorithm 179, CACM 17, p153, (1974).
  */
 
 #include "nmath.hpp"
@@ -63,7 +63,7 @@
 
 namespace Rmath{
 
-/* This is called from	qbeta(.) in a root-finding loop --- be FAST! */
+/* This is called from  qbeta(.) in a root-finding loop --- be FAST! */
 
 double pbeta_raw(double x, double pin, double qin, int lower_tail, int log_p)
 {

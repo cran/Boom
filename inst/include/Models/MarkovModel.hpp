@@ -232,7 +232,11 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<ProductDirichletModel>, Ptr<DirichletModel>);
     void set_conjugate_prior(Ptr<MarkovConjSampler>);
 
-    double loglike()const;
+    // The argument is a Vector with S^2 - 1 elements, where S is the
+    // state space size.  The final S-1 are the initial distribution.
+    // The first S * (S-1) elements are the first (S-1) columns of the
+    // transition probability matrix.  The final
+    double loglike(const Vector &serialized_params)const;
     Vec stat_dist()const;
 
   protected:

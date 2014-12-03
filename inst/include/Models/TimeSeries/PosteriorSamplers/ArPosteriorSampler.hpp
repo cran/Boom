@@ -20,6 +20,7 @@
 #define BOOM_ARP_POSTERIOR_SAMPLER_HPP_
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 #include <Models/TimeSeries/ArModel.hpp>
 #include <Models/GammaModel.hpp>
 
@@ -30,7 +31,8 @@ namespace BOOM{
   // inverse Gamma prior on innovation variance.
   class ArPosteriorSampler : public PosteriorSampler{
    public:
-    ArPosteriorSampler(ArModel *model, Ptr<GammaModelBase> siginv_prior);
+    ArPosteriorSampler(ArModel *model,
+                       Ptr<GammaModelBase> siginv_prior);
 
     // The 'draw' method will make several attempts to simulate AR
     // coefficients directly from the posterior distribution of a
@@ -57,7 +59,7 @@ namespace BOOM{
     ArModel *model_;
     Ptr<GammaModelBase> siginv_prior_;
     int max_number_of_regression_proposals_;
-    double upper_sigma_truncation_point_;
+    GenericGaussianVarianceSampler sigsq_sampler_;
   };
 
 }

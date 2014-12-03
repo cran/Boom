@@ -49,8 +49,8 @@ namespace Rmath{
 
 double ftrunc(double x)
 {
-	if(x >= 0) return FLOOR(x);
-	else return ceil(x);
+        if(x >= 0) return FLOOR(x);
+        else return ceil(x);
 }
 }
 

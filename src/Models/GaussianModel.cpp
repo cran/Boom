@@ -45,13 +45,9 @@ namespace BOOM{
 
   GaussianModel::GaussianModel(const GaussianModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       GaussianModelBase(rhs),
       ParamPolicy(rhs),
       ConjPriorPolicy(rhs)
-      //      DiffDoubleModel(rhs),
-      //      DiffVectorModel(rhs),
-      //      NumOptModel(rhs)
   {}
 
   GaussianModel::GaussianModel(const std::vector<double> &v)
@@ -61,16 +57,6 @@ namespace BOOM{
   {
     mle();
   }
-
-  // the following is not needed, as Vec derives from std::vector
-//   GaussianModel::GaussianModel(const Vec &v)
-//     : DataPolicy(new GaussianSuf());
-//   {
-//     set_params(0,1);
-//     DataPolicy::set_data_raw(v.begin(), v.end());
-//     mle();
-//   }
-
 
   GM * GM::clone()const{return new GM(*this);}
 
@@ -129,11 +115,11 @@ namespace BOOM{
 //   }
 
 
-  double GaussianModel::Loglike(Vec &g, Mat &h, uint nd) const {
-    double sigsq = this->sigsq();
+  double GaussianModel::Loglike(const Vector &mu_sigsq, Vec &g, Mat &h, uint nd) const {
+    double sigsq = mu_sigsq[1];
     if(sigsq<0) return BOOM::negative_infinity();
 
-    double mu = this->mu();
+    double mu = mu_sigsq[0];
     const double log2pi = 1.8378770664093453;
     double n = suf()->n();
     double sumsq = suf()->sumsq();

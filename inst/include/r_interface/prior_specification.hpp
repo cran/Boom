@@ -20,7 +20,13 @@
 #define BOOM_R_PRIOR_SPECIFICATION_HPP_
 
 #include <r_interface/boom_r_tools.hpp>
+#include <Models/ChisqModel.hpp>
 #include <Models/DoubleModel.hpp>
+#include <Models/Glm/VariableSelectionPrior.hpp>
+#include <Models/IndependentMvnModel.hpp>
+#include <Models/IndependentMvnModelGivenScalarSigma.hpp>
+#include <Models/MvnBase.hpp>
+#include <Models/MvnGivenScalarSigma.hpp>
 
 namespace BOOM{
 
@@ -42,6 +48,7 @@ namespace BOOM{
       bool fixed()const {return fixed_;}
       double upper_limit()const {return upper_limit_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       double prior_guess_;
       double prior_df_;
@@ -61,11 +68,13 @@ namespace BOOM{
       double mu()const {return mu_;}
       double sigma()const {return sigma_;}
       double initial_value()const {return initial_value_;}
+
      private:
       double mu_;
       double sigma_;
       double initial_value_;
     };
+
     //----------------------------------------------------------------------
     // For encoding a prior on an AR1 coefficient.  This is a Gaussian
     // prior, but users have the option of truncating the support to
@@ -76,10 +85,12 @@ namespace BOOM{
       bool force_stationary()const {return force_stationary_;}
       bool force_positive()const {return force_positive_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       bool force_stationary_;
       bool force_positive_;
     };
+
     //----------------------------------------------------------------------
     // For encoding the parameters in a conditionally normal model.
     // Tyically this is the prior on mu in an normal(mu, sigsq), where
@@ -90,6 +101,7 @@ namespace BOOM{
       double prior_mean()const{return mu_;}
       double sample_size()const{return sample_size_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       double mu_;
       double sample_size_;
@@ -105,12 +117,14 @@ namespace BOOM{
       double prior_mean_sample_size()const{return prior_mean_sample_size_;}
       const SdPrior &sd_prior()const{return sd_prior_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       double prior_mean_guess_;
       double prior_mean_sample_size_;
       SdPrior sd_prior_;
     };
 
+    //----------------------------------------------------------------------
     // For encoding the parameters of a Dirichlet distribution.  The R
     // constructor that builds 'prior' ensures that prior_counts_ is a
     // positive length vector of positive reals.
@@ -119,6 +133,7 @@ namespace BOOM{
       explicit DirichletPrior(SEXP prior);
       const Vec & prior_counts()const;
       int dim()const;
+
      private:
       Vec prior_counts_;
     };
@@ -139,21 +154,25 @@ namespace BOOM{
       std::ostream & print(std::ostream &out)const;
       // Creates a Markov model with this as a prior.
       BOOM::MarkovModel * create_markov_model()const;
+
      private:
       Mat transition_counts_;
       Vec initial_state_counts_;
     };
 
+    //----------------------------------------------------------------------
     class BetaPrior {
      public:
       explicit BetaPrior(SEXP prior);
       double a()const{return a_;}
       double b()const{return b_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       double a_, b_;
     };
 
+    //----------------------------------------------------------------------
     class GammaPrior {
      public:
       explicit GammaPrior(SEXP prior);
@@ -161,6 +180,7 @@ namespace BOOM{
       double b()const{return b_;}
       double initial_value()const{return initial_value_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       double a_, b_;
       double initial_value_;
@@ -172,11 +192,13 @@ namespace BOOM{
       const Vec & mu()const{return mu_;}
       const Spd & Sigma()const{return Sigma_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       Vec mu_;
       Spd Sigma_;
     };
 
+    //----------------------------------------------------------------------
     class NormalInverseWishartPrior {
      public:
       NormalInverseWishartPrior(SEXP prior);
@@ -185,6 +207,7 @@ namespace BOOM{
       const Spd & Sigma_guess()const{return sigma_guess_;}
       double Sigma_guess_weight()const{return sigma_guess_weight_;}
       std::ostream & print(std::ostream &out)const;
+
      private:
       Vec mu_guess_;
       double mu_guess_weight_;
@@ -192,24 +215,144 @@ namespace BOOM{
       double sigma_guess_weight_;
     };
 
+    //----------------------------------------------------------------------
     class MvnIndependentSigmaPrior {
      public:
       MvnIndependentSigmaPrior(SEXP prior);
       const MvnPrior & mu_prior()const{return mu_prior_;}
       const SdPrior & sigma_prior(int i)const{return sigma_priors_[i];}
+
      private:
       MvnPrior mu_prior_;
       std::vector<SdPrior> sigma_priors_;
     };
 
+    //----------------------------------------------------------------------
     class MvnDiagonalPrior {
      public:
       MvnDiagonalPrior(SEXP prior);
       const Vector & mean()const{return mean_;}
       const Vector & sd()const{return sd_;}
+
      private:
       Vector mean_;
       Vector sd_;
+    };
+
+    //----------------------------------------------------------------------
+    // This class is for handling spike and slab priors where there is
+    // no residual variance parameter.  See the R help files for
+    // SpikeSlabPrior or IndependentSpikeSlabPrior.
+    class SpikeSlabGlmPrior {
+     public:
+      // Args:
+      //   prior: An R object inheriting from SpikeSlabPriorBase.
+      //     Elements of 'prior' relating to the residual variance are
+      //     ignored.  If 'prior' inherits from
+      //     IndependentSpikeSlabPrior then the slab will be an
+      //     IndependentMvnModel.  Otherwise it will be an MvnModel.
+      SpikeSlabGlmPrior(SEXP prior);
+      virtual ~SpikeSlabGlmPrior() {}
+      const Vector &prior_inclusion_probabilities() {
+        return prior_inclusion_probabilities_;
+      }
+      Ptr<VariableSelectionPrior> spike() {return spike_;}
+      Ptr<MvnBase> slab() {return slab_;}
+      int max_flips() const {return max_flips_;}
+
+     private:
+      Vector prior_inclusion_probabilities_;
+      Ptr<VariableSelectionPrior> spike_;
+      Ptr<MvnBase> slab_;
+      int max_flips_;
+    };
+
+    // This is for the standard Zellner G prior in the regression
+    // setting.  See the R help files for SpikeSlabPrior.
+    class RegressionConjugateSpikeSlabPrior {
+     public:
+      // Args:
+      //   prior: The R object containing the information needed to
+      //     construct the prior.
+      //   residual_variance: The residual variance parameter from the
+      //     regression model described by the prior.
+      RegressionConjugateSpikeSlabPrior(
+          SEXP prior,
+          Ptr<UnivParams> residual_variance);
+      const Vector &prior_inclusion_probabilities() {
+        return prior_inclusion_probabilities_;}
+      Ptr<VariableSelectionPrior> spike() {return spike_;}
+      Ptr<MvnGivenScalarSigmaBase> slab() {return slab_;}
+      Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
+      int max_flips() const {return max_flips_;}
+      double sigma_upper_limit() const {return sigma_upper_limit_;}
+     private:
+      Vector prior_inclusion_probabilities_;
+      Ptr<VariableSelectionPrior> spike_;
+      Ptr<MvnGivenScalarSigmaBase> slab_;
+      Ptr<ChisqModel> siginv_prior_;
+      int max_flips_;
+      double sigma_upper_limit_;
+    };
+
+    // This is for the standard Zellner G prior in the regression
+    // setting.  See the R help files for SpikeSlabPrior or
+    // IndependentSpikeSlabPrior.
+    class RegressionNonconjugateSpikeSlabPrior
+        : public SpikeSlabGlmPrior {
+     public:
+      // Use this constructor if the prior variance is independent of
+      // the residual variance.
+      // Args:
+      //   prior:  An R list containing the following objects
+      //   - prior.inclusion.probabilities: Vector of prior inclusion
+      //       probabilities.
+      //   - mu:  Prior mean given inclusion.
+      //   - siginv: Either a vector of prior precisions (for the
+      //       independent case) or a positive definite matrix giving
+      //       the posterior precision of the regression coefficients
+      //       given inclusion.
+      //   - prior.df: The number of observations worth of weight to
+      //       be given to sigma.guess.
+      //   - sigma.guess:  A guess at the residual variance
+      RegressionNonconjugateSpikeSlabPrior(SEXP prior);
+
+      // A non-conjugate spike and slab prior for regression models,
+      // formed combining a SpikeSlabGlmPrior with an independent
+      // chi-square prior on the reciprocal residual variance.
+      RegressionNonconjugateSpikeSlabPrior(
+          SEXP prior,
+          Ptr<UnivParams> residual_variance);
+      Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
+      double sigma_upper_limit() const {return sigma_upper_limit_;}
+
+     private:
+      Ptr<ChisqModel> siginv_prior_;
+      double sigma_upper_limit_;
+    };
+
+    // Use this class for the Clyde and Ghosh data augmentation scheme
+    // for regression models.  See the R help files for
+    // IndependentSpikeSlabPrior.
+    class IndependentRegressionSpikeSlabPrior {
+     public:
+      IndependentRegressionSpikeSlabPrior(
+          SEXP prior, Ptr<UnivParams> sigsq);
+      const Vector &prior_inclusion_probabilities() {
+        return prior_inclusion_probabilities_;}
+      Ptr<VariableSelectionPrior> spike() {return spike_;}
+      Ptr<IndependentMvnModelGivenScalarSigma> slab() {return slab_;}
+      Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
+      int max_flips() {return max_flips_;}
+      double sigma_upper_limit() const {return sigma_upper_limit_;}
+
+     private:
+      Vector prior_inclusion_probabilities_;
+      Ptr<VariableSelectionPrior> spike_;
+      Ptr<IndependentMvnModelGivenScalarSigma> slab_;
+      Ptr<ChisqModel> siginv_prior_;
+      int max_flips_;
+      double sigma_upper_limit_;
     };
 
     inline std::ostream & operator<<(std::ostream &out, const NormalPrior &p) {
@@ -220,18 +363,20 @@ namespace BOOM{
       return p.print(out); }
     inline std::ostream & operator<<(std::ostream &out, const MarkovPrior &p) {
       return p.print(out); }
-    inline std::ostream & operator<<(std::ostream &out, const ConditionalNormalPrior &p) {
+    inline std::ostream & operator<<(std::ostream &out,
+                                     const ConditionalNormalPrior &p) {
       return p.print(out); }
     inline std::ostream & operator<<(std::ostream &out, const MvnPrior &p) {
       return p.print(out); }
 
-  // Creates a pointer to a DoubleModel based on the given
-  // specification.  The specification must correspond to a BOOM model
-  // type inheriting from DoubleModel.  Legal values for specification
-  // are objects inheriting from GammaPrior, BetaPrior and
-  // NormalPrior.  More may be added later.
-  Ptr<DoubleModel> create_double_model(SEXP specification);
-  }
-}
+    // Creates a pointer to a DoubleModel based on the given
+    // specification.  The specification must correspond to a BOOM model
+    // type inheriting from DoubleModel.  Legal values for specification
+    // are objects inheriting from GammaPrior, BetaPrior and
+    // NormalPrior.  More may be added later.
+    Ptr<DoubleModel> create_double_model(SEXP specification);
+
+  }  // namespace RInterface
+}  // namespace BOOM
 
 #endif // BOOM_R_PRIOR_SPECIFICATION_HPP_

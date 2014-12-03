@@ -19,7 +19,10 @@
 #ifndef BOOM_POISSON_REGRESSION_AUXILIARY_MIXTURE_SAMPLER_HPP_
 #define BOOM_POISSON_REGRESSION_AUXILIARY_MIXTURE_SAMPLER_HPP_
 
+#include <memory>
+
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/Imputer.hpp>
 #include <Models/Glm/PosteriorSamplers/PoissonDataImputer.hpp>
 #include <Models/Glm/PoissonRegressionModel.hpp>
 #include <Models/Glm/WeightedRegressionModel.hpp>
@@ -28,53 +31,60 @@
 
 namespace BOOM{
 
-class PoissonDataImputer;
+  class PoissonDataImputer;
 
-class PoissonRegressionAuxMixSampler : public PosteriorSampler {
- public:
-  PoissonRegressionAuxMixSampler(PoissonRegressionModel *model,
-                                 Ptr<MvnBase> prior,
-                                 int number_of_threads = 1);
+  class PoissonRegressionDataImputer
+      : public LatentDataImputer<PoissonRegressionData, WeightedRegSuf> {
+   public:
+    // Args:
+    //   coefficients: The coefficients for the model managed by the
+    //     sampler.  These are constant for the duration of the data
+    //     augmentation step, and then change (for all workers) after
+    //     the parameter sampling step.
+    PoissonRegressionDataImputer(const GlmCoefs *coefficients);
 
-  virtual void draw();
-  virtual double logpri()const;
+    virtual void impute_latent_data(
+        const PoissonRegressionData &data_point,
+        WeightedRegSuf *complete_data_suf,
+        RNG &rng) const;
 
-  // Below this line are implementation details exposed for testing.
-  void impute_latent_data();
-  double draw_final_event_time(int y);
-  double draw_censored_event_time(double final_event_time, double rate);
-  double draw_censored_event_time_zero_case(double rate);
+   private:
+    const GlmCoefs *coefficients_;
+    std::unique_ptr<PoissonDataImputer> imputer_;
+  };
 
-  void draw_beta_given_complete_data();
-  const WeightedRegSuf &complete_data_sufficient_statistics()const;
+  //----------------------------------------------------------------------
 
- private:
-  // This private constructor is called by the public constructor to
-  // populate data_imputers_ if number_of_threads > 1 in the public
-  // constructor.
-  PoissonRegressionAuxMixSampler(PoissonRegressionModel *model,
-                                 Ptr<MvnBase> prior,
-                                 int number_of_threads,
-                                 int thread_id);
+  class PoissonRegressionAuxMixSampler
+      : public PosteriorSampler {
+   public:
+    PoissonRegressionAuxMixSampler(PoissonRegressionModel *model,
+                                   Ptr<MvnBase> prior,
+                                   int number_of_threads = 1);
 
-  void impute_latent_data_single_threaded();
+    virtual void draw();
+    virtual double logpri()const;
 
-  PoissonRegressionModel *model_;
-  Ptr<MvnBase> prior_;
-  WeightedRegSuf complete_data_suf_;
-  boost::shared_ptr<PoissonDataImputer> data_imputer_;
+    // Below this line are implementation details exposed for testing.
+    void impute_latent_data();
+    double draw_final_event_time(int y);
+    double draw_censored_event_time(double final_event_time, double rate);
+    double draw_censored_event_time_zero_case(double rate);
 
-  // A flag when running in 'master mode'
-  bool first_time_;
+    void draw_beta_given_complete_data();
+    const WeightedRegSuf &complete_data_sufficient_statistics()const;
 
-  // num_threads_ and thread_id_ are used by slaves in the impute_data
-  // method.  To check the number of threads in the master, you should
-  // call data_imputers_.size(), and not rely on num_threads_.
-  int num_threads_;
-  int thread_id_;
-  typedef boost::shared_ptr<PoissonRegressionAuxMixSampler> WorkerPtr;
-  std::vector<WorkerPtr> workers_;
-};
+    // Set the number of workers devoted to data augmentation, n >= 1.
+    void set_number_of_workers(int n);
+
+   private:
+    PoissonRegressionModel *model_;
+    Ptr<MvnBase> prior_;
+    WeightedRegSuf complete_data_suf_;
+    ParallelLatentDataImputer<PoissonRegressionData,
+                              WeightedRegSuf,
+                              PoissonRegressionModel> parallel_data_imputer_;
+  };
 
 }  // namespace BOOM
 

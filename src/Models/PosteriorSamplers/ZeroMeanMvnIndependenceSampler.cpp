@@ -31,7 +31,7 @@ namespace BOOM{
       : m_(model),
         prior_(prior),
         which_variable_(which_variable),
-        upper_truncation_point_(infinity())
+        sampler_(prior_)
   {}
 
   ZMMI::ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
@@ -42,31 +42,19 @@ namespace BOOM{
         prior_(new GammaModel(prior_df/2,
                               pow(prior_sigma_guess, 2) * prior_df / 2)),
         which_variable_(which_variable),
-        upper_truncation_point_(infinity())
+        sampler_(prior_)
   {}
 
   void ZMMI::set_sigma_upper_limit(double max_sigma){
-    if(max_sigma <= 0) {
-      ostringstream err;
-      err << "ZeroMeanMvnIndependenceSampler::set_sigma_upper_limit "
-          << "expects a positive argument, given " << max_sigma;
-      report_error(err.str());
-    }
-    upper_truncation_point_ = max_sigma;
+    sampler_.set_sigma_max(max_sigma);
   }
 
   void ZMMI::draw(){
     Spd siginv = m_->siginv();
     int i = which_variable_;
-    double df = 2 * prior_->alpha() + m_->suf()->n();
+    double df = m_->suf()->n();
     Spd sumsq = m_->suf()->center_sumsq(m_->mu());
-    double ss = 2 * prior_->beta() + sumsq(i,i);
-    if(upper_truncation_point_ == infinity()){
-      siginv(i, i) = rgamma_mt(rng(), df/2, ss/2);
-    }else{
-      double cutpoint = 1.0/pow(upper_truncation_point_, 2);
-      siginv(i, i) = rtrun_gamma_mt(rng(), df/2, ss/2, cutpoint);
-    }
+    siginv(i, i) = 1.0 / sampler_.draw(rng(), df, sumsq(i, i));
     m_->set_siginv(siginv);
   }
 
@@ -83,8 +71,7 @@ namespace BOOM{
       const std::vector<Ptr<GammaModelBase> > & siginv_priors,
       const Vec & sigma_upper_truncation_points)
       : model_(model),
-        priors_(siginv_priors),
-        sigma_upper_truncation_point_(sigma_upper_truncation_points)
+        priors_(siginv_priors)
   {
     if (model_->dim() != priors_.size()) {
       report_error("'model' and 'siginv_priors' arguments are not compatible "
@@ -109,22 +96,23 @@ namespace BOOM{
         report_error(err.str());
       }
     }
+
+    for (int i = 0; i < priors_.size(); ++i) {
+      GenericGaussianVarianceSampler sampler(
+          priors_[i],
+          sigma_upper_truncation_points[i]);
+      samplers_.push_back(sampler);
+    }
   }
 
   void ZMMCIS::draw() {
     Spd Sigma = model_->Sigma();
     Spd sumsq = model_->suf()->center_sumsq(model_->mu());
     for (int i = 0; i < model_->dim(); ++i) {
-      double df = 2 * priors_[i]->alpha() + model_->suf()->n();
-      double ss = 2 * priors_[i]->beta() + sumsq(i,i);
-      if (sigma_upper_truncation_point_[i] == 0) {
-        Sigma(i, i) = 0.0;
-      } if(sigma_upper_truncation_point_[i] == infinity()){
-        Sigma(i, i) = 1.0 / rgamma_mt(rng(), df/2, ss/2);
-      } else {
-        double cutpoint = 1.0/pow(sigma_upper_truncation_point_[i], 2);
-        Sigma(i, i) = 1.0 / rtrun_gamma_mt(rng(), df/2, ss/2, cutpoint);
-      }
+      Sigma(i, i) = samplers_[i].draw(
+          rng(),
+          model_->suf()->n(),
+          sumsq(i, i));
     }
     model_->set_Sigma(Sigma);
   }
@@ -133,8 +121,8 @@ namespace BOOM{
     const Spd & Sigma(model_->Sigma());
     double ans = 0;
     for (int i = 0; i < Sigma.nrow(); ++i) {
-      if (sigma_upper_truncation_point_[i] > 0) {
-        ans += priors_[i]->logp(1.0/Sigma(i, i));
+      if (samplers_[i].sigma_max() > 0) {
+        ans += priors_[i]->logp(1.0 / Sigma(i, i));
       }
     }
     return ans;

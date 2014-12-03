@@ -23,6 +23,7 @@
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/PosteriorSamplers/PoissonGammaSampler.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
@@ -127,12 +128,11 @@ namespace BOOM{
 
   PoissonModel::PoissonModel(const PoissonModel &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
+      MixtureComponent(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      NumOptModel(rhs),
-      MixtureComponent(rhs)
+      NumOptModel(rhs)
   {}
 
   PoissonModel * PoissonModel::clone()const{
@@ -145,8 +145,15 @@ namespace BOOM{
     else set_lam(1.0);
   }
 
-  double PoissonModel::Loglike(Vec &g, Mat &h, uint nd)const{
-    double lam = this->lam();
+  double PoissonModel::Loglike(const Vector &lambda_vector,
+                               Vec &g, Mat &h, uint nd)const{
+    if (lambda_vector.size() != 1) {
+      report_error("Wrong size argument.");
+    }
+    double lam = lambda_vector[0];
+    if (lam < 0) {
+      return negative_infinity();
+    }
     Ptr<PoissonSuf> s = suf();
     double sm = s->sum();
     double n = s->n();

@@ -16,7 +16,10 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <LinAlg/SubMatrix.hpp>
+#include <iomanip>
+
 namespace BOOM{
+  using std::endl;
   namespace {
     typedef SubMatrix SM;
     typedef ConstSubMatrix CSM;
@@ -177,6 +180,16 @@ namespace BOOM{
     return ans;
   }
   //------------------------------------------------------------
+  ostream &SM::display(ostream &out, int precision)const{
+    ConstSubMatrix m(*this);
+    return m.display(out, precision);
+  }
+
+  ostream &operator<<(ostream &out, const SubMatrix &m){
+    return m.display(out, 5);
+  }
+
+  //------------------------------------------------------------
 
   double & SM::operator()(uint i, uint j){
     assert(i<nr_ &&  j < nc_);
@@ -268,6 +281,17 @@ namespace BOOM{
     assert(rhi < m.nrow() && chi < m.ncol());
   }
 
+  CSM::ConstSubMatrix(const double *data, int nrow, int ncol, int my_stride)
+      : start_(data),
+        nr_(nrow),
+        nc_(ncol),
+        stride(my_stride >= 1 ? my_stride : nr_)
+  {
+    assert(nr_ >= 0);
+    assert(nc_ >= 0);
+    assert(stride >= 1);
+  }
+
   uint CSM::nrow()const{return nr_;}
   uint CSM::ncol()const{return nc_;}
   const double & CSM::operator()(uint i, uint j)const{
@@ -325,6 +349,18 @@ namespace BOOM{
     return ans;
   }
   //------------------------------------------------------------
+  ostream & CSM::display(ostream & out, int precision) const {
+    out << std::setprecision(precision);
+    for(uint i = 0; i < nrow(); ++i){
+      for(uint j = 0; j < ncol(); ++j)
+        out << std::setw(8) << (*this)(i,j) << " ";
+      out << endl;}
+    return out;
+  }
+  //------------------------------------------------------------
+  ostream & operator<<(ostream &out, const ConstSubMatrix &m) {
+    return m.display(out, 5);
+  }
 
   namespace {
     template <class M1, class M2>

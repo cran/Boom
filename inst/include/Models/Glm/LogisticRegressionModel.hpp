@@ -45,7 +45,7 @@ namespace BOOM{
   class LogisticRegressionModel
       : public GlmModel,
         public NumOptModel,
-        public MixtureComponent,
+        virtual public MixtureComponent,
         public ParamPolicy_1<GlmCoefs>,
         public IID_DataPolicy<BinaryRegressionData>,
         public PriorPolicy
@@ -66,7 +66,10 @@ namespace BOOM{
     virtual double pdf(const Data * dp, bool logscale)const;
     double logp(bool y, const Vec &x)const;
 
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
+    // In the following, 'beta' refers to the set of nonzero
+    // "included" coefficients, so its dimension might be less than
+    // the number of columns in the design matrix.
+    virtual double Loglike(const Vector &beta, Vec &g, Mat &h, uint nd)const;
     virtual double log_likelihood(const Vec &beta, Vec *g, Mat *h,
                                   bool initialize_derivs = true)const;
 
@@ -95,7 +98,6 @@ namespace BOOM{
     LogitEMC(uint beta_dim, bool all=true);
     LogitEMC(const Vec &beta);
     LogitEMC * clone()const;
-    virtual double Loglike(Vec &g, Mat &h, uint nd)const;
     virtual void add_mixture_data(Ptr<Data>, double prob);
     virtual void clear_data();
     virtual double pdf(Ptr<Data> dp, bool logscale)const{
@@ -105,6 +107,9 @@ namespace BOOM{
     void set_prior(Ptr<MvnBase>);
     void find_posterior_mode();
     virtual Spd xtx()const;    // incorporates probs
+    virtual void mle() {
+      LogisticRegressionModel::mle();
+    }
   private:
     Vec probs_;
     Ptr<MvnBase> pri_;

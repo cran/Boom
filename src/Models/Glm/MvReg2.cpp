@@ -388,7 +388,6 @@ namespace BOOM{
 
   MvReg::MvReg(const MvReg &rhs)
     : Model(rhs),
-      MLE_Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
@@ -426,19 +425,24 @@ namespace BOOM{
     set_Sigma(suf()->SSE(Beta())/suf()->n());
   }
 
-  double MvReg::loglike()const{
+  double MvReg::loglike(const Vector &beta_siginv)const{
     const double log2pi = 1.83787706641;
-    const Spd & siginv(Sigma_prm()->ivar());
+
+    Matrix Beta(xdim(), ydim());
+    Vector::const_iterator it = beta_siginv.cbegin();
+    std::copy(it, it + Beta.size(), Beta.begin());
+    it += Beta.size();
+    SpdMatrix siginv(ydim());
+    siginv.unvectorize(it, true);
 
     const Spd & yty(suf()->yty());
     const Mat & xty(suf()->xty());
     const Spd & xtx(suf()->xtx());
-    const Mat & Beta(this->Beta());
 
     double qform = traceAB(siginv, yty) - 2* traceAB(xty.multT(Beta), siginv)
       + traceAB(sandwich(Beta, siginv), xtx);
 
-    double ldsi = Sigma_prm()->ldsi();
+    double ldsi = siginv.logdet();
     double n = suf()->n();
     double ans = log2pi*n/2 + ldsi*n/2 - .5*qform;
     return ans;
