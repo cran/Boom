@@ -29,9 +29,10 @@ namespace BOOM {
    public:
     MarkovModulatedPoissonProcessPosteriorSampler(
         MarkovModulatedPoissonProcess *mmpp,
-        bool initialize_latent_data = true);
-    virtual void draw();
-    virtual double logpri() const;
+        bool initialize_latent_data = true,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
    private:
     MarkovModulatedPoissonProcess *model_;
     bool first_time_;

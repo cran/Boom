@@ -44,7 +44,7 @@ class HiddenMarkovModel :
   // constructors...
   HiddenMarkovModel(std::vector<Ptr<MixtureComponent> > Mix, Ptr<MarkovModel> Mark) ;
   HiddenMarkovModel(const HiddenMarkovModel &rhs);
-  virtual HiddenMarkovModel * clone()const;
+  HiddenMarkovModel * clone() const override;
 
   template <class Fwd>        // needed for copy constructor
   void set_mixture_components(Fwd b, Fwd e){
@@ -75,15 +75,15 @@ class HiddenMarkovModel :
   // For managing the distribution of hidden states.
   void save_state_probs();
   void clear_prob_hist();
-  Mat report_state_probs(const DataSeriesType &ts)const;
+  Matrix report_state_probs(const DataSeriesType &ts)const;
 
-  const Vec &pi0() const;
-  const Mat &Q() const;
-  void set_pi0(const Vec &Pi0);
-  void set_Q(const Mat &Q);
+  const Vector &pi0() const;
+  const Matrix &Q() const;
+  void set_pi0(const Vector &Pi0);
+  void set_Q(const Matrix &Q);
 
   // Options for managing the distribution of the initial state.
-  void fix_pi0(const Vec &Pi0);
+  void fix_pi0(const Vector &Pi0);
   void fix_pi0_stationary();
   void fix_pi0_uniform();
   void free_pi0();
@@ -99,7 +99,7 @@ class HiddenMarkovModel :
   Ptr<MarkovModel> mark_;
   std::vector<Ptr<MixtureComponent> > mix_;
   Ptr<HmmFilter> filter_;
-  std::map<Ptr<Data>, Vec > prob_hist_;
+  std::map<Ptr<Data>, Vector > prob_hist_;
   Ptr<UnivParams> loglike_;
   Ptr<UnivParams> logpost_;
   std::vector<Ptr<HmmDataImputer> > workers_;
@@ -115,9 +115,9 @@ class HMM_EM : public HiddenMarkovModel
   typedef EmMixtureComponent EMC;
   HMM_EM(std::vector<Ptr<EMC> >Mix, Ptr<MarkovModel> Mark);
   HMM_EM(const HMM_EM &rhs);
-  HMM_EM * clone()const;
+  HMM_EM * clone()const override;
 
-  virtual void initialize_params();
+  void initialize_params() override;
   virtual void mle();
   double Estep(bool bayes=false);
   void Mstep(bool bayes=false);

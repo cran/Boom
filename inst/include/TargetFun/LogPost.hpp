@@ -31,7 +31,7 @@ namespace BOOM{
   class LogPostTF{
   public:
     LogPostTF(Target Loglike, Ptr<VectorModel> Pri);
-    double operator()(const Vec &z)const;
+    double operator()(const Vector &z)const;
   private:
     Target loglike;
     Ptr<VectorModel> pri;
@@ -41,9 +41,9 @@ namespace BOOM{
   public:
     dLogPostTF(dLoglikeTF Loglike, Ptr<dVectorModel>);
     dLogPostTF(Target Loglike, dTarget dLoglike, Ptr<dVectorModel>);
-    double operator()(const Vec &z)const{
+    double operator()(const Vector &z)const{
       return LogPostTF::operator()(z);}
-    double operator()(const Vec &z, Vec &g)const;
+    double operator()(const Vector &z, Vector &g)const;
   private:
     dTarget dloglike;
     Ptr<dVectorModel> dpri;
@@ -56,13 +56,13 @@ namespace BOOM{
     d2LogPostTF(Target Loglike, dTarget dLoglike, d2Target d2Loglike,
 		Ptr<d2VectorModel> dp);
 
-    double operator()(const Vec &z)const{
+    double operator()(const Vector &z)const{
       return LogPostTF::operator()(z);}
-    double operator()(const Vec &z, Vec &g){
+    double operator()(const Vector &z, Vector &g){
       return dLogPostTF::operator()(z,g);}
-    double operator()(const Vec &z, Vec &g, Mat &h)const;
+    double operator()(const Vector &z, Vector &g, Matrix &h)const;
   private:
-    boost::function<double(const Vec &x, Vec &g, Mat&h)> d2loglike;
+    boost::function<double(const Vector &x, Vector &g, Mat&h)> d2loglike;
     Ptr<d2VectorModel> d2pri;
   };
 

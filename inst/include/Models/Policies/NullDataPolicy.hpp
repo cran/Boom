@@ -29,9 +29,9 @@ namespace BOOM{
     typedef NullDataPolicy DataPolicy;
    public:
     NullDataPolicy(){}
-    virtual void add_data(Ptr<Data>){}
-    virtual void clear_data(){}
-    virtual void combine_data(const Model &, bool=true){}
+    void add_data(Ptr<Data>) override{}
+    void clear_data() override{}
+    void combine_data(const Model &, bool=true) override{}
    private:
   };
 }

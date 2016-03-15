@@ -23,10 +23,10 @@
 namespace BOOM{
   struct matrix_not_positive_definite
       : public std::exception{
-    Mat m;
+    Matrix m;
     std::string msg;
-    matrix_not_positive_definite(const Mat &M, const std::string &err_msg);
-    ~matrix_not_positive_definite()throw(){}
-    const char * what()const throw();
+    matrix_not_positive_definite(const Matrix &M, const std::string &err_msg);
+    ~matrix_not_positive_definite()throw() override{}
+    const char * what()const throw() override;
   };
 }

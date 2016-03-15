@@ -22,11 +22,11 @@
 namespace BOOM{
   typedef CumulativeProbitModel CPM;
 
-  CPM::CumulativeProbitModel(const Vec &beta, const Vec & delta) :
+  CPM::CumulativeProbitModel(const Vector &beta, const Vector & delta) :
       OrdinalCutpointModel(beta, delta)
   {}
 
-  CPM::CumulativeProbitModel(const Mat &X, const Vec &y) :
+  CPM::CumulativeProbitModel(const Matrix &X, const Vector &y) :
       OrdinalCutpointModel(X,y)
   {}
 

@@ -85,6 +85,10 @@ namespace BOOM{
     }
   }
 
+  Vector::Vector(const std::initializer_list<double> &init)
+      : dVector(init)
+  {}
+
   Vector::Vector(std::istream &in)
   {
     double x;
@@ -117,10 +121,7 @@ namespace BOOM{
     assign(v.begin(), v.end()); return *this; }
   Vector & Vector::operator=(const ConstVectorView &v){
     assign(v.begin(), v.end()); return *this; }
-  Vector & Vector::operator=(const dVector &v){
-    assign(v.begin(), v.end()); return *this; }
-
-  Vector & Vector::operator=(const double &x){
+  Vector & Vector::operator=(double x){
     uint n = size();
     if(n==0) n=1;
     else dVector::assign(n, x);
@@ -136,6 +137,17 @@ namespace BOOM{
     return *this;
   }
 
+  bool Vector::all_finite() const {
+    uint n = size();
+    const double *d = data();
+    for (uint i = 0; i < n; ++i) {
+      if (!std::isfinite(d[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Vector Vector::zero()const{ return Vector(size(), 0.0);}
 
   Vector Vector::one()const{ return Vector(size(), 1.0);}
@@ -144,6 +156,18 @@ namespace BOOM{
     uint n = size();
     double *d(data());
     for(uint i=0; i<n; ++i) d[i] = runif(0,1);
+    return *this;
+  }
+
+  Vector & Vector::randomize_with_intercept(){
+    uint n = size();
+    if (n > 0) {
+      double *d(data());
+      d[0] = 1.0;
+      for (uint i = 1; i < n; ++i) {
+        d[i] = runif(0,1);
+      }
+    }
     return *this;
   }
 
@@ -234,6 +258,7 @@ namespace BOOM{
   }
 
   Vector & Vector::operator*=(const ConstVectorView &y){
+    assert(size() == y.size());
     for(uint i=0; i<size(); ++i) (*this)[i] *= y[i];
     return *this;
   }
@@ -279,7 +304,7 @@ namespace BOOM{
     return *this;
   }
 
-  Vector & Vector::add_Xty(const Mat &X, const Vec &y, double wgt){
+  Vector & Vector::add_Xty(const Matrix &X, const Vector &y, double wgt){
     dgemv(Trans, X.nrow(), X.ncol(), wgt,
           X.data(), X.nrow(), y.data(), y.stride(),
           1.0, data(), stride());
@@ -384,15 +409,51 @@ namespace BOOM{
   double Vector::abs_norm()const{
     return dasum(size(), data(), stride());}
 
+  double Vector::max_abs()const{
+    dVector::size_type n = size();
+    const double *d = data();
+    double m = -1;
+    for (dVector::size_type i = 0; i < n; ++i) {
+      m = std::max<double>(m, fabs(d[i]));
+    }
+    return m;
+  }
+
   double Vector::sum()const{
-    return accumulate(begin(), end(), 0.0); }
+    // Benchmarks indicate that a straight sum based on pointer
+    // arithmatic is MUCH faster than iterator based approaches, so
+    // don't replace this with std::accumulate().
+    const double *d = data();
+    auto n = this->size();
+    double ans = 0;
+    for (auto i = n * 0; i < n; ++i) {
+      ans += d[i];
+    }
+    return ans;
+  }
 
   inline double mul(double x, double y){return x*y;}
   double Vector::prod()const{
-    return accumulate(begin(), end(), 1.0, mul);}
+    const auto n = this->size();
+    double ans = 1.0;
+    const double *d = data();
+    for (auto i = n * 0; i < n; ++i) {
+      ans *= d[i];
+    }
+    return ans;
+  }
 
   Vector & Vector::sort(){
     std::sort(begin(), end());
+    return *this;
+  }
+
+  Vector & Vector::transform(std::function<double(double)> f) {
+    const auto n = this->size();
+    double *d = data();
+    for (auto i = n * 0; i < n; ++i) {
+      d[i] = f(d[i]);
+    }
     return *this;
   }
 
@@ -725,6 +786,10 @@ namespace BOOM{
     std::cout << v << std::endl;
   }
 
+  void print_vector(const Vector &v) {
+    print(v);
+  }
+
   istream & operator>>(istream &in, Vector & v){
     string s;
     do{
@@ -842,5 +907,21 @@ namespace BOOM{
   Vector rev(const Vector &v) {
     return rev(ConstVectorView(v));
   }
+
+  namespace {
+    template <class VECTOR>
+    std::vector<int> round_impl(const VECTOR &v) {
+      std::vector<int> ans;
+      ans.reserve(v.size());
+      for (int i = 0; i < v.size(); ++i) {
+        ans.push_back(lround(v[i]));
+      }
+      return ans;
+    }
+  }  // namespace
+
+  std::vector<int> round(const Vector &v) { return round_impl(v); }
+  std::vector<int> round(const VectorView &v) { return round_impl(v); }
+  std::vector<int> round(const ConstVectorView &v) { return round_impl(v); }
 
 } // BOOM

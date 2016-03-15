@@ -38,7 +38,7 @@ namespace BOOM{
     setup();
   }
 
-  SSM::StateSpaceModel(const Vec &y, const std::vector<bool> &y_is_observed)
+  SSM::StateSpaceModel(const Vector &y, const std::vector<bool> &y_is_observed)
       : observation_model_(new ZeroMeanGaussianModel(sqrt(var(y, y_is_observed))/10))
   {
     setup();
@@ -91,12 +91,12 @@ namespace BOOM{
 
   // TODO(stevescott): should observation_matrix and
   // observation_variance be called with t + t0 + 1?
-  Mat SSM::forecast(int n){
+  Matrix SSM::forecast(int n){
     // TODO(stevescott): This method only works with truly Gaussian
     // state models.  We should put in a check to make sure that none
     // of the state models are T, normal mixture, etc.
     ScalarKalmanStorage ks(filter());
-    Mat ans(n, 2);
+    Matrix ans(n, 2);
     int t0 = time_dimension();
     for(int t = 0; t < n; ++t){
       ans(t,0) = observation_matrix(t+t0).dot(ks.a);
@@ -116,11 +116,11 @@ namespace BOOM{
     return ans;
   }
 
-  Vec SSM::simulate_forecast(int n, const Vec &final_state){
+  Vector SSM::simulate_forecast(int n, const Vector &final_state){
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
-    Vec ans(n);
+    Vector ans(n);
     int t0 = time_dimension();
-    Vec state = final_state;
+    Vector state = final_state;
     for(int t = 0; t < n; ++t) {
       state = simulate_next_state(state, t + t0);
       ans[t] = rnorm(observation_matrix(t+t0).dot(state),
@@ -129,13 +129,13 @@ namespace BOOM{
     return ans;
   }
 
-  Vec SSM::simulate_forecast_given_observed_data(
-      int n, const Vec &observed_data){
+  Vector SSM::simulate_forecast_given_observed_data(
+      int n, const Vector &observed_data){
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
-    Vec ans(n);
+    Vector ans(n);
     int t0 = observed_data.size();
     ScalarKalmanStorage ks(filter_observed_data(observed_data));
-    Vec state(rmvn(ks.a, ks.P));  //  this is state[t0], one after the final state
+    Vector state(rmvn(ks.a, ks.P));  //  this is state[t0], one after the final state
     for(int t = 0; t < n; ++t){
       ans[t] = rnorm(observation_matrix(t+t0).dot(state),
                      sqrt(observation_variance(t+t0)));
@@ -145,7 +145,7 @@ namespace BOOM{
     return ans;
   }
 
-  ScalarKalmanStorage SSM::filter_observed_data(const Vec &observed_data, int t0)const{
+  ScalarKalmanStorage SSM::filter_observed_data(const Vector &observed_data, int t0)const{
     ScalarKalmanStorage ks(state_dimension());
     ks.a = initial_state_mean();
     ks.P = initial_state_variance();
@@ -171,14 +171,14 @@ namespace BOOM{
     return ks;
   }
 
-  Vec SSM::one_step_holdout_prediction_errors(const Vec &newY,
-                                              const Vec &final_state)const{
-    Vec ans(length(newY));
+  Vector SSM::one_step_holdout_prediction_errors(const Vector &newY,
+                                              const Vector &final_state)const{
+    Vector ans(length(newY));
     const std::vector<Ptr<DoubleData> > &data(dat());
     int t0 = data.size();
     ScalarKalmanStorage ks(state_dimension());
     ks.a = *state_transition_matrix(t0 - 1) * final_state;
-    ks.P = Spd(state_variance_matrix(t0-1)->dense());
+    ks.P = SpdMatrix(state_variance_matrix(t0-1)->dense());
     for(int t = 0; t < ans.size(); ++t){
       bool missing = false;
       sparse_scalar_kalman_update(newY[t],

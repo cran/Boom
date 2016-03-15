@@ -138,7 +138,7 @@ namespace BOOM{
     int S = state_space_size();
     logp_.resize(S);
     double loglike = initialize_fwd(series[0]);
-    Mat P(S,S);
+    Matrix P(S,S);
     for(int i = 0; i < n; ++i){
       fill_logp(series[i], logp_);
       fill_logQ(series[i], logQ_);
@@ -194,7 +194,7 @@ namespace BOOM{
 
   // Fill logp with the density of each mixture component evaluated
   // at dp.
-  void HealthStateModel::fill_logp(Ptr<HealthStateData> dp, Vec &logp)const{
+  void HealthStateModel::fill_logp(Ptr<HealthStateData> dp, Vector &logp)const{
     for(int s = 0; s < state_space_size(); ++s){
       logp[s] = mix_[s]->pdf(dp->value(), true);
     }
@@ -204,7 +204,7 @@ namespace BOOM{
 
   void HealthStateModel::fill_logQ(Ptr<HealthStateData> dp){
     fill_logQ(dp, logQ_); }
-  void HealthStateModel::fill_logQ(Ptr<HealthStateData> dp, Mat &logQ)const{
+  void HealthStateModel::fill_logQ(Ptr<HealthStateData> dp, Matrix &logQ)const{
     double alpha = dp->final_treatment_fraction();
     if(alpha >= 1.0){
       logQ = log(mark_[dp->treatment()]->Q());

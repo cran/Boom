@@ -33,8 +33,8 @@ namespace BOOM{
     //---------- construction, assignment, operator=/== ---------
     Params();
     Params(const Params &rhs);  // does not copy io buffer
-    virtual ~Params(){}
-    virtual Params *clone() const =0;
+    ~Params() override{}
+    Params *clone() const override =0;
     // copied/cloned params have distinct data and distinct io buffers
 
     //----------------------------------------------------------------------
@@ -52,21 +52,21 @@ namespace BOOM{
     //     store p-1 numbers instead of p, because the last number is
     //     available because the probabilities sum to 1.
     virtual uint size(bool minimal = true) const = 0;
-    virtual Vec vectorize(bool minimal = true) const = 0;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
+    virtual Vector vectorize(bool minimal = true) const = 0;
+    virtual Vector::const_iterator unvectorize(Vector::const_iterator &v,
                                             bool minimal=true)=0;
-    virtual Vec::const_iterator unvectorize(const Vec &v,
+    virtual Vector::const_iterator unvectorize(const Vector &v,
                                             bool minimal=true)=0;
   };
 
   //============================================================
   //---- non-member functions for vectorizing lots of params ----
-  typedef std::vector<Ptr<Params> > ParamVec;
+  typedef std::vector<Ptr<Params> > ParamVector;
 
-  Vec vectorize(const ParamVec &v, bool minimal=true);
-  void unvectorize(ParamVec &pvec, const Vec &v, bool minimal=true);
+  Vector vectorize(const ParamVector &v, bool minimal=true);
+  void unvectorize(ParamVector &pvec, const Vector &v, bool minimal=true);
 
-  ostream & operator<<(ostream &out, const ParamVec &v);
+  ostream & operator<<(ostream &out, const ParamVector &v);
 
   //============================================================
 
@@ -77,14 +77,14 @@ namespace BOOM{
     UnivParams();
     UnivParams(double x);
     UnivParams(const UnivParams &rhs);
-    UnivParams * clone() const;
+    UnivParams * clone() const override;
 
-    virtual uint size(bool = true)const {return 1;}
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
+    uint size(bool = true)const override {return 1;}
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
   };
 
   //------------------------------------------------------------
@@ -93,16 +93,16 @@ namespace BOOM{
   {
   public:
     explicit VectorParams(uint p, double x=0.0);
-    VectorParams(const Vec &v);  // copies v's data
+    VectorParams(const Vector &v);  // copies v's data
     VectorParams(const VectorParams &rhs); // copies data
-    VectorParams * clone()const;
+    VectorParams * clone()const override;
 
-    virtual uint size(bool minimal = true)const;
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
+    uint size(bool minimal = true)const override;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
   };
   //------------------------------------------------------------
   class MatrixParams : public MatrixData,
@@ -110,31 +110,17 @@ namespace BOOM{
   {
   public:
     MatrixParams(uint r, uint c, double x=0.0);  // zero matrix
-    MatrixParams(const Mat &m);  // copies m's data
+    MatrixParams(const Matrix &m);  // copies m's data
     MatrixParams(const MatrixParams &rhs); // copies data
-    MatrixParams * clone()const;
+    MatrixParams * clone()const override;
 
-    virtual uint size(bool minimal = true)const;
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
-  };
-  //------------------------------------------------------------
-  class CorrParams : public CorrData, virtual public Params{
-  public:
-    CorrParams(const Corr &y);
-    CorrParams(const Spd &y);
-    CorrParams(const CorrParams &rhs);
-    CorrParams * clone()const;
-    virtual uint size(bool minimal = true)const;
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
+    uint size(bool minimal = true)const override;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
   };
 
-}
+}  // namespace BOOM
 #endif //  BOOM_PARAM_TYPES_H

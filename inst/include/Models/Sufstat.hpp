@@ -39,9 +39,9 @@ namespace BOOM{
     virtual Sufstat * abstract_combine(Sufstat *rhs)=0;
 
     virtual Vector vectorize(bool minimal=true)const=0;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
+    virtual Vector::const_iterator unvectorize(Vector::const_iterator &v,
 					    bool minimal=true)=0;
-    virtual Vec::const_iterator unvectorize(const Vector &v,
+    virtual Vector::const_iterator unvectorize(const Vector &v,
 					    bool minimal=true)=0;
     virtual std::ostream & print(std::ostream &)const = 0;
   private:
@@ -76,9 +76,9 @@ namespace BOOM{
     Ptr<D> DAT(Ptr<Data> dp)const{return dp.dcast<DataType>();}
     virtual void Update(const DataType &)=0;
     virtual void update(const DataType &d){Update(d);}
-    virtual void update(Ptr<Data> dp){ Update(*(DAT(dp)));}
+    void update(Ptr<Data> dp) override{ Update(*(DAT(dp)));}
     virtual void update(Ptr<D> dp){Update(*dp);}
-    virtual void update(const Data &d){
+    void update(const Data &d) override{
       Update( dynamic_cast<const DataType &>(d));}
   };
 
@@ -100,7 +100,7 @@ namespace BOOM{
       }
     }
     virtual void update(const DataPointType &d){Update(d);}
-    virtual void update(Ptr<Data> dp){
+    void update(Ptr<Data> dp) override{
       Ptr<DataPointType> d = DAT_1(dp);
       if(!!d){
         Update(*d);
@@ -117,7 +117,7 @@ namespace BOOM{
     }
     virtual void update(Ptr<DataPointType> dp){Update(*dp);}
 
-    virtual void update(const Data &d){
+    void update(const Data &d) override{
       // pointer contortions to get around using exceptions resulting
       // from a bad dynamic_cast of a reference
       const Data *data_ptr = &d;

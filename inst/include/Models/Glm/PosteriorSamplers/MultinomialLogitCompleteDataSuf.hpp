@@ -32,12 +32,12 @@ namespace BOOM {
     void update(const ChoiceData &dp, const Vector &wgts, const Vector &u);
     void combine(const MultinomialLogitCompleteDataSufficientStatistics &rhs);
 
-    const Spd & xtwx()const;
+    const SpdMatrix & xtwx()const;
     const Vector & xtwu()const;
     double weighted_sum_of_squares() const;
 
   private:
-    mutable Spd xtwx_;
+    mutable SpdMatrix xtwx_;
     Vector xtwu_;
     mutable bool sym_;
     double weighted_sum_of_squares_;

@@ -27,7 +27,7 @@ namespace BOOM{
 class OneWayChiSquareTest{
  public:
   // for testing counts vs. a known distribution
-  OneWayChiSquareTest(const Vec & observed, const Vec & distribution);
+  OneWayChiSquareTest(const Vector & observed, const Vector & distribution);
   double p_value()const;
   double degrees_of_freedom()const;
   double chi_square()const;
@@ -37,8 +37,8 @@ class OneWayChiSquareTest{
   bool is_valid()const;
   std::ostream & print(std::ostream & out)const;
  private:
-  Vec observed_;
-  Vec expected_;
+  Vector observed_;
+  Vector expected_;
   double chi_square_;
   double df_;
   double p_value_;
@@ -51,7 +51,7 @@ inline std::ostream & operator<<(std::ostream &out,
 
 class TwoWayChiSquareTest{
  public:
-  TwoWayChiSquareTest(const Mat & observed_cell_counts);
+  TwoWayChiSquareTest(const Matrix & observed_cell_counts);
   double p_value()const;
   double degrees_of_freedom()const;
   double chi_square()const;

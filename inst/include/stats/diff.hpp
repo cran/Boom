@@ -25,9 +25,9 @@
 namespace BOOM{
 
   // Returns the first difference of the given vector.
-  Vec diff(const Vec &v, bool leading_zero = false);
-  Vec diff(const VectorView &v, bool leading_zero = false);
-  Vec diff(const ConstVectorView &v, bool leading_zero = false);
+  Vector diff(const Vector &v, bool leading_zero = false);
+  Vector diff(const VectorView &v, bool leading_zero = false);
+  Vector diff(const ConstVectorView &v, bool leading_zero = false);
 
 #endif // BOOM_DIFF_HPP_
 }

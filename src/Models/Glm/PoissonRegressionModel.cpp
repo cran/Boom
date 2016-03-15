@@ -30,8 +30,12 @@ namespace BOOM {
       : ParamPolicy(new GlmCoefs(xdim))
   {}
 
-  PoissonRegressionModel::PoissonRegressionModel(const Vec &beta)
+  PoissonRegressionModel::PoissonRegressionModel(const Vector &beta)
       : ParamPolicy(new GlmCoefs(beta))
+  {}
+
+  PoissonRegressionModel::PoissonRegressionModel(const Ptr<GlmCoefs> beta)
+      : ParamPolicy(beta)
   {}
 
   PoissonRegressionModel * PoissonRegressionModel::clone()const{
@@ -52,7 +56,7 @@ namespace BOOM {
 
 
   double PoissonRegressionModel::log_likelihood(
-      const Vec &beta, Vec *g, Mat *h, bool reset_derivatives)const{
+      const Vector &beta, Vector *g, Matrix *h, bool reset_derivatives)const{
     // L = (E *lambda)^y exp(-E*lambda)
     //   ell = y * (log(E) + log(lambda)) - E*exp(x * beta)
     //       = yXbeta - E*exp(Xbeta)
@@ -92,9 +96,9 @@ namespace BOOM {
   }
 
   double PoissonRegressionModel::Loglike(const Vector &beta,
-                                         Vec &g, Mat &h, uint nd)const{
-    Vec *gp = NULL;
-    Mat *hp = NULL;
+                                         Vector &g, Matrix &h, uint nd)const{
+    Vector *gp = NULL;
+    Matrix *hp = NULL;
     if (nd > 0) gp = &g;
     if (nd > 1) hp = &h;
     return log_likelihood(beta, gp, hp, true);

@@ -98,19 +98,19 @@ namespace BOOM {
     }
   }
 
-  Vec RWHSM::initial_state_mean()const{
+  Vector RWHSM::initial_state_mean()const{
     return initial_state_mean_;
   }
 
-  Spd RWHSM::initial_state_variance()const{
+  SpdMatrix RWHSM::initial_state_variance()const{
     return initial_state_variance_;
   }
 
-  void RWHSM::set_initial_state_mean(const Vec &v){
+  void RWHSM::set_initial_state_mean(const Vector &v){
     initial_state_mean_ = v;
   }
 
-  void RWHSM::set_initial_state_variance(const Spd &Sigma){
+  void RWHSM::set_initial_state_variance(const SpdMatrix &Sigma){
     initial_state_variance_ = Sigma;
   }
 

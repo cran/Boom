@@ -63,10 +63,11 @@ namespace BOOM {
   }
 
   HZIGM::HierarchicalZeroInflatedGammaModel(
-      const std::vector<int> &number_of_zeros_per_group,
-      const std::vector<int> &number_of_positives_per_group,
-      const std::vector<double> &sum_of_positive_observations_per_group,
-      const std::vector<double> &sum_of_logs_of_positive_observations)
+      const BOOM::Vector &number_of_zeros_per_group,
+      const BOOM::Vector &number_of_positives_per_group,
+      const BOOM::Vector &sum_of_positive_observations_per_group,
+      const BOOM::Vector &sum_of_logs_of_positive_observations,
+      BOOM::RNG &seeding_rng)
       : prior_for_mean_parameters_(new GammaModel),
         prior_for_shape_parameters_(new GammaModel),
         prior_for_positive_probability_(new BetaModel)
@@ -91,7 +92,8 @@ namespace BOOM {
           data_model.get(),
           prior_for_positive_probability_,
           prior_for_mean_parameters_,
-          prior_for_shape_parameters_);
+          prior_for_shape_parameters_,
+          seeding_rng);
       data_model->set_method(sampler);
       data_models_.push_back(data_model);
     }

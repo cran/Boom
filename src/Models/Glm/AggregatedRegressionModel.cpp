@@ -53,9 +53,9 @@ namespace BOOM {
     }
 
     int p = unit_data_[0]->x().size();
-    Mat X(n, p);
+    Matrix X(n, p);
     for(int i = 0; i < n; ++i){
-      const Vec &x(unit_data_[i]->x());
+      const Vector &x(unit_data_[i]->x());
       if(x.size() != p){
         ostringstream err;
         err << "Error in BOOM::Agreg::Group::display().  Row " << i << " in Group "
@@ -79,7 +79,7 @@ namespace BOOM {
     unit_data_.push_back(dp);
   }
   //----------------------------------------------------------------------
-  void Group::distribute_total(const Vec &beta, double sigma){
+  void Group::distribute_total(const Vector &beta, double sigma){
     if (unit_data_.size() <= 1){
       unit_data_[0]->set_y(f(total_value_));
       return;
@@ -212,9 +212,9 @@ namespace BOOM {
 
   //======================================================================
   typedef AggregatedRegressionModel ARM;
-  ARM::AggregatedRegressionModel(const Mat & design_matrix,
+  ARM::AggregatedRegressionModel(const Matrix & design_matrix,
                                  const std::vector<string> & group_names,
-                                 const Vec & group_values,
+                                 const Vector & group_values,
                                  const string &transformation)
       : f_(create_transformation(transformation)),
         f(*(f_.get())),
@@ -246,9 +246,9 @@ namespace BOOM {
   // values.  Picks out the information for each group, and then creates
   // and stores a Group.
   void AggregatedRegressionModel::initialize_groups(
-      const Mat &X,
+      const Matrix &X,
       const std::vector<string> & group_names,
-      const Vec & group_values){
+      const Vector & group_values){
     if(nrow(X) != group_names.size() || nrow(X) != group_values.size()){
       ostringstream err;
       err << "The number of rows in the design matrix (" << nrow(X)
@@ -324,7 +324,7 @@ namespace BOOM {
     return NULL;
   }
   //----------------------------------------------------------------------
-  void AggregatedRegressionModel::set_beta(const Vec &beta){
+  void AggregatedRegressionModel::set_beta(const Vector &beta){
     model_->set_Beta(beta);
   }
   //----------------------------------------------------------------------

@@ -51,14 +51,15 @@ namespace BOOM{
     //     at theta.
     //   nu:  The degrees of freedom parameter to use for the
     TIM(boost::function<double(const Vector &, Vector &, Matrix &, int)> logf,
-        double nu = 3);
+        double nu = 3, RNG *rng = 0);
 
     TIM(const BOOM::Target & logf,
         const BOOM::dTarget & dlogf,
         const BOOM::d2Target & d2logf,
-        double nu = 3);
+        double nu = 3,
+        RNG *rng = 0);
 
-    virtual Vector draw(const Vector &old);
+    Vector draw(const Vector &old) override;
 
     // In the typical use case the mode is located each iteration.  If
     // you want to avoid locating the mode use fix_mode(true).  To

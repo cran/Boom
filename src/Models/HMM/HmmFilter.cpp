@@ -28,10 +28,10 @@
 
 namespace BOOM{
 
-  void hmm_recursion_error(const Mat &p, const Vec &Marg, const Mat &Tmat,
-                           const Vec &Wsp, uint i, Ptr<Data>);
-  void hmm_recursion_error(const Mat &P, const Vec &marg, const Mat &tmat,
-                           const Vec &wsp, uint i, Ptr<Data> dp){
+  void hmm_recursion_error(const Matrix &p, const Vector &Marg, const Matrix &Tmat,
+                           const Vector &Wsp, uint i, Ptr<Data>);
+  void hmm_recursion_error(const Matrix &P, const Vector &marg, const Matrix &tmat,
+                           const Vector &wsp, uint i, Ptr<Data> dp){
     string str;
     ostringstream s(str);
     s << "error in HMM recursion at step "<< i<< ":" << endl;
@@ -94,7 +94,7 @@ namespace BOOM{
     pi = markov_->pi0();
     uint S = pi.size();
     uint n = dv.size();
-    Mat P(logQ);
+    Matrix P(logQ);
     double ans = initialize(dv[0].get());
     for(uint i=1; i<n; ++i){
       if(dv[i]->missing()) logp = 0;
@@ -147,8 +147,8 @@ namespace BOOM{
   void HmmFilter::allocate(Ptr<Data> dp, uint h){
     models_[h]->add_data(dp);
   }
-  Vec HmmFilter::state_probs(Ptr<Data>)const{
-    Vec ans;
+  Vector HmmFilter::state_probs(Ptr<Data>)const{
+    Vector ans;
     report_error("state_probs() cannot be called with this filter.  "
                  "Use an HmmSavePiFilter instead.");
     return ans;
@@ -157,27 +157,27 @@ namespace BOOM{
   //======================================================================
   HmmSavePiFilter::HmmSavePiFilter(std::vector<Ptr<MixtureComponent> > mv,
                                    Ptr<MarkovModel> mark,
-                                   std::map<Ptr<Data>, Vec> &pi_hist)
+                                   std::map<Ptr<Data>, Vector> &pi_hist)
       : HmmFilter(mv, mark),
         pi_hist_(pi_hist)
   {}
   //----------------------------------------------------------------------
   void HmmSavePiFilter::allocate(Ptr<Data> dp, uint h){
     models_[h]->add_data(dp);
-    Vec & v(pi_hist_[dp]);
+    Vector & v(pi_hist_[dp]);
     if(v.size()==0) v.resize(pi.size());
     v += pi;
   }
 
-  Vec HmmSavePiFilter::state_probs(Ptr<Data> dp)const{
-    std::map<Ptr<Data>, Vec>::const_iterator it = pi_hist_.find(dp);
+  Vector HmmSavePiFilter::state_probs(Ptr<Data> dp)const{
+   std::map<Ptr<Data>, Vector>::const_iterator it = pi_hist_.find(dp);
     if(it==pi_hist_.end()){
       ostringstream err;
       err << "could not compute state probability distribution "
           << "for data point " << *dp << endl;
       report_error(err.str());
     }
-    Vec ans(it->second);
+    Vector ans(it->second);
     ans.normalize_prob();
     return ans;
   }
@@ -191,7 +191,6 @@ namespace BOOM{
       {}
   //------------------------------------------------------------
   void HmmEmFilter::bkwd_smoothing(const std::vector<Ptr<Data> > & dv){
-    typedef std::vector<Mat>::reverse_iterator RIT;
     // pi was set by fwd;
     uint n = dv.size();
     uint S = state_space_size();
@@ -205,4 +204,4 @@ namespace BOOM{
     markov_->suf()->add_initial_distribution(pi);
   }
 
-}
+}  // namespace BOOM

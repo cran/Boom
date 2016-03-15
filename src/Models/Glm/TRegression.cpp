@@ -25,6 +25,8 @@
 #include <distributions.hpp>
 #include <numopt.hpp>
 
+#include <cpputil/math_utils.hpp>
+
 #include <iomanip>
 #include <cmath>
 
@@ -34,80 +36,70 @@ using std::setprecision;
 
 namespace BOOM{
 
-  typedef WeightedRegressionData WRD;
-  typedef WeightedRegressionModel WRM;
-  typedef ScaledChisqModel SCM;
-  typedef DoubleData DD;
-  typedef TRegressionModel TRM;
+  TRegressionModel::TRegressionModel(uint p)
+      : ParamPolicy(new GlmCoefs(p),
+                    new UnivParams(1.0),
+                    new UnivParams(30.0))
+  {}
 
-  void TRM::setup_params(){
-    ParamPolicy::add_model(wreg_);
-    ParamPolicy::add_model(wgt_);
-  }
+  TRegressionModel::TRegressionModel(const Vector &b, double Sigma, double nu)
+      : ParamPolicy(new GlmCoefs(b),
+                    new UnivParams(square(Sigma)),
+                    new UnivParams(nu))
+  {}
 
-  TRM::TRegressionModel(uint p)
-    : wreg_(new WRM(p)),
-      wgt_(new SCM)
+  TRegressionModel::TRegressionModel(const Matrix &X, const Vector &y)
+      : ParamPolicy(new GlmCoefs(X.ncol()),
+                    new UnivParams(1.0),
+                    new UnivParams(30.0))
   {
-    setup_params();
+    if (X.nrow() != y.size()) {
+      report_error("X and y are incompatible in TRegressionModel constructor.");
+    }
+    for (int i = 0; i < y.size(); ++i) {
+      NEW(RegressionData, dp)(y[i], X.row(i));
+      add_data(dp);
+    }
   }
 
-  TRM::TRegressionModel(const Vector &b, double Sigma, double nu)
-    : wreg_(new WRM(b,Sigma)),
-      wgt_(new SCM(nu))
-  {
-    setup_params();
+  TRegressionModel * TRegressionModel::clone()const{
+    return new TRegressionModel(*this);}
+  GlmCoefs & TRegressionModel::coef(){return prm1_ref();}
+  const GlmCoefs & TRegressionModel::coef()const{return prm1_ref();}
+  Ptr<GlmCoefs> TRegressionModel::coef_prm(){return prm1();}
+  const Ptr<GlmCoefs> TRegressionModel::coef_prm()const{return prm1();}
+
+  Ptr<UnivParams> TRegressionModel::Sigsq_prm(){return prm2();}
+  const Ptr<UnivParams> TRegressionModel::Sigsq_prm()const{return prm2();}
+  const double & TRegressionModel::sigsq()const{return prm2_ref().value();}
+  double TRegressionModel::sigma()const{return sqrt(sigsq());}
+  void TRegressionModel::set_sigsq(double s2){Sigsq_prm()->set(s2);}
+
+  Ptr<UnivParams> TRegressionModel::Nu_prm(){return prm3();}
+  const Ptr<UnivParams> TRegressionModel::Nu_prm()const{return prm3();}
+  const double & TRegressionModel::nu()const{return prm3_ref().value();}
+  void TRegressionModel::set_nu(double Nu){Nu_prm()->set(Nu);}
+
+  double TRegressionModel::log_likelihood(const Vector &full_beta,
+                             double sigsq,
+                             double nu) const {
+    const double sigma = sqrt(sigsq);
+    const std::vector<Ptr<RegressionData>> &data(dat());
+    const Selector &included_coefficients(coef().inc());
+    const Vector beta = included_coefficients.select(full_beta);
+    double ans = 0;
+    for (int i = 0; i < data.size(); ++i) {
+      const Vector x = coef().inc().select(data[i]->x());
+      ans += dstudent(data[i]->y(), beta.dot(x), sigma, nu, true);
+    }
+    return ans;
   }
 
-
-  TRM::TRegressionModel(const TRegressionModel &rhs)
-    : Model(rhs),
-      GlmModel(rhs),
-      ParamPolicy(rhs),
-      DataPolicy(rhs),
-      PriorPolicy(rhs),
-      NumOptModel(rhs),
-      LatentVariableModel(rhs),
-      wreg_(rhs.wreg_->clone()),
-      wgt_(rhs.wgt_->clone())
-  {
-    setup_params();
-  }
-
-
-  TRM::TRegressionModel(const DatasetType &d, bool all)
-    : GlmModel(),
-      ParamPolicy(),
-      DataPolicy(),
-      PriorPolicy(),
-      LatentVariableModel(),
-      wreg_(new WRM(all ? d[0]->xdim() : 1)),
-      wgt_(new SCM)
-  {
-    setup_params();
-    uint n = d.size();
-    for(uint i=0; i<n; ++i) add_data(d[i]);
-    mle();
-  }
-
-
-  TRM * TRM::clone()const{ return new TRM(*this);}
-
-  GlmCoefs & TRM::coef(){return wreg_->coef();}
-  const GlmCoefs & TRM::coef()const{return wreg_->coef();}
-  Ptr<GlmCoefs> TRM::coef_prm(){return wreg_->coef_prm();}
-  const Ptr<GlmCoefs> TRM::coef_prm()const{return wreg_->coef_prm();}
-  Ptr<UnivParams> TRM::Sigsq_prm(){return wreg_->Sigsq_prm();}
-  const Ptr<UnivParams> TRM::Sigsq_prm()const{return wreg_->Sigsq_prm();}
-  Ptr<UnivParams> TRM::Nu_prm(){return wgt_->Nu_prm();}
-  const Ptr<UnivParams> TRM::Nu_prm()const{return wgt_->Nu_prm();}
-  void TRM::set_sigsq(double s2){wreg_->set_sigsq(s2);}
-  void TRM::set_nu(double Nu){wgt_->set_nu(Nu);}
-
-  double TRM::Loglike(const Vector &beta_sigsq_nu,
+  double TRegressionModel::Loglike(const Vector &beta_sigsq_nu,
                       Vector &g, Matrix &h, uint nd)const{
     double nu = beta_sigsq_nu.back();
     double sigsq = beta_sigsq_nu[beta_sigsq_nu.size() - 2];
+    double sigma = sqrt(sigsq);
     const Selector &inclusion_indicators(coef().inc());
     int beta_dim = inclusion_indicators.nvars();
     const Vector beta(ConstVectorView(beta_sigsq_nu, 0, beta_dim));
@@ -121,31 +113,31 @@ namespace BOOM{
       const Vector X = coef().inc().select((dat())[i]->x());
       const double yhat = beta.dot(X);
       const double y = (dat())[i]->y();
-      ans+= dstudent(y, yhat, sigsq, nu, true);
+      ans += dstudent(y, yhat, sigma, nu, true);
       if(nd>0){
- 	double e = y-yhat;
- 	double esq_ns =e*e/(nu*sigsq);
- 	double frac = esq_ns/(1+esq_ns);
+        double e = y-yhat;
+        double esq_ns =e*e/(nu*sigsq);
+        double frac = esq_ns/(1+esq_ns);
 
- 	Vector gbeta = ((nu+1)*frac/e) *X;
+        Vector gbeta = ((nu+1)*frac/e) *X;
 
- 	Vector gsignu(2);
- 	gsignu[0] = -1/(2*sigsq);
- 	gsignu[0]*= (1-(nu+1)*frac);
+        Vector gsignu(2);
+        gsignu[0] = -1/(2*sigsq);
+        gsignu[0]*= (1-(nu+1)*frac);
 
- 	gsignu[1] = .5*(digamma((nu+1)/2)- digamma(nu/2) - 1.0/nu
-			-log(1+esq_ns) + frac*(nu+1)/nu);
- 	g += concat(gbeta, gsignu);
- 	if(nd>1){
+        gsignu[1] = .5*(digamma((nu+1)/2)- digamma(nu/2) - 1.0/nu
+                        -log(1+esq_ns) + frac*(nu+1)/nu);
+        g += concat(gbeta, gsignu);
+        if(nd>1){
           report_error(
               "second derivatives of TRegression are not yet implemented.");
- 	  double esq = e*e;
- 	  double sn = sigsq*nu;
- 	  double esp = esq + sn;
+          double esq = e*e;
+          double sn = sigsq*nu;
+          double esp = esq + sn;
 
- 	  Matrix hbb = X.outer()* ((nu+1)*( (esq -sn)/esp));
- 	  Vector hbs = (-e*(nu+1)*nu/pow(esp, 2)) * X;
- 	  Vector hbn = ((e/esp)*(1-(nu+1)*sigsq/esp)) * X;}}}
+          Matrix hbb = X.outer()* ((nu+1)*( (esq -sn)/esp));
+          Vector hbs = (-e*(nu+1)*nu/pow(esp, 2)) * X;
+          Vector hbn = ((e/esp)*(1-(nu+1)*sigsq/esp)) * X;}}}
     return ans;
   }
 
@@ -196,113 +188,62 @@ namespace BOOM{
     return ans;
   }
 
-
-  void TRM::mle(){
+  void TRegressionModel::mle(){
     const double eps = 1e-5;
     double dloglike= eps+1;
     double loglike = this->loglike(vectorize_params());
     double old = loglike;
     Vector Nu(1, nu());
+    WeightedRegSuf suf(xdim());
     while(dloglike > eps){
-      EStep();
-      wreg_->mle();
-      TrmNuTF f(this);
-      loglike = max_nd1(Nu, Target(f), dTarget(f));
-      set_nu(Nu[0]);
-      dloglike = loglike-old;
+      EStep(suf);
+      loglike = MStep(suf);
+      dloglike = loglike - old;
       old = loglike;
     }
   }
 
-  double TRM::complete_data_loglike()const{
-    Vector g;
-    Matrix h;
-    return complete_data_Loglike(g,h,0);
-  }
-  double TRM::complete_data_Loglike(Vector &g, Matrix &h, uint nd)const{
-
-    uint p = Beta().size();
-
-    Vector g_reg, g_wgt;
-    Matrix h_reg, h_wgt;
-    if(nd>0){
-      g_reg.resize(p+1);
-      g_wgt.resize(1);
-
-      if(nd>1){
-	h_reg.resize(p+1, p+1);
-	h_wgt.resize(1,1);}}
-
-    Vector beta_sigsq = Beta();
-    beta_sigsq.push_back(sigsq());
-    double ans = wreg_->Loglike(
-        beta_sigsq,
-        g_reg,
-        h_reg,nd);
-
-    Vector nu_vector(1, nu());
-    ans += wgt_->Loglike(nu_vector, g_wgt, h_wgt, nd);
-
-    if(nd>0){
-      g = concat(g_reg, g_wgt);
-      if(nd>1){
-	h = block_diagonal(h_reg, h_wgt);}}
-    return ans;}
-
-
-  void TRM::impute_latent_data(RNG &rng){
-    Impute(true, rng);
-  }
-
-  void TRM::EStep(){Impute(false, GlobalRng::rng);}
-
-  void TRM::Impute(bool draw, RNG &rng){
-    wreg_->suf()->clear();
-    wgt_->suf()->clear();
-
+  void TRegressionModel::EStep(WeightedRegSuf &suf) const {
+    suf.clear();
     double nu2 = nu()/2.0;
     double df2 = nu2 + .5;
     double sigsq2 = sigsq()*2.0;
-
-    std::vector<Ptr<WeightedRegressionData> > &
-      regdat(wreg_->dat());
-
-    for(uint i=0; i<regdat.size(); ++i){
-      Ptr<WeightedRegressionData> dp = regdat[i];
-      Ptr<DoubleData> wp = dp->WeightPtr();
+    const std::vector<Ptr<RegressionData> > &data(dat());
+    for (uint i=0; i < data.size(); ++i) {
+      Ptr<RegressionData> dp = data[i];
       double err = dp->y() - predict(dp->x());
-      double ss2 = err*err/sigsq2 + nu2;
-      double w = draw ? df2/ss2 : rgamma_mt(rng, df2, ss2);
-      dp->set_weight(w);
-      wreg_->suf()->update(dp);
-      wgt_->suf()->update(wp);
+      double ss2 = square(err) / sigsq2 + nu2;
+      double w = df2/ss2;
+      suf.add_data(dp->x(), dp->y(), w);
     }
   }
 
-  void TRM::initialize_params(){
-
+  double TRegressionModel::MStep(const WeightedRegSuf &suf) {
+    set_Beta(suf.beta_hat());
+    set_sigsq(suf.SSE() / suf.n());
+    Vector Nu(1, nu());
+    TrmNuTF nu_log_likelihood(this);
+    double loglike = max_nd1(Nu,
+                             Target(nu_log_likelihood),
+                             dTarget(nu_log_likelihood));
+    set_nu(Nu[0]);
+    return loglike;
   }
 
-  double TRM::pdf(Ptr<TRM::DataType> dp, bool logscale)const{
+  double TRegressionModel::pdf(Ptr<RegressionData> dp, bool logscale)const{
     double yhat = predict(dp->x());
     return dstudent(dp->y(), yhat, sigma(), nu(), logscale); }
-  double TRM::pdf(Ptr<Data> dp, bool logscale)const{
+  double TRegressionModel::pdf(Ptr<Data> dp, bool logscale)const{
     return pdf(dp.dcast<DataType>(), logscale);}
 
-
-  const double & TRM::sigsq()const{return Sigsq_prm()->value();}
-  double TRM::sigma()const{return sqrt(sigsq());}
-  const double & TRM::nu()const{ return wgt_->nu();}
-
-
-  Ptr<RegressionData>  TRM::simdat()const{
+  Ptr<RegressionData>  TRegressionModel::simdat()const{
     uint p = Beta().size();
     Vector x(p);
     for(uint i=0; i<p; ++i) x[i] = rnorm();
     return simdat(x);
   }
 
-  Ptr<RegressionData> TRM::simdat(const Vector &x)const{
+  Ptr<RegressionData> TRegressionModel::simdat(const Vector &x)const{
     double nu = this->nu();
     double w = rgamma(nu/2, nu/2);
     double yhat = predict(x);
@@ -312,13 +253,4 @@ namespace BOOM{
     return d;
   }
 
-
-  void TRM::add_data(Ptr<RegressionData> dp){
-    NEW(DoubleData, w)(1.0);
-    NEW(WeightedRegressionData, wrd)(dp, w);
-    wreg_->add_data(wrd);
-    wgt_->add_data(w);
-  }
-
-  void TRM::add_data(Ptr<Data> dp){add_data(DAT(dp));}
-}
+}  // namespace BOOM

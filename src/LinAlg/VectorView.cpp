@@ -342,6 +342,14 @@ namespace BOOM{
     return affdot_impl(*this, y);
   }
 
+  VV & VV::transform(std::function<double(double)> f) {
+    for (int i = 0; i < size(); ++i) {
+      double *d = V + i * stride_;
+      *d = f(*d);
+    }
+    return *this;
+  }
+
   ostream & operator<<(ostream & out, const VV & v){
     for(uint i = 0; i<v.size(); ++i) out << v[i] << " ";
     return out; }

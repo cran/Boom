@@ -26,14 +26,24 @@
 
 namespace BOOM{
 
-
   void intrusive_ptr_add_ref(TargetFun *s){
     s->up_count();}
   void intrusive_ptr_release(TargetFun *s){
     s->down_count();
     if(s->ref_count()==0) delete s; }
 
-  dTargetFun::dTargetFun() : eps_scale(1e-5){}
+  double d2TargetFun::operator()(const Vector &x) const {
+    Vector g;
+    Matrix h;
+    return (*this)(x, g, h, 0);
+  }
+  double d2TargetFun::operator()(const Vector &x, Vector &g) const {
+    Matrix h;
+    return (*this)(x, g, h, 1);
+  }
+  double d2TargetFun::operator()(const Vector &x, Vector &g, Matrix &h) const {
+    return (*this)(x, g, h, 2);
+  }
 
   //======================================================================
   void intrusive_ptr_add_ref(ScalarTargetFun *s){
@@ -42,8 +52,6 @@ namespace BOOM{
     s->down_count();
     if(s->ref_count()==0) delete s; }
   //----------------------------------------------------------------------
-  dScalarTargetFun::dScalarTargetFun() : eps_scale(1e-5){}
-
 
   d2TargetFunPointerAdapter::d2TargetFunPointerAdapter(
       const TargetType &target)
@@ -62,31 +70,18 @@ namespace BOOM{
     targets_.push_back(fun);
   }
 
-  double d2TargetFunPointerAdapter::operator()(const Vector &x) const {
-    check_not_empty();
-    double ans = targets_[0](x, nullptr, nullptr, true);
-    for (int i = 1; i < targets_.size(); ++i) {
-      ans += targets_[i](x, nullptr, nullptr, false);
-    }
-    return ans;
-  }
-
   double d2TargetFunPointerAdapter::operator()(
-      const Vector &x, Vector &g) const {
+      const Vector &x, Vector &g, Matrix &h, uint nderiv) const {
     check_not_empty();
-    double ans = targets_[0](x, &g, nullptr, true);
+    double ans = targets_[0](x,
+                             nderiv > 0 ? &g : nullptr,
+                             nderiv > 1 ? &h : nullptr,
+                             true);
     for (int i = 1; i < targets_.size(); ++i) {
-      ans += targets_[i](x, &g, nullptr, false);
-    }
-    return ans;
-  }
-
-  double d2TargetFunPointerAdapter::operator()(
-      const Vector &x, Vector &g, Matrix &h) const {
-    check_not_empty();
-    double ans = targets_[0](x, &g, &h, true);
-    for (int i = 1; i < targets_.size(); ++i) {
-      ans += targets_[i](x, &g, &h, false);
+      ans += targets_[i](x,
+                         nderiv > 0 ? &g : nullptr,
+                         nderiv > 1 ? &h : nullptr,
+                         false);
     }
     return ans;
   }
@@ -100,16 +95,36 @@ namespace BOOM{
 
   //======================================================================
 
-  ScalarTargetView::ScalarTargetView(TargetFun &F, const Vec &X, uint which_dim)
-    : f(F),
-      wsp(X),
-      which(which_dim)
+  ScalarTargetFunAdapter::ScalarTargetFunAdapter(
+      boost::function<double(const Vector &)> F,
+      Vector *X,
+      uint position)
+    : f_(F),
+      wsp_(X),
+      which_(position)
   {}
 
-  double ScalarTargetView::operator()(double x)const{
-    wsp[which] = x;
-    return f(wsp);
+  double ScalarTargetFunAdapter::operator()(double x)const{
+    (*wsp_)[which_] = x;
+    return f_(*wsp_);
   }
 
-  void ScalarTargetView::set_x(const Vec &X){ wsp = X;}
+  //======================================================================
+  dScalarTargetFunAdapter::dScalarTargetFunAdapter(
+      Ptr<dScalarEnabledTargetFun> f,
+      Vector *x,
+      uint position)
+      : f_(f), x_(x), position_(position)
+  {}
+
+  double dScalarTargetFunAdapter::operator()(double x_arg) const {
+    (*x_)[position_] = x_arg;
+    return (*f_)(*x_);
+  }
+
+  double dScalarTargetFunAdapter::operator()(double x_arg,
+                                             double &derivative) const {
+    (*x_)[position_] = x_arg;
+    return f_->scalar_derivative(*x_, derivative, position_);
+  }
 }

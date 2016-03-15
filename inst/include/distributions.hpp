@@ -26,51 +26,50 @@
 #include <vector>
 #include <uint.hpp>
 
-namespace BOOM{
+namespace BOOM {
   void set_seed(unsigned int I1, unsigned int I2);
   class VectorView;
   class ConstVectorView;
 
+  class TnSampler {
+    // Implements adaptive rejection sampling for drawing from the
+    // truncated normal distribution given x>a>0.
+   public:
+    TnSampler(double a);              // Set the truncation point.
+    double draw(RNG & );              // simluate a value
+    void add_point(double x);         // adds the point to the hull
+    double f(double x)const;          // log of the target distribution
+    double df(double x)const;         // derivative of logf at x
+    double h(double x, uint k)const;  // evaluates the outer hull at x
+    std::ostream & print(std::ostream & out)const;
+   private:
+    std::vector<double> x;
+    // points that have been tried thus far, stored in ascending
+    // order
 
-   class TnSampler{
-     // Implements adaptive rejection sampling for drawing from the
-     // truncated normal distribution given x>a>0.
-    public:
-     TnSampler(double a);              // Set the truncation point.
-     double draw(RNG & );              // simluate a value
-     void add_point(double x);         // adds the point to the hull
-     double f(double x)const;          // log of the target distribution
-     double df(double x)const;         // derivative of logf at x
-     double h(double x, uint k)const;  // evaluates the outer hull at x
-     std::ostream & print(std::ostream & out)const;
-    private:
-     std::vector<double> x;
-     // points that have been tried thus far, stored in ascending
-     // order
+    std::vector<double> logf;
+    // function values corresponding to values in x
 
-     std::vector<double> logf;
-     // function values corresponding to values in x
+    std::vector<double> dlogf;
+    // derivatives of the log target density evaluated at x
 
-     std::vector<double> dlogf;
-     // derivatives of the log target density evaluated at x
+    std::vector<double> knots;
+    // contains the points of intersection between the tangent lines
+    // to logf at x.  First knot is x[0].  Later knots satisfy x[i-1]
+    // < knots[i] < x[i].
 
-     std::vector<double> knots;
-     // contains the points of intersection between the tangent lines
-     // to logf at x.  First knot is x[0].  Later knots satisfy x[i-1]
-     // < knots[i] < x[i].
+    std::vector<double> cdf;     // cdf[i] = cdf[i-1] + the integral of
+    // the hull from knots[i] to
+    // knots[i+1].  cdf.back() assumes a
+    // final knot at infinity
 
-     std::vector<double> cdf;     // cdf[i] = cdf[i-1] + the integral of
-     // the hull from knots[i] to
-     // knots[i+1].  cdf.back() assumes a
-     // final knot at infinity
+    void update_cdf();
+    void refresh_knots();
+    double compute_knot(uint k)const;
+    typedef std::vector<double>::iterator IT;
+  };
 
-     void update_cdf();
-     void refresh_knots();
-     double compute_knot(uint k)const;
-     typedef std::vector<double>::iterator IT;
-   };
-
-  class Tn2Sampler{
+  class Tn2Sampler {
     // implements adaptive rejection sampling for drawinf from the
     // truncated standard normal distribution with 0 < lo < x < hi
     public:
@@ -134,18 +133,19 @@ namespace BOOM{
                        double cutpoint, bool positive_support = true);
 
   double dtrun_norm(double, double, double, double,
-		    bool low=true, bool log=false);
+                    bool low=true, bool log=false);
   double dtrun_norm_2(double, double, double, double, double, bool log=false);
 
   double rtrun_norm_2(double mu, double sig, double lo, double hi);
   double rtrun_norm_2_mt(RNG &, double mu, double sig, double lo, double hi);
 
-  double dstudent(double, double, double, double, bool log=false);
-  double rstudent(double, double, double);
-  double rstudent_mt(RNG & rng, double, double, double);
+  double dstudent(double y, double mu, double sigma, double df, bool log=false);
+  double rstudent(double mu, double sigma, double df);
+  double rstudent_mt(RNG & rng, double mu, double sigma, double df);
 
   double rtrun_exp_mt(RNG & rng, double lam, double lo, double hi);
   double rtrun_exp(double lam, double lo, double hi);
+  double rpiecewise_log_linear_mt(RNG &rng, double slope, double lo, double hi);
 
   double rlexp(double loglam);  // log E(lam).  loglam = log(lam)
   double rlexp_mt(RNG & rng, double loglam);  // log E(lam).  loglam = log(lam)
@@ -163,47 +163,51 @@ namespace BOOM{
 
   // basic rmvn checks the cholesky decomposition, if there is a
   // problem it calls rmvn_robust
-  Vec rmvn(const Vec &Mu, const Spd &Sigma);
-  Vec rmvn_mt(RNG & rng, const Vec &Mu, const Spd &Sigma);
+  Vector rmvn(const Vector &Mu, const SpdMatrix &Sigma);
+  Vector rmvn_mt(RNG & rng, const Vector &Mu, const SpdMatrix &Sigma);
 
   // rmvn_robust computes the spectral decomposition of Sigma which
   // can be done even if there is a zero pivot that would prevent the
   // Cholesky decomposition from working
-  Vec rmvn_robust(const Vec &Mu, const Spd &Sigma);
-  Vec rmvn_L(const Vec &mu, const Mat &L);
-  Vec rmvn_ivar(const Vec &Mu, const Spd &Sigma_Inverse);
-  Vec rmvn_ivar_L(const Vec &Mu, const Mat &Ivar_chol);
-  Vec rmvn_ivar_U(const Vec &Mu, const Mat &Ivar_chol_transpose);
-  Vec rmvn_suf(const Spd & Ivar, const Vec & IvarMu);
+  Vector rmvn_robust(const Vector &Mu, const SpdMatrix &Sigma);
+  Vector rmvn_L(const Vector &mu, const Matrix &L);
+  Vector rmvn_ivar(const Vector &Mu, const SpdMatrix &Sigma_Inverse);
+  Vector rmvn_ivar_L(const Vector &Mu, const Matrix &Ivar_chol);
+  Vector rmvn_ivar_U(const Vector &Mu, const Matrix &Ivar_chol_transpose);
+  Vector rmvn_suf(const SpdMatrix & Ivar, const Vector & IvarMu);
 
-  Vec rmvn_robust_mt(RNG & rng, const Vec &Mu, const Spd &Sigma);
-  Vec rmvn_L_mt(RNG & rng, const Vec &mu, const Mat &L);
-  Vec rmvn_ivar_mt(RNG & rng, const Vec &Mu, const Spd &Sigma_Inverse);
-  Vec rmvn_ivar_L_mt(RNG & rng, const Vec &Mu, const Mat &Ivar_chol);
-  Vec rmvn_ivar_U_mt(RNG & rng, const Vec &Mu, const Mat &Ivar_chol_transpose);
-  Vec rmvn_suf_mt(RNG & rng, const Spd & Ivar, const Vec & IvarMu);
+  Vector rmvn_robust_mt(RNG & rng, const Vector &Mu, const SpdMatrix &Sigma);
+  Vector rmvn_L_mt(RNG & rng, const Vector &mu, const Matrix &L);
+  Vector rmvn_ivar_mt(RNG & rng, const Vector &Mu,
+                      const SpdMatrix &Sigma_Inverse);
+  Vector rmvn_ivar_L_mt(RNG & rng, const Vector &Mu, const Matrix &Ivar_chol);
+  Vector rmvn_ivar_U_mt(RNG & rng, const Vector &Mu,
+                        const Matrix &Ivar_chol_transpose);
+  Vector rmvn_suf_mt(RNG & rng, const SpdMatrix & Ivar, const Vector & IvarMu);
 
 
-  double dmvn(const Vec &y, const Vec &mu, const Spd &Siginv,
-	      double ldsi, bool logscale);
-  double dmvn_zero_mean(const Vec &y, const Spd &Siginv,
-			double ldsi, bool logscale);
-  double dmvn(const Vec &y, const Vec &mu, const Spd &Siginv, bool logscale);
+  double dmvn(const Vector &y, const Vector &mu, const SpdMatrix &Siginv,
+              double ldsi, bool logscale);
+  double dmvn_zero_mean(const Vector &y, const SpdMatrix &Siginv,
+                        double ldsi, bool logscale);
+  double dmvn(const Vector &y, const Vector &mu, const SpdMatrix &Siginv,
+              bool logscale);
 
   // Y~ matrix_normal(Mu, Siginv, Ominv) if
-  // Vec(Y) ~ N(Vec(Mu), (Siginv \otimes Ominv)^{-1})
+  // Vector(Y) ~ N(Vector(Mu), (Siginv \otimes Ominv)^{-1})
 
-  Mat rmatrix_normal_ivar(const Mat & Mu, const Spd &Siginv,
-			     const Spd &Ominv);
-  Mat rmatrix_normal_ivar_mt(RNG & rng, const Mat & Mu, const Spd &Siginv,
-			     const Spd &Ominv);
-  double dmatrix_normal_ivar(const Mat &Y, const Mat &Mu,
-			     const Spd &Siginv, const Spd &Ominv,
-			     bool logscale);
-  double dmatrix_normal_ivar(const Mat &Y, const Mat &Mu,
-			     const Spd &Siginv, double ldsi,
-			     const Spd &Ominv, double ldoi,
-			     bool logscale);
+  Matrix rmatrix_normal_ivar(const Matrix & Mu, const SpdMatrix &Siginv,
+                             const SpdMatrix &Ominv);
+  Matrix rmatrix_normal_ivar_mt(RNG & rng, const Matrix & Mu,
+                                const SpdMatrix &Siginv,
+                                const SpdMatrix &Ominv);
+  double dmatrix_normal_ivar(const Matrix &Y, const Matrix &Mu,
+                             const SpdMatrix &Siginv, const SpdMatrix &Ominv,
+                             bool logscale);
+  double dmatrix_normal_ivar(const Matrix &Y, const Matrix &Mu,
+                             const SpdMatrix &Siginv, double ldsi,
+                             const SpdMatrix &Ominv, double ldoi,
+                             bool logscale);
 
   //  uniforms shrinkage prior in usp.cpp
   double dusp(double x, double z0, bool logscale);
@@ -213,59 +217,81 @@ namespace BOOM{
   double rusp(double z0);
   double rusp_mt(RNG & rng, double z0);
 
-  //  Spd rWish( double,  Spd &);
-  Spd rWish(double df, const Spd &sumsq_inv, bool inv=false);
-  Spd rWish_mt(RNG &, double df, const Spd &sumsq_inv, bool inv=false);
-  Spd rWishChol(double df, const Mat &sumsq_upper_chol, bool inv=false);
-  Spd rWishChol_mt(RNG &, double df, const Mat &sumsq_upper_chol, bool inv=false);
-  double dWish(const Spd &S, const Spd &sumsq, double df, bool logscale, bool inv=false);
-  inline double dWishinv(const Spd &S, const Spd &sumsq, double df, bool logscale){
+  //  SpdMatrix rWish( double,  SpdMatrix &);
+  SpdMatrix rWish(double df, const SpdMatrix &sumsq_inv, bool inv=false);
+  SpdMatrix rWish_mt(RNG &, double df, const SpdMatrix &sumsq_inv,
+                     bool inv=false);
+  SpdMatrix rWishChol(double df, const Matrix &sumsq_upper_chol,
+                      bool inv=false);
+  SpdMatrix rWishChol_mt(RNG &, double df, const Matrix &sumsq_upper_chol,
+                         bool inv=false);
+  double dWish(const SpdMatrix &S, const SpdMatrix &sumsq, double df,
+               bool logscale,
+               bool inv=false);
+  inline double dWishinv(
+      const SpdMatrix &S, const SpdMatrix &sumsq, double df, bool logscale) {
     return dWish(S, sumsq, df, logscale, true); }
 
-  double ddirichlet(const Vec & x, const Vec & nu, bool logscale);
-  double ddirichlet(const VectorView & x, const Vec & nu, bool logscale);
-  double ddirichlet(const Vec & x, const VectorView & nu, bool logscale);
-  double ddirichlet(const VectorView & x, const VectorView & nu, bool logscale);
+  double ddirichlet(const Vector & x,
+                    const Vector & nu,
+                    bool logscale);
+  double ddirichlet(const VectorView & x,
+                    const Vector & nu,
+                    bool logscale);
+  double ddirichlet(const Vector & x,
+                    const VectorView & nu,
+                    bool logscale);
+  double ddirichlet(const VectorView & x,
+                    const VectorView & nu,
+                    bool logscale);
+  double ddirichlet(const Vector & x,
+                    const ConstVectorView & nu,
+                    bool logscale);
+  double ddirichlet(const ConstVectorView & x,
+                    const Vector & nu,
+                    bool logscale);
+  double ddirichlet(const ConstVectorView & x,
+                    const ConstVectorView & nu,
+                    bool logscale);
+  double ddirichlet(const VectorView & x,
+                    const ConstVectorView & nu,
+                    bool logscale);
+  double ddirichlet(const ConstVectorView & x,
+                    const VectorView & nu,
+                    bool logscale);
 
-  double ddirichlet(const Vec & x, const ConstVectorView & nu, bool logscale);
-  double ddirichlet(const ConstVectorView & x, const Vec & nu, bool logscale);
-  double ddirichlet(const ConstVectorView & x, const ConstVectorView & nu, bool logscale);
+  Vector mdirichlet(const Vector &nu);
+  double dirichlet_loglike(const Vector &nu, Vector *g, Matrix *h,
+                           const Vector & sumlogpi, double nobs);
 
-  double ddirichlet(const VectorView & x, const ConstVectorView & nu, bool logscale);
-  double ddirichlet(const ConstVectorView & x, const VectorView & nu, bool logscale);
+  Vector rdirichlet(const Vector & nu);
+  Vector rdirichlet_mt(RNG &rng, const Vector & nu);
+  Vector rdirichlet(const VectorView & nu);
+  Vector rdirichlet_mt(RNG &rng, const VectorView & nu);
+  Vector rdirichlet(const ConstVectorView & nu);
+  Vector rdirichlet_mt(RNG &rng, const ConstVectorView & nu);
 
-  Vec mdirichlet(const Vec &nu);
-  double dirichlet_loglike(const Vec &nu, Vec *g, Mat *h,
-			   const Vec & sumlogpi, double nobs);
-
-  Vec rdirichlet(const Vec & nu);
-  Vec rdirichlet_mt(RNG &rng, const Vec & nu);
-  Vec rdirichlet(const VectorView & nu);
-  Vec rdirichlet_mt(RNG &rng, const VectorView & nu);
-  Vec rdirichlet(const ConstVectorView & nu);
-  Vec rdirichlet_mt(RNG &rng, const ConstVectorView & nu);
-
-  unsigned int rmulti(const Vec &);
-  unsigned int rmulti(const VectorView &);
-  unsigned int rmulti(const ConstVectorView &);
-  unsigned int rmulti_mt(RNG &rng, const Vec &);
-  unsigned int rmulti_mt(RNG &rng, const VectorView &);
-  unsigned int rmulti_mt(RNG &rng, const ConstVectorView &);
+  uint rmulti(const Vector &);
+  uint rmulti(const VectorView &);
+  uint rmulti(const ConstVectorView &);
+  uint rmulti_mt(RNG &rng, const Vector &);
+  uint rmulti_mt(RNG &rng, const VectorView &);
+  uint rmulti_mt(RNG &rng, const ConstVectorView &);
 
   int rmulti(int, int);
   int rmulti_mt(RNG &, int, int);
 
-  double dmvt(const Vec &x,  const Vec &mu, const Spd &Siginv,
-	      double nu, double ldsi, bool logscale);
-  double dmvt(const Vec &x,  const Vec &mu, const Spd &Siginv,
-	      double nu, bool logscale);
+  double dmvt(const Vector &x,  const Vector &mu, const SpdMatrix &Siginv,
+              double nu, double ldsi, bool logscale);
+  double dmvt(const Vector &x,  const Vector &mu, const SpdMatrix &Siginv,
+              double nu, bool logscale);
 
-  Vec rmvt(const Vec &mu, const Spd &Sigma, double nu);
-  Vec rmvt_ivar(const Vec &mu, const Spd &Sigma, double nu);
-  Vec rmvt_mt(RNG &, const Vec &mu, const Spd &Sigma, double nu);
-  Vec rmvt_ivar_mt(RNG &, const Vec &mu, const Spd &Sigma, double nu);
-}
+  Vector rmvt(const Vector &mu, const SpdMatrix &Sigma, double nu);
+  Vector rmvt_ivar(const Vector &mu, const SpdMatrix &Sigma, double nu);
+  Vector rmvt_mt(RNG &, const Vector &mu, const SpdMatrix &Sigma, double nu);
+  Vector rmvt_ivar_mt(RNG &, const Vector &mu, const SpdMatrix &Sigma,
+                      double nu);
 
+}  // namespace BOOM
 
-
-#endif// BOOM_DISTRIBUTIONS_HPP
+#endif  // BOOM_DISTRIBUTIONS_HPP

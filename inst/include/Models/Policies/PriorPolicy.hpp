@@ -25,21 +25,31 @@
 
 namespace BOOM{
 
-  class PriorPolicy : virtual public Model{
-    // policy class to cover how a model sets priors for its paramters.
-  public:
-    virtual PriorPolicy * clone()const=0;
+  // A policy class implementing the relationship between a Model and
+  // its PosteriorSampler.
+  class PriorPolicy : virtual public Model {
+   public:
+    PriorPolicy * clone()const override =0;
 
     // Invoke each of the sampling methods that have been set, in the
     // order they were set.
-    virtual void sample_posterior();
-    virtual double logpri()const;
-    virtual void set_method(Ptr<PosteriorSampler>);
-    virtual void clear_methods();
+    void sample_posterior() override;
+    double logpri() const override;
+    void set_method(Ptr<PosteriorSampler>) override;
+    void clear_methods();
 
     // Returns the number of sampling methods that have been set.
-    int number_of_sampling_methods() const;
-  private:
+    int number_of_sampling_methods() const override;
+
+   protected:
+    PosteriorSampler * sampler(int i) override {
+      return samplers_[i].get();
+    }
+    PosteriorSampler const * const sampler(int i) const override {
+      return samplers_[i].get();
+    }
+
+   private:
     std::vector<Ptr<PosteriorSampler> > samplers_;
   };
 

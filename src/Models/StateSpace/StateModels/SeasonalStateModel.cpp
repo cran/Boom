@@ -65,6 +65,12 @@ namespace BOOM{
 
   bool SSM::new_season(int t)const{
     t -= time_of_first_observation_;
+    if (t < 0) {
+      // If t is negative then move an integer number of full seasons
+      // into the future.  Because t is negative, _subtracting_ t *
+      // duration_ will move us |t| cycles into the future.
+      t -= duration_ * t;
+    }
     return ((t % duration_) == 0);
   }
 
@@ -83,12 +89,12 @@ namespace BOOM{
   }
 
   Ptr<SparseMatrixBlock> SSM::state_transition_matrix(int t)const{
-    if(new_season(t)) return T0_;
+    if(new_season(t+1)) return T0_;
     return T1_;
   }
 
   Ptr<SparseMatrixBlock> SSM::state_variance_matrix(int t)const{
-    if(new_season(t)) return RQR0_;
+    if(new_season(t+1)) return RQR0_;
     return RQR1_;
   }
 
@@ -110,7 +116,9 @@ namespace BOOM{
     }
     state_error = 0;
     assert(state_error.size() == state_dimension());
-    if(new_season(t)){
+    if(new_season(t+1)){
+      // If next time period is the start of a new season, then an
+      // update is needed.  Otherwise, the state error is zero.
       state_error[0] = rnorm(0, sigma());
     }
   }
@@ -130,10 +138,10 @@ namespace BOOM{
     time_of_first_observation_ = t;
   }
 
-  Vec SSM::initial_state_mean()const{
+  Vector SSM::initial_state_mean()const{
     return initial_state_mean_;}
 
-  Spd SSM::initial_state_variance()const{
+  SpdMatrix SSM::initial_state_variance()const{
     if(initial_state_variance_.nrow() != state_dimension()){
       ostringstream err;
       err << "The initial state variance has the wrong size in "
@@ -144,7 +152,7 @@ namespace BOOM{
     }
     return initial_state_variance_;}
 
-  void SSM::set_initial_state_mean(const Vec &mu){
+  void SSM::set_initial_state_mean(const Vector &mu){
     if(mu.size() != state_dimension()){
       ostringstream err;
       err << "wrong size arugment passed to "
@@ -158,7 +166,7 @@ namespace BOOM{
     }
     initial_state_mean_ = mu;}
 
-  void SSM::set_initial_state_variance(const Spd &v){
+  void SSM::set_initial_state_variance(const SpdMatrix &v){
     if(ncol(v) != state_dimension()){
       ostringstream err;
       err << "wrong size arugment passed to "
@@ -173,7 +181,7 @@ namespace BOOM{
     initial_state_variance_ = v;}
 
   void SSM::set_initial_state_variance(double sigsq){
-    Spd v(state_dimension(), sigsq);
+    SpdMatrix v(state_dimension(), sigsq);
     initial_state_variance_ = v;}
 
 

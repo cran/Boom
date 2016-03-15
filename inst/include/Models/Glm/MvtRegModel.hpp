@@ -33,18 +33,18 @@ namespace BOOM{
   {
   public:
     MvtRegModel(uint xdim, uint ydim);
-    MvtRegModel(const Mat &X,const Mat &Y, bool add_intercept=false);
-    MvtRegModel(const Mat &B, const Spd &Sigma, double nu);
+    MvtRegModel(const Matrix &X,const Matrix &Y, bool add_intercept=false);
+    MvtRegModel(const Matrix &B, const SpdMatrix &Sigma, double nu);
 
     MvtRegModel(const MvtRegModel &rhs);
-    MvtRegModel * clone()const;
+    MvtRegModel * clone()const override;
 
     uint xdim()const;  // x includes intercept
     uint ydim()const;
 
-    const Mat & Beta()const;     // [xdim rows, ydim columns]
-    const Spd & Sigma()const;
-    const Spd & Siginv()const;
+    const Matrix & Beta()const;     // [xdim rows, ydim columns]
+    const SpdMatrix & Sigma()const;
+    const SpdMatrix & Siginv()const;
     double ldsi()const;
     double nu()const;
 
@@ -55,24 +55,24 @@ namespace BOOM{
     const Ptr<SpdParams> Sigma_prm()const;
     const Ptr<UnivParams> Nu_prm()const;
 
-    void set_Beta(const Mat &B);
-    void set_beta(const Vec & b, uint m);
-    void set_Sigma(const Spd &V);
-    void set_Siginv(const Spd &iV);
+    void set_Beta(const Matrix &B);
+    void set_beta(const Vector & b, uint m);
+    void set_Sigma(const SpdMatrix &V);
+    void set_Siginv(const SpdMatrix &iV);
 
     void set_nu(double nu);
 
     //--- estimation and probability calculations
-    virtual void mle();
-    virtual double loglike(
-        const Vector &beta_columns_siginv_triangle_nu)const;
+    void mle() override;
+    double loglike(
+        const Vector &beta_columns_siginv_triangle_nu)const override;
     virtual double pdf(dPtr,bool)const;
-    virtual Vec predict(const Vec &x)const;
+    virtual Vector predict(const Vector &x)const;
 
     //---- simulate MV regression data ---
     virtual MvRegData * simdat()const;
-    virtual MvRegData * simdat(const Vec &X)const;
-    Vec simulate_fake_x()const;  // no intercept
+    virtual MvRegData * simdat(const Vector &X)const;
+    Vector simulate_fake_x()const;  // no intercept
 
   };
 }

@@ -22,19 +22,35 @@
 
 namespace BOOM{
   class BinomialRegressionData
-      : public GlmData<IntData>{
+      : public GlmData<DoubleData>{
    public:
-    typedef GlmData<IntData> Base;
-    BinomialRegressionData(uint y, uint n, const Vec &x, bool add_icpt=false);
-    virtual BinomialRegressionData * clone()const;
-    void set_n(uint n, bool check = true);
-    void set_y(uint y, bool check = true);
-    uint n()const;
+    typedef GlmData<DoubleData> Base;
+
+    // Args:
+    //   y:  The number of successes, where y >= 0.
+    //   n:  The number of trials, where n >= y.
+    //   x:  The vector of predictor variables.
+    BinomialRegressionData(double y, double n, const Vector &x);
+
+    // Args:
+    //   y:  The number of successes, where y >= 0.
+    //   n:  The number of trials, where n >= y.
+    //   x: The vector of predictor variables.  This constructor
+    //     allows the x's to be shared with other objects.
+    BinomialRegressionData(double y, double n, Ptr<VectorData> x);
+
+    BinomialRegressionData * clone() const override;
+    void set_n(double n, bool check = true);
+    void set_y(double y, bool check = true);
+    double n()const;
     void check()const;  // throws if n < y
-    virtual ostream & display(ostream &out)const;
+    ostream & display(ostream &out)const override;
+
    private:
-    uint n_;  // number of trials in the binomial process
-              // y() is the number of successes
+    // Number of binomial trials.
+    double n_;
+    // y() is the number of successes.
   };
-}
+
+}  // namespace BOOM
 #endif // BOOM_BINOMIAL_REGRESSION_DATA_HPP_

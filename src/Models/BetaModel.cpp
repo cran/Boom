@@ -70,23 +70,23 @@ namespace BOOM{
     sumlogc_ += s.sumlogc_;
   }
 
-  Vec BS::vectorize(bool)const{
-    Vec ans(3);
+  Vector BS::vectorize(bool)const{
+    Vector ans(3);
     ans[0] = n_;
     ans[1] = sumlog_;
     ans[2] = sumlogc_;
     return ans;
   }
 
-  Vec::const_iterator BS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator BS::unvectorize(Vector::const_iterator &v, bool){
     n_ = *v; ++v;
     sumlog_ = *v; ++v;
     sumlogc_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator BS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator BS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -175,7 +175,7 @@ namespace BOOM{
     set_params(a, b);
   }
 
-  double BM::Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const{
+  double BM::Loglike(const Vector &ab, Vector &g, Matrix &h, uint nd) const{
     if (ab.size() != 2) {
       report_error("Wrong size argument.");
     }

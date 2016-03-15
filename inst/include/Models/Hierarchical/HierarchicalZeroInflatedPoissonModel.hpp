@@ -38,8 +38,8 @@ namespace BOOM {
     // Automatic conversions from ZeroInflatedPoissonSuf are allowed.
     ZeroInflatedPoissonData(const ZeroInflatedPoissonSuf &suf);
     ZeroInflatedPoissonData(const ZeroInflatedPoissonData &rhs);
-    virtual ZeroInflatedPoissonData * clone()const;
-    virtual ostream & display(ostream &out)const;
+    ZeroInflatedPoissonData * clone() const override;
+    ostream & display(ostream &out)const override;
     const ZeroInflatedPoissonSuf &suf()const;
    private:
     ZeroInflatedPoissonSuf suf_;
@@ -119,14 +119,14 @@ namespace BOOM {
     //   These are respectible starting values for an MCMC algorithm,
     //   but not particularly accurate otherwise.
     HierarchicalZeroInflatedPoissonModel(
-        const std::vector<int> &trials,
-        const std::vector<int> &events,
-        const std::vector<int> &number_of_zeros);
+        const BOOM::Vector &trials,
+        const BOOM::Vector &events,
+        const BOOM::Vector &number_of_zeros);
 
     HierarchicalZeroInflatedPoissonModel(
         const HierarchicalZeroInflatedPoissonModel &rhs);
 
-    virtual HierarchicalZeroInflatedPoissonModel * clone()const;
+    HierarchicalZeroInflatedPoissonModel * clone() const override;
 
     // Unless a separate pointer to data_level_model is kept, the data
     // for data_level_model should be set before calling this
@@ -135,20 +135,20 @@ namespace BOOM {
 
     // Removes all data_level_models and their associated parameters
     // and data.
-    virtual void clear_data();
+    void clear_data() override;
 
     // Clear the data from all data_level_models, but does not delete
     // the models.
     void clear_client_data();
 
     // Clear the learning methods for each of the client models.
-    virtual void clear_methods();
+    void clear_methods();
 
     // Adds the data_level_models from rhs to this.
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
+    void combine_data(const Model &rhs, bool just_suf = true) override;
 
     // Creates a new data_level_model with data assigned.
-    virtual void add_data(Ptr<Data>);
+    void add_data(Ptr<Data>) override;
 
     // Returns the number of data_level_models managed by this model.
     int number_of_groups()const;

@@ -29,7 +29,6 @@ namespace BOOM{
     ParamPolicy_4();
     ParamPolicy_4(Ptr<P1> p1, Ptr<P2> p2, Ptr<P3> p3, Ptr<P4> p4);
     ParamPolicy_4(const ParamPolicy_4 &rhs);
-    ParamPolicy_4<P1, P2, P3, P4> * clone()const=0;
     ParamPolicy_4<P1, P2, P3, P4> & operator=(const ParamPolicy_4 &rhs);
 
     Ptr<P1> prm1(){return prm1_;}
@@ -56,22 +55,22 @@ namespace BOOM{
       prm1_ = p1; prm2_ = p2, prm3_ = p3; prm4_ = p4; set_t(); }
 
     // over-rides for abstract base Model
-    virtual ParamVec t(){return t_;}
-    virtual const ParamVec t()const{return t_;}
+    ParamVector t() override {return t_;}
+    const ParamVector t() const override {return t_;}
 
   private:
     Ptr<P1> prm1_;
     Ptr<P2> prm2_;
     Ptr<P3> prm3_;
     Ptr<P4> prm4_;
-    ParamVec t_;
+    ParamVector t_;
     void set_t();
   };
   //------------------------------------------------------------
 
   template<class P1, class P2, class P3, class P4>
   void ParamPolicy_4<P1, P2, P3, P4>::set_t(){
-    t_ = ParamVec(4);
+    t_ = ParamVector(4);
     t_[0] = prm1_;
     t_[1] = prm2_;
     t_[2] = prm3_;
@@ -108,10 +107,6 @@ namespace BOOM{
     {
       set_t();
     }
-
-  template<class P1, class P2, class P3, class P4>
-  ParamPolicy_4<P1, P2, P3, P4> * ParamPolicy_4<P1, P2, P3, P4>::clone()const{
-    return new ParamPolicy_4<P1, P2, P3, P4>(*this);}
 
   template<class P1, class P2, class P3, class P4>
   ParamPolicy_4<P1, P2, P3, P4> & ParamPolicy_4<P1, P2, P3, P4>::operator=

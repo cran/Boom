@@ -21,12 +21,12 @@
 namespace BOOM{
   typedef ParamHolder PH;
 
-  PH::ParamHolder(Ptr<Params> held, Vec &Wsp)
+  PH::ParamHolder(Ptr<Params> held, Vector &Wsp)
     : v(Wsp),
       prm(held)
   {}
 
-  PH::ParamHolder(const Vec & x, Ptr<Params> held, Vec &Wsp)
+  PH::ParamHolder(const Vector & x, Ptr<Params> held, Vector &Wsp)
     : v(Wsp),
       prm(held)
     {
@@ -40,13 +40,13 @@ namespace BOOM{
 
   //------------------------------------------------------------
 
-  typedef ParamVecHolder PVH;
-  PVH::ParamVecHolder(const ParamVec &held, Vec &Wsp)
+  typedef ParamVectorHolder PVH;
+  PVH::ParamVectorHolder(const ParamVector &held, Vector &Wsp)
     : v(Wsp),
       prm(held)
   {}
 
-  PVH::ParamVecHolder(const Vec & x, const ParamVec & held, Vec &Wsp)
+  PVH::ParamVectorHolder(const Vector & x, const ParamVector & held, Vector &Wsp)
     : v(Wsp),
       prm(held)
     {
@@ -55,7 +55,7 @@ namespace BOOM{
     }
 
 
-  PVH::~ParamVecHolder(){
+  PVH::~ParamVectorHolder(){
     unvectorize(prm, v, true);
   }
 

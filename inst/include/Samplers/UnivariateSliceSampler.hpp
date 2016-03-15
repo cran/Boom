@@ -17,37 +17,41 @@
 */
 
 #include <Samplers/Sampler.hpp>
-#include <TargetFun/TargetFun.hpp>
+#include <Samplers/ScalarSliceSampler.hpp>
 #include <LinAlg/Vector.hpp>
+#include <functional>
+#include <TargetFun/TargetFun.hpp>
 
 namespace BOOM{
 
-  /*
-   * A "Univariate" slice sampler draws a vector one component at a
-   * time.  It is not a "scalar" slice sampler.
-   */
+   // A "Univariate" slice sampler draws a vector one component at a
+   // time.  If you just want to draw a scalar quantity then you want
+   // a ScalarSliceSampler instead.
+  class UnivariateSliceSampler : public Sampler {
+   public:
+    typedef std::function<double(const Vector &x)> Target;
+    // Args:
+    //   logdensity: The log of the un-normalized density function to
+    //     be sampled.
+    //   dim:  The dimension of the density to be sampled.
+    //   suggested_dx: The initial suggested step size to use for each
+    //     scalar slice sampler.
+    //   unimodal: If 'true' the density is known to be unimodal.  If
+    //     'false' then the density is potentially multi-modal.
+    //   rng: A pointer to the random number generator that supplies
+    //     randomness to this sampler.
+    UnivariateSliceSampler(const Target &logdensity,
+                           int dim,
+                           double suggested_dx = 1.0,
+                           bool unimodal = false,
+                           RNG *rng = nullptr);
+    Vector draw(const Vector &x) override;
 
-  class UnivariateSliceSampler : public Sampler{
-  public:
-    UnivariateSliceSampler(const TargetFun &F, bool unimodal=false);
-    Vec draw(const Vec &x);
-    double logp(const Vec &x)const;
-  private:
-    const TargetFun &f;
-    bool unimodal;
-    Vec theta, wsp;
-    uint which;
-    double lo, hi; // slice boundaries
-    double plo, phi; // logp at slice boundaries
-    double y, pstar; // current value and slice height
-
-    void doubling(bool);
-    void contract(double lam, double p);
-    void find_limits();
-    void initialize(); // draws vertical slice. ensures hi,lo are valid
-    void draw_1();
-    double f1(double x);
-    void validate(double &value, double &prob, double anchor);
+   private:
+    Target f_;
+    std::vector<ScalarTargetFunAdapter> scalar_targets_;
+    std::vector<ScalarSliceSampler> scalar_samplers_;
+    Vector theta_;
   };
 
 }

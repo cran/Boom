@@ -26,8 +26,10 @@ namespace BOOM {
   MvnIndependentVarianceSampler::MvnIndependentVarianceSampler(
       MvnModel * model,
       const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-      const Vec & sigma_max_values)
-      : model_(model),
+      const Vector & sigma_max_values,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         priors_(siginv_priors)
   {
     if (model->dim() != siginv_priors.size()) {
@@ -58,8 +60,8 @@ namespace BOOM {
   }
 
   void MvnIndependentVarianceSampler::draw(){
-    Spd diagonal_inverse_variance = model_->siginv();
-    Spd sumsq = model_->suf()->center_sumsq(model_->mu());
+    SpdMatrix diagonal_inverse_variance = model_->siginv();
+    SpdMatrix sumsq = model_->suf()->center_sumsq(model_->mu());
     // Because the variance matrix is diagonal, we can simply draw its
     // diagonal elements one at a time.
     for (int i = 0; i < model_->dim(); ++i) {

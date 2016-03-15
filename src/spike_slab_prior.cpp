@@ -42,8 +42,10 @@ namespace BOOM {
           max_flips_(GetMaxFlips(r_prior))
     {
       Vector prior_mean = ToBoomVector(getListElement(r_prior, "mu"));
-      if (Rf_inherits(r_prior, "SpikeSlabPrior")) {
-        Spd prior_precision = ToBoomSpd(getListElement(
+      if (Rf_inherits(r_prior, "SpikeSlabPrior")
+          || Rf_inherits(r_prior, "LogitZellnerPrior")
+          || Rf_inherits(r_prior, "PoissonZellnerPrior")) {
+        SpdMatrix prior_precision = ToBoomSpdMatrix(getListElement(
             r_prior, "siginv"));
         slab_.reset(new MvnModel(prior_mean, prior_precision, true));
       } else if (Rf_inherits(r_prior, "IndependentSpikeSlabPrior")) {
@@ -74,7 +76,7 @@ namespace BOOM {
       if (Rf_inherits(r_spike_slab_prior, "SpikeSlabPrior")) {
         slab_.reset(new MvnGivenScalarSigma(
             mu,
-            ToBoomSpd(getListElement(r_spike_slab_prior, "siginv")),
+            ToBoomSpdMatrix(getListElement(r_spike_slab_prior, "siginv")),
             residual_variance));
       } else if (Rf_inherits(r_spike_slab_prior, "IndependentSpikeSlabPrior")) {
         slab_.reset(new IndependentMvnModelGivenScalarSigma(
@@ -84,6 +86,19 @@ namespace BOOM {
             residual_variance));
       }
     }
+
+    namespace {
+      typedef StudentRegressionConjugateSpikeSlabPrior SRCSSP;
+      typedef StudentRegressionNonconjugateSpikeSlabPrior SRNSSP;
+      typedef StudentIndependentSpikeSlabPrior SISSP;
+    }
+
+    SRCSSP::StudentRegressionConjugateSpikeSlabPrior(
+        SEXP r_prior, Ptr<UnivParams> residual_variance)
+        : RegressionConjugateSpikeSlabPrior(r_prior, residual_variance),
+          df_prior_(create_double_model(getListElement(
+              r_prior, "degrees.of.freedom.prior")))
+    {}
 
     RegressionNonconjugateSpikeSlabPrior::RegressionNonconjugateSpikeSlabPrior(
         SEXP r_spike_slab_prior)
@@ -96,6 +111,12 @@ namespace BOOM {
           r_spike_slab_prior, "sigma.guess"));
       siginv_prior_.reset(new ChisqModel(prior_df, sigma_guess));
     }
+
+    SRNSSP::StudentRegressionNonconjugateSpikeSlabPrior(SEXP r_prior)
+        : RegressionNonconjugateSpikeSlabPrior(r_prior),
+          df_prior_(create_double_model(getListElement(
+              r_prior, "degrees.of.freedom.prior")))
+    {}
 
     IndependentRegressionSpikeSlabPrior::IndependentRegressionSpikeSlabPrior(
         SEXP r_prior, Ptr<UnivParams> sigsq)
@@ -111,6 +132,13 @@ namespace BOOM {
               Rf_asReal(getListElement(r_prior, "sigma.guess")))),
           max_flips_(GetMaxFlips(r_prior)),
           sigma_upper_limit_(GetSigmaUpperLimit(r_prior))
+    {}
+
+    SISSP::StudentIndependentSpikeSlabPrior(
+        SEXP r_prior, Ptr<UnivParams> sigsq)
+        : IndependentRegressionSpikeSlabPrior(r_prior, sigsq),
+          df_prior_(create_double_model(getListElement(
+              r_prior, "degrees.of.freedom.prior")))
     {}
 
   }  // namespace RInterface

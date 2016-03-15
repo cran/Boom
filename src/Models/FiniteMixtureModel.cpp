@@ -41,10 +41,10 @@ namespace BOOM{
   }
 
   FMM::FiniteMixtureModel(Ptr<MixtureComponent> mcomp, Ptr<MultinomialModel> pi)
-    : MixtureDataPolicy(pi->size()),
+    : MixtureDataPolicy(pi->dim()),
       mixing_dist_(pi)
   {
-    uint S = pi->size();
+    uint S = pi->dim();
     for(uint s=0; s<S; ++s){
       Ptr<MixtureComponent> mp = mcomp->clone();
       mixture_components_.push_back(mp);
@@ -117,10 +117,10 @@ namespace BOOM{
     }
   }
 
-  void FMM::class_membership_probability(Ptr<Data> dp, Vec &ans)const{
+  void FMM::class_membership_probability(Ptr<Data> dp, Vector &ans)const{
     int S = number_of_mixture_components();
     ans.resize(S);
-    const Vec & log_pi(logpi());
+    const Vector & log_pi(logpi());
     for(int s = 0; s < S; ++s){
       ans[s] = log_pi[s] + mixture_component(s)->pdf(dp.get(), true);
     }
@@ -159,8 +159,8 @@ namespace BOOM{
   uint FMM::number_of_mixture_components()const{
     return mixture_components_.size();}
 
-  const Vec & FMM::pi()const{ return mixing_dist_->pi();}
-  const Vec & FMM::logpi()const{
+  const Vector & FMM::pi()const{ return mixing_dist_->pi();}
+  const Vector & FMM::logpi()const{
     set_logpi();
     return logpi_;}
 
@@ -181,14 +181,14 @@ namespace BOOM{
     return mixture_components_[s].get();
   }
 
-  const Mat & FMM::class_membership_probability()const{
+  const Matrix & FMM::class_membership_probability()const{
     return class_membership_probabilities_;
   }
 
-  Vec FMM::class_assignment()const{
+  Vector FMM::class_assignment()const{
     std::vector<Ptr<CategoricalData> > hvec(latent_data());
     int n = hvec.size();
-    Vec ans(n);
+    Vector ans(n);
     for(int i = 0; i < n; ++i) ans[i] = hvec[i]->value();
     return ans;
   }
@@ -230,7 +230,7 @@ namespace BOOM{
     return new EmFiniteMixtureModel(*this);}
 
   void EmFiniteMixtureModel::populate_em_mixture_components(){
-    for(int s = 0; s < mixing_distribution()->size(); ++s){
+    for(int s = 0; s < mixing_distribution()->dim(); ++s){
       em_mixture_components_.push_back(
           mixture_component(s).dcast<EmMixtureComponent>());
     }
@@ -241,8 +241,8 @@ namespace BOOM{
     uint n = d.size();
     uint S = number_of_mixture_components();
 
-    const Vec &log_pi(logpi());
-    Vec wsp(S);
+    const Vector &log_pi(logpi());
+    Vector wsp(S);
     double ans = 0;
 
     for(uint i=0; i<n; ++i){
@@ -268,11 +268,11 @@ namespace BOOM{
 
   double EmFiniteMixtureModel::EStep(){
     clear_component_data();
-    Vec &wsp(wsp_);
+    Vector &wsp(wsp_);
     wsp.resize(number_of_mixture_components());
     const std::vector<Ptr<Data> > &data(dat());
     double ans = 0;
-    const Vec &log_pi(logpi());
+    const Vector &log_pi(logpi());
     for(int i = 0; i < data.size(); ++i){
       for(int s = 0; s < number_of_mixture_components(); ++s){
         wsp[s] = log_pi[s] + mixture_component(s)->pdf(data[i].get(), true);

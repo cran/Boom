@@ -20,7 +20,7 @@
 #define BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_
 
 #include <Models/Policies/CompositeParamPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 #include <Models/DoubleModel.hpp>
 #include <Models/BinomialModel.hpp>
 #include <Models/GammaModel.hpp>
@@ -52,24 +52,24 @@ namespace BOOM{
                            double sum_of_positives,
                            double sum_of_logs_of_positives);
     ZeroInflatedGammaModel(const ZeroInflatedGammaModel &rhs);
-    virtual ZeroInflatedGammaModel * clone()const;
+    ZeroInflatedGammaModel * clone() const override;
 
-    virtual double pdf(Ptr<Data>, bool logscale)const;
-    virtual double pdf(const Data *, bool logscale)const;
-    virtual double logp(double x)const;
-    virtual double sim()const;
+    double pdf(Ptr<Data>, bool logscale)const override;
+    double pdf(const Data *, bool logscale)const override;
+    double logp(double x)const override;
+    double sim()const override;
 
     // This model does not keep copies of the original data set.  It
     // uses the sufficient statistics of its component models instead.
-    virtual void add_data(Ptr<Data>);
+    void add_data(Ptr<Data>) override;
     void add_data_raw(double y);
     virtual void add_mixture_data(Ptr<Data>, double weight);
     void add_mixture_data_raw(double y, double weight);
-    virtual void clear_data();
+    void clear_data() override;
 
     // Combine the data owned by rhs to the data owned by *this.
     // Throws an exception if rhs is not a ZeroInflatedGammaModel.
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
+    void combine_data(const Model &rhs, bool just_suf = true) override;
 
     virtual void mle();
 

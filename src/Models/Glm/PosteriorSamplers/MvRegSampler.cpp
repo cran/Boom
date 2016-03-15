@@ -22,9 +22,10 @@ namespace BOOM{
 
   typedef MvRegSampler MRS;
 
-  MRS::MvRegSampler(MvReg *m, const Mat &Beta_guess, double prior_beta_nobs,
-		    double Prior_df, const Spd & Sigma_guess)
-    : mod(m),
+  MRS::MvRegSampler(MvReg *m, const Matrix &Beta_guess, double prior_beta_nobs,
+            double Prior_df, const SpdMatrix & Sigma_guess, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod(m),
       SS(Sigma_guess * Prior_df),
       prior_df(Prior_df),
       Ominv(m->xdim()),
@@ -36,9 +37,9 @@ namespace BOOM{
   }
 
   double MRS::logpri()const{
-    const Spd & Siginv(mod->Siginv());
+    const SpdMatrix & Siginv(mod->Siginv());
     double ldsi  = mod->ldsi();
-    const Mat & Beta(mod->Beta());
+    const Matrix & Beta(mod->Beta());
     double ans = dWish(Siginv, SS, prior_df, true);
     ans += dmatrix_normal_ivar(Beta, B, Siginv, ldsi, Ominv, ldoi,true);
     return ans;
@@ -52,18 +53,18 @@ namespace BOOM{
   void MRS::draw_Beta(){
     Ptr<NeMvRegSuf> s(mod->suf().dcast<NeMvRegSuf>());
 
-    Spd ivar = Ominv + s->xtx();
-    Mat Mu = s->xty() + Ominv*B;
+    SpdMatrix ivar = Ominv + s->xtx();
+    Matrix Mu = s->xty() + Ominv*B;
     Mu = ivar.solve(Mu);
-    Mat ans = rmatrix_normal_ivar(Mu, mod->Siginv(), ivar);
+    Matrix ans = rmatrix_normal_ivar(Mu, mod->Siginv(), ivar);
     mod->set_Beta(ans);
   }
 
   void MRS::draw_Sigma(){
     Ptr<MvRegSuf> s(mod->suf());
-    Spd sumsq = SS + s->SSE(mod->Beta());
+    SpdMatrix sumsq = SS + s->SSE(mod->Beta());
     double df = prior_df + s->n();
-    Spd ans = rWish(df, sumsq.inv());
+    SpdMatrix ans = rWish(df, sumsq.inv());
     mod->set_Siginv(ans);
   }
 }

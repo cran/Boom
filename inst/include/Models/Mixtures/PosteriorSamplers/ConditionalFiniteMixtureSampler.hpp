@@ -26,9 +26,10 @@ namespace BOOM {
 
   class ConditionalFiniteMixtureSampler : public PosteriorSampler {
    public:
-    ConditionalFiniteMixtureSampler(ConditionalFiniteMixtureModel *model);
-    virtual double logpri() const;
-    virtual void draw();
+    ConditionalFiniteMixtureSampler(ConditionalFiniteMixtureModel *model,
+                                    RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
    private:
     ConditionalFiniteMixtureModel *model_;
   };

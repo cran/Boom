@@ -49,6 +49,13 @@ namespace BOOM{
     lognc_ = 0;
   }
 
+  void PoissonSuf::add_incremental_counts(double incremental_counts,
+                                          double incremental_exposure) {
+    sum_ += incremental_counts;
+    n_ += incremental_exposure;
+    lognc_ = 0;
+  }
+
   void PoissonSuf::Update(const DataType  &X){
     int x = X.value();
     sum_+=x;
@@ -80,24 +87,24 @@ namespace BOOM{
   PoissonSuf * PoissonSuf::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec PoissonSuf::vectorize(bool)const{
-    Vec ans(3);
+  Vector PoissonSuf::vectorize(bool)const{
+    Vector ans(3);
     ans[0] = sum_;
     ans[1] = n_;
     ans[2] = lognc_;
     return ans;
   }
 
-  Vec::const_iterator PoissonSuf::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator PoissonSuf::unvectorize(Vector::const_iterator &v, bool){
     sum_ = *v;   ++v;
     n_ = *v;     ++v;
     lognc_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator PoissonSuf::unvectorize(const Vec &v,
+  Vector::const_iterator PoissonSuf::unvectorize(const Vector &v,
                                               bool minimal){
-    Vec::const_iterator it = v.begin();
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -135,8 +142,7 @@ namespace BOOM{
       NumOptModel(rhs)
   {}
 
-  PoissonModel * PoissonModel::clone()const{
-    return new PoissonModel(*this);}
+  PoissonModel * PoissonModel::clone()const{return new PoissonModel(*this);}
 
   void PoissonModel::mle(){
     double n = suf()->n();
@@ -146,7 +152,7 @@ namespace BOOM{
   }
 
   double PoissonModel::Loglike(const Vector &lambda_vector,
-                               Vec &g, Mat &h, uint nd)const{
+                               Vector &g, Matrix &h, uint nd)const{
     if (lambda_vector.size() != 1) {
       report_error("Wrong size argument.");
     }
@@ -165,29 +171,23 @@ namespace BOOM{
     return ans;
   }
 
-  Ptr<UnivParams> PoissonModel::Lam(){
-    return ParamPolicy::prm();}
-  const Ptr<UnivParams> PoissonModel::Lam()const{
-    return ParamPolicy::prm();}
-
+  Ptr<UnivParams> PoissonModel::Lam(){return ParamPolicy::prm();}
+  const Ptr<UnivParams> PoissonModel::Lam()const{return ParamPolicy::prm();}
   double PoissonModel::lam()const{return Lam()->value();}
   void PoissonModel::set_lam(double x){Lam()->set(x);}
-
   double PoissonModel::pdf(uint x, bool logscale) const{
     return dpois(x, lam(), logscale); }
-
+  double PoissonModel::logp(int x) const {
+    return dpois(x, lam(), true);
+  }
   double PoissonModel::pdf(Ptr<Data> dp, bool logscale) const{
     return dpois(DAT(dp)->value(), lam(), logscale); }
-
   double PoissonModel::pdf(const Data * dp, bool logscale) const{
     return dpois(DAT(dp)->value(), lam(), logscale); }
-
   double PoissonModel::mean()const{return lam();}
   double PoissonModel::var()const{return lam();}
   double PoissonModel::sd()const{return sqrt(lam());}
-  double PoissonModel::simdat()const{
-    return rpois(lam());}
-
+  double PoissonModel::simdat()const{return rpois(lam());}
   void PoissonModel::add_mixture_data(Ptr<Data> dp, double prob){
     double y = DAT(dp)->value();
     suf()->add_mixture_data(y, prob);

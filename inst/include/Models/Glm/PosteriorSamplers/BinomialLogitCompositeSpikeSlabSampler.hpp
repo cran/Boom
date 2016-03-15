@@ -20,6 +20,7 @@
 #define BOOM_BINOMIAL_LOGIT_COMPOSITE_SPIKE_SLAB_SAMPLER_HPP_
 #include <Models/Glm/PosteriorSamplers/BinomialLogitSpikeSlabSampler.hpp>
 #include <Models/MvnBase.hpp>
+#include <Samplers/MoveAccounting.hpp>
 
 namespace BOOM{
   //======================================================================
@@ -39,8 +40,8 @@ namespace BOOM{
       int elements_remaining = nvars - start_;
       chunk_size_ = std::min(chunk_size, elements_remaining);
     }
-    double operator()(const Vec &beta_chunk)const;
-    double operator()(const Vec &beta_chunk, Vec &grad, Mat &hess, int nd)const;
+    double operator()(const Vector &beta_chunk)const;
+    double operator()(const Vector &beta_chunk, Vector &grad, Matrix &hess, int nd)const;
    private:
     const BinomialLogitModel *m_;
     const MvnBase * pri_;
@@ -68,8 +69,9 @@ namespace BOOM{
         double tdf,
         int max_tim_chunk_size,
         int max_rwm_chunk_size = 1,
-        double rwm_variance_scale_factor = 1.0);
-    virtual void draw();
+        double rwm_variance_scale_factor = 1.0,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
     void rwm_draw();
     void tim_draw();
 
@@ -79,6 +81,14 @@ namespace BOOM{
     BinomialLogitLogPostChunk log_posterior(
         int chunk_number,
         int max_chunk_size)const;
+
+    // The three samplers will be used in proportion to the weights
+    // supplied here.  Weights must be non-negative, and at least one
+    // must be positive.
+    void set_sampler_weights(
+        double da_weight,
+        double rwm_weight,
+        double tim_weight);
 
     ostream & time_report(ostream &out)const;
 
@@ -90,24 +100,8 @@ namespace BOOM{
     int max_rwm_chunk_size_;
     double rwm_variance_scale_factor_;
 
-    int auxmix_tries_;
-    double auxmix_times_;
-    int rwm_tries_;
-    double rwm_times_;
-    int tim_tries_;
-    double tim_times_;
-
-    int rwm_chunk_attempts_;
-    int rwm_chunk_successes_;
-
-    int tim_chunk_attempts_;
-    int tim_chunk_mode_failures_;
-    int tim_chunk_successes_;
-
-    double rwm_chunk_times_;
-    double tim_mode_finding_times_;
-    double tim_trial_times_;
-    double tim_mode_finding_wasted_time_;
+    MoveAccounting move_accounting_;
+    Vector sampler_weights_;
 
     // Compute the size of the largest chunk
     int compute_chunk_size(int max_chunk_size)const;

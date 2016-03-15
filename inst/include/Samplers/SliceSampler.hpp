@@ -24,17 +24,17 @@
 
 namespace BOOM{
 
-  typedef boost::function<double(const Vec &)> Func;
+  typedef boost::function<double(const Vector &)> Func;
 
   class SliceSampler : public Sampler{
   public:
-    virtual ~SliceSampler(){}
+    ~SliceSampler() override{}
     SliceSampler(Func F, bool unimodal=false);
-    Vec draw(const Vec &x);
-    double logp(const Vec &x)const;
+    Vector draw(const Vector &x) override;
+    double logp(const Vector &x)const;
   private:
     double lo, hi, plo, phi, pstar, scale;
-    Vec theta, z;
+    Vector theta, z;
     bool unimodal;
     Func f;
     void doubling(bool);

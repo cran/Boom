@@ -27,20 +27,21 @@ namespace BOOM{
     // assumes Beta|Sigma ~ N(B, Sigma \otimes I/kappa)
     // and Sigma^{-1} ~ Wishart(prior_df/2, SS/2);
 
-    MvRegSampler(MvReg *m, const Mat &B, double kappa, double prior_df, const Spd & Sigma_guess);
+    MvRegSampler(MvReg *m, const Matrix &B, double kappa, double prior_df,
+                 const SpdMatrix & Sigma_guess, RNG &seeding_rng = GlobalRng::rng);
 
-    double logpri()const;
-    void draw();
+    double logpri()const override;
+    void draw() override;
     void draw_Beta();
     void draw_Sigma();
 
   private:
     MvReg *mod;
-    Spd SS;
+    SpdMatrix SS;
     double prior_df;
-    Spd Ominv;
+    SpdMatrix Ominv;
     double ldoi;
-    Mat B;
+    Matrix B;
   };
 
 }

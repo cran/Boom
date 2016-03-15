@@ -23,8 +23,10 @@ namespace BOOM{
   typedef ProbitRegressionSampler PRS;
 
   PRS::ProbitRegressionSampler(ProbitRegressionModel *model,
-                               Ptr<MvnBase> prior)
-      : mod_(model),
+                               Ptr<MvnBase> prior,
+                               RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        mod_(model),
         pri_(prior),
         xtx_(mod_->xdim()),
         xtz_(mod_->xdim()),
@@ -43,7 +45,7 @@ namespace BOOM{
   }
 
   void PRS::draw_beta(){
-    const Spd & siginv(pri_->siginv());
+    const SpdMatrix & siginv(pri_->siginv());
     beta_ = rmvn_suf_mt(rng(),
                         xtx_ + siginv,
                         xtz_ + siginv * pri_->mu());
@@ -53,10 +55,10 @@ namespace BOOM{
   void PRS::impute_latent_data(){
     const ProbitRegressionModel::DatasetType & data(mod_->dat());
     int n = data.size();
-    const Vec & beta(mod_->Beta());
+    const Vector & beta(mod_->Beta());
     xtz_ = 0;
     for(int i = 0; i < n; ++i){
-      const Vec & x(data[i]->x());
+      const Vector & x(data[i]->x());
       double eta = x.dot(beta);
       bool y = data[i]->y();
       double z = rtrun_norm_mt(rng(), eta, 1, 0, y);
@@ -64,8 +66,8 @@ namespace BOOM{
     }
   }
 
-  const Vec & PRS::xtz()const{ return xtz_; }
-  const Spd & PRS::xtx()const{ return xtx_; }
+  const Vector & PRS::xtz()const{ return xtz_; }
+  const SpdMatrix & PRS::xtx()const{ return xtx_; }
 
   void PRS::refresh_xtx(){
     int p = mod_->xdim();
@@ -74,7 +76,7 @@ namespace BOOM{
     const ProbitRegressionModel::DatasetType & data(mod_->dat());
     int n = data.size();
     for(int i = 0; i < n; ++i){
-      const Vec & x(data[i]->x());
+      const Vector & x(data[i]->x());
       xtx_.add_outer(x, 1, false);
     }
     xtx_.reflect();

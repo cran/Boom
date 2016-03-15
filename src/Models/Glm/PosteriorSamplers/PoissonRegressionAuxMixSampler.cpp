@@ -22,6 +22,10 @@
 
 namespace BOOM {
 
+  namespace {
+    typedef PoissonRegressionAuxMixSampler PRAMS;
+  }
+
   PoissonRegressionDataImputer::PoissonRegressionDataImputer(
       const GlmCoefs *coefficients)
       : coefficients_(coefficients),
@@ -51,7 +55,7 @@ namespace BOOM {
       const PoissonRegressionData &dp,
       WeightedRegSuf *complete_data_suf,
       RNG &rng) const {
-    const Vec &x(dp.x());
+    const Vector &x(dp.x());
     double eta = coefficients_->predict(x);
     int y = dp.y();
     double exposure = dp.exposure();
@@ -81,55 +85,76 @@ namespace BOOM {
 
   //======================================================================
 
-  PoissonRegressionAuxMixSampler::PoissonRegressionAuxMixSampler(
+  PRAMS::PoissonRegressionAuxMixSampler(
       PoissonRegressionModel *model,
       Ptr<MvnBase> prior,
-      int number_of_threads)
-      : model_(model),
+      int number_of_threads,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         prior_(prior),
         complete_data_suf_(model_->xdim()),
-        parallel_data_imputer_(complete_data_suf_, model_)
+        parallel_data_imputer_(complete_data_suf_, model_),
+        latent_data_fixed_(false)
   {
     set_number_of_workers(number_of_threads);
   }
 
-  double PoissonRegressionAuxMixSampler::logpri()const{
+  double PRAMS::logpri()const{
     return prior_->logp(model_->Beta());
   }
 
-  void PoissonRegressionAuxMixSampler::draw(){
+  void PRAMS::draw(){
     impute_latent_data();
     draw_beta_given_complete_data();
   }
 
-  void PoissonRegressionAuxMixSampler::impute_latent_data() {
-    complete_data_suf_ = parallel_data_imputer_.impute();
+  void PRAMS::impute_latent_data() {
+    if (!latent_data_fixed_) {
+      complete_data_suf_ = parallel_data_imputer_.impute();
+    }
   }
 
-  void PoissonRegressionAuxMixSampler::draw_beta_given_complete_data(){
-    Spd ivar = prior_->siginv() + complete_data_suf_.xtx();
-    Vec ivar_mu = prior_->siginv() * prior_->mu() + complete_data_suf_.xty();
-    Vec beta = rmvn_suf_mt(rng(), ivar, ivar_mu);
+  void PRAMS::draw_beta_given_complete_data(){
+    SpdMatrix ivar = prior_->siginv() + complete_data_suf_.xtx();
+    Vector ivar_mu = prior_->siginv() * prior_->mu() + complete_data_suf_.xty();
+    Vector beta = rmvn_suf_mt(rng(), ivar, ivar_mu);
     model_->set_Beta(beta);
   }
 
-  const WeightedRegSuf &
-  PoissonRegressionAuxMixSampler::complete_data_sufficient_statistics()const{
+  const WeightedRegSuf & PRAMS::complete_data_sufficient_statistics() const {
     return complete_data_suf_;
   }
 
-  void PoissonRegressionAuxMixSampler::set_number_of_workers(int n) {
+  void PRAMS::set_number_of_workers(int n) {
     if (n < 1) {
       report_error("You need at least one worker.");
     }
     parallel_data_imputer_.clear_workers();
     GlmCoefs *coefficients = model_->coef_prm().get();
-    typedef PoissonRegressionDataImputer ImputeWorker;
     for (int i = 0; i < n; ++i) {
       parallel_data_imputer_.add_worker(
-          new PoissonRegressionDataImputer(coefficients));
+          new PoissonRegressionDataImputer(coefficients), rng());
     }
     parallel_data_imputer_.assign_data();
+  }
+
+  void PRAMS::fix_latent_data(bool fixed) {
+    latent_data_fixed_ = fixed;
+  }
+
+  void PRAMS::clear_complete_data_sufficient_statistics() {
+    complete_data_suf_.clear();
+  }
+
+  void PRAMS::update_complete_data_sufficient_statistics(
+      double precision_weighted_sum,
+      double total_precision,
+      const Vector &predictors) {
+    complete_data_suf_.add_data(
+        predictors,
+        precision_weighted_sum / total_precision,
+        total_precision);
   }
 
 }  // namespace BOOM

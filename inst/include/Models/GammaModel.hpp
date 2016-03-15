@@ -37,11 +37,11 @@ namespace BOOM{
     // constructor
     GammaSuf();
     GammaSuf(const GammaSuf &);
-    GammaSuf *clone() const;
+    GammaSuf *clone() const override;
 
     void set(double sum, double sumlog, double n);
-    void clear();
-    void Update(const DoubleData &dat);
+    void clear() override;
+    void Update(const DoubleData &dat) override;
     void update_raw(double y);
     void add_mixture_data(double y, double prob);
 
@@ -52,13 +52,13 @@ namespace BOOM{
 
     virtual void combine(Ptr<GammaSuf> s);
     virtual void combine(const GammaSuf & s);
-    GammaSuf * abstract_combine(Sufstat *s);
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    GammaSuf * abstract_combine(Sufstat *s) override;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
+    ostream &print(ostream &out)const override;
   private:
     double sum_, sumlog_, n_;
   };
@@ -72,16 +72,16 @@ namespace BOOM{
   public:
     GammaModelBase();
     GammaModelBase(const GammaModelBase &);
-    virtual GammaModelBase * clone()const=0;
+    GammaModelBase * clone()const override =0;
 
     virtual double alpha()const=0;
     virtual double beta()const=0;
-    virtual void add_mixture_data(Ptr<Data>, double prob);
-    double pdf(Ptr<Data> dp, bool logscale) const;
-    double pdf(const Data * dp, bool logscale) const;
+    void add_mixture_data(Ptr<Data>, double prob) override;
+    double pdf(Ptr<Data> dp, bool logscale) const override;
+    double pdf(const Data * dp, bool logscale) const override;
 
-    double Logp(double x, double &g, double &h, uint nd) const ;
-    double sim() const;
+    double Logp(double x, double &g, double &h, uint nd) const override ;
+    double sim() const override;
   };
   //======================================================================
 
@@ -100,15 +100,15 @@ namespace BOOM{
     GammaModel(double shape, double mean, int);
 
     GammaModel(const GammaModel &m);
-    GammaModel *clone() const;
+    GammaModel *clone() const override;
 
     Ptr<UnivParams> Alpha_prm();
     Ptr<UnivParams> Beta_prm();
     const Ptr<UnivParams> Alpha_prm()const;
     const Ptr<UnivParams> Beta_prm()const;
 
-    double alpha()const;
-    double beta()const;
+    double alpha()const override;
+    double beta()const override;
     void set_alpha(double);
     void set_beta(double);
     void set_params(double a, double b);
@@ -116,10 +116,10 @@ namespace BOOM{
     double mean()const;
 
     // probability calculations
-    double Loglike(const Vector &ab, Vec &g, Mat &h, uint lev) const;
+    double Loglike(const Vector &ab, Vector &g, Matrix &h, uint lev) const override;
     double loglikelihood(double a, double b) const;
-    double loglikelihood_full(const Vec &ab, Vec *g, Mat *h)const;
-    void mle();
+    double loglikelihood_full(const Vector &ab, Vector *g, Matrix *h)const;
+    void mle() override;
   };
 
 }

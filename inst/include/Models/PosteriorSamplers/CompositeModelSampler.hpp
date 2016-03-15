@@ -26,9 +26,10 @@ namespace BOOM{
   // down to the individual components of the composite model.
   class CompositeModelSampler : public PosteriorSampler{
    public:
-    CompositeModelSampler(CompositeModel *model);
-    virtual double logpri()const;
-    virtual void draw();
+    CompositeModelSampler(CompositeModel *model,
+                          RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
    private:
     CompositeModel *m_;
   };

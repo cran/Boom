@@ -26,55 +26,55 @@ namespace BOOM{
 
   namespace {
 
-    template <class INT> std::string u2str(INT u){
-      std::ostringstream out;
-      out << u;
-      return out.str();
-    }
-
     template <class INT> std::vector<int>
-    count_values(const std::vector<INT> &y, std::vector<std::string> &labels) {
-      std::vector<int> x(y.begin(), y.end());
+    count_values(const std::vector<INT> &y,
+                 std::vector<std::string> &labels,
+                 bool contiguous) {
       std::vector<int> counts;
       labels.clear();
-      std::sort(x.begin(), x.end());
-      int last = x[0];
-      string lab = u2str(last);
-      uint count = 1;
-      for(uint i=1; i<x.size(); ++i){
-        if(x[i]!=last){
-	counts.push_back(count);
-	labels.push_back(lab);
-	count = 1;
-	last = x[i];
-	lab = u2str(last);
-      }else{
-	++count;
+      if (y.empty()) {
+        return counts;
       }
+      std::map<INT, int> distribution;
+      for (int i = 0; i < y.size(); ++i) {
+        ++distribution[y[i]];
+      }
+      if (contiguous) {
+        INT smallest = distribution.begin()->first;
+        INT largest = distribution.rbegin()->first;
+        for (INT i = smallest; i <= largest; ++i) {
+          // A hack to ensure that distribution[i] is accessed, and
+          // thus populated (with zero, if it had not been populated
+          // before).  No element will ever be less than zero.
+          if (distribution[i] < 0) {
+            distribution[i] = 0;
+          }
+        }
+      }
+      for (const auto &element : distribution) {
+        counts.push_back(element.second);
+        labels.push_back(std::to_string((element.first)));
+      }
+      return counts;
     }
-    counts.push_back(count);
-    labels.push_back(lab);
-    return counts;
-    }
+  }  // namespace
+
+  FrequencyDistribution::FrequencyDistribution(const std::vector<uint> &y,
+                                               bool contiguous){
+    counts_ = count_values(y, labs_, contiguous);
   }
 
-  FreqDist::FreqDist(const std::vector<uint> &y){
-    counts_ = count_values(y, labs_);
+  FrequencyDistribution::FrequencyDistribution(const std::vector<int> &y,
+                                               bool contiguous){
+    counts_ = count_values(y, labs_, contiguous);
   }
 
-  FreqDist::FreqDist(const std::vector<int> &y){
-    counts_ = count_values(y, labs_);
+  FrequencyDistribution::FrequencyDistribution(
+      const std::vector<unsigned long> &y, bool contiguous){
+    counts_ = count_values(y, labs_, contiguous);
   }
 
-  FreqDist::FreqDist(const std::vector<long> &y){
-    counts_ = count_values(y, labs_);
-  }
-
-  FreqDist::FreqDist(const std::vector<unsigned long> &y){
-    counts_ = count_values(y, labs_);
-  }
-
-  std::ostream & FreqDist::print(std::ostream &out)const{
+  std::ostream & FrequencyDistribution::print(std::ostream &out)const{
     uint N = labs_.size();
     uint labfw=0;
     uint countfw=0;
@@ -82,7 +82,7 @@ namespace BOOM{
       uint len = labs_[i].size();
       if(len > labfw) labfw = len;
 
-      string s = u2str(counts_[i]);
+      string s = std::to_string(counts_[i]);
       len = s.size();
       if(len > countfw) countfw = len;
     }
@@ -91,18 +91,59 @@ namespace BOOM{
 
     for(uint i=0; i<N; ++i){
       out << std::setw(labfw) << labs_[i]
-	  << std::setw(countfw) << counts_[i]
-	  << std::endl;
+          << std::setw(countfw) << counts_[i]
+          << std::endl;
     }
     return out;
   }
 
-  void FreqDist::reset(const std::vector<int> &counts,
-                 const std::vector<std::string> &labels){
+  void FrequencyDistribution::reset(const std::vector<int> &counts,
+                                    const std::vector<std::string> &labels){
     if(counts.size() != labels.size()){
-      report_error("counts and labels must be the same size in FreqDist::reset");
+      report_error("counts and labels must be the same size in "
+                   "FrequencyDistribution::reset");
     }
     counts_ = counts;
     labs_ = labels;
   }
-}
+
+  BucketedFrequencyDistribution::BucketedFrequencyDistribution(
+      const Vector &x,
+      const Vector &cutpoints)
+      : cutpoints_(sort(cutpoints))
+  {
+    std::vector<int> counts(cutpoints.size() + 1, 0);
+    Vector sorted_x = sort(x);
+    int i = 0;
+    for (int bucket = 0; bucket < cutpoints_.size(); ++bucket) {
+      for (; i < x.size(); ++i) {
+        if (sorted_x[i] > cutpoints_[bucket]) {
+          break;
+        }
+        ++counts[bucket];
+      }
+    }
+    counts.back() = sorted_x.size() - i;
+    FrequencyDistribution::reset(counts, create_labels());
+  }
+
+  std::vector<std::string>
+  BucketedFrequencyDistribution::create_labels() const {
+    std::vector<std::string> ans;
+    for (int i = 0; i < cutpoints_.size(); ++i ){
+      std::ostringstream label_stream;
+      if (i == 0) {
+        label_stream << "(-inf";
+      } else {
+        label_stream << "(" << std::setprecision(3) << cutpoints_[i-1];
+      }
+      label_stream << ", " << std::setprecision(3) << cutpoints_[i] << "]";
+      ans.push_back(label_stream.str());
+    }
+    std::ostringstream label_stream;
+    label_stream << "(" << std::setprecision(3) << cutpoints_.back()
+                 << ", inf)";
+    ans.push_back(label_stream.str());
+    return ans;
+  }
+}  // namespace BOOM

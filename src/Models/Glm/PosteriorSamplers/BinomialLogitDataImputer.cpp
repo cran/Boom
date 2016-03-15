@@ -40,8 +40,8 @@ namespace BOOM {
   //----------------------------------------------------------------------
   void BinomialLogitDataImputer::debug_status_message(
       ostream &out,
-      int number_of_trials,
-      int number_of_successes,
+      double number_of_trials,
+      double number_of_successes,
       double linear_predictor) const {
     out << "number_of_trials:    " << number_of_trials << endl
         << "number_of_successes: " << number_of_successes << endl
@@ -55,8 +55,8 @@ namespace BOOM {
 
   std::pair<double, double> BinomialLogitPartialAugmentationDataImputer::impute(
       RNG &rng,
-      int number_of_trials,
-      int number_of_successes,
+      double number_of_trials,
+      double number_of_successes,
       double linear_predictor) const {
     if (number_of_successes > number_of_trials) {
       ostringstream err;
@@ -103,7 +103,7 @@ namespace BOOM {
         variance_of_logit_sum += number_of_successes *
             trun_logit_variance(linear_predictor, 0, true);
       }
-      int number_of_failures = number_of_trials - number_of_successes;
+      double number_of_failures = number_of_trials - number_of_successes;
       if (number_of_failures > 0) {
         mean_of_logit_sum += number_of_failures *
             trun_logit_mean(linear_predictor, 0, false);
@@ -137,8 +137,8 @@ namespace BOOM {
 
   std::pair<double, double> BinomialLogitCltDataImputer::impute(
       RNG & rng,
-      int number_of_trials,
-      int number_of_successes,
+      double number_of_trials,
+      double number_of_successes,
       double linear_predictor) const {
     if (number_of_trials > clt_threshold()) {
       return impute_large_sample(
@@ -151,8 +151,8 @@ namespace BOOM {
 
   std::pair<double, double> BinomialLogitCltDataImputer::impute_small_sample(
       RNG & rng,
-      int number_of_trials,
-      int number_of_successes,
+      double number_of_trials,
+      double number_of_successes,
       double linear_predictor) const{
     double information_weighted_sum = 0;
     double information = 0;
@@ -174,8 +174,8 @@ namespace BOOM {
   //----------------------------------------------------------------------
   std::pair<double, double> BinomialLogitCltDataImputer::impute_large_sample(
       RNG &rng,
-      int number_of_trials,
-      int number_of_successes,
+      double number_of_trials,
+      double number_of_successes,
       double linear_predictor) const {
     double information = 0.0;
     const Vector & mixing_weights(mixture_approximation.weights());

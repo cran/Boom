@@ -24,13 +24,13 @@
 #include <LinAlg/Matrix.hpp>
 
 #include <cpputil/math_utils.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 
 #include <numopt.hpp>
 /* Nelder-Mead */
 namespace BOOM{
 
-  inline double Myf(const Vec &x, const Target &target){
+  inline double Myf(const Vector &x, const Target &target){
     const double big =  1.0e+35;    /*a very large number*/
     double f = target(x);
     return std::isfinite(f) ? f : big;}
@@ -46,7 +46,7 @@ namespace BOOM{
     else return true;
   }
 
-  double nelder_mead_driver(Vec & Bvec, Vec &X, Target target,
+  double nelder_mead_driver(Vector & Bvec, Vector &X, Target target,
  			    double abstol, double intol, double alpha,
  			    double bet, double gamm,
  			    bool trace, int &fncount, int maxit){
@@ -56,7 +56,7 @@ namespace BOOM{
     int fcount=0;
     do{
       ++restarts;
-      if(restarts > maxrestart) throw_exception<std::runtime_error>("too many restarts");
+      if(restarts > maxrestart) report_error("too many restarts");
       fcount=0;
       ans = nelder_mead(Bvec, X, target, abstol, intol, alpha,
  			bet, gamm, trace, fcount, maxit);
@@ -73,7 +73,7 @@ namespace BOOM{
   }
 
 
-  double nelder_mead(Vec & Bvec, Vec &X, Target target,
+  double nelder_mead(Vector & Bvec, Vector &X, Target target,
  		     double abstol, double intol, double alpha,
  		     double bet, double gamm,
  		     bool, int &fncount, int maxit) {
@@ -99,8 +99,8 @@ namespace BOOM{
     //     if (trace)
     //       Rprintf("  Nelder-Mead direct search function minimizer\n");
 
-    //    Mat P(0, n, 0, n+1);
-    Mat P(n+1, n+2);
+    //    Matrix P(0, n, 0, n+1);
+    Matrix P(n+1, n+2);
     f = target(Bvec);
     if (!std::isfinite(f)) {
       //error("Function cannot be evaluated at initial parameters");
@@ -108,7 +108,7 @@ namespace BOOM{
       err << "Error in nelder_mead:  " << endl
           << "Function cannot be evaluated at initial parameters:" << endl
           << Bvec;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     } else {
       //      if (trace) Rprintf("Function value for initial parameters = %f\n", f);
       funcount = 1;
@@ -275,7 +275,7 @@ namespace BOOM{
     //     }
     Fmin = P(n1 - 1,L - 1);
     for (i = 0; i < n; i++) X[i] = P(i,L - 1);
-    if (shrinkfail) throw_exception<std::runtime_error>("Nelder-Mead shrink failure");
+    if (shrinkfail) report_error("Nelder-Mead shrink failure");
     fncount = funcount;
     return Fmin;
   }

@@ -103,20 +103,20 @@ namespace BOOM{
     // be false when a new month begins if the release of the most
     // recent monthly totals is delayed (e.g. if the coarse data is
     // not as up-to-date as the fine data).
-    FineNowcastingData(const Vec &x,
-                         double coarse_observation,
-                         bool coarse_observation_observed,
-                         bool contains_end,
-                         double fraction_in_initial_period);
+    FineNowcastingData(const Vector &x,
+                       double coarse_observation,
+                       bool coarse_observation_observed,
+                       bool contains_end,
+                       double fraction_in_initial_period);
     FineNowcastingData(const FineNowcastingData &rhs);
-    virtual FineNowcastingData * clone()const;
-    virtual ostream &display(ostream &out)const;
+    FineNowcastingData * clone() const override;
+    ostream &display(ostream &out) const override;
 
-    Ptr<RegressionData> regression_data()const;
-    double fraction_in_initial_period()const;
-    bool contains_end()const;
-    bool coarse_observation_observed()const;
-    double coarse_observation()const;
+    Ptr<RegressionData> regression_data() const;
+    double fraction_in_initial_period() const;
+    bool contains_end() const;
+    bool coarse_observation_observed() const;
+    double coarse_observation() const;
 
    private:
     Ptr<RegressionData> x_;
@@ -147,7 +147,7 @@ namespace BOOM{
         bool contains_end,
         bool owns_matrix = false);
 
-    ~AccumulatorTransitionMatrix();
+    ~AccumulatorTransitionMatrix() override;
 
     // Resets the class as if the constructor had been called with
     // these arguments.
@@ -158,16 +158,16 @@ namespace BOOM{
 
     // Number of rows and columns in the augmented matrix (i.e. after
     // adding w and W to the state).
-    virtual int nrow()const;
-    virtual int ncol()const;
+    int nrow() const override;
+    int ncol() const override;
 
-    virtual Vec operator*(const Vec &v)const;
-    virtual Vec operator*(const VectorView &v)const;
-    virtual Vec operator*(const ConstVectorView &v)const;
+    Vector operator*(const Vector &v) const override;
+    Vector operator*(const VectorView &v) const override;
+    Vector operator*(const ConstVectorView &v) const override;
 
-    virtual Vec Tmult(const Vec &v)const;
-    virtual void sandwich_inplace(Spd &P)const;
-    virtual Mat & add_to(Mat &P)const;
+    Vector Tmult(const Vector &v) const override;
+    void sandwich_inplace(SpdMatrix &P) const override;
+    Matrix & add_to(Matrix &P) const override;
    private:
     const SparseKalmanMatrix * transition_matrix_;
     SparseVector observation_vector_;
@@ -200,21 +200,21 @@ namespace BOOM{
         const SparseVector &Z,
         double observation_variance,
         bool owns_matrix = false);
-    ~AccumulatorStateVarianceMatrix();
+    ~AccumulatorStateVarianceMatrix() override;
 
     void reset(const SparseKalmanMatrix *RQR,
                const SparseVector &Z,
                double observation_variance);
 
-    virtual int nrow()const;
-    virtual int ncol()const;
+    int nrow() const override;
+    int ncol() const override;
 
-    virtual Vec operator*(const Vec &v)const;
-    virtual Vec operator*(const VectorView &v)const;
-    virtual Vec operator*(const ConstVectorView &v)const;
+    Vector operator*(const Vector &v) const override;
+    Vector operator*(const VectorView &v) const override;
+    Vector operator*(const ConstVectorView &v) const override;
 
-    virtual Vec Tmult(const Vec &x)const;
-    virtual Mat & add_to(Mat &P)const;
+    Vector Tmult(const Vector &x) const override;
+    Matrix & add_to(Matrix &P) const override;
    private:
     // See the fragility comments in AccumulatorTransitionMatrix.
     const SparseKalmanMatrix *state_variance_matrix_;
@@ -237,10 +237,10 @@ namespace BOOM{
       : public RegressionStateModel {
    public:
     AggregatedRegressionStateModel(Ptr<RegressionModel> m);
-    void set_final_x(const Vec &x);
-    virtual SparseVector observation_matrix(int t)const;
+    void set_final_x(const Vector &x);
+    SparseVector observation_matrix(int t) const override;
    private:
-    Vec final_x_;
+    Vector final_x_;
   };
 
   //======================================================================
@@ -254,80 +254,80 @@ namespace BOOM{
    public:
     AggregatedStateSpaceRegression(int number_of_predictors);
     AggregatedStateSpaceRegression(const AggregatedStateSpaceRegression &rhs);
-    virtual AggregatedStateSpaceRegression * clone()const;
+    AggregatedStateSpaceRegression * clone() const override;
 
     // Need to override add_data so that x's can be shared with the
     // regression model.
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<FineNowcastingData>);
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<FineNowcastingData>) override;
 
     // A shortcut data accessor emphasizing that data point t is
     // measured on the 'weekly' scale, rather than 'monthly'.
     Ptr<FineNowcastingData> fine_data(int t);
-    const Ptr<FineNowcastingData> fine_data(int t)const;
+    const Ptr<FineNowcastingData> fine_data(int t) const;
 
     // Number of fine scale time points ('weeks') in the training data.
-    int time_dimension()const;
+    int time_dimension() const override;
 
     // Number of elements in the state vector at a single time point,
     // including the cumulator variables.  Because the cumulator
     // variables are not accounted for by a StateModel, we need to
     // overload this function and account for them by hand.
-    virtual int state_dimension()const;
+    int state_dimension() const override;
 
     // Variance of observed data w[t], given state alpha[t].  Durbin
     // and Koopman's H.  For this model, this is 0.
-    virtual double observation_variance(int t)const;
+    double observation_variance(int t) const override;
 
     // An adjusted_observation(t) is w[t] after subtracting off
     // regression effects not accounted for in the state model.  We
     // can just return the W[t] portion of the week[t], if observed
     // because our regression adjustment is already part of the state
     // vector.
-    virtual double adjusted_observation(int t)const;
+    double adjusted_observation(int t) const override;
 
     // Returns an indicator of whether W[t] is observed for week t.
-    virtual bool is_missing_observation(int t)const;
+    bool is_missing_observation(int t) const override;
 
     // The regression model is the observation model for the
     // non-cumulated client data.  The observation model for the
     // cumulated data is a Gaussian model with zero variance.
-    virtual GaussianModel * observation_model(){
+    GaussianModel * observation_model() override {
       return observation_model_.get();}
-    virtual const GaussianModel * observation_model()const{
+    const GaussianModel * observation_model() const override {
       return observation_model_.get(); }
 
     // Returns a pointer to the RegressionModel that manages the
     // linear prediction based on contemporaneous covariates.
     RegressionModel * regression_model(){
       return regression_.get();}
-    const RegressionModel * regression_model()const{
+    const RegressionModel * regression_model() const{
       return regression_.get();}
 
     // Returns a pointer to the RegressionStateModel used in the
     // Kalman filter.
     AggregatedRegressionStateModel * regression_state_model() {
       return regression_state_.get();}
-    const AggregatedRegressionStateModel * regression_state_model()const{
+    const AggregatedRegressionStateModel * regression_state_model() const{
       return regression_state_.get();}
 
     // This function updates the regression portion of the model.
-    virtual void observe_data_given_state(int t);
+    void observe_data_given_state(int t) override;
 
-    virtual const AccumulatorTransitionMatrix *
-    state_transition_matrix(int t)const;
+    const AccumulatorTransitionMatrix *
+    state_transition_matrix(int t) const override;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t) const override;
 
-    virtual const AccumulatorStateVarianceMatrix *
-    state_variance_matrix(int t)const;
+    const AccumulatorStateVarianceMatrix *
+    state_variance_matrix(int t) const override;
 
-    virtual void simulate_initial_state(VectorView v)const;
-    virtual Vec simulate_initial_state()const;
-    virtual Vec simulate_state_error(int t)const;
+    void simulate_initial_state(VectorView v) const override;
+    Vector simulate_initial_state() const override;
+    Vector simulate_state_error(int t) const override;
 
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
+    Vector initial_state_mean() const override;
+    SpdMatrix initial_state_variance() const override;
 
    private:
     Ptr<RegressionModel> regression_;

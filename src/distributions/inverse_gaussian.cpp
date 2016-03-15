@@ -20,14 +20,19 @@
 #include <stdexcept>
 #include <cmath>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
   double dig(double x, double mu, double lambda, bool logscale){
     const double log_two_pi(1.83787706640935);
-    if(x <= 0) return logscale ? negative_infinity() :  0;
-    if(mu <= 0) throw_exception<std::runtime_error>("mu <= 0 in dig");
-    if(lambda <= 0) throw_exception<std::runtime_error>("lambda <= 0 in dig");
+    if (x <= 0) return logscale ? negative_infinity() :  0;
+    if (mu <= 0) {
+     report_error("mu <= 0 in dig");
+    }
+    if (lambda <= 0) {
+      report_error("lambda <= 0 in dig");
+    }
 
     double ans = -lambda * pow(x-mu, 2)/(2 * mu * mu * x);
     ans += .5 * (log(lambda)  - log_two_pi - 3 * log(x));
@@ -35,9 +40,13 @@ namespace BOOM{
   }
 
   double pig(double x, double mu, double lambda, bool logscale){
-    if(x <= 0) return logscale ? negative_infinity() :  0;
-    if(mu <= 0) throw_exception<std::runtime_error>("mu <= 0 in pig");
-    if(lambda <= 0) throw_exception<std::runtime_error>("lambda <= 0 in pig");
+    if (x <= 0) return logscale ? negative_infinity() :  0;
+    if (mu <= 0) {
+      report_error("mu <= 0 in pig");
+    }
+    if (lambda <= 0) {
+      report_error("lambda <= 0 in pig");
+    }
 
     double rlx = sqrt(lambda/x);
     double xmu = x/mu;
@@ -54,7 +63,7 @@ namespace BOOM{
     double x = mu + muy * mu2lam
         - mu2lam * sqrt(muy * (4*lambda + muy));
     double z = runif_mt(rng);
-    if(z > mu/(mu+x)) return mu2/x;
+    if (z > mu/(mu+x)) return mu2/x;
     return x;
   }
 }

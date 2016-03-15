@@ -30,11 +30,13 @@ namespace BOOM{
     // condition on mu.  Use MvnConjVarSampler if you want to
     // integrate out mu.
   public:
-    MvnVarSampler(MvnModel *, double df, const Spd & SS);
-    MvnVarSampler(MvnModel *, const WishartModel &siginv_prior);
-    MvnVarSampler(MvnModel *);
-    virtual double logpri()const;
-    virtual void draw();
+    MvnVarSampler(MvnModel *, double df, const SpdMatrix & SS,
+                  RNG &seeding_rng = GlobalRng::rng);
+    MvnVarSampler(MvnModel *, const WishartModel &siginv_prior,
+                  RNG &seeding_rng = GlobalRng::rng);
+    MvnVarSampler(MvnModel *, RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
   private:
     MvnModel *mvn_;
     Ptr<UnivParams> pdf_;
@@ -49,10 +51,12 @@ namespace BOOM{
     // assumes y~N(mu, Sigma), with mu|Sigma \norm(mu0, Sigma/kappa)
     // and Sigma^-1~W(df, SS)
   public:
-    MvnConjVarSampler(MvnModel *, double df, const Spd & SS);
-    MvnConjVarSampler(MvnModel *, const WishartModel &siginv_prior);
-    MvnConjVarSampler(MvnModel *);
-    void draw();
+    MvnConjVarSampler(MvnModel *, double df, const SpdMatrix & SS,
+                      RNG &seeding_rng = GlobalRng::rng);
+    MvnConjVarSampler(MvnModel *, const WishartModel &siginv_prior,
+                      RNG &seeding_rng = GlobalRng::rng);
+    MvnConjVarSampler(MvnModel *, RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
   };
 
 }

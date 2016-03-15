@@ -36,13 +36,15 @@ namespace BOOM{
    public:
     ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
                                    Ptr<GammaModelBase> prior,
-                                   int which_variable);
+                                   int which_variable,
+                                   RNG &seeding_rng = GlobalRng::rng);
     ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
                                    double prior_df,
                                    double sigma_guess,
-                                   int which_variable);
-    void draw();
-    double logpri()const;
+                                   int which_variable,
+                                   RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
     void set_sigma_upper_limit(double max_sigma);
    private:
     ZeroMeanMvnModel *m_;
@@ -59,9 +61,10 @@ namespace BOOM{
     ZeroMeanMvnCompositeIndependenceSampler(
         ZeroMeanMvnModel *model,
         const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-        const Vec & sigma_upper_truncation_points);
-    virtual void draw();
-    virtual double logpri()const;
+        const Vector & sigma_upper_truncation_points,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
    private:
     ZeroMeanMvnModel *model_;
     std::vector<Ptr<GammaModelBase> > priors_;

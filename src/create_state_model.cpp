@@ -16,6 +16,7 @@
 #include <Models/PosteriorSamplers/FixedSpdSampler.hpp>
 #include <Models/PosteriorSamplers/FixedUnivariateSampler.hpp>
 #include <Models/PosteriorSamplers/GammaPosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/IndependentMvnVarSampler.hpp>
 #include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
 #include <Models/PosteriorSamplers/ZeroMeanMvnIndependenceSampler.hpp>
 
@@ -31,6 +32,7 @@
 #include <Models/StateSpace/StateModels/SeasonalStateModel.hpp>
 #include <Models/StateSpace/StateModels/StateModel.hpp>
 #include <Models/StateSpace/StateModels/StudentLocalLinearTrend.hpp>
+#include <Models/StateSpace/StateModels/TrigStateModel.hpp>
 
 #include <Models/TimeSeries/NonzeroMeanAr1Model.hpp>
 #include <Models/TimeSeries/PosteriorSamplers/NonzeroMeanAr1Sampler.hpp>
@@ -96,6 +98,8 @@ namespace BOOM{
         return CreateArStateModel(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "StudentLocalLinearTrend")) {
         return CreateStudentLocalLinearTrend(list_arg, prefix);
+      } else if (Rf_inherits(list_arg, "Trig")) {
+        return CreateTrigStateModel(list_arg, prefix);
       }
 
       // Should never get here
@@ -112,7 +116,7 @@ namespace BOOM{
       explicit FinalStateCallback(StateSpaceModelBase *model)
           : model_(model) {}
       virtual int dim()const {return model_->state_dimension();}
-      virtual Vec get_vector()const { return model_->final_state();}
+      virtual Vector get_vector()const { return model_->final_state();}
      private:
       StateSpaceModelBase * model_;
     };
@@ -194,12 +198,12 @@ namespace BOOM{
       NormalPrior slope_initial_value_prior_spec(
           getListElement(list_arg, "initial.slope.prior"));
 
-      Vec initial_state_mean(2);
+      Vector initial_state_mean(2);
       initial_state_mean[0] = level_initial_value_prior_spec.mu();
       initial_state_mean[1] = slope_initial_value_prior_spec.mu();
       local_linear_trend->set_initial_state_mean(initial_state_mean);
 
-      Spd initial_state_variance(2);
+      SpdMatrix initial_state_variance(2);
       initial_state_variance(0, 0) =
           square(level_initial_value_prior_spec.sigma());
       initial_state_variance(1, 1) =
@@ -207,7 +211,7 @@ namespace BOOM{
       local_linear_trend->set_initial_state_variance(initial_state_variance);
 
       // Set initial values of model parameters
-      Spd Sigma = local_linear_trend->Sigma();
+      SpdMatrix Sigma = local_linear_trend->Sigma();
       Sigma(0, 0) = square(level_sigma_prior_spec.initial_value());
       Sigma(1, 1) = square(slope_sigma_prior_spec.initial_value());
       Sigma(0, 1) = 0;
@@ -289,7 +293,7 @@ namespace BOOM{
       StudentLocalLinearTrendLevelWeightCallback(
           StudentLocalLinearTrendStateModel *model) : model_(model) {}
       virtual int dim()const{ return model_->latent_level_weights().size(); }
-      virtual Vec get_vector()const{ return model_->latent_level_weights(); }
+      virtual Vector get_vector()const{ return model_->latent_level_weights(); }
      private:
       StudentLocalLinearTrendStateModel *model_;
     };
@@ -300,7 +304,7 @@ namespace BOOM{
       StudentLocalLinearTrendSlopeWeightCallback(
           StudentLocalLinearTrendStateModel *model) : model_(model) {}
       virtual int dim()const{ return model_->latent_level_weights().size(); }
-      virtual Vec get_vector()const{ return model_->latent_slope_weights(); }
+      virtual Vector get_vector()const{ return model_->latent_slope_weights(); }
      private:
       StudentLocalLinearTrendStateModel *model_;
     };
@@ -348,12 +352,12 @@ namespace BOOM{
       NormalPrior slope_initial_value_prior_spec(
           getListElement(list_arg, "initial.slope.prior"));
 
-      Vec initial_state_mean(2);
+      Vector initial_state_mean(2);
       initial_state_mean[0] = level_initial_value_prior_spec.mu();
       initial_state_mean[1] = slope_initial_value_prior_spec.mu();
       robust_local_linear_trend->set_initial_state_mean(initial_state_mean);
 
-      Spd initial_state_variance(2);
+      SpdMatrix initial_state_variance(2);
       initial_state_variance(0, 0) =
           square(level_initial_value_prior_spec.sigma());
       initial_state_variance(1, 1) =
@@ -400,7 +404,45 @@ namespace BOOM{
 
       return robust_local_linear_trend;
     }
+    //======================================================================
+    TrigStateModel *StateModelFactory::CreateTrigStateModel(
+        SEXP list_arg, const std::string &prefix) {
+      double period = Rf_asReal(getListElement(list_arg, "period"));
+      Vector frequencies = ToBoomVector(getListElement(
+          list_arg, "frequencies"));
+      TrigStateModel * trig_state_model(
+          new TrigStateModel(period, frequencies));
 
+      //-------------- set the prior and the posterior sampler.
+      SdPrior sigma_prior(getListElement(list_arg, "sigma.prior"));
+      int dimension = trig_state_model->dim();
+      NEW(ChisqModel, single_siginv_prior)(
+          sigma_prior.prior_df(),
+          sigma_prior.prior_guess());
+      std::vector<Ptr<GammaModelBase>> priors(dimension, single_siginv_prior);
+      double sigma_upper_limit = sigma_prior.upper_limit();
+      if (sigma_upper_limit < 0) {
+        sigma_upper_limit = infinity();
+      }
+      Vector sd_max_values(dimension, sigma_upper_limit);
+      NEW(IndependentMvnVarSampler, sampler)(
+          trig_state_model,
+          priors,
+          sd_max_values);
+      trig_state_model->set_method(sampler);
+
+      //-------------- set the prior for the initial state
+      MvnPrior initial_prior(getListElement(list_arg, "initial.state.prior"));
+      trig_state_model->set_initial_state_mean(initial_prior.mu());
+      trig_state_model->set_initial_state_variance(initial_prior.Sigma());
+
+      //-------------- adjust the io manager.
+
+      io_manager_->add_list_element(
+          new SdVectorListElement(trig_state_model->Sigsq_prm(),
+                                  prefix + "trig.coefficient.sd"));
+      return trig_state_model;
+    }
     //======================================================================
     LocalLinearTrendMeanRevertingSlopeStateModel *
     StateModelFactory::CreateGeneralizedLocalLinearTrend(
@@ -538,7 +580,7 @@ namespace BOOM{
         MvnDiagonalPrior initial_value_prior_spec(r_initial_state_prior);
         seasonal->set_initial_state_mean(
             initial_value_prior_spec.mean());
-        Spd variance(initial_value_prior_spec.sd().size());
+        SpdMatrix variance(initial_value_prior_spec.sd().size());
         variance.set_diag(pow(initial_value_prior_spec.sd(), 2));
         seasonal->set_initial_state_variance(variance);
       }
@@ -626,8 +668,8 @@ namespace BOOM{
 
       //------------------------------------------------------------
       // Set prior distribution for initial state
-      Vec initial_state_mean(holiday_model->state_dimension(), 0.0);
-      Spd initial_state_variance(holiday_model->state_dimension());
+      Vector initial_state_mean(holiday_model->state_dimension(), 0.0);
+      SpdMatrix initial_state_variance(holiday_model->state_dimension());
       initial_state_variance.set_diag(square(initial_value_prior_spec.sigma()));
       holiday_model->set_initial_state_mean(initial_state_mean);
       holiday_model->set_initial_state_variance(initial_state_variance);
@@ -712,7 +754,7 @@ namespace BOOM{
       // There is one row for each dynamic regression coefficient.
       virtual int nrow()const {return state_model_->state_dimension(); }
       virtual int ncol()const {return model_->time_dimension();}
-      virtual BOOM::Mat get_matrix()const {
+      virtual BOOM::Matrix get_matrix()const {
         return model_->full_time_series_state_component(model_position_);
       }
 
@@ -779,7 +821,7 @@ namespace BOOM{
     StateModelFactory::CreateDynamicRegressionStateModel(
         SEXP list_arg, const std::string &prefix, CallbackVector * callbacks) {
 
-      SEXP r_design_matrix(getListElement(list_arg, "design.matrix"));
+      SEXP r_design_matrix(getListElement(list_arg, "predictors"));
       Matrix X = ToBoomMatrix(r_design_matrix);
       // Get colnames for X.  The R code should ensure that X has them.
       std::vector<std::string> xnames =

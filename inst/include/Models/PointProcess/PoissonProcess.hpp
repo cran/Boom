@@ -33,7 +33,7 @@ namespace BOOM{
   // poisson processes can generalize.
   class PoissonProcess : virtual public Model{
    public:
-    virtual PoissonProcess *clone()const=0;
+    PoissonProcess *clone()const override =0;
 
     // lambda(t)
     virtual double event_rate(const DateTime &t)const=0;

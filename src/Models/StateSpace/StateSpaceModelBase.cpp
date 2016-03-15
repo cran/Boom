@@ -34,7 +34,6 @@ namespace BOOM{
         state_positions_(1, 0),
         state_is_fixed_(false),
         mcmc_kalman_storage_is_current_(false),
-        pedantic_(true),
         kalman_filter_is_current_(false),
         default_state_transition_matrix_(new BlockDiagonalMatrix),
         default_state_variance_matrix_(new BlockDiagonalMatrix)
@@ -48,52 +47,40 @@ namespace BOOM{
         state_positions_(1, 0),
         state_is_fixed_(rhs.state_is_fixed_),
         mcmc_kalman_storage_is_current_(false),
-        pedantic_(rhs.pedantic_),
         kalman_filter_is_current_(false),
         default_state_transition_matrix_(new BlockDiagonalMatrix),
         default_state_variance_matrix_(new BlockDiagonalMatrix)
   {
-    for(int s = 0; s < rhs.nstate(); ++s) {
+    for (int s = 0; s < rhs.nstate(); ++s) {
       add_state(rhs.state_model(s)->clone());
     }
-    if(state_is_fixed_) state_ = rhs.state_;
+    if (state_is_fixed_) state_ = rhs.state_;
   }
 
   //----------------------------------------------------------------------
-  void SSMB::impute_state(){
+  void SSMB::impute_state() {
     set_state_model_behavior(StateModel::MIXTURE);
-    if(state_is_fixed_){
+    if (state_is_fixed_) {
       observe_fixed_state();
-    }else if(pedantic_){
-      impute_state_pedantically();
-    }else{
+    } else {
       resize_state();
       clear_client_data();
-      simulate_forward(true);
-      Vec r0 = smooth_disturbances(kalman_storage_);
-      propagate_disturbances(r0, true);
+      simulate_forward();
+      Vector r0_sim = smooth_disturbances(kalman_storage_);
+      Vector r0_obs = smooth_disturbances(supplemental_kalman_storage_);
+      propagate_disturbances(r0_sim, r0_obs, true);
     }
-  }
-
-  //----------------------------------------------------------------------
-  void SSMB::impute_state_pedantically(){
-    resize_state();
-    clear_client_data();
-    simulate_forward(false);
-    Vec r0_sim = smooth_disturbances(kalman_storage_);
-    Vec r0_obs = smooth_disturbances(supplemental_kalman_storage_);
-    propagate_disturbances_pedantically(r0_sim, r0_obs, true);
   }
 
   //----------------------------------------------------------------------
   // Ensure that state_ is large enough to hold the results of
   // impute_state().
-  void SSMB::resize_state(){
-    if(nrow(state_) != state_dimension()
-       || ncol(state_) != time_dimension()){
+  void SSMB::resize_state() {
+    if (nrow(state_) != state_dimension()
+       || ncol(state_) != time_dimension()) {
       state_.resize(state_dimension(), time_dimension());
     }
-    for(int s = 0; s < state_models_.size(); ++s){
+    for (int s = 0; s < state_models_.size(); ++s) {
       state_models_[s]->observe_time_dimension(time_dimension());
     }
   }
@@ -104,35 +91,27 @@ namespace BOOM{
   // simulated state is stored in state_, while kalman_storage_ holds
   // the output of the Kalman filter.
   //
-  // If use_shortcut == true, then y - y_+ will be simulated in a
-  // single pass through the Kalman filter.  This is not a good idea
-  // if any of the model matrices are less than full rank.
-  //
-  // Otherwise, y_+ and alpha_+ will be simulated in parallel with
+  // y_+ and alpha_+ will be simulated in parallel with
   // Kalman filtering and disturbance smoothing of y, and the results
   // will be subtracted to compute y_*.
-  void SSMB::simulate_forward(bool use_shortcut){
+  void SSMB::simulate_forward() {
     check_kalman_storage(kalman_storage_);
-    if(!use_shortcut){
-      check_kalman_storage(supplemental_kalman_storage_);
-    }
-    for(int t = 0; t < time_dimension(); ++t){
+    check_kalman_storage(supplemental_kalman_storage_);
+    log_likelihood_ = 0;
+    for (int t = 0; t < time_dimension(); ++t) {
       // simulate_state at time t
-      if(t==0){
+      if (t == 0) {
         simulate_initial_state(state_.col(0));
         a_ = initial_state_mean();
         P_ = initial_state_variance();
-        if(!use_shortcut){
-          supplemental_a_ = a_;
-          supplemental_P_ = P_;
-        }
+        supplemental_a_ = a_;
+        supplemental_P_ = P_;
       }else{
         simulate_next_state(state_.col(t-1), state_.col(t), t);
       }
       double y_sim = simulate_adjusted_observation(t);
-      double ystar = use_shortcut ? adjusted_observation(t) - y_sim : y_sim;
       sparse_scalar_kalman_update(
-          ystar,
+          y_sim,
           a_,
           P_,
           kalman_storage_[t].K,
@@ -143,26 +122,24 @@ namespace BOOM{
           observation_variance(t),
           *state_transition_matrix(t),
           *state_variance_matrix(t));
-      if(!use_shortcut){
         ////////////////////////
         // TODO(stevescott): The actual one step ahead prediction
         // errors are being stored in supplemental_kalman_storage_,
-        // and not kalman_storage_.  We should eventually get rid of
-        // the 'use_shortcut' option and keep the prediction errors in
-        // the right place.
-        sparse_scalar_kalman_update(
-            adjusted_observation(t),
-            supplemental_a_,
-            supplemental_P_,
-            supplemental_kalman_storage_[t].K,
-            supplemental_kalman_storage_[t].F,
-            supplemental_kalman_storage_[t].v,
-            is_missing_observation(t),
-            observation_matrix(t),
-            observation_variance(t),
-            (*state_transition_matrix(t)),
-            (*state_variance_matrix(t)));
-      }
+        // and not kalman_storage_.  We should eventually keep the
+        // prediction errors in the right place.
+      log_likelihood_ += sparse_scalar_kalman_update(
+          adjusted_observation(t),
+          supplemental_a_,
+          supplemental_P_,
+          supplemental_kalman_storage_[t].K,
+          supplemental_kalman_storage_[t].F,
+          supplemental_kalman_storage_[t].v,
+          is_missing_observation(t),
+          observation_matrix(t),
+          observation_variance(t),
+          (*state_transition_matrix(t)),
+          (*state_variance_matrix(t)));
+
       // The Kalman update sets a_ to a[t+1] and P to P[t+1], so they
       // will be current for the next iteration.
     }
@@ -181,14 +158,15 @@ namespace BOOM{
   // Koopman (2002).
   // TODO(stevescott): make sure you've got t, t-1, and t+1 worked out
   // correctly.
-  Vec SSMB::smooth_disturbances(std::vector<LightKalmanStorage> &kalman_storage){
+  Vector SSMB::smooth_disturbances(
+      std::vector<LightKalmanStorage> &kalman_storage) {
     int n = time_dimension();
-    Vec r(state_dimension(), 0.0);
-    for(int t = n-1; t>=0; --t){
+    Vector r(state_dimension(), 0.0);
+    for (int t = n-1; t>=0; --t) {
       // Upon entry r is r[t].
       // On exit, r is r[t-1] and kalman_storage[t].K is r[t]
 
-      // The distrubance smoother is defined by the following formula:
+      // The disturbance smoother is defined by the following formula:
       // r[t-1] = Z[t] * v[t]/F[t] + (T[t]^T - Z[t] * K[t]^T)r[t]
       //        = T[t]^T * r + Z[t] * (v[t]/F[t] - K.dot(r))
 
@@ -196,11 +174,11 @@ namespace BOOM{
       // with Durbin and Koopman.
       double v = kalman_storage[t].v;
       double F = kalman_storage[t].F;
-      Vec &K(kalman_storage[t].K);
+      Vector &K(kalman_storage[t].K);
       double coefficient = (v/F) - K.dot(r);
 
       // Now produce r[t-1]
-      Vec rt_1 = state_transition_matrix(t)->Tmult(r);
+      Vector rt_1 = state_transition_matrix(t)->Tmult(r);
       observation_matrix(t).add_this_to(rt_1, coefficient);
       K = r;
       r = rt_1;
@@ -211,53 +189,30 @@ namespace BOOM{
   //----------------------------------------------------------------------
   // After a call to smooth_disturbances() puts r[t] in
   // kalman_storage_[t].K, this function propagates the r's forward to
-  // get E(alpha | y), and add it to the simulated state.  The 'sign'
-  // argument can be used to share code between the 'pedantic' and
-  // non-pedantic versions of the program.
-  void SSMB::propagate_disturbances(const Vec &r0, bool observe){
-    if(state_.ncol() <= 0) return;
-
-    Spd P0 = initial_state_variance();
-    Vec state_mean = initial_state_mean() + P0*r0;
-    state_.col(0) += state_mean;
-    if(observe) {
-      observe_state(0);
-      observe_data_given_state(0);
-    }
-    for(int t = 1; t < time_dimension(); ++t){
-      state_mean = (*state_transition_matrix(t-1)) * state_mean
-          + (*state_variance_matrix(t-1)) * kalman_storage_[t-1].K;
-      state_.col(t).axpy(state_mean);
-      if(observe){
-        observe_state(t);
-        observe_data_given_state(t);
-      }
-    }
-  }
-
-  void SSMB::propagate_disturbances_pedantically(
-      const Vec &r0_sim, const Vec & r0_obs, bool observe){
+  // get E(alpha | y), and add it to the simulated state.
+  void SSMB::propagate_disturbances(
+      const Vector &r0_sim, const Vector & r0_obs, bool observe) {
     // TODO(stevescott): Two linear operations are being performed in
     // parallel.  Can they be replaced by a single linear operation on
     // the difference?
-    if(state_.ncol() <= 0) return;
-    Spd P0 = initial_state_variance();
-    Vec state_mean_sim = initial_state_mean() + P0*r0_sim;
-    Vec state_mean_obs = initial_state_mean() + P0*r0_obs;
+    if (state_.ncol() <= 0) return;
+    SpdMatrix P0 = initial_state_variance();
+    Vector state_mean_sim = initial_state_mean() + P0*r0_sim;
+    Vector state_mean_obs = initial_state_mean() + P0*r0_obs;
 
     state_.col(0) += state_mean_obs - state_mean_sim;
-    if(observe) {
+    if (observe) {
       observe_state(0);
       observe_data_given_state(0);
     }
-    for(int t = 1; t < time_dimension(); ++t){
+    for (int t = 1; t < time_dimension(); ++t) {
       state_mean_sim = (*state_transition_matrix(t-1)) * state_mean_sim
           + (*state_variance_matrix(t-1)) * kalman_storage_[t-1].K;
       state_mean_obs = (*state_transition_matrix(t-1)) * state_mean_obs
           + (*state_variance_matrix(t-1)) * supplemental_kalman_storage_[t-1].K;
 
       state_.col(t).axpy(state_mean_obs - state_mean_sim);
-      if(observe){
+      if (observe) {
         observe_state(t);
         observe_data_given_state(t);
       }
@@ -265,10 +220,13 @@ namespace BOOM{
   }
 
   void SSMB::observe_state(int t) {
-    if(t==0){ observe_initial_state(); return; }
+    if (t == 0) {
+      observe_initial_state();
+      return;
+    }
     const ConstVectorView now(state_.col(t));
     const ConstVectorView then(state_.col(t-1));
-    for(int s = 0; s < nstate(); ++s){
+    for (int s = 0; s < nstate(); ++s) {
       state_model(s)->observe_state(
           state_component(then, s),
           state_component(now, s),
@@ -276,19 +234,18 @@ namespace BOOM{
     }
   }
 
-  void SSMB::observe_initial_state(){
-    for(int s = 0; s < nstate(); ++s){
+  void SSMB::observe_initial_state() {
+    for (int s = 0; s < nstate(); ++s) {
       ConstVectorView state(state_component(state_.col(0), s));
       state_model(s)->observe_initial_state(state);
     }
   }
 
   //----------------------------------------------------------------------
-  Vec SSMB::one_step_prediction_errors()const{
-    loglike_ = 0;
+  Vector SSMB::one_step_prediction_errors() const {
     int n = time_dimension();
-    Vec errors(n);
-    if(n==0) return errors;
+    Vector errors(n);
+    if (n == 0) return errors;
 
     if (mcmc_kalman_storage_is_current_) {
       for (int i = 0; i < n; ++i) {
@@ -299,23 +256,25 @@ namespace BOOM{
       }
       return errors;
     }
+    log_likelihood_ = 0;
     initialize_final_kalman_storage();
     ScalarKalmanStorage &ks(final_kalman_storage_);
 
-    for(int i = 0; i < n; ++i){
+    for (int i = 0; i < n; ++i) {
       double resid = adjusted_observation(i);
       bool missing = is_missing_observation(i);
-      loglike_ += sparse_scalar_kalman_update(resid,
-                                              ks.a,
-                                              ks.P,
-                                              ks.K,
-                                              ks.F,
-                                              ks.v,
-                                              missing,
-                                              observation_matrix(i),
-                                              observation_variance(i),
-                                              (*state_transition_matrix(i)),
-                                              (*state_variance_matrix(i)));
+      log_likelihood_ += sparse_scalar_kalman_update(
+          resid,
+          ks.a,
+          ks.P,
+          ks.K,
+          ks.F,
+          ks.v,
+          missing,
+          observation_matrix(i),
+          observation_variance(i),
+          (*state_transition_matrix(i)),
+          (*state_variance_matrix(i)));
       errors[i] = ks.v;
     }
     kalman_filter_is_current_ = true;
@@ -323,15 +282,16 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  void SSMB::clear_client_data(){
+  void SSMB::clear_client_data() {
     observation_model()->clear_data();
-    for(int s = 0; s < nstate(); ++s){
+    for (int s = 0; s < nstate(); ++s) {
       state_model(s)->clear_data();
     }
+    signal_complete_data_reset();
   }
 
   //----------------------------------------------------------------------
-  void SSMB::add_state(Ptr<StateModel> m){
+  void SSMB::add_state(Ptr<StateModel> m) {
     ParamPolicy::add_model(m);
     state_models_.push_back(m);
     state_dimension_ += m->state_dimension();
@@ -339,13 +299,13 @@ namespace BOOM{
           + m->state_dimension();
     state_positions_.push_back(next_position);
     std::vector<Ptr<Params> > params(m->t());
-    for(int i = 0; i < params.size(); ++i) observe(params[i]);
+    for (int i = 0; i < params.size(); ++i) observe(params[i]);
   }
 
   //----------------------------------------------------------------------
-  SparseVector SSMB::observation_matrix(int t)const{
+  SparseVector SSMB::observation_matrix(int t) const {
     SparseVector ans;
-    for(int s = 0; s < nstate(); ++s){
+    for (int s = 0; s < nstate(); ++s) {
       ans.concatenate(state_models_[s]->observation_matrix(t));
     }
     return ans;
@@ -355,20 +315,20 @@ namespace BOOM{
   // TODO(stevescott): This and other code involving model matrices is
   // an optimization opportunity.  Test it out to see if
   // precomputation makes sense.
-  const SparseKalmanMatrix * SSMB::state_transition_matrix(int t)const{
+  const SparseKalmanMatrix * SSMB::state_transition_matrix(int t) const {
     // Size comparisons should be made with respect to
     // state_dimension_, not state_dimension() which is virtual.
-    if(default_state_transition_matrix_->nrow() != state_dimension_
+    if (default_state_transition_matrix_->nrow() != state_dimension_
        || default_state_transition_matrix_->ncol() != state_dimension_) {
       default_state_transition_matrix_->clear();
-      for(int s = 0; s < state_models_.size(); ++s){
+      for (int s = 0; s < state_models_.size(); ++s) {
         default_state_transition_matrix_->add_block(
             state_models_[s]->state_transition_matrix(t));
       }
     }else{
       // If we're in this block, then the matrix must have been
       // created already, and we just need to update the blocks.
-      for(int s = 0; s < state_models_.size(); ++s){
+      for (int s = 0; s < state_models_.size(); ++s) {
         default_state_transition_matrix_->replace_block(
             s, state_models_[s]->state_transition_matrix(t));
       }
@@ -377,9 +337,9 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  const SparseKalmanMatrix * SSMB::state_variance_matrix(int t)const{
+  const SparseKalmanMatrix * SSMB::state_variance_matrix(int t) const {
     default_state_variance_matrix_->clear();
-    for(int s = 0; s < state_models_.size(); ++s){
+    for (int s = 0; s < state_models_.size(); ++s) {
       default_state_variance_matrix_->add_block(
           state_models_[s]->state_variance_matrix(t));
     }
@@ -387,53 +347,54 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  int SSMB::state_dimension()const{return state_dimension_;}
+  int SSMB::state_dimension() const {return state_dimension_;}
 
   //----------------------------------------------------------------------
-  double SSMB::loglike()const{
+  double SSMB::log_likelihood() const {
     filter();
-    return loglike_;
+    return log_likelihood_;
   }
 
   //----------------------------------------------------------------------
-  const ScalarKalmanStorage & SSMB::filter()const{
-    if(kalman_filter_is_current_) return final_kalman_storage_;
-    loglike_ = 0;
+  const ScalarKalmanStorage & SSMB::filter() const {
+    if (kalman_filter_is_current_) return final_kalman_storage_;
+    log_likelihood_ = 0;
     initialize_final_kalman_storage();
     int n = time_dimension();
-    if(n==0) return final_kalman_storage_;
+    if (n == 0) return final_kalman_storage_;
     ScalarKalmanStorage &ks(final_kalman_storage_);
 
-    for(int i = 0; i < n; ++i){
+    for (int i = 0; i < n; ++i) {
       double resid = adjusted_observation(i);
       bool missing = is_missing_observation(i);
-      loglike_ += sparse_scalar_kalman_update(resid,
-                                              ks.a,
-                                              ks.P,
-                                              ks.K,
-                                              ks.F,
-                                              ks.v,
-                                              missing,
-                                              observation_matrix(i),
-                                              observation_variance(i),
-                                              (*state_transition_matrix(i)),
-                                              (*state_variance_matrix(i)));
+      log_likelihood_ += sparse_scalar_kalman_update(
+          resid,
+          ks.a,
+          ks.P,
+          ks.K,
+          ks.F,
+          ks.v,
+          missing,
+          observation_matrix(i),
+          observation_variance(i),
+          (*state_transition_matrix(i)),
+          (*state_variance_matrix(i)));
     }
     kalman_filter_is_current_ = true;
     return final_kalman_storage_;
   }
 
   //----------------------------------------------------------------------
-  Vec SSMB::simulate_initial_state()const{
-    Vec ans(state_dimension_);
+  Vector SSMB::simulate_initial_state() const {
+    Vector ans(state_dimension_);
     simulate_initial_state(VectorView(ans));
     return ans;
   }
 
   //----------------------------------------------------------------------
   // TODO(stevescott):  test
-  void SSMB::simulate_initial_state(VectorView state0)const{
-    for(int s = 0; s < state_models_.size(); ++s){
+  void SSMB::simulate_initial_state(VectorView state0) const {
+    for (int s = 0; s < state_models_.size(); ++s) {
       state_model(s)->simulate_initial_state(state_component(state0, s));
     }
   }
@@ -442,15 +403,15 @@ namespace BOOM{
   // Simulates state for time period t
   void SSMB::simulate_next_state(ConstVectorView last,
                                  VectorView next,
-                                 int t)const{
+                                 int t) const {
     next= (*state_transition_matrix(t-1)) * last;
     next += simulate_state_error(t-1);
   }
 
   //----------------------------------------------------------------------
-  Vec SSMB::simulate_next_state(const Vec &state,
-                                int t)const{
-    Vec ans(state);
+  Vector SSMB::simulate_next_state(const Vector &state,
+                                   int t) const {
+    Vector ans(state);
     simulate_next_state(ConstVectorView(state),
                         VectorView(ans),
                         t);
@@ -458,29 +419,30 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  Vec SSMB::simulate_state_error(int t)const{
-    // simulate N(0, RQR)
-    Vec ans(state_dimension_, 0);
-    for(int s = 0; s < state_models_.size(); ++s){
+  Vector SSMB::simulate_state_error(int t) const {
+    // simulate N(0, RQR) for the state at time t+1, using the
+    // variance matrix at time t.
+    Vector ans(state_dimension_, 0);
+    for (int s = 0; s < state_models_.size(); ++s) {
       VectorView eta(state_component(ans, s));
       state_model(s)->simulate_state_error(eta, t);
     }
     return ans;
   }
   //----------------------------------------------------------------------
-  Vec SSMB::initial_state_mean()const{
-    Vec ans;
-    for(int s = 0; s < state_models_.size(); ++s){
+  Vector SSMB::initial_state_mean() const {
+    Vector ans;
+    for (int s = 0; s < state_models_.size(); ++s) {
       ans.concat(state_models_[s]->initial_state_mean());
     }
     return ans;
   }
 
   //----------------------------------------------------------------------
-  Spd SSMB::initial_state_variance()const{
-    Spd ans(state_dimension_);
+  SpdMatrix SSMB::initial_state_variance() const {
+    SpdMatrix ans(state_dimension_);
     int lo = 0;
-    for(int s = 0; s < state_models_.size(); ++s){
+    for (int s = 0; s < state_models_.size(); ++s) {
       Ptr<StateModel> state = state_models_[s];
       int hi = lo + state->state_dimension() - 1;
       SubMatrix block(ans, lo, hi, lo, hi);
@@ -491,30 +453,30 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  void SSMB::observe(Ptr<Params> p){
+  void SSMB::observe(Ptr<Params> p) {
     boost::function<void(void)>f =
         boost::bind(&SSMB::kalman_filter_is_not_current, this);
     p->add_observer(f);
   }
 
   //----------------------------------------------------------------------
-  ConstVectorView SSMB::final_state()const{
+  ConstVectorView SSMB::final_state() const {
     return state_.last_col();
   }
 
   //----------------------------------------------------------------------
-  ConstVectorView SSMB::state(int t)const{
+  ConstVectorView SSMB::state(int t) const {
     return state_.col(t);
   }
 
   //----------------------------------------------------------------------
-  const Mat &SSMB::state()const{return state_;}
+  const Matrix &SSMB::state() const {return state_;}
 
   //----------------------------------------------------------------------
-  std::vector<Vec> SSMB::state_contributions()const{
-    std::vector<Vec> ans(nstate());
-    for(int t = 0; t < time_dimension(); ++t){
-      for(int m = 0; m < nstate(); ++m){
+  std::vector<Vector> SSMB::state_contributions() const {
+    std::vector<Vector> ans(nstate());
+    for (int t = 0; t < time_dimension(); ++t) {
+      for (int m = 0; m < nstate(); ++m) {
         ConstVectorView state(state_component(state_.col(t), m));
         ans[m].push_back(state_models_[m]->observation_matrix(t).dot(state));
       }
@@ -523,41 +485,46 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  Vec SSMB::state_contribution(int s)const{
-    if(ncol(state_) != time_dimension() ||
+  Vector SSMB::state_contribution(int s) const {
+    if (ncol(state_) != time_dimension() ||
        nrow(state_) != state_dimension()) {
       ostringstream err;
-      err << "state is the wrong size in StateSpaceModelBase::state_contribution"
-          << endl
+      err << "state is the wrong size in "
+          << "StateSpaceModelBase::state_contribution" << endl
           << "State contribution matrix has " << ncol(state_) << " columns.  "
           << "Time dimension is " << time_dimension() << "." << endl
           << "State contribution matrix has " << nrow(state_) << " rows.  "
           << "State dimension is " << state_dimension() << "." << endl;
       report_error(err.str());
     }
-    Vec ans(time_dimension());
-    for(int t = 0; t < time_dimension(); ++t){
+    Vector ans(time_dimension());
+    for (int t = 0; t < time_dimension(); ++t) {
       ConstVectorView state(state_component(state_.col(t), s));
       ans[t] = state_model(s)->observation_matrix(t).dot(state);
     }
     return ans;
   }
+
+  Vector SSMB::regression_contribution() const {
+    return Vector();
+  }
+
   //----------------------------------------------------------------------
-  VectorView SSMB::state_component(Vec &v, int s)const{
+  VectorView SSMB::state_component(Vector &v, int s) const {
     int start = state_positions_[s];
     int size = state_model(s)->state_dimension();
     return VectorView(v, start, size);
   }
 
   //----------------------------------------------------------------------
-  VectorView SSMB::state_component(VectorView &v, int s)const{
+  VectorView SSMB::state_component(VectorView &v, int s) const {
     int start = state_positions_[s];
     int size = state_model(s)->state_dimension();
     return VectorView(v, start, size);
   }
 
   //----------------------------------------------------------------------
-  ConstVectorView SSMB::state_component(const ConstVectorView &v, int s)const{
+  ConstVectorView SSMB::state_component(const ConstVectorView &v, int s) const {
     int start = state_positions_[s];
     int size = state_model(s)->state_dimension();
     return ConstVectorView(v, start, size);
@@ -573,9 +540,9 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  void SSMB::permanently_set_state(const Mat &state){
-    if((ncol(state) != time_dimension()) ||
-       (nrow(state) != state_dimension())){
+  void SSMB::permanently_set_state(const Matrix &state) {
+    if ((ncol(state) != time_dimension()) ||
+       (nrow(state) != state_dimension())) {
       ostringstream err;
       err << "Wrong dimension of 'state' in "
           << "StateSpaceModelBase::permanently_set_state()."
@@ -589,38 +556,39 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  void SSMB::observe_fixed_state(){
+  void SSMB::observe_fixed_state() {
     clear_client_data();
-    for(int t = 0; t < time_dimension(); ++t){
+    for (int t = 0; t < time_dimension(); ++t) {
       observe_state(t);
       observe_data_given_state(t);
     }
   }
 
   //----------------------------------------------------------------------
-  void SSMB::set_state_model_behavior(StateModel::Behavior behavior){
-    for(int s = 0; s < nstate(); ++s){
+  void SSMB::set_state_model_behavior(StateModel::Behavior behavior) {
+    for (int s = 0; s < nstate(); ++s) {
       state_model(s)->set_behavior(behavior);
     }
   }
 
   //----------------------------------------------------------------------
-  void SSMB::check_kalman_storage(std::vector<LightKalmanStorage> &kalman_storage){
+  void SSMB::check_kalman_storage(
+      std::vector<LightKalmanStorage> &kalman_storage) {
     bool ok = true;
-    if(kalman_storage.size() < time_dimension()){
+    if (kalman_storage.size() < time_dimension()) {
       kalman_storage.reserve(time_dimension());
       ok = false;
     }
 
-    if(!kalman_storage.empty()) {
-      if(kalman_storage[0].K.size() != state_dimension()){
+    if (!kalman_storage.empty()) {
+      if (kalman_storage[0].K.size() != state_dimension()) {
         kalman_storage.clear();
         ok = false;
       }
     }
 
-    if(!ok){
-      for(int t = kalman_storage.size(); t < time_dimension(); ++t) {
+    if (!ok) {
+      for (int t = kalman_storage.size(); t < time_dimension(); ++t) {
         LightKalmanStorage s(state_dimension());
         kalman_storage.push_back(s);
       }
@@ -628,10 +596,32 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  void SSMB::initialize_final_kalman_storage()const{
+  void SSMB::initialize_final_kalman_storage() const {
     ScalarKalmanStorage &ks(final_kalman_storage_);
     ks.a = initial_state_mean();
     ks.P = initial_state_variance();
     ks.F = observation_matrix(0).sandwich(ks.P) + observation_variance(0);
   }
-}
+
+  void SSMB::register_data_observer(StateSpace::SufstatManagerBase *smb) {
+    data_observers_.push_back(StateSpace::SufstatManager(smb));
+  }
+
+  // Send a signal to any object observing this model's data that
+  // observation t has changed.
+  void SSMB::signal_complete_data_change(int t) {
+    for (int i = 0; i< data_observers_.size(); ++i) {
+      data_observers_[i].update_complete_data_sufficient_statistics(t);
+    }
+  }
+
+  // Send a signal to any observers of this model's data that the
+  // complete data sufficient statistics should be reset.
+  void SSMB::signal_complete_data_reset() {
+    for (int i = 0; i < data_observers_.size(); ++i) {
+      data_observers_[i].clear_complete_data_sufficient_statistics();
+    }
+  }
+
+
+}  // namespace BOOM

@@ -30,7 +30,7 @@ namespace BOOM{
 
   typedef MvnGivenScalarSigma MGSS;
 
-  MvnGivenScalarSigma::MvnGivenScalarSigma(const Spd &ominv,
+  MvnGivenScalarSigma::MvnGivenScalarSigma(const SpdMatrix &ominv,
                                            Ptr<UnivParams> sigsq)
       : MvnGivenScalarSigmaBase(sigsq),
         ParamPolicy(new VectorParams(nrow(ominv))),
@@ -40,8 +40,8 @@ namespace BOOM{
         wsp_(ominv)
   {}
 
-  MvnGivenScalarSigma::MvnGivenScalarSigma(const Vec &mean,
-                                           const Spd &ominv,
+  MvnGivenScalarSigma::MvnGivenScalarSigma(const Vector &mean,
+                                           const SpdMatrix &ominv,
                                            Ptr<UnivParams> sigsq)
       : MvnGivenScalarSigmaBase(sigsq),
         ParamPolicy(new VectorParams(mean)),
@@ -69,14 +69,14 @@ namespace BOOM{
   const Ptr<VectorParams> MGSS::Mu_prm()const{return ParamPolicy::prm();}
 
   uint MGSS::dim()const{ return nrow(wsp_); }
-  const Vec & MGSS::mu()const{ return Mu_prm()->value(); }
+  const Vector & MGSS::mu()const{ return Mu_prm()->value(); }
 
-  const Spd & MGSS::Sigma()const{
+  const SpdMatrix & MGSS::Sigma()const{
     wsp_ = omega_.var() * sigsq();
     return wsp_;
   }
 
-  const Spd & MGSS::siginv()const{
+  const SpdMatrix & MGSS::siginv()const{
     wsp_ = omega_.ivar() / sigsq();
     return wsp_;
   }
@@ -85,11 +85,15 @@ namespace BOOM{
     return omega_.ldsi() - dim() * log(sigsq());
   }
 
-  const Spd & MGSS::Omega()const{ return omega_.var();}
-  const Spd & MGSS::ominv()const{ return omega_.ivar();}
+  const SpdMatrix & MGSS::Omega()const{ return omega_.var();}
+  const SpdMatrix & MGSS::ominv()const{ return omega_.ivar();}
   double MGSS::ldoi()const{ return omega_.ldsi();}
 
-  void MGSS::set_mu(const Vec &mu){Mu_prm()->set(mu);}
+  void MGSS::set_mu(const Vector &mu){Mu_prm()->set(mu);}
+  void MGSS::set_unscaled_precision(const SpdMatrix &omega_inverse) {
+    omega_.set_ivar(omega_inverse);
+  }
+
   void MGSS::mle(){ set_mu(suf()->ybar()); }
 
   double MGSS::loglike(const Vector &mu_ominv)const{
@@ -102,7 +106,7 @@ namespace BOOM{
   }
 
   double MGSS::pdf(Ptr<Data> dp, bool logscale)const{
-    const Vec &y(DAT(dp)->value());
+    const Vector &y(DAT(dp)->value());
     return dmvn(y, mu(), siginv(), ldsi(), logscale);
   }
 

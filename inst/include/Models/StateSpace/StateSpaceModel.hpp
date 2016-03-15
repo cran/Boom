@@ -33,33 +33,33 @@ namespace BOOM{
         public PriorPolicy {
    public:
     StateSpaceModel();
-    StateSpaceModel(const Vec &y,
+    StateSpaceModel(const Vector &y,
                     const std::vector<bool> &y_is_observed =
                        std::vector<bool>());
     StateSpaceModel(const StateSpaceModel &rhs);
-    StateSpaceModel * clone()const;
+    StateSpaceModel * clone()const override;
 
-    virtual int time_dimension()const;
-    virtual double observation_variance(int t)const;
-    virtual double adjusted_observation(int t)const;
-    virtual bool is_missing_observation(int t)const;
-    virtual ZeroMeanGaussianModel* observation_model();
-    virtual const ZeroMeanGaussianModel* observation_model()const;
-    virtual void observe_data_given_state(int t);
+    int time_dimension()const override;
+    double observation_variance(int t)const override;
+    double adjusted_observation(int t)const override;
+    bool is_missing_observation(int t)const override;
+    ZeroMeanGaussianModel* observation_model() override;
+    const ZeroMeanGaussianModel* observation_model()const override;
+    void observe_data_given_state(int t) override;
 
     // Forecast the next nrow(newX) time steps given the current data,
-    // using the Kalman filter.  The first column of Mat is the mean
+    // using the Kalman filter.  The first column of Matrix is the mean
     // of the forecast.  The second column is the standard errors.
-    Mat forecast(int n);
+    Matrix forecast(int n);
 
     // Simulate the next n time periods, given current parameters and
     // state.
-    Vec simulate_forecast(int n, const Vec &final_state);
+    Vector simulate_forecast(int n, const Vector &final_state);
 
     // Simulate the next n time periods given current parameters and a
     // specified set of observed data.  Uses negative_infinity() as a signal
     // for missing data.
-    Vec simulate_forecast_given_observed_data(int n, const Vec &observed_data);
+    Vector simulate_forecast_given_observed_data(int n, const Vector &observed_data);
 
     // Run the Kalman filter over the set of observed data, using
     // negative_infinity() as a signal for missing data.  The .a and .P
@@ -67,12 +67,12 @@ namespace BOOM{
     // variance of the state one period after the last element in
     // observed_data.  t0 is notional time period for
     // observed_data[0], which will usually be 0.
-    ScalarKalmanStorage filter_observed_data(const Vec &observed_data, int t0 = 0)const;
+    ScalarKalmanStorage filter_observed_data(const Vector &observed_data, int t0 = 0)const;
 
     // Return the vector of one-step-ahead predictions errors from a
     // holdout sample, following immediately after the training data.
-    Vec one_step_holdout_prediction_errors(const Vec &holdout_y,
-                                           const Vec &final_state)const;
+    Vector one_step_holdout_prediction_errors(const Vector &holdout_y,
+                                           const Vector &final_state)const;
    private:
     Ptr<ZeroMeanGaussianModel> observation_model_;
     void setup();

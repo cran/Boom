@@ -19,13 +19,12 @@
 #include <LinAlg/QR.hpp>
 namespace BOOM{
 
-  std::pair<Vec, double> ols(const Mat &X, const Vec &y){
-
+  std::pair<Vector, double> ols(const Matrix &X, const Vector &y){
     uint n = y.size();
     uint p = X.ncol();
     QR qr(X);
-    Vec b = qr.solve(y);
-    Vec e = y-X*b;
+    Vector b = qr.solve(y);
+    Vector e = y-X*b;
     double SSE = e.normsq();
     return std::make_pair(b, SSE/(n-p));
   }

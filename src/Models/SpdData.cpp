@@ -70,7 +70,7 @@ namespace BOOM{
       : Storage(false)
     {}
 
-    CholStorage::CholStorage(const Spd &S)
+    CholStorage::CholStorage(const SpdMatrix &S)
       : Storage(true),
 	L(Chol(S).getL())
     {
@@ -87,13 +87,13 @@ namespace BOOM{
 
     uint CholStorage::dim()const{ return L.nrow(); }
 
-    void CholStorage::set(const Mat &arg, bool sig){
+    void CholStorage::set(const Matrix &arg, bool sig){
       L=arg;
       set_current();
       if(sig) signal();
     }
 
-    const Mat & CholStorage::value()const{
+    const Matrix & CholStorage::value()const{
       return L;
     }
 
@@ -110,7 +110,7 @@ namespace BOOM{
       : Storage(false)
     {}
 
-    SpdStorage::SpdStorage(const Spd &S)
+    SpdStorage::SpdStorage(const SpdMatrix &S)
       : Storage(true),
 	sig_(S)
     {}
@@ -124,18 +124,18 @@ namespace BOOM{
       return new SpdStorage(*this);}
 
 
-    const Spd & SpdStorage::value()const{ return sig_; }
+    const SpdMatrix & SpdStorage::value()const{ return sig_; }
 
     uint SpdStorage::dim()const{ return sig_.nrow();}
 
-    void SpdStorage::set(const Spd &S, bool sig){
+    void SpdStorage::set(const SpdMatrix &S, bool sig){
       sig_=S;
       set_current();
       if(sig) signal();
     }
 
     void SpdStorage::refresh_from_chol(const CholStorage &chol, bool inv){
-      const Mat &L(chol.value());
+      const Matrix &L(chol.value());
       if(inv){
 	sig_ = chol2inv(L);
       }else{
@@ -156,8 +156,8 @@ namespace BOOM{
   using namespace SPD;
 
   SD::SpdData(uint n, double diag, bool ivar)
-    : var_(ivar ? new SpdStorage : new SpdStorage(Spd(n,diag))),
-      ivar_(ivar ? new SpdStorage(Spd(n,diag)) : new SpdStorage),
+    : var_(ivar ? new SpdStorage : new SpdStorage(SpdMatrix(n,diag))),
+      ivar_(ivar ? new SpdStorage(SpdMatrix(n,diag)) : new SpdStorage),
       var_chol_(new CholStorage),
       ivar_chol_(new CholStorage)
   {
@@ -165,7 +165,7 @@ namespace BOOM{
     current_rep_ = ivar ? ivar_ : var_;
   }
 
-  SD::SpdData(const Spd & S, bool ivar)
+  SD::SpdData(const SpdMatrix & S, bool ivar)
     : var_(ivar ? new SpdStorage : new SpdStorage(S)),
       ivar_(ivar? new SpdStorage(S) : new SpdStorage),
       var_chol_(new CholStorage),
@@ -220,17 +220,17 @@ namespace BOOM{
     return out;
   }
 
-  const Spd & SD::value()const{ return var();}
+  const SpdMatrix & SD::value()const{ return var();}
 
-  void SD::set(const Spd & V, bool sig){
+  void SD::set(const SpdMatrix & V, bool sig){
     set_var(V,sig); }
 
-  const Spd & SD::var()const{
+  const SpdMatrix & SD::var()const{
     ensure_var_current();
     return var_->value();
   }
 
-  const Spd & SD::ivar()const{
+  const SpdMatrix & SD::ivar()const{
     ensure_ivar_current();
     return ivar_->value();
   }
@@ -273,7 +273,7 @@ namespace BOOM{
       std::ostringstream err;
       err << "I'm lost in SpdData::ensure_chol_current"
 	  << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     ensure_chol_current(chol, sig, siginv_chol, siginv);
   }
@@ -286,19 +286,19 @@ namespace BOOM{
     ensure_chol_current(var_chol_, var_, ivar_chol_, ivar_);
   }
 
-  const Mat & SD::ivar_chol()const{
+  const Matrix & SD::ivar_chol()const{
     ensure_ivar_chol_current();
     return ivar_chol_->value();
   }
 
-  const Mat & SD::var_chol()const{
+  const Matrix & SD::var_chol()const{
     ensure_var_chol_current();
     return var_chol_->value();
   }
 
   double SD::ldsi()const{
     bool inv = (ivar_->current() || ivar_chol_->current());
-    const Mat & L(inv ? ivar_chol() : var_chol());
+    const Matrix & L(inv ? ivar_chol() : var_chol());
     ConstVectorView v(L.diag());
 
     double ans = 0;
@@ -307,25 +307,25 @@ namespace BOOM{
     return inv ? ans : -ans;
   }
 
-  void SD::set_var(const Spd & var, bool sig){
+  void SD::set_var(const SpdMatrix & var, bool sig){
     var_->set(var,sig);
     current_rep_ = var_;
   }
-  void SD::set_ivar(const Spd & ivar, bool sig){
+  void SD::set_ivar(const SpdMatrix & ivar, bool sig){
     ivar_->set(ivar, sig);
     current_rep_ =ivar_;
   }
-  void SD::set_ivar_chol(const Mat & L, bool sig){
+  void SD::set_ivar_chol(const Matrix & L, bool sig){
     ivar_chol_->set(L, sig);
     current_rep_ = ivar_chol_;
   }
-  void SD::set_var_chol(const Mat & L, bool sig){
+  void SD::set_var_chol(const Matrix & L, bool sig){
     var_chol_->set(L, sig);
     current_rep_ = var_chol_;
   }
 
-  void SD::set_S_Rchol(const Vec &sd, const Mat &L){
-    Mat C(L);
+  void SD::set_S_Rchol(const Vector &sd, const Matrix &L){
+    Matrix C(L);
     uint n = C.nrow();
     assert(sd.size()==n);
     for(uint i=0; i<n; ++i) C.row(i)*=sd[i];

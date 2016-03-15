@@ -23,20 +23,20 @@ namespace BOOM{
   void intrusive_ptr_release(Sufstat *m){ m->down_count();
     if(m->ref_count()==0) delete m; }
 
-  Vec vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal){
+  Vector vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal){
     uint N = v.size();
-    Vec ans;
+    Vector ans;
     for(uint i=0; i<N; ++i){
-      Vec tmp = v[i]->vectorize(minimal);
+      Vector tmp = v[i]->vectorize(minimal);
       ans.concat(tmp);
     }
     return ans;
   }
 
   void unvectorize(std::vector<Ptr<Sufstat> >  &svec,
-                   const Vec &v,
+                   const Vector &v,
                    bool minimal){
-    Vec::const_iterator it=v.begin();
+    Vector::const_iterator it=v.begin();
     for(uint i=0; i<svec.size(); ++i){
       it = svec[i]->unvectorize(it, minimal);
     }

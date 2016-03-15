@@ -31,9 +31,10 @@ namespace BOOM{
       : public PosteriorSampler {
    public:
     PoissonRegressionRwmSampler(PoissonRegressionModel *model,
-                                Ptr<MvnBase> prior);
-    virtual void draw();
-    virtual double logpri()const;
+                                Ptr<MvnBase> prior,
+                                RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
    private:
     PoissonRegressionModel *model_;
     Ptr<MvnBase> prior_;

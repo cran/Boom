@@ -82,7 +82,7 @@ namespace BOOM{
       for(SubjectSet::iterator it = subjects.begin();
 	  it!=subjects.end(); ++it, ++i){
 	Ptr<Subject> s = *it;
-	Vec & Theta(s->Theta());
+	Vector & Theta(s->Theta());
 	Response r = response(s);
 	if(!d[i]) d[i] = new DataType(*r,Theta);
 	else{

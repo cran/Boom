@@ -88,27 +88,25 @@ namespace BOOM{
    SpdMatrix::SpdMatrix(const Matrix &A, bool check)
      : Matrix(A)
    {
-     if(check) assert(A.is_sym());
+     if(check && !A.is_sym()) {
+       report_error("Matrix argument to SpdMatrix is not symmetric.");
+     }
    }
 
    SpdMatrix::SpdMatrix(const SubMatrix &rhs, bool check)
    {
-     if(check){
-       if(rhs.nrow() != rhs.ncol()){
-         report_error("SpdMatrix constructor was supplied a non-square"
-                      "SubMatrix argument");
-       }
+     if (check && (rhs.nrow() != rhs.ncol())) {
+       report_error("SpdMatrix constructor was supplied a non-square"
+                    "SubMatrix argument");
      }
      operator=(rhs);
    }
 
    SpdMatrix::SpdMatrix(const ConstSubMatrix &rhs, bool check)
    {
-     if(check){
-       if(rhs.nrow() != rhs.ncol()){
-         report_error("SpdMatrix constructor was supplied a non-square"
-                      "SubMatrix argument");
-       }
+     if (check && rhs.nrow() != rhs.ncol()) {
+       report_error("SpdMatrix constructor was supplied a non-square"
+                    "SubMatrix argument");
      }
      operator=(rhs);
    }
@@ -347,7 +345,7 @@ namespace BOOM{
      return *this;
    }
 
-   SpdMatrix & SpdMatrix::add_inner(const Matrix &X, const Vec &w,
+   SpdMatrix & SpdMatrix::add_inner(const Matrix &X, const Vector &w,
                                     bool force_sym){
      assert(X.nrow()==w.size());
      assert(X.ncol()==this->ncol());
@@ -358,7 +356,7 @@ namespace BOOM{
    }
 
 
-   SpdMatrix & SpdMatrix::add_inner(const Mat &x, double w){
+   SpdMatrix & SpdMatrix::add_inner(const Matrix &x, double w){
      int n = nrow();
      assert(x.ncol() == this->nrow());
      uint k = x.nrow();
@@ -368,7 +366,7 @@ namespace BOOM{
      return *this;
    }
 
-   SpdMatrix & SpdMatrix::add_inner2(const Mat &A, const Mat &B, double w){
+   SpdMatrix & SpdMatrix::add_inner2(const Matrix &A, const Matrix &B, double w){
      // adds w*(A^TB + B^TA)
      assert(A.ncol() == B.ncol() && A.ncol()==nrow());
      assert(A.nrow()==B.nrow());
@@ -389,7 +387,7 @@ namespace BOOM{
    }
 
 
-   SpdMatrix & SpdMatrix::add_outer2(const Mat &A, const Mat &B, double w){
+   SpdMatrix & SpdMatrix::add_outer2(const Matrix &A, const Matrix &B, double w){
      // adds w*(AB^T + BA^T)
      assert(A.nrow()==B.nrow()  &&  B.nrow()==nrow());
      assert(B.ncol()==A.ncol());
@@ -562,7 +560,7 @@ namespace BOOM{
    Matrix chol(const SpdMatrix &S){ return S.chol();}
    Matrix chol(const SpdMatrix &S, bool & ok){return S.chol(ok);}
 
-   SpdMatrix chol2inv(const Mat &L){
+   SpdMatrix chol2inv(const Matrix &L){
      assert(L.is_square());
      int n = L.nrow();
      SpdMatrix ans(L, false);
@@ -620,10 +618,10 @@ namespace BOOM{
      return SpdMatrix(ans, false); // no symmetry check needed
    }
 
-   SpdMatrix sum_self_transpose(const Mat &A){
+   SpdMatrix sum_self_transpose(const Matrix &A){
      assert(A.is_square());
      uint n = A.nrow();
-     Spd ans(n, 0.0);
+     SpdMatrix ans(n, 0.0);
      for(uint i=0; i<n; ++i){
        for(uint j=0; j<i; ++j){
          ans(i,j) = ans(j,i) = A(i,j) + A(j,i);}}

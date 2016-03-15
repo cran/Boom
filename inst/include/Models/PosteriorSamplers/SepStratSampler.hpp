@@ -27,12 +27,14 @@ namespace BOOM{
   class SepStratSampler : public PosteriorSampler{
    public:
     SepStratSampler(MvnModel *mod,
-                    const std::vector<Ptr<GammaModel> > & ivar);
+                    const std::vector<Ptr<GammaModel> > & ivar,
+                    RNG &seeding_rng = GlobalRng::rng);
     SepStratSampler(MvnModel *mod,
-                    Ptr<CorrModel> Rprior,
-                    const std::vector<Ptr<GammaModel> > & ivar);
-    void draw();
-    double logpri()const;
+                    Ptr<CorrelationModel> Rprior,
+                    const std::vector<Ptr<GammaModel> > & ivar,
+                    RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
 
     void set_max_tries(int);
     void set_polar_frac(double);
@@ -46,7 +48,7 @@ namespace BOOM{
     double stable_seconds()const{return stable_time_;}
     double wasted_seconds()const{return wasted_time_;}
     double polar_seconds()const{return polar_time_;}
-    Spd Sigma();
+    SpdMatrix Sigma();
 
    private:
     friend class SigmaTarget;
@@ -63,22 +65,22 @@ namespace BOOM{
     double logp_slice_R(double r);
     double logp_slice_ivar(double ivar);
     void find_limits();
-    double logp0(const Spd & Sigma, double alpha)const;
-    double logprior(const Spd & Sigma)const;
+    double logp0(const SpdMatrix & Sigma, double alpha)const;
+    double logprior(const SpdMatrix & Sigma)const;
     double detR(double r);
 
     // fundamental data
     MvnModel *mod_;
-    Ptr<CorrModel> Rpri_;
+    Ptr<CorrelationModel> Rpri_;
     std::vector<Ptr<GammaModel> > sinv_pri_;
 
     // data used jointly by fast_draw and stable_draw
-    Spd cand_;
+    SpdMatrix cand_;
     double n_;
-    Spd sumsq_;
-    Mat sumsq_upper_chol_;
-    mutable Spd R_;   // workspace for fast_draw.  state for stable_draw
-    mutable Vec sd_;  // workspace for fast_draw.  state for stable_draw
+    SpdMatrix sumsq_;
+    Matrix sumsq_upper_chol_;
+    mutable SpdMatrix R_;   // workspace for fast_draw.  state for stable_draw
+    mutable Vector sd_;  // workspace for fast_draw.  state for stable_draw
 
     int fast_count_;
     int stable_count_;
@@ -98,7 +100,7 @@ namespace BOOM{
     int i_, j_;
     double lo_;
     double hi_;
-    Spd Rinv_;
+    SpdMatrix Rinv_;
   };
 
 }

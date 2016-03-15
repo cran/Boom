@@ -38,20 +38,20 @@ namespace BOOM{
       sym_(false)
   {}
 
-  WRS::WeightedRegSuf(const Mat &X, const Vec &y, const Vec &w)
+  WRS::WeightedRegSuf(const Matrix &X, const Vector &y, const Vector &w)
   {
-    Mat tmpx = add_intercept(X);
+    Matrix tmpx = add_intercept(X);
     uint p = tmpx.nrow();
     setup_mat(p);
     reweight(tmpx, y, w);
   }
 
-  WRS::WeightedRegSuf(const Mat &X, const Vec &y)
+  WRS::WeightedRegSuf(const Matrix &X, const Vector &y)
   {
-    Mat tmpx = add_intercept(X);
+    Matrix tmpx = add_intercept(X);
     uint p = tmpx.nrow();
     setup_mat(p);
-    Vec w(y.size(), 1.0);
+    Vector w(y.size(), 1.0);
     reweight(tmpx, y, w);
   }
 
@@ -70,21 +70,20 @@ namespace BOOM{
       n_(rhs.n_),
       yt_w_y_(rhs.yt_w_y_),
       sym_(rhs.sym_)
-  {
-  }
+  {}
 
-  WRS * WRS::clone()const{return new WRS(*this);}
+  WRS * WRS::clone() const {return new WRS(*this);}
 
-  ostream & WRS::print(ostream &out)const{
+  ostream & WRS::print(ostream &out) const {
     out << "xtwx_   = " << endl << xtx() << endl
-	<< "xtwy_   = " << xtwy_ << endl
-	<< "n_      = " << n_ << endl
-	<< "yt_w_y_ = " << yt_w_y_ << endl
-	<< "sumlogw_= " << sumlogw_ << endl;
+        << "xtwy_   = " << xtwy_ << endl
+        << "n_      = " << n_ << endl
+        << "yt_w_y_ = " << yt_w_y_ << endl
+        << "sumlogw_= " << sumlogw_ << endl;
     return out;
   }
 
-  void WRS::combine(Ptr<WRS> s){
+  void WRS::combine(Ptr<WRS> s) {
     xtwx_ += s->xtwx_;
     xtwy_ += s->xtwy_;
     n_ += s->n_;
@@ -93,7 +92,7 @@ namespace BOOM{
     sym_ = sym_ && s->sym_;
   }
 
-  void WRS::combine(const WRS & s){
+  void WRS::combine(const WRS & s) {
     xtwx_ += s.xtwx_;
     xtwy_ += s.xtwy_;
     n_ += s.n_;
@@ -102,11 +101,11 @@ namespace BOOM{
     sym_ = sym_ && s.sym_;
   }
 
-  WeightedRegSuf * WRS::abstract_combine(Sufstat *s){
+  WeightedRegSuf * WRS::abstract_combine(Sufstat *s) {
     return abstract_combine_impl(this,s); }
 
-  Vec WRS::vectorize(bool minimal)const{
-    Vec ans = xtwx_.vectorize(minimal);
+  Vector WRS::vectorize(bool minimal) const {
+    Vector ans = xtwx_.vectorize(minimal);
     ans.concat(xtwy_);
     ans.push_back(n_);
     ans.push_back(yt_w_y_);
@@ -114,8 +113,8 @@ namespace BOOM{
     return ans;
   }
 
-  Vec::const_iterator WRS::unvectorize(Vec::const_iterator &v,
-                                       bool){
+  Vector::const_iterator WRS::unvectorize(Vector::const_iterator &v,
+                                          bool) {
     xtwx_.unvectorize(v);
     uint dim = xtwy_.size();
     xtwy_.assign(v, v+dim);
@@ -126,34 +125,33 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator WRS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator WRS::unvectorize(const Vector &v, bool minimal) {
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
   //------------------------------------------------------------
-  void WRS::setup_mat(uint p){
-    xtwx_ = Spd(p, 0.0);
-    xtwy_ = Vec(p, 0.0);
+  void WRS::setup_mat(uint p) {
+    xtwx_ = SpdMatrix(p, 0.0);
+    xtwy_ = Vector(p, 0.0);
     sym_  = false;
   }
 
-  void WRS::reweight(const Mat &X, const Vec &y,
-		     const Vec &w){
+  void WRS::reweight(const Matrix &X, const Vector &y, const Vector &w) {
     uint n = w.size();
     assert(y.size()== n  && X.nrow()==n);
     clear();
-    for(uint i=0; i<n; ++i) add_data(X.row(i), y[i], w[i]);
+    for (uint i=0; i<n; ++i) add_data(X.row(i), y[i], w[i]);
   }
 
-  void WRS::reweight(const dsetPtr &dp){
+  void WRS::reweight(const dsetPtr &dp) {
     clear();
-    for(uint i=0; i < dp->size(); ++i) update((*dp)[i]);
+    for (uint i=0; i < dp->size(); ++i) update((*dp)[i]);
   }
 
   //------------------------------------------------------------
 
-  void WRS::add_data(const Vec &x, double y, double w){
+  void WRS::add_data(const Vector &x, double y, double w) {
     ++n_;
     yt_w_y_ += w*y*y;
     sumlogw_ += log(w);
@@ -162,41 +160,46 @@ namespace BOOM{
     sym_ = false;
   }
 
-  void WRS::clear(){
+  void WRS::clear() {
     xtwx_=0.0;
     xtwy_ = 0.0;
     yt_w_y_ = n_ = sumlogw_ = 0.0;
     sym_ = false;
   }
 
-  void WRS::Update(const WRD &d){ add_data(d.x(), d.y(), d.weight());}
+  void WRS::Update(const WRD &d) { add_data(d.x(), d.y(), d.weight());}
 
   //------------------------------------------------------------
-  uint WRS::size()const{return xtwx_.nrow();}
-  double WRS::yty()const{return yt_w_y_;}
-  Vec WRS::xty()const{return xtwy_;}
-  Spd WRS::xtx()const{
-    if(!sym_) make_symmetric();
+  uint WRS::size() const {return xtwx_.nrow();}
+  double WRS::yty() const {return yt_w_y_;}
+  Vector WRS::xty() const {return xtwy_;}
+  SpdMatrix WRS::xtx() const {
+    if (!sym_) make_symmetric();
     return xtwx_;
   }
-  void WRS::make_symmetric()const{
+  void WRS::make_symmetric() const {
     xtwx_.reflect();
     sym_ = true;
   }
 
-  Vec WRS::xty(const Selector &inc)const{return inc.select(xtwy_);}
-  Spd WRS::xtx(const Selector &inc)const{return inc.select(xtx());}
+  Vector WRS::xty(const Selector &inc) const {return inc.select(xtwy_);}
+  SpdMatrix WRS::xtx(const Selector &inc) const {return inc.select(xtx());}
 
-  Vec WRS::beta_hat()const{return xtx().solve(xtwy_);}
-  double WRS::SSE()const{
-    Spd ivar = xtx().inv();
+  Vector WRS::beta_hat() const {return xtx().solve(xtwy_);}
+
+  double WRS::weighted_sum_of_squared_errors(const Vector &beta) const {
+    return xtx().Mdist(beta) - 2 * beta.dot(xty()) + yty();
+  }
+
+  double WRS::SSE() const {
+    SpdMatrix ivar = xtx().inv();
     return yty() - ivar.Mdist(xty()); }
 
-  double WRS::SST()const{ return yty()/sumw() - pow(ybar(), 2); }
-  double WRS::n()const{return n_;}
-  double WRS::sumw()const{return xtwx_(0,0);}
-  double WRS::sumlogw()const{return sumlogw_;}
-  double WRS::ybar()const{return xtwy_[0]/sumw();}
+  double WRS::SST() const { return yty()/sumw() - pow(ybar(), 2); }
+  double WRS::n() const {return n_;}
+  double WRS::sumw() const {return xtwx_(0,0);}
+  double WRS::sumlogw() const {return sumlogw_;}
+  double WRS::ybar() const {return xtwy_[0]/sumw();}
 
   //----------------------------------------------------------------------
 
@@ -205,72 +208,43 @@ namespace BOOM{
 
   WRM::WeightedRegressionModel(uint p)
     : ParamPolicy(new GlmCoefs(p), new UnivParams(1.0)),
-      DataPolicy(new WRS(p)),
-      PriorPolicy()
+      DataPolicy(new WRS(p))
     {}
 
-  WRM::WeightedRegressionModel(const Vec &b, double Sigma)
+  WRM::WeightedRegressionModel(const Vector &b, double Sigma)
     : ParamPolicy(new GlmCoefs(b), new UnivParams(pow(Sigma,2))),
-      DataPolicy(new WRS(b.size())),
-      PriorPolicy()
+      DataPolicy(new WRS(b.size()))
     {}
 
-  std::vector<Ptr<WRD> > make_data(const Mat &X, const Vec &y);
-  std::vector<Ptr<WRD> > make_data(const Mat &X, const Vec &y, const Vec &w);
-
-  std::vector<Ptr<WRD> > make_data(const Mat &X, const Vec &y, const Vec & w){
-    uint n = X.nrow();
-    uint p = X.ncol();
-    std::vector<Ptr<WRD> > ans;
-    ans.reserve(n);
-
-    Vec x(p, 0.0);
-    for(uint i=0; i<n; ++i){
-      x = X.row(i);
-      NEW(RegressionData, rdp)(y[i], x);
-      Ptr<WRD> wrdp = new WRD(rdp, w[i]);
-      ans.push_back(wrdp);
+  namespace {
+    std::vector<Ptr<WRD> > make_data(
+        const Matrix &X, const Vector &y, const Vector & w) {
+      std::vector<Ptr<WRD> > ans;
+      for (uint i=0; i < X.nrow(); ++i) {
+        ans.push_back(new WeightedRegressionData(y[i], X.row(i), w[i]));
+      }
+      return ans;
     }
-    return ans;
-  }
+  }  // namespace
 
-  std::vector<Ptr<WRD> > make_data(const Mat &X, const Vec &y){
-    uint n = X.nrow();
-    uint p = X.ncol();
-    std::vector<Ptr<WRD> > ans;
-    ans.reserve(n);
-
-    Vec x(p, 0.0);
-    for(uint i=0; i<n; ++i){
-      x = X.row(i);
-      NEW(RegressionData, rdp)(y[i], x);
-      Ptr<WRD> wrdp = new WRD(rdp, 1.0);
-      ans.push_back(wrdp);
-    }
-    return ans;
-  }
-
-
-  WRM::WeightedRegressionModel(const Mat &X, const Vec &y)
-    : ParamPolicy(new GlmCoefs(X.ncol()), new UnivParams(1.0)),
-      DataPolicy(new WRS(X.ncol()), make_data(X,y)),
-      PriorPolicy()
+  WRM::WeightedRegressionModel(const Matrix &X, const Vector &y)
+      : ParamPolicy(new GlmCoefs(X.ncol()), new UnivParams(1.0)),
+        DataPolicy(new WRS(X.ncol()), make_data(X, y, Vector(y.size(), 1.0)))
   {
     mle();
   }
 
-  WRM::WeightedRegressionModel(const Mat &X, const Vec &y, const Vec &w)
-    : ParamPolicy(new GlmCoefs(X.ncol()), new UnivParams(1.0)),
-      DataPolicy(new WRS(X.ncol()), make_data(X,y, w)),
-      PriorPolicy()
+  WRM::WeightedRegressionModel(
+      const Matrix &X, const Vector &y, const Vector &w)
+      : ParamPolicy(new GlmCoefs(X.ncol()), new UnivParams(1.0)),
+        DataPolicy(new WRS(X.ncol()), make_data(X, y, w))
   {
     mle();
   }
 
   WRM::WeightedRegressionModel(const DatasetType &d, bool all)
-    : ParamPolicy(new GlmCoefs(d[0]->xdim(), all), new UnivParams(1.0)),
-      DataPolicy(new WRS(d[0]->xdim()), d),
-      PriorPolicy()
+      : ParamPolicy(new GlmCoefs(d[0]->xdim(), all), new UnivParams(1.0)),
+        DataPolicy(new WRS(d[0]->xdim()), d)
   {
     mle();
   }
@@ -278,45 +252,45 @@ namespace BOOM{
 
 
   WRM::WeightedRegressionModel(const WeightedRegressionModel &rhs)
-    : Model(rhs),
-      ParamPolicy(rhs),
-      DataPolicy(rhs),
-      PriorPolicy(rhs),
-      GlmModel(rhs),
-      NumOptModel(rhs)
+      : Model(rhs),
+        ParamPolicy(rhs),
+        DataPolicy(rhs),
+        PriorPolicy(rhs),
+        GlmModel(rhs),
+        NumOptModel(rhs)
   {}
 
 
-  WeightedRegressionModel * WRM::clone()const{ return new WRM(*this);}
+  WeightedRegressionModel * WRM::clone() const { return new WRM(*this);}
 
-  double WRM::pdf(dPtr dp, bool logscale)const{
+  double WRM::pdf(dPtr dp, bool logscale) const {
     Ptr<DataType> d = dp.dcast<DataType>();
     return pdf(d, logscale);
   }
 
-  double WRM::pdf(Ptr<WeightedRegressionData> dp, bool logscale)const{
+  double WRM::pdf(Ptr<WeightedRegressionData> dp, bool logscale) const {
     double mu = predict(dp->x());
     double sigsq = this->sigsq();
     double w = dp->weight();
     return dnorm(dp->y(), mu, sqrt(sigsq/w), logscale);
   }
 
-  GlmCoefs & WRM::coef(){return ParamPolicy::prm1_ref();}
-  const GlmCoefs & WRM::coef()const{return ParamPolicy::prm1_ref();}
-  Ptr<GlmCoefs> WRM::coef_prm(){return ParamPolicy::prm1();}
-  const Ptr<GlmCoefs> WRM::coef_prm()const{return ParamPolicy::prm1();}
+  GlmCoefs & WRM::coef() {return ParamPolicy::prm1_ref();}
+  const GlmCoefs & WRM::coef() const {return ParamPolicy::prm1_ref();}
+  Ptr<GlmCoefs> WRM::coef_prm() {return ParamPolicy::prm1();}
+  const Ptr<GlmCoefs> WRM::coef_prm() const {return ParamPolicy::prm1();}
 
-  void WRM::set_sigsq(double s2){ ParamPolicy::prm2_ref().set(s2);}
+  void WRM::set_sigsq(double s2) { ParamPolicy::prm2_ref().set(s2);}
 
-  Ptr<UnivParams> WRM::Sigsq_prm(){return ParamPolicy::prm2();}
-  const Ptr<UnivParams> WRM::Sigsq_prm()const {return ParamPolicy::prm2();}
-  const double & WRM::sigsq()const{return ParamPolicy::prm2_ref().value();}
-  double WRM::sigma()const{return sqrt(sigsq());}
+  Ptr<UnivParams> WRM::Sigsq_prm() {return ParamPolicy::prm2();}
+  const Ptr<UnivParams> WRM::Sigsq_prm() const {return ParamPolicy::prm2();}
+  const double & WRM::sigsq() const {return ParamPolicy::prm2_ref().value();}
+  double WRM::sigma() const {return sqrt(sigsq());}
 
-  void WRM::mle(){
-    Spd xtx(suf()->xtx(coef().inc()));
-    Vec xty(suf()->xty(coef().inc()));
-    Vec b = xtx.solve(xty);
+  void WRM::mle() {
+    SpdMatrix xtx(suf()->xtx(coef().inc()));
+    Vector xty(suf()->xty(coef().inc()));
+    Vector b = xtx.solve(xty);
     set_included_coefficients(b);
 
     double SSE = suf()->yty() - 2* b.dot(xty) + xtx.Mdist(b);
@@ -325,22 +299,22 @@ namespace BOOM{
   }
 
   double WRM::Loglike(const Vector &beta_sigsq,
-                      Vec &g, Mat &h, uint nd)const{
+                      Vector &g, Matrix &h, uint nd) const {
     const double log2pi = 1.8378770664093453;
     const Selector & inclusion_indicators(coef().inc());
     const int beta_dim(inclusion_indicators.nvars());
     const Vector beta(ConstVectorView(beta_sigsq, 0, beta_dim));
     const double sigsq = beta_sigsq.back();
 
-    if(sigsq <= 0){
+    if (sigsq <= 0) {
       g=0;
       g.back() = -sigsq;
       h = h.Id();
       return BOOM::negative_infinity();
     }
 
-    Spd xtwx(suf()->xtx(inclusion_indicators));
-    Vec xtwy(suf()->xty(inclusion_indicators));
+    SpdMatrix xtwx(suf()->xtx(inclusion_indicators));
+    Vector xtwy(suf()->xty(inclusion_indicators));
     double ytwy =suf()->yty();
     double n = suf()->n();
     double sumlogw = suf()->sumlogw();
@@ -348,9 +322,9 @@ namespace BOOM{
     double SS = xtwx.Mdist(beta) -2*beta.dot(xtwy) + ytwy;
     double ans = -.5*(n*log2pi + n*log(sigsq) - sumlogw + SS/sigsq);
 
-    if(nd>0){
+    if (nd>0) {
       double siginv = 1.0/sigsq;
-      Vec gb = xtwx * beta;
+      Vector gb = xtwx * beta;
       gb -= xtwy;
       gb *=  -siginv;
 
@@ -358,17 +332,14 @@ namespace BOOM{
       double gs2 = -n/2 *siginv + SS/2 *isig4;
       g = concat(gb, gs2);
 
-      if(nd>1){
-	Mat hb = -siginv * xtwx;
-	double hs2 = n/2 * isig4 - SS * isig4*siginv;
-	h = block_diagonal(hb, Mat(1,1,hs2));
+      if (nd>1) {
+        Matrix hb = -siginv * xtwx;
+        double hs2 = n/2 * isig4 - SS * isig4*siginv;
+        h = block_diagonal(hb, Matrix(1,1,hs2));
       }
     }
 
     return ans;
-
   }
 
-
-
-}// closes namespace BOOM
+  }  // namespace BOOM

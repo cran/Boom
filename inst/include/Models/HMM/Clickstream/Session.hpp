@@ -16,7 +16,7 @@ namespace BOOM {
       Session(const std::vector<Ptr<Event> > &events, bool add_eos_if_missing);
 
       Session(const Session & rhs);
-      virtual Session * clone()const;
+      Session * clone() const override;
       int number_of_events_including_eos()const;
       Ptr<Event> event(int i);
       const Ptr<Event> event(int i)const;

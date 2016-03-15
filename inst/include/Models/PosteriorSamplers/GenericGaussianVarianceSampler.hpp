@@ -61,8 +61,13 @@ namespace BOOM {
     //     include the prior sum of squares, as this will be supplied
     //     by this function.
     // Returns:
-    //   A draw of the residual variance, which will be <= sigma_max_.
+    //   A draw of the residual variance, which will be <= sigma_max_^2.
     double draw(RNG &rng, double data_df, double data_ss) const;
+
+    // Returns the posterior mode of the residual variance based on
+    // the inverse Gamma distribution.  If theta ~ Gamma(a, b), then
+    // the mode of 1/theta is b / (a + 1).
+    double posterior_mode(double data_df, double data_ss) const;
 
    private:
     Ptr<GammaModelBase> prior_;

@@ -22,12 +22,12 @@
 #include <Models/ModelTypes.hpp>
 
 namespace BOOM{
-  class ParamVecHolder;
+  class ParamVectorHolder;
 
   class LoglikeTF{
   public:
     LoglikeTF(LoglikeModel *model) : mod(model) {}
-    double operator()(const Vec &x)const {
+    double operator()(const Vector &x)const {
       return mod->loglike(x);
     }
   private:
@@ -41,8 +41,8 @@ namespace BOOM{
         : LoglikeTF(d),
           dmod(d)
     {}
-    double operator()(const Vec &x)const{return LoglikeTF::operator()(x);}
-    double operator()(const Vec &x, Vec &g)const {
+    double operator()(const Vector &x)const{return LoglikeTF::operator()(x);}
+    double operator()(const Vector &x, Vector &g)const {
       return dmod->dloglike(x, g);
     }
   private:
@@ -56,10 +56,10 @@ namespace BOOM{
         : dLoglikeTF(d2),
           d2mod(d2)
     {}
-    double operator()(const Vec &x)const{ return LoglikeTF::operator()(x);}
-    double operator()(const Vec &x, Vec &g)const{
+    double operator()(const Vector &x)const{ return LoglikeTF::operator()(x);}
+    double operator()(const Vector &x, Vector &g)const{
       return dLoglikeTF::operator()(x,g);}
-    double operator()(const Vec &x, Vec &g, Mat &h)const {
+    double operator()(const Vector &x, Vector &g, Matrix &h)const {
       return d2mod->d2loglike(x, g, h);
     }
   private:

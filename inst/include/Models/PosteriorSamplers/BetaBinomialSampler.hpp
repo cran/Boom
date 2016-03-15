@@ -28,10 +28,11 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    BetaBinomialSampler(BinomialModel *, Ptr<BetaModel>);
-    virtual void draw();
-    virtual double logpri()const;
-    void find_posterior_mode();
+    BetaBinomialSampler(BinomialModel *, Ptr<BetaModel>,
+                        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
+    void find_posterior_mode(double epsilon = 1e-5) override;
   private:
     BinomialModel *mod_;
     Ptr<BetaModel> pri_;

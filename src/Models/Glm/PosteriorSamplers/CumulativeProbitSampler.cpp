@@ -27,8 +27,10 @@ namespace BOOM{
   typedef CumulativeProbitSampler CPS;
   typedef CumulativeProbitModel CPM;
   CPS::CumulativeProbitSampler(CPM *m,
-                               Ptr<MvnBase> prior)
-      : m_(m),
+                               Ptr<MvnBase> prior,
+                               RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(m),
         beta_prior_(prior),
         suf_(m->xdim())
   {}
@@ -50,7 +52,7 @@ namespace BOOM{
     uint n = data.size();
     for(int i = 0; i < n; ++i){
       uint y = data[i]->y();
-      const Vec & x(data[i]->x());
+      const Vector & x(data[i]->x());
       double eta = m_->predict(x);
       double z = 0;
       if(y == 0){
@@ -79,8 +81,8 @@ namespace BOOM{
 
   class PartialTarget : public ScalarTargetFun{
    public:
-    typedef boost::function<double(const Vec &)> TF;
-    PartialTarget(const TF &f, uint pos, const Vec &v)
+    typedef boost::function<double(const Vector &)> TF;
+    PartialTarget(const TF &f, uint pos, const Vector &v)
         : f_(f),
           pos_(pos),
           v_(v)
@@ -93,7 +95,7 @@ namespace BOOM{
    private:
     const TF f_;
     uint pos_;
-    mutable Vec v_;
+    mutable Vector v_;
   };
 
   }  // anonymous namespace

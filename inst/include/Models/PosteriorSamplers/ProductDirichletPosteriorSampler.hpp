@@ -31,15 +31,17 @@ class ProductDirichletPosteriorSampler
   ProductDirichletPosteriorSampler(ProductDirichletModel *m,
                                    std::vector<Ptr<VECmodel> > phi,
                                    std::vector<Ptr<SCALmodel> > alpha,
-                                   double min_nu=0)
-      : m_(m),
+                                   double min_nu=0,
+                                   RNG &seeding_rng = GlobalRng::rng)
+      : PosteriorSampler(seeding_rng),
+        m_(m),
         phi_row_prior_(phi.begin(), phi.end()),
         alpha_row_prior_(alpha.begin(), alpha.end()),
         min_nu_(min_nu)
   {}
 
-  virtual void draw();
-  virtual double logpri()const;
+  void draw() override;
+  double logpri() const override;
  private:
   ProductDirichletModel *m_;
   // phi_row_prior_ pretty much has to be Dirichlet

@@ -21,24 +21,35 @@
 
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
 
 namespace BOOM{
 
   // LightKalmanStorage is 'light' because it does not keep a copy of
   // 'a' (the state forecast/state value) or P (variance of state
-  // forecast/value).
+  // forecast/value).  The struct uses the mathematical notation from
+  // Durbin and Koopman (2001) to make it easy to follow the math of
+  // the Kalman filter.
   struct LightKalmanStorage{
-    Vec K;
+    // Kalman gain
+    Vector K;
+
+    // Forward prediction variance.  Variance of y[t] given data to
+    // time t-1.
     double F;
+
+    // One step prediction error.  Difference between y[t] and its
+    // prediction given data to time t-1.
     double v;
+
     LightKalmanStorage(){}
     LightKalmanStorage(int dim) : K(dim) {}
   };
 
   struct ScalarKalmanStorage : public LightKalmanStorage{
-    Vec a;
-    Spd P;
+    // Expected value of the state at time t given data to time t-1.
+    Vector a;
+    // Variance of state at time t given data to time t-1.
+    SpdMatrix P;
     ScalarKalmanStorage() : LightKalmanStorage() {}
     ScalarKalmanStorage(int dim) : LightKalmanStorage(dim), a(dim), P(dim) {}
   };

@@ -24,27 +24,27 @@
 
 namespace BOOM{
 
-  Vec vectorize(const ParamVec &v, bool minimal){
+  Vector vectorize(const ParamVector &v, bool minimal){
     uint N = v.size();
     uint vec_size(0);
 
     for(uint i=0; i<N; ++i) vec_size+= v[i]->size(minimal);
-    Vec ans(vec_size);
-    Vec::iterator it=ans.begin();
+    Vector ans(vec_size);
+    Vector::iterator it=ans.begin();
     for(uint i=0; i<N; ++i){
-      Vec tmp=v[i]->vectorize(minimal);
+      Vector tmp=v[i]->vectorize(minimal);
       it = std::copy(tmp.begin(), tmp.end(), it);
     }
     return ans;
   }
-  void unvectorize(ParamVec &pvec, const Vec &v, bool minimal){
-    Vec::const_iterator it=v.begin();
+  void unvectorize(ParamVector &pvec, const Vector &v, bool minimal){
+    Vector::const_iterator it=v.begin();
     for(uint i=0; i<pvec.size(); ++i){
       it = pvec[i]->unvectorize(it, minimal);
     }
   }
 
-  ostream & operator<<(ostream &out, const ParamVec &v){
+  ostream & operator<<(ostream &out, const ParamVector &v){
     out << vectorize(v, false);
     return out;
   }
@@ -66,15 +66,15 @@ namespace BOOM{
   UnivParams * UnivParams::clone() const {
     return new UnivParams(*this); }
 
-  Vec UnivParams::vectorize(bool) const {
-    Vec ans(1);
+  Vector UnivParams::vectorize(bool) const {
+    Vector ans(1);
     ans[0] = value();
     return ans; }
-  Vec::const_iterator UnivParams::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator UnivParams::unvectorize(Vector::const_iterator &v, bool){
     set(*v);
     return ++v;}
-  Vec::const_iterator UnivParams::unvectorize(const Vec &v, bool){
-    Vec::const_iterator b=v.begin();
+  Vector::const_iterator UnivParams::unvectorize(const Vector &v, bool){
+    Vector::const_iterator b=v.begin();
     return unvectorize(b); }
 
   //============================================================
@@ -84,7 +84,7 @@ namespace BOOM{
     : VD(p, x)
   {}
 
-  VectorParams::VectorParams(const Vec &v)
+  VectorParams::VectorParams(const Vector &v)
     : VD(v)
   {}
 
@@ -99,18 +99,18 @@ namespace BOOM{
     return dim();
   }
 
-  Vec VectorParams::vectorize(bool) const { return value();}
+  Vector VectorParams::vectorize(bool) const { return value();}
 
-  Vec::const_iterator VectorParams::unvectorize
-  (Vec::const_iterator &v, bool){
-    Vec::const_iterator e = v+size(false);
-    Vec tmp(v,e);
+  Vector::const_iterator VectorParams::unvectorize
+  (Vector::const_iterator &v, bool){
+    Vector::const_iterator e = v+size(false);
+    Vector tmp(v,e);
     set(tmp);
     return e;
   }
 
-  Vec::const_iterator VectorParams::unvectorize(const Vec &v, bool){
-    Vec::const_iterator b=v.begin();
+  Vector::const_iterator VectorParams::unvectorize(const Vector &v, bool){
+    Vector::const_iterator b=v.begin();
     return unvectorize(b); }
 
   //============================================================
@@ -121,7 +121,7 @@ namespace BOOM{
      : MD(r,c,x)
   {}
 
-  MP::MatrixParams(const Mat &m)
+  MP::MatrixParams(const Matrix &m)
     : MD(m)
   {}
 
@@ -136,69 +136,20 @@ namespace BOOM{
     return value().size();
   }
 
-  Vec MP::vectorize(bool) const {
-    Vec ans(value().begin(), value().end());
+  Vector MP::vectorize(bool) const {
+    Vector ans(value().begin(), value().end());
     return ans; }
 
-  Vec::const_iterator MP::unvectorize(Vec::const_iterator &b, bool){
-    Vec::const_iterator e=b+size();
-    const Mat &val(value());
-    Mat tmp(b,e,val.nrow(), val.ncol());
+  Vector::const_iterator MP::unvectorize(Vector::const_iterator &b, bool){
+    Vector::const_iterator e=b+size();
+    const Matrix &val(value());
+    Matrix tmp(b,e,val.nrow(), val.ncol());
     set(tmp);
     return e;
   }
-  Vec::const_iterator MP::unvectorize(const Vec &v, bool){
-    Vec::const_iterator b=v.begin();
+  Vector::const_iterator MP::unvectorize(const Vector &v, bool){
+    Vector::const_iterator b=v.begin();
     return unvectorize(b);
   }
 
-  //============================================================
-
-  typedef CorrParams CP;
-
-  CP::CorrParams(const Corr &R)
-    : Params(),
-      CorrData(R)
-  {}
-
-  CP::CorrParams(const Spd &R)
-    : Params(),
-      CorrData(R)
-  {}
-
-  CP::CorrParams(const CP &rhs)
-    : Data(rhs),
-      Params(rhs),
-      CorrData(rhs)
-  {}
-
-  CP * CP::clone() const {return new CP(*this);}
-
-  uint CP::size(bool minimal) const {
-    const CorrelationMatrix &R(value());
-    if(minimal) {
-      return R.nelem();
-    } else {
-      uint n = R.ncol();
-      return n*n;
-    }
-  }
-
-  Vec CP::vectorize(bool minimal) const {
-    return value().vectorize(minimal); }
-
-  Vec::const_iterator CP::unvectorize(Vec::const_iterator &v,
-				      bool minimal){
-    Corr tmp(value());
-    Vec::const_iterator ans = tmp.unvectorize(v, minimal);
-    set(tmp);
-    return ans;
-  }
-
-  Vec::const_iterator CP::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator b(v.begin());
-    return unvectorize(b,minimal);
-  }
-
-
-}
+}  // namespace BOOM

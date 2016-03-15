@@ -32,7 +32,6 @@
 
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
 
 #include <vector>
 
@@ -54,56 +53,58 @@ namespace BOOM{
     // with rows contemporaneous to y.  If some of the y's are
     // missing, use 'observed' to indicate which are observed.  The X's
     // must be fully observed.
-    StateSpaceRegressionModel(const Vec &y,
-                              const Mat &X,
+    StateSpaceRegressionModel(const Vector &y,
+                              const Matrix &X,
                               const std::vector<bool> &observed=
                               std::vector<bool>());
 
     StateSpaceRegressionModel(const StateSpaceRegressionModel &rhs);
-    StateSpaceRegressionModel * clone()const;
+    StateSpaceRegressionModel * clone()const override;
 
-    virtual int time_dimension()const{return dat().size();}
+    int time_dimension() const override {return dat().size();}
 
     // Variance of observed data y[t], given state alpha[t].  Durbin
     // and Koopman's H.
-    virtual double observation_variance(int t)const;
+    double observation_variance(int t) const override;
 
-    virtual double adjusted_observation(int t)const;
-    virtual bool is_missing_observation(int t)const;
-    virtual RegressionModel * observation_model(){
-      return regression_.get();}
-    virtual const RegressionModel * observation_model()const{
+    double adjusted_observation(int t) const override;
+    bool is_missing_observation(int t) const override;
+    RegressionModel * observation_model() override {
+      return regression_.get(); }
+    const RegressionModel * observation_model() const override {
       return regression_.get(); }
 
-    virtual void observe_data_given_state(int t);
+    void observe_data_given_state(int t) override;
 
     // Forecast the next nrow(newX) time steps given the current data,
-    // using the Kalman filter.  The first column of Mat is the mean
+    // using the Kalman filter.  The first column of Matrix is the mean
     // of the forecast.  The second column is the standard errors.
-    Mat forecast(const Mat &newX)const;
+    Matrix forecast(const Matrix &newX)const;
 
     // Simulate the next nrow(newX) time periods, given current
     // parameters and state.
-    Vec simulate_forecast(const Mat &newX, const Vec &final_state);
-    Vec simulate_forecast(const Mat &newX);
+    Vector simulate_forecast(const Matrix &newX, const Vector &final_state);
+    Vector simulate_forecast(const Matrix &newX);
 
     // Contribution of the regression model to the overall mean of y
     // at each time point.
-    Vec regression_contribution()const;
+    Vector regression_contribution()const override;
+    bool has_regression() const override {return true;}
 
     // Returns the vector of one-step-ahead prediction errors from a
     // holdout sample.
-    Vec one_step_holdout_prediction_errors(const Mat &newX,
-                                           const Vec &newY,
-                                           const Vec &final_state)const;
+    Vector one_step_holdout_prediction_errors(const Matrix &newX,
+                                              const Vector &newY,
+                                              const Vector &final_state)const;
 
     Ptr<RegressionModel> regression_model(){return regression_;}
     const Ptr<RegressionModel> regression_model()const{return regression_;}
 
-    // Need to overload add_data so that x's can be shared with the
+    // Need to override add_data so that x's can be shared with the
     // regression model.
-    virtual void add_data(Ptr<Data> dp);
-    virtual void add_data(Ptr<RegressionData> dp);
+    void add_data(Ptr<Data> dp) override;
+    void add_data(Ptr<RegressionData> dp) override;
+
    private:
     // The regression model holds the regression coefficients and the
     // observation error variance.
@@ -113,7 +114,6 @@ namespace BOOM{
     void setup();
   };
 
-
-}
+}  // namespace BOOM
 
 #endif // BOOM_STATE_SPACE_REGRESSION_HPP_

@@ -133,12 +133,14 @@ namespace BOOM {
       double total_prediction_sd,
       double prior_tree_depth_alpha,
       double prior_tree_depth_beta,
-      boost::function<double(int)> log_prior_on_number_of_trees)
+      boost::function<double(int)> log_prior_on_number_of_trees,
+      RNG &seeding_rng)
       : BartPosteriorSamplerBase(model,
                                  total_prediction_sd,
                                  prior_tree_depth_alpha,
                                  prior_tree_depth_beta,
-                                 log_prior_on_number_of_trees),
+                                 log_prior_on_number_of_trees,
+                                 seeding_rng),
         model_(model),
         data_imputer_(new PoissonDataImputer)
   {}

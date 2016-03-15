@@ -34,9 +34,10 @@ namespace BOOM {
     MvnIndependentVarianceSampler(
         MvnModel *model,
         const std::vector<Ptr<GammaModelBase> > &siginv_priors,
-        const Vec & sigma_max_values);
-    void draw();
-    double logpri()const;
+        const Vector & sigma_max_values,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
 
    private:
     MvnModel *model_;

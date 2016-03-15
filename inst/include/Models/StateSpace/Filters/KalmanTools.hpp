@@ -31,31 +31,57 @@ namespace BOOM{
   // K is output as K[t]
   // Finv is output as Finv[t]
   // v is output as v[t]
-  double scalar_kalman_update(double y,    // y[t]
-                              Vec &a,      // a[t] -> a[t+1]
-                              Spd &P,      // P[t] -> P[t+1]
-                              Vec &K,      // output as K[t]
-                              double &F,   // output as F[t]
-                              double &v,   // output as v[t]
+  double scalar_kalman_update(double y,       // y[t]
+                              Vector &a,      // a[t] -> a[t+1]
+                              SpdMatrix &P,   // P[t] -> P[t+1]
+                              Vector &K,      // output as K[t]
+                              double &F,      // output as F[t]
+                              double &v,      // output as v[t]
                               bool missing,
-                              const Vec &Z,
+                              const Vector &Z,
                               double H,
-                              const Mat &T,
-                              Mat &L,
-                              const Spd &RQR);
+                              const Matrix &T,
+                              Matrix &L,
+                              const SpdMatrix &RQR);
+
+  // The Kalman filter as implemented above computes the predictive
+  // distribution of the state at time t+1 given data up to time t.
+  // This function takes the outputs of scalar_kalman_update and
+  // converts the mean and variance so that they refer to the state at
+  // time t (rather than t+1) given data up to time t.
+  //
+  // Args:
+  //   a: On input this is the mean of the state at time t+1 given
+  //     data to time t.  On output it is the mean of the state at
+  //     time t given data to time t.
+  //   P: On input this is the variance of the state at time t+1 given
+  //     data to time t.  On output it is the variance of the state at
+  //     time t given data at time t.
+  //   F_forecast_variance: This is the one_step ahead forecast
+  //     variance at time t (the output 'F' of scalar_kalman_update
+  //     upon observing y[t]).
+  //   v_one_step_prediction_error: The one step prediction error at
+  //     time t (the output 'v' of scalar_kalman_update upon observing
+  //     y[t]).
+  //   Z_state_reducer:  The value of Z passed to scalar_kalman_update.
+  void make_contemporaneous(Vector &a,
+                            SpdMatrix &P,
+                            double F_forecast_variance,
+                            double v_one_step_prediction_error,
+                            const Vector &Z_state_reducer);
 
   // Updates a[t] and P[t] to condition on all Y, and sets up r and N
   // for use in the next recursion.
-  void scalar_kalman_smoother_update(Vec &a,
-                                     Spd &P,
-                                     const Vec & K,
+  void scalar_kalman_smoother_update(Vector &a,
+                                     SpdMatrix &P,
+                                     const Vector & K,
                                      double F,
                                      double v,
-                                     const Vec &Z,
-                                     const Mat &T,
-                                     Vec & r,
-                                     Mat & N,
-                                     Mat & L);
+                                     const Vector &Z,
+                                     const Matrix &T,
+                                     Vector & r,
+                                     Matrix & N,
+                                     Matrix & L);
 
 }
 #endif// BOOM_KALMAN_TOOLS_HPP

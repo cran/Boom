@@ -24,11 +24,11 @@ namespace BOOM{
   using namespace std;
   using std::string;
   matrix_not_positive_definite::matrix_not_positive_definite
-  (const Mat &M, const string &err_msg)
+  (const Matrix &M, const string &err_msg)
       : m(M), msg(err_msg)
   {}
 
-  string print_matrix_limits(const Mat &m, const string &name=""){
+  string print_matrix_limits(const Matrix &m, const string &name=""){
     ostringstream out;
     out << name << "[" << m.nrow() << ","
         << m.ncol() << "] = " << endl

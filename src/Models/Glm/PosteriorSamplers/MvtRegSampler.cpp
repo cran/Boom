@@ -30,15 +30,16 @@ namespace BOOM{
   struct Logp_nu{
     Logp_nu( Ptr<ScaledChisqModel> Numod, Ptr<DoubleModel> Pri)
       : loglike(Numod.get() ), pri(Pri) {}
-    double operator()(const Vec &x)const{ return loglike(x) + pri->logp(x[0]); }
+    double operator()(const Vector &x)const{ return loglike(x) + pri->logp(x[0]); }
     LoglikeTF loglike;
     Ptr<DoubleModel> pri;
   };
 
-  MVTRS::MvtRegSampler(MvtRegModel *m, const Mat &B_guess, double prior_nobs,
-		       double prior_df, const Spd & Sigma_guess,
-		       Ptr<DoubleModel> Nu_prior)
-    : mod(m),
+  MVTRS::MvtRegSampler(MvtRegModel *m, const Matrix &B_guess, double prior_nobs,
+               double prior_df, const SpdMatrix & Sigma_guess,
+               Ptr<DoubleModel> Nu_prior, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod(m),
       reg_model(new MvReg(mod->Beta(), mod->Sigma())),
       nu_model(new ScaledChisqModel(m->nu())),
       nu_prior(Nu_prior)
@@ -85,8 +86,8 @@ namespace BOOM{
   }
 
   double MVTRS::impute_w(Ptr<MvRegData> dp){
-    const Vec &y(dp->y());
-    const Vec &x(dp->x());
+    const Vector &y(dp->y());
+    const Vector &x(dp->x());
     yhat = mod->predict(x);
     double nu = mod->nu();
     double ss = mod->Siginv().Mdist(y,yhat);
@@ -103,7 +104,7 @@ namespace BOOM{
   }
 
   void MVTRS::draw_nu(){
-    Vec nu(1,mod->nu());
+    Vector nu(1,mod->nu());
     nu = nu_sampler->draw(nu);
     mod->set_nu(nu[0]);
   }

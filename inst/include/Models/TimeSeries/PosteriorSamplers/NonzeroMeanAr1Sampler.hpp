@@ -31,7 +31,8 @@ namespace BOOM{
     NonzeroMeanAr1Sampler(NonzeroMeanAr1Model *model,
                           Ptr<GaussianModelBase> mean_prior,
                           Ptr<GaussianModelBase> phi_prior,
-                          Ptr<GammaModelBase> siginv_prior);
+                          Ptr<GammaModelBase> siginv_prior,
+                          RNG &seeding_rng = GlobalRng::rng);
 
     // Truncate the support of phi (the autoregression coefficient) to
     // (-1, 1) to ensure stationarity
@@ -42,8 +43,8 @@ namespace BOOM{
     void force_ar1_positive();
     void set_sigma_upper_limit(double sigma_hi_);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     void draw_mu();
     void draw_phi();

@@ -18,12 +18,12 @@
 #ifndef BOOM_PRODUCT_MODEL_HPP
 #define BOOM_PRODUCT_MODEL_HPP
 
-#include <ModelTypes.hpp>
+#include "ModelTypes.hpp"
 
 namespace BOOM{
 template <class T>
 class ProductModel{
-}
+};
 
 
 #endif //BOOM_PRODUCT_MODEL_HPP

@@ -19,6 +19,7 @@
 #include <Samplers/ScalarSliceSampler.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
@@ -29,9 +30,10 @@
 namespace BOOM{
   typedef ScalarSliceSampler SSS;
 
-//  SSS::ScalarSliceSampler(const ScalarTargetFun &F, bool Unimodal, double dx)
-  SSS::ScalarSliceSampler(const Fun &F, bool Unimodal, double dx)
-    : logf_(F),
+  SSS::ScalarSliceSampler(const Fun &F, bool Unimodal, double dx,
+                          RNG *rng)
+    : ScalarSampler(rng),
+      logf_(F),
       suggested_dx_(dx),
       min_dx_(-1),
       lo_set_manually_(false),
@@ -80,16 +82,16 @@ namespace BOOM{
         ostringstream err;
         err << "number of tries exceeded.  candidate value is "
             << x_cand << " with logp_cand = " << logp_cand << endl;
-        throw_exception(err.str(), x);
+        handle_error(err.str(), x);
       }
     }while(logp_cand < logp_slice_);
-    throw_exception("should never get here", x);
+    handle_error("should never get here", x);
     return 0;
   }
 
-// If a candidate draw winds up out of the slice then the pseudo-slice
-// can be made narrower to increase the chance of success next time.
-// See Neal (2003).
+  // If a candidate draw winds up out of the slice then the
+  // pseudo-slice can be made narrower to increase the chance of
+  // success next time.  See Neal (2003).
   void SSS::contract(double x, double x_cand, double logp){
     if(x_cand > x){
       hi_ = x_cand;
@@ -104,12 +106,13 @@ namespace BOOM{
     }
   }
 
-// driver function to find the limits of a slice containing 'x'.
-// Logic varies according to whether the distribution is bounded
-// above, below, both, or neither.
+  // Driver function to find the limits of a slice containing 'x'.
+  // Logic varies according to whether the distribution is bounded
+  // above, below, both, or neither.
   void SSS::find_limits(double x){
     logp_slice_ = logf_(x) - rexp_mt(rng(), 1.0);
     check_finite(x,logp_slice_);
+    bool limits_successfully_found = true;
     if(doubly_bounded()){
       lo_ = lower_bound_;
       logplo_ = logf_(lo_);
@@ -118,44 +121,57 @@ namespace BOOM{
     }else if (lower_bounded()){
       lo_ = lower_bound_;
       logplo_ = logf_(lo_);
-      find_upper_limit(x);
+      limits_successfully_found = find_upper_limit(x);
     }else if(upper_bounded()){
-      find_lower_limit(x);
+      limits_successfully_found = find_lower_limit(x);
       hi_ = upper_bound_;
       logphi_ = logf_(hi_);
     }else{ // unbounded
-      find_limits_unbounded(x);
+      limits_successfully_found = find_limits_unbounded(x);
     }
     check_slice(x);
-    check_probs(x);
+    if (limits_successfully_found) {
+      check_probs(x);
+    }
   }
 
-// find the upper and lower limits of a slice containing x for a
-// potentially multimodal distribution.  Uses Neal's (2003 Annals of
-// Statistics) doubling algorithm
-  void SSS::find_limits_unbounded(double x){
+  // Find the upper and lower limits of a slice containing x for a
+  // potentially multimodal distribution.  Uses Neal's (2003 Annals of
+  // Statistics) doubling algorithm.
+  bool SSS::find_limits_unbounded(double x){
     hi_ = x + suggested_dx_;
     lo_ = x - suggested_dx_;
+    logphi_ = logf_(hi_);
+    logplo_ = logf_(lo_);
     if(unimodal_){
       find_limits_unbounded_unimodal(x);
+      return true;
     }else{
+      int doubling_count = 0;
       while(!done_doubling()){
         double u = runif_mt(rng(), -1, 1);
         if(u>0) double_hi(x);
         else double_lo(x);
+        if (++doubling_count > 100) {
+          // The slice has been doubled 100 times.  This is almost
+          // certainly beecause of an error in the target distribution
+          // or a crazy starting value.
+          return false;
+        }
       }
     }
     check_upper_limit(x);
     check_lower_limit(x);
+    return true;
   }
 
-// utility function used by find_limits_unbounded
+  // A utility function used by find_limits_unbounded.
   bool SSS::done_doubling()const{
     return (logphi_ < logp_slice_) && (logplo_ < logp_slice_);
   }
 
-// find the upper and lower limits of a slice when the target
-// distribution is known to be unimodal
+  // Find the upper and lower limits of a slice when the target
+  // distribution is known to be unimodal.
   void SSS::find_limits_unbounded_unimodal(double x){
     hi_ = x + suggested_dx_;
     logphi_ = logf_(hi_);
@@ -168,22 +184,38 @@ namespace BOOM{
     check_lower_limit(x);
   }
 
-  void SSS::find_upper_limit(double x){
+  bool SSS::find_upper_limit(double x){
     hi_ = x + suggested_dx_;
     logphi_ = logf_(hi_);
+    int doubling_count = 0;
     while(logphi_ >= logp_slice_ || (!unimodal_ && runif_mt(rng()) > .5)){
       double_hi(x);
+      if (++doubling_count > 100) {
+        // The slice has been doubled over 100 times.  This is almost
+        // certainly because of an error in the implementation of the
+        // target distribution, or a crazy starting value.
+        return false;
+      }
     }
     check_upper_limit(x);
+    return true;
   }
 
-  void SSS::find_lower_limit(double x){
+  bool SSS::find_lower_limit(double x){
     lo_ = x - suggested_dx_;
     logplo_ = logf_(lo_);
+    int doubling_count = 0;
     while(logplo_ >= logp_slice_ || (!unimodal_ && runif_mt(rng()) > .5)){
       double_lo(x);
+      if (++doubling_count > 100) {
+        // The slice has been doubled over 100 times.  This is almost
+        // certainly because of an error in the implementation of the
+        // target distribution, or a crazy starting value.
+        return false;
+      }
     }
     check_lower_limit(x);
+    return true;
   }
 
   std::string SSS::error_message(double lo, double hi, double x,
@@ -192,43 +224,42 @@ namespace BOOM{
     ostringstream err;
     err << endl
         << "lo = " << lo << "  logp(lo) = " << logplo << endl
-	<< "hi = " << hi << "  logp(hi) = " << logphi << endl
-	<< "x  = " << x  << "  logp(x)  = " << logp_slice << endl;
+        << "hi = " << hi << "  logp(hi) = " << logphi << endl
+        << "x  = " << x  << "  logp(x)  = " << logp_slice << endl;
     return err.str().c_str();
   }
 
-  void SSS::throw_exception(const std::string & msg, double x)const{
-    BOOM::throw_exception<std::runtime_error>(
-        msg + " in ScalarSliceSampler" +
-        error_message(lo_, hi_, x, logplo_, logphi_, logp_slice_));
+  void SSS::handle_error(const std::string & msg, double x)const{
+    report_error(msg + " in ScalarSliceSampler" +
+                 error_message(lo_, hi_, x, logplo_, logphi_, logp_slice_));
   }
 
-// makes the upper end of the slice twice as far away from x, and
-// updates the density value
+  // Makes the upper end of the slice twice as far away from x, and
+  // updates the density value
   void SSS::double_hi(double x){
     double dx = hi_ - x;
     hi_ = x + 2 * dx;
     if(!std::isfinite(hi_)){
-      throw_exception("infinite upper limit", x);
+      handle_error("infinite upper limit", x);
     }
     logphi_ = logf_(hi_);
   }
 
-// makes the lower end of the slice twice as far away from x, and
-// updates the density value
+  // Makes the lower end of the slice twice as far away from x, and
+  // updates the density value
   void SSS::double_lo(double x){
     double dx = x - lo_;
     lo_  = x-2*dx;
-    if(!std::isfinite(lo_)) throw_exception("infinite lower limit", x);
+    if(!std::isfinite(lo_)) handle_error("infinite lower limit", x);
     logplo_ = logf_(lo_);
   }
 
   //------ Quality assurance and error handling  ---------------------
   void SSS::check_slice(double x){
     if(x<lo_ || x>hi_)
-      throw_exception("problem building slice:  x out of bounds", x);
+      handle_error("problem building slice:  x out of bounds", x);
     if(lo_>hi_)
-      throw_exception("problem building slice:  lo > hi", x);
+      handle_error("problem building slice:  lo > hi", x);
   }
 
   void SSS::check_probs(double x){
@@ -236,7 +267,7 @@ namespace BOOM{
     bool logood = lower_bounded() || (logplo_ <= logp_slice_);
     bool higood = upper_bounded() || (logphi_ <= logp_slice_);
     if( logood  && higood) return;
-    throw_exception("problem with probabilities", x);
+    handle_error("problem with probabilities", x);
   }
 
   bool SSS::lower_bounded()const{return lo_set_manually_;}
@@ -246,19 +277,19 @@ namespace BOOM{
 
   void SSS::check_finite(double x, double logp_slice_){
     if(std::isfinite(logp_slice_)) return;
-    throw_exception("initial value leads to infinite probability", x);
+    handle_error("initial value leads to infinite probability", x);
   }
 
   void SSS::check_upper_limit(double x){
-    if(x>hi_) throw_exception("x beyond upper limit", x);
-    if(!std::isfinite(hi_)) throw_exception("upper limit is infinite", x);
-    if(isnan(logphi_)) throw_exception("upper limit givs NaN probability", x);
+    if(x>hi_) handle_error("x beyond upper limit", x);
+    if(!std::isfinite(hi_)) handle_error("upper limit is infinite", x);
+    if(isnan(logphi_)) handle_error("upper limit givs NaN probability", x);
   }
 
   void SSS::check_lower_limit(double x){
-    if(x<lo_) throw_exception("x beyond lower limit", x);
-    if(!std::isfinite(lo_)) throw_exception("lower limit is infininte", x);
-    if(isnan(logplo_)) throw_exception("lower limit givs NaN probability", x);
+    if(x<lo_) handle_error("x beyond lower limit", x);
+    if(!std::isfinite(lo_)) handle_error("lower limit is infininte", x);
+    if(isnan(logplo_)) handle_error("lower limit givs NaN probability", x);
   }
 
-}
+}  // namespace BOOM

@@ -25,7 +25,7 @@ namespace BOOM{
     : SD(p,diag,ivar)
   {}
 
-  SP::SpdParams(const Spd &V, bool ivar)
+  SP::SpdParams(const SpdMatrix &V, bool ivar)
     : SD(V,ivar)
   {}
 
@@ -42,18 +42,18 @@ namespace BOOM{
 
   SP * SP::clone()const{return new SP(*this);}
 
-  Vec SP::vectorize(bool min)const{
+  Vector SP::vectorize(bool min)const{
     return var().vectorize(min); }
 
-  Vec::const_iterator SP::unvectorize
-  (Vec::const_iterator &v, bool minimal){
-    Spd tmp(var());
-    Vec::const_iterator ans = tmp.unvectorize(v, minimal);
+  Vector::const_iterator SP::unvectorize
+  (Vector::const_iterator &v, bool minimal){
+    SpdMatrix tmp(var());
+    Vector::const_iterator ans = tmp.unvectorize(v, minimal);
     set_var(tmp);
     return ans;
   }
 
-  Vec::const_iterator SP::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator b(v.begin());
+  Vector::const_iterator SP::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator b(v.begin());
     return this->unvectorize(b, minimal); }
 }

@@ -51,15 +51,15 @@ namespace BOOM {
     GaussianBartModel(int number_of_trees, const Vector &y, const Matrix &x);
 
     GaussianBartModel(const GaussianBartModel &rhs);
-    virtual GaussianBartModel * clone()const;
+    GaussianBartModel * clone() const override;
 
     // The number of observations in the training data.
-    virtual int sample_size()const;
+    int sample_size()const override;
 
     // An override for add_data is needed so that variable_summaries_
     // can be adjusted when new data is observed.
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<RegressionData>);
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<RegressionData>) override;
 
     virtual double sigsq()const;
     void set_sigsq(double sigsq);

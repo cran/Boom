@@ -198,7 +198,8 @@ namespace BOOM{
   }
   //======================================================================
 
-  USDaylightSavingsTimeBegins::USDaylightSavingsTimeBegins(int days_before, int days_after)
+  USDaylightSavingsTimeBegins::USDaylightSavingsTimeBegins(
+      int days_before, int days_after)
       : FloatingHoliday(days_before, days_after)
   {}
 
@@ -215,7 +216,8 @@ namespace BOOM{
     return last_weekday_in_month(Sun, Apr, year);
   }
   //======================================================================
-  USDaylightSavingsTimeEnds::USDaylightSavingsTimeEnds(int days_before, int days_after)
+  USDaylightSavingsTimeEnds::USDaylightSavingsTimeEnds(
+      int days_before, int days_after)
       : FloatingHoliday(days_before, days_after)
   {}
 

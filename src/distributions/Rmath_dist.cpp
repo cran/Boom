@@ -39,23 +39,17 @@ namespace BOOM{
     return Rmath::rnorm_mt(rng, mu,sig);  }
 
   /*--- Uniform Distribution ---*/
-
   double dunif(double x, double lo, double hi, bool log){
     return Rmath::dunif(x,lo,hi,log);  }
-
   double punif(double x, double lo, double hi, bool low, bool log){
     return Rmath::punif(x,lo,hi,low,log);}
-
   double qunif(double p, double lo, double hi, bool low, bool log){
     return Rmath::qunif(p,lo,hi,low,log);  }
-
-  double runif(double lo, double hi){
-    return Rmath::runif(lo,hi);}
+  double runif(double lo, double hi){return Rmath::runif(lo,hi);}
   double runif_mt(RNG &rng, double lo, double hi){
     return Rmath::runif_mt(rng, lo,hi);}
 
   /*--- Gamma Distribution ---*/
-
   double dgamma(double x, double a, double b, bool log){
     return Rmath::dgamma(x,a,1.0/b, log);  }
   double pgamma(double x, double a, double b, bool low, bool log){
@@ -68,7 +62,6 @@ namespace BOOM{
     return Rmath::rgamma_mt(rng, a, 1.0/b);}
 
   /* Beta Distribution */
-
   double dbeta(double x, double a, double b, bool log){
     return Rmath::dbeta(x,a,b,log);}
   double pbeta(double x, double a, double b, bool low, bool log){
@@ -79,7 +72,6 @@ namespace BOOM{
     return Rmath::rbeta(a,b);}
   double rbeta_mt(RNG & rng, double a, double b){
     return Rmath::rbeta_mt(rng, a,b);}
-
 
   /* Lognormal Distribution */
   double dlnorm(double x, double mu, double sig, bool log){
@@ -94,7 +86,6 @@ namespace BOOM{
     return Rmath::rlnorm_mt(rng, mu,sig);}
 
   /* Chi-squared Distribution */
-
   double dchisq(double x, double df, bool log){
     return Rmath::dchisq(x,df, log);}
   double pchisq(double x, double df, bool low, bool log){
@@ -105,18 +96,14 @@ namespace BOOM{
   double rchisq_mt(RNG & rng, double df){ return Rmath::rchisq_mt(rng, df);}
 
   /* Non-central Chi-squared Distribution */
-
   double dnchisq(double x, double df, double ncp, bool log){
     return Rmath::dnchisq(x,df,ncp,log);}
   double pnchisq(double x, double df, double ncp, bool low, bool log){
     return Rmath::pnchisq(x, df,ncp,low,log);}
   double qnchisq(double p, double df, double ncp, bool low, bool log){
     return Rmath::qnchisq(p,df,ncp,low,log);}
-  //   double rnchisq(double df, double ncp){
-  //     return Rmath::rnchisq(df,ncp);}
 
   /* F Distibution */
-
   double df(double x, double ndf, double ddf, bool log){
     return Rmath::df(x,ndf,ddf,log);}
   double pf(double x, double ndf, double ddf, bool low, bool log){
@@ -128,7 +115,6 @@ namespace BOOM{
     return Rmath::rf_mt(rng, ndf,ddf);}
 
   /* Student t Distibution */
-
   double dt(double x, double df, bool log){
     return Rmath::dt(x,df,log);}
   double pt(double x, double df, bool low, bool log){
@@ -139,7 +125,6 @@ namespace BOOM{
   double rt_mt(RNG & rng, double df){ return Rmath::rt_mt(rng, df);}
 
   /* Binomial Distribution */
-
   double dbinom(double x, double n, double p, bool log){
     return Rmath::dbinom(x,n,p,log);}
   double pbinom(double x, double n, double p, bool low, bool log){
@@ -157,7 +142,9 @@ namespace BOOM{
     return result;
   }
 
-  void rmultinom(int n, const std::vector<double> &prob, std::vector<int> &result){
+  void rmultinom(int n,
+                 const std::vector<double> &prob,
+                 std::vector<int> &result){
     Rmath::rmultinom_mt(BOOM::GlobalRng::rng, n, prob, result);
   }
 
@@ -176,7 +163,6 @@ namespace BOOM{
 
 
   /* Cauchy Distribution */
-
   double dcauchy(double x, double mu, double scal, bool log){
     return Rmath::dcauchy(x,mu,scal,log);}
   double pcauchy(double x, double mu, double scal, bool low, bool log){
@@ -189,7 +175,6 @@ namespace BOOM{
     return Rmath::rcauchy_mt(rng, mu,sig);}
 
   /* Exponential Distribution */
-
   double dexp(double x, double lam, bool log){
     return Rmath::dexp(x,1.0/lam,log);}
   double pexp(double x, double lam, bool low, bool log){
@@ -200,7 +185,6 @@ namespace BOOM{
   double rexp_mt(RNG & rng, double lam){ return Rmath::rexp_mt(rng, 1.0/lam);}
 
   /* Geometric Distribution */
-
   double dgeom(double x, double p, bool log){
     return Rmath::dgeom(x,p,log);}
   double pgeom(double x, double p, bool low, bool log){
@@ -211,7 +195,6 @@ namespace BOOM{
   double rgeom_mt(RNG & rng, double p){ return Rmath::rgeom_mt(rng, p);}
 
   /* Hypergeometric Distibution */
-
   double dhyper(double x, double r, double b, double n, bool log){
     return Rmath::dhyper(x,r,b,n,log);}
   double phyper(double x, double r, double b, double n, bool low, bool log){
@@ -224,7 +207,6 @@ namespace BOOM{
     return Rmath::rhyper_mt(rng, r,b,n);}
 
   /* Negative Binomial Distribution */
-
   double dnbinom(double x, double n, double p, bool log){
     return Rmath::dnbinom(x,n,p,log);}
   double pnbinom(double x, double n, double p, bool low, bool log){
@@ -237,7 +219,6 @@ namespace BOOM{
     return Rmath::rnbinom_mt(rng, n,p);}
 
   /* Poisson Distribution */
-
   double dpois(double x, double lam, bool log){
     return Rmath::dpois(x,lam,log);}
   double ppois(double x, double lam, bool low, bool log){
@@ -248,7 +229,6 @@ namespace BOOM{
   double rpois_mt(RNG & rng, double lam){ return Rmath::rpois_mt(rng, lam);}
 
   /* Weibull Distribution */
-
   double dweibull(double x, double shape, double scale, bool log){
     return Rmath::dweibull(x,shape,scale,log);}
   double pweibull(double x, double shape, double scale, bool low, bool log){
@@ -261,7 +241,6 @@ namespace BOOM{
     return Rmath::rweibull_mt(rng, shape,scale);}
 
   /* Logistic Distribution */
-
   double dlogis(double x, double mu, double sig, bool log){
     return Rmath::dlogis(x,mu,sig,log);}
   double plogis(double x, double mu, double sig, bool low, bool log){
@@ -274,24 +253,20 @@ namespace BOOM{
     return Rmath::rlogis_mt(rng, mu,sig);}
 
   /* Non-central Beta Distribution */
-
   double dnbeta(double x, double a, double b, double lam, bool log){
     return Rmath::dnbeta(x,a,b,lam,log);}
   double pnbeta(double x, double a, double b, double lam, bool low, bool log){
     return Rmath::pnbeta(x,a,b,lam,low,log);}
 
   /* Non-central F Distribution */
-
   double pnf(double x, double dfn, double dfd, double lam, bool low,
  	     bool log){ return Rmath::pnf(x,dfn,dfd,lam,low,log);}
 
   /* Non-central Student t Distribution */
-
   double pnt(double x, double df, double mu, bool low, bool log){
     return Rmath::pnt(x,df,mu,low,log);}
 
   /* Wilcoxon Rank Sum Distribution */
-
   double dwilcox(double x, double m, double n, bool log){
     return Rmath::dwilcox(x,m,n,log);}
   double pwilcox(double x, double m, double n, bool low, bool log){
@@ -301,7 +276,6 @@ namespace BOOM{
   double rwilcox(double m, double n){return Rmath::rwilcox(m,n);}
 
   /* Wilcoxon Signed Rank Distribution */
-
   double dsignrank(double x, double n, bool log){
     return Rmath::dsignrank(x,n,log);}
   double psignrank(double x, double n, bool low, bool log){
@@ -312,7 +286,7 @@ namespace BOOM{
 
   /* Gamma and Related Functions */
   double gamma(double x){ return Rmath::gammafn(x);}
-  double lgamma(double x){ int tmp; return Rmath::lgammafn2(x, tmp);}
+  double lgamma(double x){ return Rmath::lgammafn(x);}
   double digamma(double x){return Rmath::digamma(x);}
   double trigamma(double x){return Rmath::trigamma(x);}
   double tetragamma(double x){return Rmath::tetragamma(x);}
@@ -324,13 +298,4 @@ namespace BOOM{
   double choose(double n, double p){ return Rmath::choose(n,p);}
   double lchoose(double n, double p){ return Rmath::lchoose(n,p);}
 
-  /* Bessel Functions */
-
-//   double bessel_i(double x, double a, double e){return Rmath::bessel_i(x,a,e);}
-//   double bessel_j(double x, double a){return Rmath::bessel_j(x,a);}
-//   double bessel_k(double x, double a, double e){ return Rmath::bessel_k(x,a,e);}
-//   double bessel_y(double x, double a){return Rmath::bessel_y(x,a);}
-
-
-
-}// ends namespace BOOM
+}  // namespace BOOM

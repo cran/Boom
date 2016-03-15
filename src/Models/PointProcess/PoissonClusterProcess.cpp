@@ -67,7 +67,7 @@ namespace BOOM{
       return 0;
     }
 
-    double normalize_filter(Mat &P){
+    double normalize_filter(Matrix &P){
       double max_log = max(P);
       P -= max_log;
       P.exp();
@@ -229,7 +229,7 @@ namespace BOOM{
       return log(process->event_rate(t))
           + (primary(process) ? logp_primary : logp_secondary);
     }else{
-      Vec wsp(n);
+      Vector wsp(n);
       for(int i = 0; i < n; ++i){
         const PoissonProcess *process = responsible_processes[i];
         wsp[i] = log(process->event_rate(t)) +
@@ -285,7 +285,7 @@ namespace BOOM{
     }
 
     while(filter_.size() < data.number_of_events()){
-      Mat P(S, S);
+      Matrix P(S, S);
       filter_.push_back(P);
     }
 
@@ -302,7 +302,7 @@ namespace BOOM{
   double PoissonClusterProcess::fwd_1(const PointProcess &data,
                                       int t,
                                       int source){
-    Mat &P(filter_[t]);
+    Matrix &P(filter_[t]);
     P = negative_infinity();
     int S = number_of_hmm_states();
     const DateTime & t0(t==0 ?
@@ -345,8 +345,8 @@ namespace BOOM{
       RNG &rng,
       const PointProcess &data,
       const std::vector<int> &source,
-      Mat & probability_of_activity,
-      Mat & probability_of_responsibility){
+      Matrix & probability_of_activity,
+      Matrix & probability_of_responsibility){
 
     int n = data.number_of_events();
     if(n == 0){
@@ -408,8 +408,8 @@ namespace BOOM{
   void PoissonClusterProcess::backward_smoothing(
       const PointProcess &data,
       const std::vector<int> &source,
-      Mat &probability_of_activity,
-      Mat &probability_of_responsibility){
+      Matrix &probability_of_activity,
+      Matrix &probability_of_responsibility){
     int n = data.number_of_events();
     if(n==0){
       probability_of_responsibility = 0;
@@ -567,7 +567,7 @@ namespace BOOM{
     // If n != 0 and n != 1 then there are several processes that
     // could have produced the event.  Sample one of them from the
     // full conditional distribution.
-    Vec wsp(n);
+    Vector wsp(n);
     const PointProcessEvent &event(data.event(t));
     const DateTime &time(event.timestamp());
     double logp_primary = 0;
@@ -630,8 +630,8 @@ namespace BOOM{
   void PoissonClusterProcess::add_data(Ptr<PointProcess> dp){
     int n = dp->number_of_events();
     int nproc = 3;
-    Mat activity(nproc, n, 0.0);
-    Mat responsibility(nproc, n, 0.0);
+    Matrix activity(nproc, n, 0.0);
+    Matrix responsibility(nproc, n, 0.0);
     probability_of_activity_.push_back(activity);
     probability_of_responsibility_.push_back(responsibility);
     DataPolicy::add_data(dp);

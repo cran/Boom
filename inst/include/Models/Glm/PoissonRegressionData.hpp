@@ -23,12 +23,35 @@
 namespace BOOM {
   class PoissonRegressionData : public GlmData<IntData> {
    public:
-    PoissonRegressionData(int y, const Vec &x);
-    PoissonRegressionData(int y, const Vec &x, double exposure);
-    virtual PoissonRegressionData * clone()const;
-    virtual ostream & display(ostream &out)const;
+    // Args:
+    //   y:  The number of successes (or number of events).
+    //   x:  The vector of predictors.
+    //   exposure: The opportunity to generate events.  In some
+    //     applications this is an interval of time.  In others it is
+    //     a number of trials.
+    PoissonRegressionData(int y, const Vector &x, double exposure = 1.0);
+
+    // Args:
+    //   y:  The number of successes / events.
+    //   x: The vector of predictors.  This constructor allows the x's
+    //     to be shared with other objects.
+    //   exposure: The opportunity to generate events.  In some
+    //     applications this is an interval of time.  In others it is
+    //     a number of trials.
+    PoissonRegressionData(int y, Ptr<VectorData> x, double exposure);
+
+    PoissonRegressionData * clone() const override;
+    ostream & display(ostream &out)const override;
     double exposure()const;
     double log_exposure()const;
+
+    // Sets the value of this observation's exposure.
+    // Args:
+    //   exposure:  The new exposure value.
+    //   signal: If 'true' then any observers who are watching this
+    //     data object will be notified of the change.  If false then
+    //     observers will not be notified.
+    void set_exposure(double exposure, bool signal = true);
    private:
     double exposure_;
     double log_exposure_;

@@ -72,7 +72,8 @@ namespace BOOM {
     typedef LatentDataImputer<OBSERVED_DATA, SUFFICIENT_STATISTICS> Imputer;
 
     LatentDataImputerWorker(Imputer *imputer,
-                            const SUFFICIENT_STATISTICS &suf)
+                            const SUFFICIENT_STATISTICS &suf,
+                            RNG &seeding_rng = GlobalRng::rng)
         : imputer_(imputer),
           suf_(suf)
     {
@@ -83,7 +84,7 @@ namespace BOOM {
       if (sampler) {
         rng_ = &(sampler->rng());
       } else {
-        rng_storage_.reset(new RNG(seed_rng()));
+        rng_storage_.reset(new RNG(seed_rng(seeding_rng)));
         rng_ = rng_storage_.get();
       }
     }
@@ -236,8 +237,8 @@ namespace BOOM {
     //     allocated object not shared with anyone else.  The worker
     //     pool will take ownership of the object and call delete when
     //     the ParallelLatentDataImputer is destroyed.
-    void add_worker(Imputer *imputer) {
-      workers_.emplace_back(new Worker(imputer, suf_));
+    void add_worker(Imputer *imputer, RNG &seeding_rng = GlobalRng::rng) {
+      workers_.emplace_back(new Worker(imputer, suf_, seeding_rng));
     }
 
     int number_of_workers() const {

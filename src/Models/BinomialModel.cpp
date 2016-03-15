@@ -87,22 +87,22 @@ namespace BOOM{
     return abstract_combine_impl(this, s);}
 
 
-  Vec BS::vectorize(bool)const{
-    Vec ans(2);
+  Vector BS::vectorize(bool)const{
+    Vector ans(2);
     ans[0] = sum_;
     ans[1] = nobs_;
     return ans;
   }
 
-  Vec::const_iterator BS::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator BS::unvectorize(Vector::const_iterator &v,
                                       bool){
     sum_ = *v;  ++v;
     nobs_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator BS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator BS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -123,7 +123,7 @@ namespace BOOM{
     : Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
-      ConjPriorPolicy(rhs),
+      PriorPolicy(rhs),
       NumOptModel(rhs),
       n_(rhs.n_)
   {}
@@ -151,7 +151,7 @@ namespace BOOM{
   Ptr<UnivParams> BM::Prob_prm(){ return ParamPolicy::prm();}
   const Ptr<UnivParams> BM::Prob_prm()const{ return ParamPolicy::prm();}
 
-  double BM::Loglike(const Vector &probvec, Vec &g, Mat &h, uint nd)const{
+  double BM::Loglike(const Vector &probvec, Vector &g, Matrix &h, uint nd)const{
     if (probvec.size() != 1) {
       report_error("Wrong size argument.");
     }
@@ -199,17 +199,5 @@ namespace BOOM{
   void BM::add_mixture_data(Ptr<Data> dp, double prob){
     suf()->add_mixture_data(DAT(dp)->value(), prob);
   }
-
-  void BM::set_conjugate_prior(double a, double b){
-    NEW(BetaModel, prior)(a, b);
-    NEW(BetaBinomialSampler, sampler)(this, prior);
-    ConjPriorPolicy::set_conjugate_prior(sampler);
-  }
-
-  void BM::set_conjugate_prior(Ptr<BetaBinomialSampler> sampler){
-    ConjPriorPolicy::set_conjugate_prior(sampler);
-  }
-
-  void BM::find_posterior_mode(){ConjPriorPolicy::find_posterior_mode();}
 
 }

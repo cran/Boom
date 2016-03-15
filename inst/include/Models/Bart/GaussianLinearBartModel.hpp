@@ -43,10 +43,10 @@ namespace BOOM {
                             const Vector &y,
                             const Matrix &x);
     GaussianLinearBartModel(const GaussianLinearBartModel &rhs);
-    virtual GaussianLinearBartModel * clone()const;
+    GaussianLinearBartModel * clone() const override;
 
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<RegressionData>);
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<RegressionData>) override;
 
     double predict(const Vector &x)const;
     double predict(const VectorView &x)const;

@@ -20,6 +20,7 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/Types.hpp>
+#include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 #include <stdexcept>
 
@@ -27,8 +28,8 @@ namespace BOOM{
 
   // returns the Bartlett decomposition of a Wishart matrix of
   // dimension d and nu degrees of freedom
-  Mat WishartTriangle(RNG & rng, int dim, double nu){
-    Mat ans(dim, dim, 0.0);
+  Matrix WishartTriangle(RNG & rng, int dim, double nu){
+    Matrix ans(dim, dim, 0.0);
     for(int i = 0; i < dim; ++i){
       ans(i,i) = sqrt(rchisq_mt(rng, nu - i));
       for(int j = 0; j < i; ++j) ans(i,j) = rnorm_mt(rng);
@@ -36,24 +37,26 @@ namespace BOOM{
     return ans;
   }
 
-  Spd rWish(double nu, const Spd &sumsq_inv, bool inv){
+  SpdMatrix rWish(double nu, const SpdMatrix &sumsq_inv, bool inv){
     return rWish_mt(GlobalRng::rng, nu, sumsq_inv, inv);  }
 
-  Spd rWish_mt(RNG & rng, double nu, const Spd &sumsq_inv, bool inv){
+  SpdMatrix rWish_mt(RNG & rng, double nu, const SpdMatrix &sumsq_inv, bool inv){
     uint d = sumsq_inv.nrow();
-    Mat L = WishartTriangle(rng, d, nu);
+    Matrix L = WishartTriangle(rng, d, nu);
     bool ok=true;
-    Mat ss_chol = sumsq_inv.chol(ok);
-    if(!ok) throw_exception<std::runtime_error>("problem in rWish");
+    Matrix ss_chol = sumsq_inv.chol(ok);
+    if (!ok) {
+      report_error("problem in rWish");
+    }
 
-    Mat tmp(ss_chol * L);  // tmp is the lower cholesky triangle of siginv
-    if(inv){
-      throw_exception<std::runtime_error>("need to invert from choelsky factor in rwish");
+    Matrix tmp(ss_chol * L);  // tmp is the lower cholesky triangle of siginv
+    if (inv) {
+      report_error("need to invert from choelsky factor in rwish");
     }
     return LLT(tmp);
   }
 
-  Spd rWishChol(double nu, const Mat & sumsq_upper_chol, bool inv){
+  SpdMatrix rWishChol(double nu, const Matrix & sumsq_upper_chol, bool inv){
     return rWishChol_mt(GlobalRng::rng, nu, sumsq_upper_chol, inv);
   }
 
@@ -63,15 +66,15 @@ namespace BOOM{
   // Wishart distribution (in the Bayesian world this ususally means
   // draw "Sigma"), otherwise draw from the ordinary Wishart
   // distribution (i.e. draw Sigma inverse).
-  Spd rWishChol_mt(RNG & rng, double nu, const Mat & sumsq_upper_chol, bool inv){
+  SpdMatrix rWishChol_mt(RNG & rng, double nu, const Matrix & sumsq_upper_chol, bool inv){
     uint d = sumsq_upper_chol.nrow();
-    Mat L = WishartTriangle(rng, d, nu);
+    Matrix L = WishartTriangle(rng, d, nu);
 
     // sumsq_upper_chol = U (an upper triangular matrix)
     // if we're drawing sigma^{-1} then we want U^{-1}L times its transpose.
     // if we're drawing sigma then we want (U^T * L.inv) times (L.inv() U)
-    Spd ans(L.nrow(), 0.0);
-    const Mat &U(sumsq_upper_chol);
+    SpdMatrix ans(L.nrow(), 0.0);
+    const Matrix &U(sumsq_upper_chol);
     if(inv){
       ans.add_inner(Lsolve(L, U));  // (L^{-1}U) (L^{-1}U)^T
     }else{
@@ -89,10 +92,10 @@ namespace BOOM{
   //
   // if(inv) then the density of the inverse Wishart is returned
   // instead.
-  double dWish(const Spd &Siginv, const Spd &sumsq, double df,
+  double dWish(const SpdMatrix &Siginv, const SpdMatrix &sumsq, double df,
                bool logscale, bool inv){
-    if(Siginv.nrow()!=sumsq.nrow()){
-      throw_exception<std::runtime_error>("Siginv and sumsq must have same dimensions in dWish");
+    if (Siginv.nrow()!=sumsq.nrow()) {
+      report_error("Siginv and sumsq must have same dimensions in dWish");
     }
 
     const double log2 = 0.693147180559945;

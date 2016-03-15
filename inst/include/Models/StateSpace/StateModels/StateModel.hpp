@@ -47,8 +47,8 @@ namespace BOOM{
       MIXTURE   // e.g. treat the t-distribution like a normal mixture.
     };
 
-    virtual ~StateModel(){}
-    virtual StateModel * clone()const=0;
+    ~StateModel() override{}
+    StateModel * clone()const override =0;
 
     // Some state models need to know the maximum value of t so they
     // can set up space for latent variables, etc.  Many state models
@@ -70,6 +70,7 @@ namespace BOOM{
     // The dimension of the state vector.
     virtual uint state_dimension()const=0;
 
+    // Simulates the state eror at time t, for moving to time t+1.
     virtual void simulate_state_error(VectorView eta, int t)const = 0;
     virtual void simulate_initial_state(VectorView eta)const;
 
@@ -82,8 +83,8 @@ namespace BOOM{
     //  a different API for that case anyway.
     virtual SparseVector observation_matrix(int t)const = 0;
 
-    virtual Vec initial_state_mean()const = 0;
-    virtual Spd initial_state_variance()const = 0;
+    virtual Vector initial_state_mean()const = 0;
+    virtual SpdMatrix initial_state_variance()const = 0;
 
     // Some state models can behave differently in different contexts.
     // E.g. they can be viewed as conditionally normal when fitting,

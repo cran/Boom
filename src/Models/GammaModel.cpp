@@ -94,23 +94,23 @@ namespace BOOM{
   GammaSuf * GS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s);    }
 
-  Vec GS::vectorize(bool)const{
-    Vec ans(3);
+  Vector GS::vectorize(bool)const{
+    Vector ans(3);
     ans[0] = sum_;
     ans[1] = sumlog_;
     ans[2] = n_;
     return ans;
   }
 
-  Vec::const_iterator GS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator GS::unvectorize(Vector::const_iterator &v, bool){
     sum_ = *v;    ++v;
     sumlog_ = *v; ++v;
     n_ = *v;      ++v;
     return v;
   }
 
-  Vec::const_iterator GS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator GS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -243,7 +243,7 @@ namespace BOOM{
     return alpha() / beta();
   }
 
-  inline double bad_gamma_loglike(double a,double b, Vec &g, Mat &h, uint nd){
+  inline double bad_gamma_loglike(double a,double b, Vector &g, Matrix &h, uint nd){
     if(nd>0){
       g[0] = (a <=0) ? -(a+1) : 0;
       g[1] = (b <= 0) ? -(b+1) : 0;
@@ -252,7 +252,7 @@ namespace BOOM{
     return BOOM::negative_infinity();
   }
 
-  inline double bad_gamma_loglike(double a, double b, Vec *g, Mat *h){
+  inline double bad_gamma_loglike(double a, double b, Vector *g, Matrix *h){
     if (g) {
       (*g)[0] = (a <=0) ? -(a+1) : 0;
       (*g)[1] = (b <= 0) ? -(b+1) : 0;
@@ -263,7 +263,7 @@ namespace BOOM{
     return negative_infinity();
   }
 
-  double GammaModel::Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const{
+  double GammaModel::Loglike(const Vector &ab, Vector &g, Matrix &h, uint nd) const{
     if (ab.size() != 2) {
       report_error("Wrong size argument.");
     }
@@ -296,7 +296,7 @@ namespace BOOM{
     return n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
   }
 
-  double GammaModel::loglikelihood_full(const Vec &ab, Vec *g, Mat *h)const{
+  double GammaModel::loglikelihood_full(const Vector &ab, Vector *g, Matrix *h)const{
     if (length(ab) != 2) {
       report_error("GammaModel::loglikelihood expects an argument of length 2");
     }

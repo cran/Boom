@@ -60,10 +60,11 @@ namespace BOOM{
    public:
     PoissonRegressionAuxMixSampler(PoissonRegressionModel *model,
                                    Ptr<MvnBase> prior,
-                                   int number_of_threads = 1);
+                                   int number_of_threads = 1,
+                                   RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     // Below this line are implementation details exposed for testing.
     void impute_latent_data();
@@ -77,6 +78,32 @@ namespace BOOM{
     // Set the number of workers devoted to data augmentation, n >= 1.
     void set_number_of_workers(int n);
 
+    // By default, this class updates its own latent data through a
+    // call to impute_latent_data().  Calling this fuction with a
+    // 'true' argument (the default), sets a flag that turns
+    // impute_latent_data into a no-op.  The latent data can still be
+    // manipulated through calls to clear_sufficient_statistics() and
+    // update_sufficient_statistics(), but implicit data augmentation
+    // is turned off.  Calling this function with a 'false' argument
+    // turns data augmentation back on.
+    void fix_latent_data(bool fixed = true);
+
+    // Clear the complete data sufficient statistics.  This is
+    // normally unnecessary.  This function is primarily intended for
+    // nonstandard situations where the complete data sufficient
+    // statistics need to be manipulated by an outside actor.
+    void clear_complete_data_sufficient_statistics();
+
+    // Increment the complete data sufficient statistics with the
+    // given quantities.  This is normally unnecessary.  This function
+    // is primarily intended for nonstandard situations where the
+    // complete data sufficient statistics need to be manipulated by
+    // an outside actor.
+    void update_complete_data_sufficient_statistics(
+        double precision_weighted_sum,
+        double total_precision,
+        const Vector &x);
+
    private:
     PoissonRegressionModel *model_;
     Ptr<MvnBase> prior_;
@@ -84,6 +111,7 @@ namespace BOOM{
     ParallelLatentDataImputer<PoissonRegressionData,
                               WeightedRegSuf,
                               PoissonRegressionModel> parallel_data_imputer_;
+    bool latent_data_fixed_;
   };
 
 }  // namespace BOOM

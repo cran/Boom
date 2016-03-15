@@ -18,7 +18,6 @@
 #ifndef BOOM_COMPOSITE_MODEL_PARAM_POLICY
 #define BOOM_COMPOSITE_MODEL_PARAM_POLICY
 
-
 /*======================================================================
   Use this policy when the Model is defined as a composite of several
   sub-models.  E.g. latent variable models.  If the model just happens
@@ -41,7 +40,6 @@ namespace BOOM{
     CompositeParamPolicy(FwdIt b, FwdIt e);
 
     CompositeParamPolicy(const CompositeParamPolicy &rhs);  // components not copied
-    CompositeParamPolicy * clone()const=0;
     CompositeParamPolicy & operator=(const CompositeParamPolicy &);
 
     void add_model(Ptr<Model>);
@@ -51,15 +49,15 @@ namespace BOOM{
     template<class Fwd>
     void set_models(Fwd b, Fwd e);
 
-    ParamVec t();
-    const ParamVec t()const;
+    ParamVector t() override;
+    const ParamVector t()const override;
 
     void add_params(Ptr<Params>);
 
   private:
     bool have_model(Ptr<Model>)const;
     std::vector<Ptr<Model> > models_;
-    ParamVec t_;
+    ParamVector t_;
   };
 
   template <class Fwd>
@@ -68,7 +66,7 @@ namespace BOOM{
     std::copy(b,e, back_inserter(models_));
     t_.clear();
     for(uint i =0; i<models_.size(); ++i){
-      ParamVec tmp(models_[i]->t());
+      ParamVector tmp(models_[i]->t());
       std::copy(tmp.begin(), tmp.end(), back_inserter(t_));}}
 
 

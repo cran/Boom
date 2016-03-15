@@ -197,20 +197,20 @@ namespace BOOM {
     return observation_matrix_;
   }
 
-  Vec StudentLocalLinearTrendStateModel::initial_state_mean()const{
+  Vector StudentLocalLinearTrendStateModel::initial_state_mean()const{
     return initial_state_mean_;
   }
 
-  void StudentLocalLinearTrendStateModel::set_initial_state_mean(const Vec &v){
+  void StudentLocalLinearTrendStateModel::set_initial_state_mean(const Vector &v){
     initial_state_mean_ = v;
   }
 
-  Spd StudentLocalLinearTrendStateModel::initial_state_variance()const{
+  SpdMatrix StudentLocalLinearTrendStateModel::initial_state_variance()const{
     return initial_state_variance_;
   }
 
   void StudentLocalLinearTrendStateModel::set_initial_state_variance(
-      const Spd &V){
+      const SpdMatrix &V){
     initial_state_variance_ = V;
   }
 
@@ -313,11 +313,11 @@ namespace BOOM {
     return slope_weight_sufficient_statistics_;
   }
 
-  const Vec & StudentLocalLinearTrendStateModel::latent_level_weights()const{
+  const Vector & StudentLocalLinearTrendStateModel::latent_level_weights()const{
     return latent_level_scale_factors_;
   }
 
-  const Vec & StudentLocalLinearTrendStateModel::latent_slope_weights()const{
+  const Vector & StudentLocalLinearTrendStateModel::latent_slope_weights()const{
     return latent_slope_scale_factors_;
   }
 

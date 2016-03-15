@@ -49,8 +49,8 @@ namespace BOOM {
         int known_mixture_component = -1);
 
     ConditionalMixtureData(const ConditionalMixtureData &rhs);
-    virtual ConditionalMixtureData * clone() const;
-    virtual ostream & display(ostream &out) const;
+    ConditionalMixtureData * clone() const override;
+    ostream & display(ostream &out) const override;
 
     // The individual data point being modeled by the mixture.
     const Data * data() const;
@@ -115,7 +115,7 @@ namespace BOOM {
         const std::vector<Ptr<MixtureComponent> > & mixture_components,
         Ptr<MultinomialLogitModel> mixing_distribution);
 
-    ConditionalFiniteMixtureModel * clone()const;
+    ConditionalFiniteMixtureModel * clone()const override;
 
     // Clears data from the mixture components.  No data is cleared
     // from the mixing distribution or the vector of data for this
@@ -123,19 +123,19 @@ namespace BOOM {
     void clear_component_data();
 
     // Clear the data from the model and all its components.
-    virtual void clear_data();
+    void clear_data() override;
 
-    virtual void add_data(Ptr<Data> dp);
+    void add_data(Ptr<Data> dp) override;
     void add_conditional_mixture_data(Ptr<ConditionalMixtureData> dp);
     virtual std::vector<Ptr<ConditionalMixtureData> > & dat();
     virtual const std::vector<Ptr<ConditionalMixtureData> > & dat()const;
-    virtual void combine_data(const Model &other_model, bool just_suf = true);
+    void combine_data(const Model &other_model, bool just_suf = true) override;
 
     // Assigns each (non-missing) observation to a mixture component.
     // Each call to impute_latent_data also calculates the log
     // likelihood as a byproduct.  You can access the log likelihood
     // by calling last_loglike().
-    virtual void impute_latent_data(RNG &rng);
+    void impute_latent_data(RNG &rng) override;
 
     // The number of mixture components in the model.
     int number_of_mixture_components()const;
@@ -148,7 +148,7 @@ namespace BOOM {
 
     double last_loglike() const;
 
-    virtual double pdf(const Data *dp, bool logscale) const;
+    double pdf(const Data *dp, bool logscale) const override;
     double logp(const ConditionalMixtureData &data) const;
 
     // Sets the mixture component for a specific observation number.

@@ -21,36 +21,33 @@
 #include <Models/GaussianModelBase.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
-#include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
-namespace BOOM{
+#include <Models/Policies/PriorPolicy.hpp>
+
+namespace BOOM {
 
   class ZeroMeanGaussianModel
       : public GaussianModelBase,
         public ParamPolicy_1<UnivParams>,
-        public ConjugatePriorPolicy<ZeroMeanGaussianConjSampler>
+        public PriorPolicy
   {
    public:
     ZeroMeanGaussianModel(double sigma=1.0);
     ZeroMeanGaussianModel(const std::vector<double> &);
-    virtual ZeroMeanGaussianModel * clone()const;
+    ZeroMeanGaussianModel * clone() const override;
 
-    virtual void set_sigsq(double sigsq);
+    void set_sigsq(double sigsq) override;
 
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
 
-    virtual double mu()const{return 0;}
-    virtual double sigsq()const;
-    virtual double sigma()const;
+    double mu()const override{return 0;}
+    double sigsq()const override;
+    double sigma()const override;
 
-    virtual void mle();
-    void set_conjugate_prior(double df, double sigma_guess);
-    void set_conjugate_prior(Ptr<GammaModelBase>);
-    void set_conjugate_prior(Ptr<ZeroMeanGaussianConjSampler>);
+    void mle() override;
 
     double Loglike(const Vector &sigsq_vec,
-                   Vec &g, Mat &h, uint nd)const;
+                   Vector &g, Matrix &h, uint nd)const override;
   };
-}
+}  // namespace BOOM
 #endif // BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP

@@ -27,7 +27,7 @@ namespace BOOM {
 
     NestedHmm(const std::vector<Ptr<Stream> > & streams, int S2, int S1);
     NestedHmm(int S2, int S1, int S0);
-    virtual NestedHmm * clone()const;
+    NestedHmm * clone() const override;
 
     // The mixture component for state H, h.
     Ptr<MarkovModel> mix(int H, int h);
@@ -65,7 +65,7 @@ namespace BOOM {
     double loglike();
     double last_loglike()const;
     double last_logpost()const;
-    double logpri()const;
+    double logpri()const override;
 
     void set_loglike(double);
     void set_logpost(double);
@@ -102,8 +102,8 @@ namespace BOOM {
     //  std::vector<Mat> conditional_conversion_probs(const BOOM::include &abs)const;
 
     // initial distribution and transition matrix in (h,y) space
-    Mat augmented_Q(int H)const;
-    Vec augmented_pi0(int H)const;
+    Matrix augmented_Q(int H)const;
+    Vector augmented_pi0(int H)const;
 
     void print_params(ostream &out)const; // for debugging
     void print_event(ostream &out,
@@ -158,12 +158,12 @@ namespace BOOM {
 
     // stuff for the filter
     mutable std::vector<Mat> P;
-    mutable  Vec pi_;
-    mutable  Vec logpi0_;
-    mutable  Vec logd_;
-    const Vec one_;       // A vector of 1's
-    mutable  Mat logQ1_;  // for the first obs in a session
-    mutable  Mat logQ2_;  // for the subsequent observations
+    mutable  Vector pi_;
+    mutable  Vector logpi0_;
+    mutable  Vector logd_;
+    const Vector one_;       // A vector of 1's
+    mutable  Matrix logQ1_;  // for the first obs in a session
+    mutable  Matrix logQ2_;  // for the subsequent observations
 
     RNG rng_;
 
@@ -176,11 +176,11 @@ namespace BOOM {
     void start_thread_em();
     double initialize(Ptr<Event>)const;
     void check_filter_size(int n)const;
-    ConstVectorView get_hinit(const Vec &pi, int H)const;
-    Vec get_Hinit(const Vec &pi)const;
-    ConstSubMatrix get_htrans(const Mat &P, int H)const;
-    ConstSubMatrix get_block(const Mat &P, int H1, int H2)const;
-    Mat get_Htrans(const Mat &P)const;
+    ConstVectorView get_hinit(const Vector &pi, int H)const;
+    Vector get_Hinit(const Vector &pi)const;
+    ConstSubMatrix get_htrans(const Matrix &P, int H)const;
+    ConstSubMatrix get_block(const Matrix &P, int H1, int H2)const;
+    Matrix get_Htrans(const Matrix &P)const;
     double fwd_bkwd_with_threads(bool bayes=false, bool find_mode=true);
     double impute_latent_data_with_threads();
 
@@ -196,9 +196,11 @@ namespace BOOM {
   class NestedHmmDataImputer
       : public BOOM::PosteriorSampler{
    public:
-    NestedHmmDataImputer(NestedHmm *mod) : m(mod) {}
-    void draw(){m->impute_latent_data();}
-    double logpri()const{return 0;}
+    NestedHmmDataImputer(NestedHmm *mod, RNG &seeding_rng = GlobalRng::rng)
+      : PosteriorSampler(seeding_rng),
+        m(mod) {}
+    void draw() override{m->impute_latent_data();}
+    double logpri()const override{return 0;}
    private:
     NestedHmm *m;
   };

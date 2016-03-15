@@ -131,7 +131,7 @@ namespace BOOM {
 
   void PartialSpdListElement::stream() {
     CheckSize();
-    Spd Sigma = prm_->var();
+    SpdMatrix Sigma = prm_->var();
     double v = data()[next_position()];
     if (report_sd_) v *= v;
     Sigma(which_, which_) = v;
@@ -345,7 +345,7 @@ namespace BOOM {
 
   void SdVectorListElement::stream() {
     CheckSize();
-    Vec sd = matrix_view_.row(next_position());
+    Vector sd = matrix_view_.row(next_position());
     prm_->set(sd * sd);
   }
 
@@ -433,7 +433,7 @@ namespace BOOM {
 
   void MatrixListElement::write() {
     CheckSize();
-    const Mat &m(prm_->value());
+    const Matrix &m(prm_->value());
     int iteration = next_position();
     int nr = m.nrow();
     int nc = m.ncol();
@@ -458,7 +458,7 @@ namespace BOOM {
     int iteration = next_position();
     int nr = prm_->nrow();
     int nc = prm_->ncol();
-    Mat tmp(nr, nc);
+    Matrix tmp(nr, nc);
     for(int i = 0; i < nr; ++i) {
       for(int j = 0; j < nc; ++j) {
       tmp(i, j) = array_view_(iteration, i, j);
@@ -477,7 +477,7 @@ namespace BOOM {
 
   void MatrixListElement::CheckSize() {
     const std::vector<int> & dims(array_view_.dim());
-    const Mat & value(prm_->value());
+    const Matrix & value(prm_->value());
     if(value.nrow() != dims[1] ||
        value.ncol() != dims[2]) {
       std::ostringstream err;
@@ -512,7 +512,7 @@ namespace BOOM {
 
   void SpdListElement::write() {
     CheckSize();
-    const Mat &m(prm_->value());
+    const Matrix &m(prm_->value());
     int iteration = next_position();
     int nr = m.nrow();
     int nc = m.ncol();
@@ -537,7 +537,7 @@ namespace BOOM {
     int iteration = next_position();
     int nr = prm_->dim();
     int nc = prm_->dim();
-    Mat tmp(nr, nc);
+    Matrix tmp(nr, nc);
     for(int i = 0; i < nr; ++i) {
       for(int j = 0; j < nc; ++j) {
       tmp(i, j) = array_view_(iteration, i, j);
@@ -556,7 +556,7 @@ namespace BOOM {
 
   void SpdListElement::CheckSize() {
     const std::vector<int> & dims(array_view_.dim());
-    const Mat & value(prm_->value());
+    const Matrix & value(prm_->value());
     if(value.nrow() != dims[1] ||
        value.ncol() != dims[2]) {
       std::ostringstream err;
@@ -574,7 +574,7 @@ namespace BOOM {
 
   NativeVectorListElement::NativeVectorListElement(VectorIoCallback *callback,
                                                    const std::string &name,
-                                                   Vec *vector_buffer)
+                                                   Vector *vector_buffer)
       : RealValuedRListIoElement(name),
         streaming_buffer_(vector_buffer),
         matrix_view_(0, 0, 0)
@@ -621,7 +621,7 @@ namespace BOOM {
   //======================================================================
   NativeMatrixListElement::NativeMatrixListElement(MatrixIoCallback *callback,
                                                    const std::string &name,
-                                                   Mat *streaming_buffer)
+                                                   Matrix *streaming_buffer)
       : MatrixListElementBase(name),
         streaming_buffer_(streaming_buffer),
         array_view_(0, ArrayBase::index3(0, 0, 0))
@@ -662,7 +662,7 @@ namespace BOOM {
   }
 
   void NativeMatrixListElement::write() {
-    Mat tmp = callback_->get_matrix();
+    Matrix tmp = callback_->get_matrix();
     int niter = next_position();
     for (int i = 0; i < callback_->nrow(); ++i) {
       for (int j = 0; j < callback_->ncol(); ++j) {

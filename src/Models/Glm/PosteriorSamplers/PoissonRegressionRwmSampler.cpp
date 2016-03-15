@@ -24,8 +24,9 @@
 namespace BOOM {
 
   PoissonRegressionRwmSampler::PoissonRegressionRwmSampler(
-      PoissonRegressionModel *model, Ptr<MvnBase> prior)
-      : model_(model),
+      PoissonRegressionModel *model, Ptr<MvnBase> prior, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         prior_(prior)
   {
     if (model_->xdim() != prior_->dim()) {
@@ -37,7 +38,7 @@ namespace BOOM {
   void PoissonRegressionRwmSampler::draw() {
     const std::vector<Ptr<PoissonRegressionData> > & data(model_->dat());
     int nobs = data.size();
-    Spd proposal_information = prior_->siginv();
+    SpdMatrix proposal_information = prior_->siginv();
 
     for (int i = 0; i < nobs; ++i) {
       const PoissonRegressionData &d(*data[i]);
@@ -46,9 +47,9 @@ namespace BOOM {
     }
 
     proposal_information.reflect();
-    const Vec & beta = model_->Beta();
+    const Vector & beta = model_->Beta();
 
-    Vec candidate = rmvt_ivar_mt(rng(), beta, proposal_information, 2);
+    Vector candidate = rmvt_ivar_mt(rng(), beta, proposal_information, 2);
     double logp_cand = prior_->logp(candidate) +
         model_->log_likelihood(candidate);
     double logp_original = prior_->logp(beta) + model_->log_likelihood(beta);

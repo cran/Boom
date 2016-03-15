@@ -57,7 +57,7 @@ namespace BOOM{
 
   void WMS::Update(const WVD &rhs){
     double w = rhs.weight();
-    const Vec &x(rhs.value());
+    const Vector &x(rhs.value());
     sum_.axpy(x,w);
     sumsq_.add_outer(x,w);
     ++n_;
@@ -65,30 +65,30 @@ namespace BOOM{
     sumlogw_ += log(w);
   }
 
-  const Vec & WMS::sum()const{ return sum_;}
-  const Spd & WMS::sumsq()const{ return sumsq_;}
+  const Vector & WMS::sum()const{ return sum_;}
+  const SpdMatrix & WMS::sumsq()const{ return sumsq_;}
   double WMS::n()const{return n_;}
   double WMS::sumw()const{return sumw_;}
   double WMS::sumlogw()const{return sumlogw_;}
 
-  Vec WMS::ybar()const{
+  Vector WMS::ybar()const{
     if( sumw()==0) return sum().zero();
     return sum()/sumw();}
 
-  Spd WMS::var_hat()const{
+  SpdMatrix WMS::var_hat()const{
     if(sumw()==0) return sumsq()*0.0;
     return center_sumsq()/sumw();
   }
 
-  Spd WMS::center_sumsq(const Vec &mu)const{
-    Spd ans = sumsq();  // sum wyy^T
+  SpdMatrix WMS::center_sumsq(const Vector &mu)const{
+    SpdMatrix ans = sumsq();  // sum wyy^T
     ans.add_outer(mu, sumw()); // wyyT + w.mu.muT
 
     ans -=  as_symmetric(mu.outer(sum_, 2));
     return ans;
   }
 
-  Spd WMS::center_sumsq()const{ return center_sumsq(ybar());}
+  SpdMatrix WMS::center_sumsq()const{ return center_sumsq(ybar());}
 
   void WMS::combine(Ptr<WMS> s){
     sum_ += s->sum_;
@@ -109,8 +109,8 @@ namespace BOOM{
   WeightedMvnSuf * WMS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec WMS::vectorize(bool minimal)const{
-    Vec ans = sum_;
+  Vector WMS::vectorize(bool minimal)const{
+    Vector ans = sum_;
     ans.concat(sumsq_.vectorize(minimal));
     ans.push_back(n_);
     ans.push_back(sumw_);
@@ -118,7 +118,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vec::const_iterator WMS::unvectorize(Vec::const_iterator &v, bool minimal){
+  Vector::const_iterator WMS::unvectorize(Vector::const_iterator &v, bool minimal){
     uint dim = sum_.size();
     sum_.assign(v, v+dim);
     v+=dim;
@@ -129,8 +129,8 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator WMS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator WMS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -145,13 +145,13 @@ namespace BOOM{
   //======================================================================
 
   WeightedMvnModel::WeightedMvnModel(uint p, double mu, double sigma)
-    : ParamPolicy(new VectorParams(Vec(p, mu)),
+    : ParamPolicy(new VectorParams(Vector(p, mu)),
 		  new SpdParams(Id(p)*(sigma*sigma))),
       DataPolicy(new WMS(p)),
     PriorPolicy()
   {}
 
-  WeightedMvnModel::WeightedMvnModel(const Vec &mean, const Spd &Var)
+  WeightedMvnModel::WeightedMvnModel(const Vector &mean, const SpdMatrix &Var)
     : ParamPolicy(new VectorParams(mean), new SpdParams(Var)),
       DataPolicy(new WMS(mean.size())),
       PriorPolicy()
@@ -178,14 +178,14 @@ namespace BOOM{
   const Ptr<SpdParams> WeightedMvnModel::Sigma_prm()const{
     return ParamPolicy::prm2();}
 
-  const Vec & WeightedMvnModel::mu()const{return Mu_prm()->value();}
-  const Spd & WeightedMvnModel::Sigma()const{return Sigma_prm()->var();}
-  const Spd & WeightedMvnModel::siginv()const{return Sigma_prm()->ivar();}
+  const Vector & WeightedMvnModel::mu()const{return Mu_prm()->value();}
+  const SpdMatrix & WeightedMvnModel::Sigma()const{return Sigma_prm()->var();}
+  const SpdMatrix & WeightedMvnModel::siginv()const{return Sigma_prm()->ivar();}
   double WeightedMvnModel::ldsi()const{return Sigma_prm()->ldsi();}
 
-  void WeightedMvnModel::set_mu(const Vec &v){Mu_prm()->set(v);}
-  void WeightedMvnModel::set_Sigma(const Spd &s){Sigma_prm()->set_var(s);}
-  void WeightedMvnModel::set_siginv(const Spd &ivar){
+  void WeightedMvnModel::set_mu(const Vector &v){Mu_prm()->set(v);}
+  void WeightedMvnModel::set_Sigma(const SpdMatrix &s){Sigma_prm()->set_var(s);}
+  void WeightedMvnModel::set_siginv(const SpdMatrix &ivar){
     Sigma_prm()->set_ivar(ivar);}
 
   void WeightedMvnModel::mle(){
@@ -202,7 +202,7 @@ namespace BOOM{
     double ldsi = siginv.logdet();
 
     double sumlogw = suf()->sumlogw();
-    const Spd sumsq = suf()->center_sumsq();
+    const SpdMatrix sumsq = suf()->center_sumsq();
     double n = suf()->n();
 
     double ans = n*.5*(log2pi + ldsi) + dim() * .5 *sumlogw;
@@ -212,7 +212,7 @@ namespace BOOM{
 
   double WeightedMvnModel::pdf(Ptr<WeightedVectorData> dp, bool logscale)const{
     double w = dp->weight();
-    const Vec &y(dp->value());
+    const Vector &y(dp->value());
     uint p = mu().size();
     double wldsi = p*log(w) +  ldsi();
     return dmvn(y, mu(), w*siginv(), wldsi, logscale);

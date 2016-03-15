@@ -34,7 +34,7 @@ namespace BOOM{
     typedef SER DataSeriesType; // should inherit from TimeSeries<D>
     typedef TimeSeriesDataInfoPolicy<D,SER> DataInfoPolicy;
 
-    TimeSeriesDataInfoPolicy * clone()const=0;
+    TimeSeriesDataInfoPolicy * clone()const override =0;
     Ptr<DataSeriesType> DAT(dPtr dp)const;
     Ptr<DataPointType> DAT_1(dPtr dp)const;
   };

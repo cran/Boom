@@ -26,8 +26,9 @@ namespace BOOM{
   TIM::TIM(const BOOM::Target & logf,
            const BOOM::dTarget & dlogf,
            const BOOM::d2Target & d2logf,
-           double nu)
-      : MetropolisHastings(logf, 0),
+           double nu,
+           RNG *rng)
+      : MetropolisHastings(logf, 0, rng),
         prop_(0),
         nu_(nu),
         f_(logf),
@@ -40,13 +41,14 @@ namespace BOOM{
         mode_has_been_found_(0)
   {}
 
-  inline double TIM_empty_target(const Vec &){ return 1.0; }
+  inline double TIM_empty_target(const Vector &){ return 1.0; }
 
-  typedef boost::function<double(const Vec &,Vec &, Matrix &,int)> FullTarget;
+  typedef boost::function<double(const Vector &,Vector &, Matrix &,int)> FullTarget;
 
   TIM::TIM(FullTarget logf,
-           double nu)
-      : MetropolisHastings(TIM_empty_target, 0),
+           double nu,
+           RNG *rng)
+      : MetropolisHastings(TIM_empty_target, 0, rng),
         prop_(0),
         nu_(nu),
         cand_(1),
@@ -61,7 +63,7 @@ namespace BOOM{
     MetropolisHastings::set_target(f_);
   }
 
-  Vec TIM::draw(const Vec & old){
+  Vector TIM::draw(const Vector & old){
     check_proposal(old.size());
     if(!mode_has_been_found_ || !mode_is_fixed_){
       bool ok = locate_mode(old);
@@ -70,7 +72,7 @@ namespace BOOM{
     return MetropolisHastings::draw(old);
   }
 
-  void TIM::report_failure(const Vec &old){
+  void TIM::report_failure(const Vector &old){
     ostringstream err;
     double value = d2f_(old, g_, H_);
     err << "failed attempt to find mode in BOOM::TIM" << endl
@@ -84,7 +86,7 @@ namespace BOOM{
 
   void TIM::fix_mode(bool yn){ mode_is_fixed_ = yn;}
 
-  bool TIM::locate_mode(const Vec & old){
+  bool TIM::locate_mode(const Vector & old){
     cand_ = old;
     g_ = old;
     H_.resize(old.size(), old.size());
@@ -113,7 +115,7 @@ namespace BOOM{
     mode_is_fixed_ = true;
   }
 
-  const Vec & TIM::mode()const{
+  const Vector & TIM::mode()const{
     if(!prop_){
       report_error("need to call TIM::locate_mode() before calling TIM::mode");
     }
@@ -129,10 +131,10 @@ namespace BOOM{
   }
 
   Ptr<MvtIndepProposal> TIM::create_proposal(int dim, double nu){
-    Vec mu(dim);
+    Vector mu(dim);
     SpdMatrix Sigma(dim);
     Sigma.set_diag(1.0);
-    return new MvtIndepProposal(mu, Sigma, nu);
+    return new MvtIndepProposal(mu, Sigma, nu, rng());
   }
 
   void TIM::check_proposal(int dim){

@@ -20,16 +20,17 @@
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
-#include <distributions/trun_gamma.hpp>
 #include <Models/GaussianModelBase.hpp>
 #include <Models/GammaModel.hpp>
 
 namespace BOOM{
 
   typedef GaussianVarSampler GVS;
-  GVS::GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g)
-    : gam(g),
-      mod(m),
+  GVS::GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g,
+                          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      prior_(g),
+      model_(m),
       sampler_(g)
   {}
 
@@ -37,28 +38,34 @@ namespace BOOM{
 
   GVS::GaussianVarSampler(GaussianModelBase* m,
                           double prior_df,
-                          double prior_sigma_guess)
-    : gam(new GammaModel(prior_df/2.0, sumsq(prior_df,prior_sigma_guess)/2.0)),
-      mod(m),
-      sampler_(gam)
+                          double prior_sigma_guess,
+                          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      prior_(new GammaModel(prior_df/2.0, sumsq(prior_df,prior_sigma_guess)/2.0)),
+      model_(m),
+      sampler_(prior_)
   {}
+
+  void GVS::draw(){
+    double n = model_->suf()->n();
+    double sumsq = model_->suf()->centered_sumsq(model_->mu());
+    double sigsq = sampler_.draw(rng(), n, sumsq);
+    model_->set_sigsq(sigsq);
+  }
+
+  double GVS::logpri()const{
+    return prior_->logp(1.0/model_->sigsq());
+  }
 
   void GVS::set_sigma_upper_limit(double max_sigma){
     sampler_.set_sigma_max(max_sigma);
   }
 
-  void GVS::draw(){
-    double n = mod->suf()->n();
-    double ybar = mod->suf()->ybar();
-    double mu = mod->mu();
-    double sumsq = mod->suf()->sumsq() - 2*n*ybar*mu + n*mu*mu;
-    double sigsq = sampler_.draw(rng(), n, sumsq);
-    mod->set_sigsq(sigsq);
-  }
+  const Ptr<GammaModelBase> GVS::ivar()const{ return prior_;}
 
-  double GVS::logpri()const{
-    return gam->logp(1.0/mod->sigsq());
+  void GVS::find_posterior_mode(double) {
+    double n = model_->suf()->n();
+    double sumsq = model_->suf()->centered_sumsq(model_->mu());
+    model_->set_sigsq(sampler_.posterior_mode(n, sumsq));
   }
-
-  const Ptr<GammaModelBase> GVS::ivar()const{ return gam;}
 }

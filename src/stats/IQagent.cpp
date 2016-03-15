@@ -129,7 +129,7 @@ namespace BOOM{
     uint i=0;
     while(i<n && Fplus_[i] < p) ++i;
     if(i==n){
-      // throw_exception<std::runtime_error>("find_xplus failed in IQagent");
+      // report_error("find_xplus failed in IQagent");
       i= n-1;  /////// troubling???
     }
     return data_buffer_[i];
@@ -140,7 +140,7 @@ namespace BOOM{
     uint i= n-1;
     while(Fminus_[i] > p){
       if(i==0){
-	//	throw_exception<std::runtime_error>("find_xminus failed in IQagent");
+	//	report_error("find_xminus failed in IQagent");
 	break;
       }
       --i;

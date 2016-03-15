@@ -34,9 +34,10 @@ namespace BOOM {
    public:
     BetaPosteriorSampler(BetaModel *model,
                          Ptr<DoubleModel> mean_prior,
-                         Ptr<DoubleModel> sample_size_prior);
-    virtual void draw();
-    virtual double logpri()const;
+                         Ptr<DoubleModel> sample_size_prior,
+                         RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
 
    private:
     BetaModel *model_;

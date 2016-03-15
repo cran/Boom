@@ -27,15 +27,15 @@ namespace BOOM{
       : public OrdinalCutpointModel
   {
    public:
-    CumulativeLogitModel(const Vec &beta, const Vec & delta);
-    CumulativeLogitModel(const Mat &X, const Vec &y);
+    CumulativeLogitModel(const Vector &beta, const Vector & delta);
+    CumulativeLogitModel(const Matrix &X, const Vector &y);
     CumulativeLogitModel(const CumulativeLogitModel &rhs);
-    virtual CumulativeLogitModel * clone()const;
+    CumulativeLogitModel * clone() const override;
 
-    virtual double link_inv(double)const;
-    virtual double dlink_inv(double)const;
+    double link_inv(double)const override;
+    double dlink_inv(double)const override;
    private:
-    virtual double simulate_latent_variable()const;
+    double simulate_latent_variable()const override;
   };
 
 } // ends namespace BOOM

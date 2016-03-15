@@ -31,8 +31,10 @@ namespace BOOM{
       Ptr<GammaModelBase> average_daily_rate_prior,
       Ptr<DirichletModel> day_of_week_prior,
       Ptr<DirichletModel> weekday_hourly_prior,
-      Ptr<DirichletModel> weekend_hourly_prior)
-      : model_(model),
+      Ptr<DirichletModel> weekend_hourly_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         average_daily_rate_prior_(average_daily_rate_prior),
         day_of_week_prior_(day_of_week_prior),
         weekday_hourly_prior_(weekday_hourly_prior),
@@ -59,12 +61,12 @@ namespace BOOM{
     double a = sum(model_->suf()->count()) +
         average_daily_rate_prior_->alpha();
     double b = average_daily_rate_prior_->beta();
-    const Vec &daily(model_->day_of_week_pattern());
-    const Vec &weekend(model_->weekend_hourly_pattern());
-    const Vec &weekday(model_->weekday_hourly_pattern());
-    const Mat &exposure(model_->suf()->exposure());
+    const Vector &daily(model_->day_of_week_pattern());
+    const Vector &weekend(model_->weekend_hourly_pattern());
+    const Vector &weekday(model_->weekday_hourly_pattern());
+    const Matrix &exposure(model_->suf()->exposure());
     for(int d = 0; d < 6; ++d){
-      const Vec &hourly((d==Sat || d==Sun) ? weekend : weekday);
+      const Vector &hourly((d==Sat || d==Sun) ? weekend : weekday);
       for(int hour = 0; hour < 24; ++hour){
         b += daily[d] * hourly[hour] * exposure(d, hour);
       }
@@ -75,9 +77,9 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   void SAM::draw_daily_pattern(){
-    Vec nu = model_->suf()->daily_event_count() + day_of_week_prior_->nu();
-    Vec cand = rdirichlet_mt(rng(), nu);
-    Vec orig = model_->day_of_week_pattern() / 7;
+    Vector nu = model_->suf()->daily_event_count() + day_of_week_prior_->nu();
+    Vector cand = rdirichlet_mt(rng(), nu);
+    Vector orig = model_->day_of_week_pattern() / 7;
 
     double num = model_->loglike(
         WP::concatenate_params(
@@ -107,11 +109,11 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   void SAM::draw_weekend_hourly_pattern(){
-    Vec nu = model_->suf() -> weekend_hourly_event_count() +
+    Vector nu = model_->suf() -> weekend_hourly_event_count() +
         weekend_hourly_prior_->nu();
 
-    Vec cand = rdirichlet_mt(rng(), nu);
-    Vec orig = model_->weekend_hourly_pattern() / 24;
+    Vector cand = rdirichlet_mt(rng(), nu);
+    Vector orig = model_->weekend_hourly_pattern() / 24;
 
     double num = model_->loglike(
         WP::concatenate_params(
@@ -139,10 +141,10 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   void SAM::draw_weekday_hourly_pattern(){
-    Vec nu = model_->suf() -> weekday_hourly_event_count() +
+    Vector nu = model_->suf() -> weekday_hourly_event_count() +
         weekday_hourly_prior_->nu();
-    Vec cand = rdirichlet_mt(rng(), nu);
-    Vec orig = model_->weekday_hourly_pattern() / 24;
+    Vector cand = rdirichlet_mt(rng(), nu);
+    Vector orig = model_->weekday_hourly_pattern() / 24;
 
     double num = model_->loglike(
         WP::concatenate_params(

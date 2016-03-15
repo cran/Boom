@@ -40,17 +40,25 @@ namespace BOOM {
   {
    public:
     PoissonRegressionModel(int xdim);
-    PoissonRegressionModel(const Vec& beta);
-    virtual  PoissonRegressionModel * clone()const;
+    PoissonRegressionModel(const Vector& beta);
 
-    virtual GlmCoefs & coef();
-    virtual const GlmCoefs & coef()const;
-    virtual Ptr<GlmCoefs> coef_prm();
-    virtual const Ptr<GlmCoefs> coef_prm()const;
+    // Use this constructor if the model is supposed to share its
+    // coefficient parameter with another model.
+    PoissonRegressionModel(Ptr<GlmCoefs> beta);
+
+     PoissonRegressionModel * clone() const override;
+
+    GlmCoefs & coef() override;
+    const GlmCoefs & coef()const override;
+    Ptr<GlmCoefs> coef_prm() override;
+    const Ptr<GlmCoefs> coef_prm()const override;
 
     // The dimension of the arguments to Loglike and log_likelihood is
     // the number of included coefficients.
-    virtual double Loglike(const Vector &beta, Vec &g, Mat &h, uint nd)const;
+    double Loglike(const Vector &beta,
+                           Vector &g,
+                           Matrix &h,
+                           uint nd) const override;
 
     // Log likelihood function.
     // Args:
@@ -75,9 +83,9 @@ namespace BOOM {
                           Matrix *hessian = nullptr,
                           bool reset_derivatives = true) const;
     // mle() optimizes over the set of included coefficients.
-    virtual void mle();
+    void mle() override;
 
-    virtual double pdf(const Data *, bool logscale)const;
+    double pdf(const Data *, bool logscale)const override;
     double logp(const PoissonRegressionData &data)const;
   };
 

@@ -153,7 +153,7 @@ namespace BOOM {
   }
 
   double PoissonGammaModel::Loglike(
-      const Vector &ab, Vec &g, Mat &H, uint nd)const{
+      const Vector &ab, Vector &g, Matrix &H, uint nd)const{
     if (ab.size() != 2) {
       report_error("Wrong size argument.");
     }
@@ -247,7 +247,7 @@ namespace BOOM {
   // estimate of the sample size is the variance of empirical means
   // around ybar.
   void PoissonGammaModel::method_of_moments(){
-    Vec lambda;
+    Vector lambda;
     const std::vector<Ptr<PoissonData> > &data(dat());
     int nobs = data.size();
     lambda.reserve(nobs);

@@ -40,8 +40,8 @@ namespace BOOM {
     sym_ = false;
   }
 
-  void MLVSS::update(const ChoiceData &dp, const Vec & wgts, const Vec &u){
-    const Mat & X(dp.X(false));      // 'false' means omit columns
+  void MLVSS::update(const ChoiceData &dp, const Vector & wgts, const Vector &u){
+    const Matrix & X(dp.X(false));      // 'false' means omit columns
     xtwx_.add_inner(X, wgts, false);   // corresponding to subject X's at
     xtwu_ += X.Tmult(wgts*u);         // choice level 0.
     sym_ = false;
@@ -57,13 +57,13 @@ namespace BOOM {
     weighted_sum_of_squares_ += rhs.weighted_sum_of_squares();
   }
 
-  const Spd & MLVSS::xtwx()const{
+  const SpdMatrix & MLVSS::xtwx()const{
     if(!sym_) xtwx_.reflect();
     sym_ = true;
     return xtwx_;
   }
 
-  const Vec & MLVSS::xtwu()const{return xtwu_;}
+  const Vector & MLVSS::xtwu()const{return xtwu_;}
 
   double MLVSS::weighted_sum_of_squares() const {
     return weighted_sum_of_squares_;

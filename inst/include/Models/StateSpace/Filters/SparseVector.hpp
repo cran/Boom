@@ -47,7 +47,11 @@ namespace BOOM{
   //======================================================================
   class SparseVector {
    public:
-    SparseVector(int n=0);
+    explicit SparseVector(int n=0);
+
+    // A sparse vector where all elements are filled.
+    explicit SparseVector(const Vector &dense);
+
     // Add rhs to the end of *this and return the new *this.
     SparseVector &concatenate(const SparseVector &rhs);
     int size()const;
@@ -56,20 +60,27 @@ namespace BOOM{
     SparseVector & operator*=(double x);
     SparseVector & operator/=(double x);
     double sum()const;
-    double dot(const Vec &v)const;
+    double dot(const Vector &v)const;
     double dot(const VectorView &v)const;
     double dot(const ConstVectorView &v)const;
 
-    // x+= this * coefficient
-    void add_this_to(Vec &x, double coefficient)const;
+    // Replaces x with (x + this * coefficient).
+    void add_this_to(Vector &x, double coefficient)const;
     void add_this_to(VectorView x, double coefficient)const;
+
+    // Replaces m with (m + scale * this * this->transpose()).
+    void add_outer_product(SpdMatrix &m, double scale = 1.0) const;
 
     // Returns this.transpose() * P * this, which is sum_{i,j} P(i,j)
     // * this[i] * this[j]
-    double sandwich(const Spd &P)const;
+    double sandwich(const SpdMatrix &P)const;
+
+    // Returns x * this.transpose.
+    Matrix outer_product_transpose(const Vector &x, double scale = 1.0) const;
 
     // Return the dense vector equivalent to *this.
-    Vec dense()const;
+    Vector dense()const;
+
    private:
     std::map<int, double> elements_;
     int size_;
@@ -77,8 +88,10 @@ namespace BOOM{
     friend class SparseVectorReturnProxy;
   };
 
-  Vec operator*(const Spd &P, const SparseVector &v);
-  Vec operator*(const SubMatrix P, const SparseVector &v);
+  Vector operator*(const SpdMatrix &P, const SparseVector &v);
+  Vector operator*(const SubMatrix P, const SparseVector &v);
   ostream & operator<<(ostream &, const SparseVector &v);
-}
+
+}  // namespace BOOM
+
 #endif // BOOM_SPARSE_VECTOR_HPP_

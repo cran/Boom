@@ -30,15 +30,8 @@ namespace BOOM{
   class Vector;
   class SpdMatrix;
   class Matrix;
-  typedef unsigned int uint;
 
-  //----------------------------------------------------------------------
   class VectorView{
-    double *V;
-    uint nelem_;
-    int stride_;
-
-    bool inrange(uint n)const{return n < nelem_;}
    public:
     typedef VectorViewIterator iterator;
     typedef VectorViewConstIterator const_iterator;
@@ -77,7 +70,7 @@ namespace BOOM{
     int stride()const{return stride_;}
 
     uint size()const{return nelem_;}   // returns number of elements
-    uint length()const{return nelem_;}; // same as size()
+    uint length()const{return nelem_;} // same as size()
 
     //------------------ subscripting -----------------------
     const double & operator[](int n)const{
@@ -95,7 +88,7 @@ namespace BOOM{
     double & front(){return *V;}
     const double & front() const{return *V;}
     double & back(){return *(V+(nelem_-1)*stride_);}
-    const double & back() const{return *(V+(nelem_-1)*stride_);}
+    const double & back() const{return *(V+(nelem_ - 1) * stride_);}
 
     //---------------- input/output -------------------------
     std::ostream & write(std::ostream &, bool endl=true)const;
@@ -122,9 +115,9 @@ namespace BOOM{
     VectorView & operator*=(const ConstVectorView &y);
     VectorView & operator/=(const ConstVectorView &y);
 
-    VectorView & axpy(const Vector &y, double a=1.0);
-    VectorView & axpy(const VectorView &y, double a=1.0);
-    VectorView & axpy(const ConstVectorView &y, double a=1.0);
+    VectorView & axpy(const Vector &y, double a = 1.0);
+    VectorView & axpy(const VectorView &y, double a = 1.0);
+    VectorView & axpy(const ConstVectorView &y, double a = 1.0);
 
     double normsq()const;
     double normalize_prob();
@@ -145,6 +138,12 @@ namespace BOOM{
     double affdot(const VectorView &y)const;
     // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
+    VectorView & transform(std::function<double(double)> f);
+   private:
+    double *V;
+    uint nelem_;
+    int stride_;
+    bool inrange(uint n)const{return n < nelem_;}
   };
 
   // IO

@@ -32,20 +32,21 @@ namespace BOOM{
   {
    public:
     CumulativeLogitSampler(CumulativeLogitModel *m,
-                            Ptr<MvnBase> beta_prior);
+                            Ptr<MvnBase> beta_prior,
+                            RNG &seeding_rng = GlobalRng::rng);
     void impute_latent_data();
     void draw_beta();
     void draw_delta();
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
    private:
     CumulativeLogitModel *m_;
     Ptr<MvnBase> beta_prior_;
     WeightedRegSuf suf_;
-    Spd ivar_;
-    Vec mu_;
-    Vec beta_;
-    Vec delta_;
+    SpdMatrix ivar_;
+    Vector mu_;
+    Vector beta_;
+    Vector delta_;
     // assume a flat prior on delta
   };
 

@@ -134,15 +134,19 @@ namespace BOOM{
     return ans;
   }
 
-  LogitLogLikelihood LRM::log_likelihood_tf()const{
-    return LogitLogLikelihood(this);
+  d2TargetFunPointerAdapter LRM::log_likelihood_tf()const{
+    return d2TargetFunPointerAdapter(
+        [this](const Vector &beta, Vector *g, Matrix *h,
+               bool initialize_derivs) {
+          return this->log_likelihood(beta, g, h, initialize_derivs);
+        });
   }
 
-  Spd LRM::xtx()const{
+  SpdMatrix LRM::xtx()const{
     const std::vector<Ptr<BinaryRegressionData> > & d(dat());
     uint n = d.size();
     uint p = d[0]->xdim();
-    Spd ans(p);
+    SpdMatrix ans(p);
     for(uint i=0; i<n; ++i) ans.add_outer(d[i]->x(), 1.0, false);
     ans.reflect();
     return ans;
@@ -160,102 +164,5 @@ namespace BOOM{
   }
 
   double LRM::log_alpha()const{return log_alpha_;}
-
-  //______________________________________________________________________
-
-  typedef LogitLogLikelihood LLL;
-  LLL::LogitLogLikelihood(const LRM *m)
-      : m_(m)
-  {}
-
-  double LLL::operator()(const Vector &b)const{
-    return m_->log_likelihood(b, 0, 0);
-  }
-  double LLL::operator()(const Vector &b, Vector &g)const{
-    return m_->log_likelihood(b, &g, 0);
-  }
-  double LLL::operator()(const Vector &b, Vector &g, Matrix &h)const{
-    return m_->log_likelihood(b, &g, &h);
-  }
-
-  //______________________________________________________________________
-
-  LogitEMC::LogitEMC(uint beta_dim, bool all)
-    : LRM(beta_dim, all)
-  {}
-
-  LogitEMC::LogitEMC(const Vector &beta)
-    : LRM(beta)
-  {}
-
-  LogitEMC * LogitEMC::clone()const{return new LogitEMC(*this);}
-
-  //----------------------------------------------------------------------
-
-  double logit_loglike_1(const Vector & beta, bool y, const Vector &x,
-			 Vector *g, Matrix *h, double mix_wgt){
-    double eta = x.dot(beta);
-    double lognc = lse2(0, eta);
-    double ans = y?  eta : 0;
-    ans -= lognc;
-    if(g){
-      double p = exp(eta-lognc);
-      g->axpy(x, mix_wgt* (y-p));
-      if(h){
-	double q = 1-p;
-	h->add_outer( x,x, -mix_wgt * p*q);}}
-    return mix_wgt * ans;
-  }
-
-  //----------------------------------------------------------------------
-
-  void LogitEMC::add_mixture_data(Ptr<Data> dp, double prob){
-    LRM::add_data(dp);
-    probs_.push_back(prob);
-  }
-
-  void LogitEMC::clear_data(){
-    LRM::clear_data();
-    probs_.clear();
-  }
-
-  void LogitEMC::set_prior(Ptr<MvnBase> pri){
-    pri_ = pri;
-    NEW(LogitSampler, sam)(this, pri);
-    set_method(sam);
-  }
-
-  Spd LogitEMC::xtx()const{
-    uint n = probs_.size();
-    if(n==0) return LRM::xtx();
-    const std::vector<Ptr<BinaryRegressionData> > & d(dat());
-    assert(d.size()==n);
-    uint p = d[0]->xdim();
-    Spd ans(p);
-    for(uint i=0; i<n; ++i){
-      ans.add_outer(d[i]->x(), probs_[i], false);
-    }
-    ans.reflect();
-    return ans;
-  }
-
-  void LogitEMC::find_posterior_mode(){
-    if(!pri_){
-      ostringstream err;
-      err << "Logit_EMC cannot find posterior mode.  "
-	  << "No prior is set." << endl;
-      report_error(err.str());
-    }
-
-    d2LoglikeTF loglike(this);
-    d2LogPostTF logpost(loglike, pri_);
-    Vector b = this->Beta();
-    uint dim = b.size();
-    Vector g(dim);
-    Matrix h(dim,dim);
-    b = max_nd2(b, g, h, Target(logpost), dTarget(logpost),
-                d2Target(logpost), 1e-5);
-    this->set_Beta(b);
-  }
 
 }

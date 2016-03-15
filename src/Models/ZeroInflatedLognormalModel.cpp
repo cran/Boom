@@ -133,32 +133,9 @@ namespace BOOM{
     binomial_->combine_data( *(rhsp->binomial_), true);
   }
 
-  void ZILM::find_posterior_mode(){
-    gaussian_->find_posterior_mode();
-    binomial_->find_posterior_mode();
-  }
-
   void ZILM::mle(){
     gaussian_->mle();
     binomial_->mle();
-  }
-
-  void ZILM::set_conjugate_prior(
-      double normal_mean_guess,
-      double normal_mean_weight,
-      double normal_standard_deviation_guess,
-      double normal_standard_deviation_weight,
-      double nonzero_proportion_guess,
-      double nonzero_proportion_weight){
-    gaussian_->set_conjugate_prior(normal_mean_guess,
-                                   normal_mean_weight,
-                                   normal_standard_deviation_weight,
-                                   normal_standard_deviation_guess);
-    double a = nonzero_proportion_weight * nonzero_proportion_guess;
-    double b = nonzero_proportion_weight * (1 - nonzero_proportion_guess);
-    binomial_->set_conjugate_prior(a, b);
-    NEW(ZeroInflatedLognormalPosteriorSampler, sampler)(this);
-    this->set_method(sampler);
   }
 
   double ZILM::mu()const{

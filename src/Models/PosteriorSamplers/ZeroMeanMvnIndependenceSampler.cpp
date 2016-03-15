@@ -27,8 +27,10 @@ namespace BOOM{
 
   ZMMI::ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
                                        Ptr<GammaModelBase> prior,
-                                       int which_variable)
-      : m_(model),
+                                       int which_variable,
+                                       RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model),
         prior_(prior),
         which_variable_(which_variable),
         sampler_(prior_)
@@ -37,8 +39,10 @@ namespace BOOM{
   ZMMI::ZeroMeanMvnIndependenceSampler(ZeroMeanMvnModel *model,
                                        double prior_df,
                                        double prior_sigma_guess,
-                                       int which_variable)
-      : m_(model),
+                                       int which_variable,
+                                       RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model),
         prior_(new GammaModel(prior_df/2,
                               pow(prior_sigma_guess, 2) * prior_df / 2)),
         which_variable_(which_variable),
@@ -50,10 +54,10 @@ namespace BOOM{
   }
 
   void ZMMI::draw(){
-    Spd siginv = m_->siginv();
+    SpdMatrix siginv = m_->siginv();
     int i = which_variable_;
     double df = m_->suf()->n();
-    Spd sumsq = m_->suf()->center_sumsq(m_->mu());
+    SpdMatrix sumsq = m_->suf()->center_sumsq(m_->mu());
     siginv(i, i) = 1.0 / sampler_.draw(rng(), df, sumsq(i, i));
     m_->set_siginv(siginv);
   }
@@ -69,8 +73,10 @@ namespace BOOM{
   ZMMCIS::ZeroMeanMvnCompositeIndependenceSampler(
       ZeroMeanMvnModel *model,
       const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-      const Vec & sigma_upper_truncation_points)
-      : model_(model),
+      const Vector & sigma_upper_truncation_points,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         priors_(siginv_priors)
   {
     if (model_->dim() != priors_.size()) {
@@ -106,8 +112,8 @@ namespace BOOM{
   }
 
   void ZMMCIS::draw() {
-    Spd Sigma = model_->Sigma();
-    Spd sumsq = model_->suf()->center_sumsq(model_->mu());
+    SpdMatrix Sigma = model_->Sigma();
+    SpdMatrix sumsq = model_->suf()->center_sumsq(model_->mu());
     for (int i = 0; i < model_->dim(); ++i) {
       Sigma(i, i) = samplers_[i].draw(
           rng(),
@@ -118,7 +124,7 @@ namespace BOOM{
   }
 
   double ZMMCIS::logpri()const {
-    const Spd & Sigma(model_->Sigma());
+    const SpdMatrix & Sigma(model_->Sigma());
     double ans = 0;
     for (int i = 0; i < Sigma.nrow(); ++i) {
       if (samplers_[i].sigma_max() > 0) {

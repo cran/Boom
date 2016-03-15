@@ -47,18 +47,18 @@ namespace BOOM{
       PcrNid(const string & Id, uint Mscore, uint which_sub,
 			 uint Nscales, const string &Name="");
       PcrNid(const string & Id, uint Mscore, uint which_sub,
-			 uint Nscales, double a, double b, const Vec &d,
+			 uint Nscales, double a, double b, const Vector &d,
 			 const string &Name="");
       PcrNid(const PcrNid &rhs);
-      PcrNid * clone()const;
+      PcrNid * clone()const override;
 
-      virtual const Vec & d()const;
+      virtual const Vector & d()const;
       virtual double d(uint m)const;
-      virtual void set_d(const Vec &D);
+      virtual void set_d(const Vector &D);
       virtual bool is_d0_fixed()const{return false;}
 
-      virtual const Mat & X(const Vec &Theta)const;
-      virtual const Mat & X(double theta)const;
+      virtual const Matrix & X(const Vector &Theta)const;
+      virtual const Matrix & X(double theta)const;
 
     private:
       virtual void fill_beta(bool first_time=false)const;

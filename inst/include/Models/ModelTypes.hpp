@@ -20,15 +20,14 @@
 
 #include <BOOM.hpp>
 #include <Models/ParamTypes.hpp>
-#include <LinAlg/Types.hpp>
-#include <boost/shared_ptr.hpp>
+#include <Models/DataTypes.hpp>
 #include <distributions/rng.hpp>
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Matrix.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   class PosteriorSampler;
-  class Params;
-  class Data;
 
   // A Model is the basic unit of operation in statistical learning.
   // In BOOM, each Model manages Params, Data, and learning methods.
@@ -42,7 +41,7 @@ namespace BOOM{
   // Any class inheriting from model should do so virtually, because
   // Model contains a reference count that should not be duplicated.
   class Model : private RefCounted{
-  public:
+   public:
     friend void intrusive_ptr_add_ref(Model *d){d->up_count();}
     friend void intrusive_ptr_release(Model *d){
       d->down_count(); if(d->ref_count()==0) delete d;}
@@ -50,20 +49,22 @@ namespace BOOM{
     //------ constructors, destructors, operator=/== -----------
     Model();
     Model(const Model &rhs);        // ref count is not copied
-    virtual Model * clone()const=0;
 
-    // the result of clone() should have identical parameters in
-    // distinct memory.  It should not have any data assigned.  Nor
-    // should it include the same priors and sampling methods
+    // The result of clone() (and copies generally) should have
+    // identical parameters in distinct memory.  It should not have
+    // any data assigned.  Nor should it include the same priors and
+    // sampling methods.
+    virtual Model * clone() const = 0;
 
-    virtual ~Model(){}
+
+    virtual ~Model() {}
 
     //----------- parameter interface  ---------------------
-    virtual ParamVec t()=0;              // implemented in ParmPolicy
-    virtual const ParamVec t()const=0;
+    virtual ParamVector t() = 0;              // implemented in ParmPolicy
+    virtual const ParamVector t()const = 0;
 
-    virtual Vec vectorize_params(bool minimal=true)const;
-    virtual void unvectorize_params(const Vec &v, bool minimal=true);
+    virtual Vector vectorize_params(bool minimal=true)const;
+    virtual void unvectorize_params(const Vector &v, bool minimal = true);
 
     //------------ functions implemented in DataPolicy -----
 
@@ -71,32 +72,45 @@ namespace BOOM{
     // model.  It is assumed that dp points to a Data object of the
     // type produced by the concrete model.  The Data type is made
     // concrete in the model's DataPolicy.
-    virtual void add_data(Ptr<Data> dp)=0;    //
+    virtual void add_data(Ptr<Data> dp) = 0;
 
     // Discard all the data that has been added using add_data().
-    virtual void clear_data()=0;
+    virtual void clear_data() = 0;
 
     // Combine the data managed by other_model with the data managed
     // by *this.  If just_suf is true and the model has sufficient
     // statistics, the actual data from 'other_model' is not copied.
-    virtual void combine_data(const Model & other_model, bool just_suf=true)=0;
+    virtual void combine_data(const Model & other_model, bool just_suf=true) = 0;
 
     //------------ functions over-ridden in PriorPolicy ----
-    virtual void sample_posterior()=0;
-    virtual double logpri()const=0;      // evaluates current params
-    virtual void set_method(Ptr<PosteriorSampler>)=0;
+    virtual void sample_posterior() = 0;
+    virtual double logpri()const = 0;      // evaluates current params
+    virtual void set_method(Ptr<PosteriorSampler>) = 0;
+    virtual int number_of_sampling_methods() const = 0;
+
+   protected:
+    virtual PosteriorSampler * sampler(int i) = 0;
+    virtual PosteriorSampler const *const sampler(int i) const = 0;
   };
 
   //============= mix-in classes =========================================
 
-  // The model has parameters that can be estimated by maximum likelihood.
+  class IntModel : virtual public Model {
+   public:
+    // Evaluate the log probability mass function at x.  Return
+    // negative_infinity() For values of x outside the support of the
+    // model.
+    virtual double logp(int x) const = 0;
+  };
+
+  //======================================================================
+  // A MLE_Model has parameters that can be estimated by maximum likelihood.
   class MLE_Model : virtual public Model {
-  public:
+   public:
     MLE_Model() : status_(NOT_CALLED) {}
     // Set the paramters to their maximum likelihood estimates.
-    virtual void mle()=0;
+    virtual void mle() = 0;
     virtual void initialize_params();
-    virtual MLE_Model *clone()const=0;
     enum MleStatus {
       NOT_CALLED = -1,
       FAILURE = 0,
@@ -120,63 +134,83 @@ namespace BOOM{
       error_message_ = error_message;
     }
   };
+  //======================================================================
+  // A PosteriorModeModel has parameters that can be estimated by their
+  // posterior mode.
+  class PosteriorModeModel : virtual public Model {
+   public:
+    // Set parameters to their MAP (posterior mode maximizing) values.
+    // In most cases, the work for this call will have to be delegated
+    // to a posterior sampler that knows how to find the posterior
+    // mode.  The default implementation for this method is
+    // 1) check that a posterior sampler has been set.  Throw if not.
+    // 2) check that the posterior sampler implements
+    //    find_posterior_mode.  Throw if not.
+    // 3) call the posterior sampler's find_posterior_mode method.
+    //
+    // Args:
+    //   epsilon: If the mode finding algorithm is iterative, use
+    //     epsilon as its convergence criterion.
+    virtual void find_posterior_mode(double epsilon = 1e-5);
 
+    // A model can only find a posterior mode if it has been assigned
+    // a PosteriorSampler that can help out.  This function returns
+    // 'true' if an appropriate sampler has been assigned, and 'false'
+    // otherwise.
+    virtual bool can_find_posterior_mode() const;
+  };
+  //======================================================================
   class LoglikeModel : public MLE_Model {
-  public:
-    virtual double loglike(const Vector &theta)const=0;
-    virtual LoglikeModel * clone()const=0;
-    virtual void mle();
+   public:
+    virtual double loglike(const Vector &theta)const = 0;
+    void mle() override;
   };
 
   class dLoglikeModel : public LoglikeModel{
-  public:
-    virtual double dloglike(const Vector &x, Vec &g)const=0;
-    virtual void mle();
-    virtual dLoglikeModel *clone()const=0;
+   public:
+    virtual double dloglike(const Vector &x, Vector &g)const = 0;
+    void mle() override;
   };
 
   class d2LoglikeModel : public dLoglikeModel{
-  public:
-    virtual double d2loglike(const Vector &x, Vec &g, Mat &H)const=0;
-    virtual void mle();
-    virtual double mle_result(Vec &gradient, Mat &hessian);
-    virtual d2LoglikeModel *clone()const=0;
+   public:
+    virtual double d2loglike(const Vector &x, Vector &g, Matrix &H)const = 0;
+    void mle() override;
+    virtual double mle_result(Vector &gradient, Matrix &hessian);
   };
 
   class NumOptModel : public d2LoglikeModel{
-  public:
-    virtual double Loglike(const Vector &x, Vec &g, Mat &H, uint nd)const=0;
-    virtual double loglike(const Vector &x)const{
-      Vec g;
-      Mat h;
+   public:
+    virtual double Loglike(
+        const Vector &x, Vector &g, Matrix &H, uint nd) const = 0;
+    double loglike(const Vector &x) const override {
+      Vector g;
+      Matrix h;
       return Loglike(x, g, h, 0);
     }
-    virtual double dloglike(const Vector &x, Vec &g)const{
-      Mat h;
+    double dloglike(const Vector &x, Vector &g) const override{
+      Matrix h;
       return Loglike(x, g, h, 1);
     }
-    virtual double d2loglike(const Vector &x, Vec &g, Mat &h)const{
+    double d2loglike(const Vector &x, Vector &g, Matrix &h) const override {
       return Loglike(x, g, h, 2);
     }
-    virtual NumOptModel * clone()const=0;
   };
   //======================================================================
-  class LatentVariableModel {
-  public:
-    virtual void impute_latent_data(RNG &rng)=0;
-    virtual LatentVariableModel * clone()const=0;
+  class LatentVariableModel : virtual public Model {
+   public:
+    virtual void impute_latent_data(RNG &rng) = 0;
   };
   //======================================================================
-  class CorrModel : virtual public Model {
-  public:
-    virtual CorrModel * clone()const=0;
-    virtual double logp(const Corr &)const=0;
+  class CorrelationModel : virtual public Model {
+   public:
+    virtual double logp(const CorrelationMatrix &)const = 0;
   };
   //======================================================================
   class MixtureComponent : virtual public Model {
    public:
-    virtual double pdf(const Data *, bool logscale)const=0;
-    virtual MixtureComponent * clone()const=0;
+    virtual double pdf(const Data *, bool logscale)const = 0;
+    MixtureComponent * clone() const override = 0;
   };
 
 }  // namespace BOOM

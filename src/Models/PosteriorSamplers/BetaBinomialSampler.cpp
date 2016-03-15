@@ -23,8 +23,9 @@ namespace BOOM{
   typedef BetaBinomialSampler BBS;
 
   BBS::BetaBinomialSampler(BinomialModel *mod,
-			   Ptr<BetaModel> pri)
-    : mod_(mod),
+               Ptr<BetaModel> pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(mod),
       pri_(pri)
   {}
 
@@ -46,7 +47,7 @@ namespace BOOM{
     return pri_->logp(p);
   }
 
-  void BBS::find_posterior_mode(){
+  void BBS::find_posterior_mode(double){
     double a = pri_->a();
     double b = pri_->b();
     double y = mod_->suf()->sum() + a;

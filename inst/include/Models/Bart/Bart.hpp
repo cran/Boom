@@ -218,11 +218,11 @@ namespace BOOM {
       explicit DiscreteVariableSummary(int variable_index,
                                        const Vector &values);
       explicit DiscreteVariableSummary(const SerializedVariableSummary &vs);
-      virtual bool random_cutpoint(RNG &rng, TreeNode *node) const;
-      virtual SerializedVariableSummary serialize() const;
-      virtual bool is_continuous() const {return false;}
-      virtual Vector get_cutpoint_range(const TreeNode *node) const;
-      virtual bool is_legal_configuration(const TreeNode *node) const;
+      bool random_cutpoint(RNG &rng, TreeNode *node) const override;
+      SerializedVariableSummary serialize() const override;
+      bool is_continuous() const override {return false;}
+      Vector get_cutpoint_range(const TreeNode *node) const override;
+      bool is_legal_configuration(const TreeNode *node) const override;
      private:
       Vector cutpoint_values_;
     };
@@ -233,11 +233,11 @@ namespace BOOM {
       explicit ContinuousVariableSummary(int variable_index,
                                          const Vector &values);
       explicit ContinuousVariableSummary(const SerializedVariableSummary &vs);
-      virtual bool random_cutpoint(RNG &rng, TreeNode *node) const;
-      virtual SerializedVariableSummary serialize() const;
-      virtual bool is_continuous() const {return true;}
-      virtual Vector get_cutpoint_range(const TreeNode *node) const;
-      virtual bool is_legal_configuration(const TreeNode *node) const;
+      bool random_cutpoint(RNG &rng, TreeNode *node) const override;
+      SerializedVariableSummary serialize() const override;
+      bool is_continuous() const override {return true;}
+      Vector get_cutpoint_range(const TreeNode *node) const override;
+      bool is_legal_configuration(const TreeNode *node) const override;
      private:
       Vector range_;  // lower and upper limits for cutpoints
     };
@@ -649,7 +649,7 @@ namespace BOOM {
     //     contribution is 'mean' / 'number_of_trees'.
     BartModelBase(int number_of_trees, double mean = 0.0);
     BartModelBase(const BartModelBase &rhs);
-    virtual ~BartModelBase() {}
+    ~BartModelBase() override {}
 
     // Return the number of observations that this model has observed.
     virtual int sample_size() const = 0;

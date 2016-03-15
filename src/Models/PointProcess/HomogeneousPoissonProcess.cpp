@@ -76,24 +76,24 @@ namespace BOOM{
     return abstract_combine_impl(this, rhs);
   }
 
-  Vec PoissonProcessSuf::vectorize(bool)const{
-    Vec ans(2);
+  Vector PoissonProcessSuf::vectorize(bool)const{
+    Vector ans(2);
     ans[0] = number_of_events_;
     ans[1] = exposure_time_;
     return ans;
   }
 
-  Vec::const_iterator PoissonProcessSuf::unvectorize(
-      Vec::const_iterator &v,  bool){
+  Vector::const_iterator PoissonProcessSuf::unvectorize(
+      Vector::const_iterator &v,  bool){
     number_of_events_ = lround(*v);
     ++v;
     exposure_time_ = *v;
     return ++v;
   }
 
-  Vec::const_iterator PoissonProcessSuf::unvectorize(
-      const Vec &v, bool minimal){
-    Vec::const_iterator b = v.begin();
+  Vector::const_iterator PoissonProcessSuf::unvectorize(
+      const Vector &v, bool minimal){
+    Vector::const_iterator b = v.begin();
     return this->unvectorize(b, minimal);
   }
 

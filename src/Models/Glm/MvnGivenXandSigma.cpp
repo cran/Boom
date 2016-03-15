@@ -37,7 +37,7 @@ namespace BOOM{
 
   MGXS::MvnGivenXandSigma(RegressionModel * mod, Ptr<VectorParams> Mu,
 			  Ptr<UnivParams> prior_ss,
-			  const Vec & Lambda, double diag_wgt)
+			  const Vector & Lambda, double diag_wgt)
     : ParamPolicy(Mu, prior_ss),
       mod_(mod),
       ivar_(new SpdParams(Mu->dim())),
@@ -65,18 +65,18 @@ namespace BOOM{
 
   MGXS * MGXS::clone()const{return new MGXS(*this);}
 
-  const Vec & MGXS::mu()const{return Mu_prm()->value();}
+  const Vector & MGXS::mu()const{return Mu_prm()->value();}
 
   double MGXS::prior_sample_size()const{
     return Kappa_prm()->value();
   }
 
-  const Spd & MGXS::Sigma()const{
+  const SpdMatrix & MGXS::Sigma()const{
     set_ivar();
     return ivar_->var();
   }
 
-  const Spd & MGXS::siginv()const{
+  const SpdMatrix & MGXS::siginv()const{
     set_ivar();
     return ivar_->ivar();
   }
@@ -95,7 +95,7 @@ namespace BOOM{
   void MGXS::set_ivar()const{
     if(current_) return;
 
-    Spd ivar(mod_->xtx());
+    SpdMatrix ivar(mod_->xtx());
     double w = diagonal_weight_;
 
     if(w>= 1.0) ivar.set_diag(ivar.diag());
@@ -122,10 +122,10 @@ namespace BOOM{
   const Ptr<UnivParams> MGXS::Kappa_prm()const{
     return ParamPolicy::prm2();}
 
-  Vec MGXS::sim()const{
-    const Mat & L(ivar_->var_chol());
+  Vector MGXS::sim()const{
+    const Matrix & L(ivar_->var_chol());
     uint p = dim();
-    Vec ans(p);
+    Vector ans(p);
     for(uint i=0; i<p; ++i) ans[i] = rnorm();
     ans = L * ans;
     ans += mu();

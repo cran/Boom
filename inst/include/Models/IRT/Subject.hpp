@@ -37,10 +37,10 @@ namespace BOOM{
       friend class IrtModel;
 
       Subject(const string &Id, uint nscal);
-      Subject(const string &Id, const Vec & theta);
-      Subject(const string &Id, uint nscal, const Vec & background_vars);
+      Subject(const string &Id, const Vector & theta);
+      Subject(const string &Id, uint nscal, const Vector & background_vars);
       Subject(const Subject &rhs);
-      Subject * clone()const;
+      Subject * clone()const override;
 
       Response add_item(Ptr<Item>, uint response);
       Response add_item(Ptr<Item>, const string &response);
@@ -54,10 +54,10 @@ namespace BOOM{
 
       Ptr<VectorParams> Theta_prm();
       const Ptr<VectorParams> Theta_prm()const;
-      const Vec & Theta()const;
-      void set_Theta(const Vec &v);
+      const Vector & Theta()const;
+      void set_Theta(const Vector &v);
 
-      ostream & display(ostream &)const;
+      ostream & display(ostream &)const override;
       ostream & display_responses(ostream &)const;
 
       uint Nitems()const;
@@ -65,7 +65,7 @@ namespace BOOM{
 
       virtual double loglike()const;
       const string & id()const;
-      Spd xtx()const;
+      SpdMatrix xtx()const;
       // returns \sum_i \Beta_i \Beta_i^T for betas
 
       Response simulate_response(Ptr<Item>);
@@ -74,7 +74,7 @@ namespace BOOM{
       ItemResponseMap responses_;
       Ptr<Item> search_helper;
       Ptr<VectorParams> Theta_;
-      Vec x_;                            // covariates
+      Vector x_;                            // covariates
       Response prototype;
     };
     //----------------------------------------------------------------------

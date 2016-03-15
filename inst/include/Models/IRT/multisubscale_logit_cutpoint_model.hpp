@@ -36,7 +36,7 @@ namespace BOOM{
 
       MultisubscaleLogitCutpointModel(const Selector &subs, uint Maxscore);
       MultisubscaleLogitCutpointModel(const MLCM &rhs);
-      MLCM * clone()const;
+      MLCM * clone()const override;
 
 //       virtual Ptr<GlmCoefs> coef();
 //       virtual const Ptr<GlmCoefs> coef()const;
@@ -44,10 +44,10 @@ namespace BOOM{
 
       ostream & display_item_params(ostream &, bool decorate=true)const;
 
-      void initialize_params(); // set to observed proportions assuming theta=0
+      void initialize_params() override; // set to observed proportions assuming theta=0
 
-      double response_prob(Response r, const Vec &Theta, bool logscale)const;
-      double response_prob(uint r, const Vec &Theta, bool logscale)const;
+      double response_prob(Response r, const Vector &Theta, bool logscale)const;
+      double response_prob(uint r, const Vector &Theta, bool logscale)const;
 
       DataPolicy::DatasetType & dat(){return DataPolicy::dat();}
       const DataPolicy::DatasetType & dat()const{return DataPolicy::dat();}

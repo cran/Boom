@@ -18,41 +18,32 @@
 #include <Models/Glm/BinomialLogitModel.hpp>
 #include <distributions.hpp>
 #include <stats/logit.hpp>
+#include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
   typedef BinomialLogitModel BLM;
   typedef BinomialRegressionData BRD;
-  typedef BinomialLogitLogLikelihood BLLL;
-
-
-  BLLL::BinomialLogitLogLikelihood(const BLM *m)
-      : m_(m)
-  {}
-
-  double BLLL::operator()(const Vector & beta)const{
-    return m_->log_likelihood(beta, 0, 0);
-  }
-  double BLLL::operator()(const Vector & beta, Vector &g)const{
-    return m_->log_likelihood(beta, &g, 0);
-  }
-  double BLLL::operator()(const Vector & beta, Vector &g, Matrix &H)const{
-    return m_->log_likelihood(beta, &g, &H);
-  }
 
   BLM::BinomialLogitModel(uint beta_dim, bool all)
       : ParamPolicy(new GlmCoefs(beta_dim, all)),
-      log_alpha_(0)
-      {}
+        log_alpha_(0)
+  {}
 
   BLM::BinomialLogitModel(const Vector &beta)
       : ParamPolicy(new GlmCoefs(beta)),
-      log_alpha_(0)
-      {}
+        log_alpha_(0)
+  {}
+
+  BLM::BinomialLogitModel(Ptr<GlmCoefs> beta)
+      : ParamPolicy(beta),
+        log_alpha_(0)
+  {}
 
   BLM::BinomialLogitModel(const Matrix &X, const Vector &y, const Vector &n)
       : ParamPolicy(new GlmCoefs(X.ncol())),
-      log_alpha_(0)
+        log_alpha_(0)
       {
         int nr = nrow(X);
         for(int i = 0; i < nr; ++i){
@@ -96,10 +87,22 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  double BLM::logp(uint y, uint n, const Vector &x, bool logscale)const{
-    double eta = predict(x);
-    double p = logit_inv(eta);
-    return dbinom(y, n, p, logscale);
+  // In many cases y and n will be set using integers, so they will
+  // compare to integer literals exactly.  Only rarely are they non-integers.
+  double BLM::logp(double y, double n, const Vector &x, bool logscale)const{
+    if (n == 0) {
+      double ans = y == 0 ? 0 : negative_infinity();
+      return logscale ? ans : exp(ans);
+    } else if (n == 1 && (y == 0 || y == 1)) {
+      // This is a common special case of the more general calcualtion
+      // in the next branch.  Special handling here for efficiency
+      // reasons.
+      return logp_1(y, x, logscale);
+    } else {
+      double eta = predict(x);
+      double p = logit_inv(eta);
+      return dbinom(y, n, p, logscale);
+    }
   }
 
   double BLM::Loglike(const Vector &beta, Vector &g, Matrix &h, uint nd)const{
@@ -150,13 +153,20 @@ namespace BOOM{
     return ans;
   }
 
-  BLLL BLM::log_likelihood_tf()const{ return BLLL(this); }
+  d2TargetFunPointerAdapter BLM::log_likelihood_tf() const {
+    return d2TargetFunPointerAdapter(
+        [this](const Vector &x,
+               Vector *g,
+               Matrix *h,
+               bool reset_derivs) {
+          return this->log_likelihood(x, g, h, reset_derivs);});
+  }
 
-  Spd BLM::xtx()const{
+  SpdMatrix BLM::xtx()const{
     const std::vector<Ptr<BinomialRegressionData> > & d(dat());
     uint n = d.size();
     uint p = d[0]->xdim();
-    Spd ans(p);
+    SpdMatrix ans(p);
     for(uint i=0; i<n; ++i){
       double n = d[i]->n();
       ans.add_outer(d[i]->x(), n, false);
@@ -171,7 +181,7 @@ namespace BOOM{
       err << "alpha (proportion of non-events retained in the data) "
           << "must be in (0,1]" << endl
           << "you set alpha = " << alpha << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     log_alpha_ = std::log(alpha);
   }

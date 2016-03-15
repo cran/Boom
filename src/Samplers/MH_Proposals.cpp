@@ -21,21 +21,21 @@
 namespace BOOM{
 
 
-  MH_Proposal::MH_Proposal()
-      : rng_(seed_rng())
+  MH_Proposal::MH_Proposal(RNG & seeding_rng)
+      : rng_(seed_rng(seeding_rng))
   {}
 
   typedef MvtMhProposal MVTP;
 
-  MVTP::MvtMhProposal(const Spd & Ivar, double nu)
-      : nu_(nu)
+  MVTP::MvtMhProposal(const SpdMatrix & Ivar, double nu, RNG & seeding_rng)
+      : MH_Proposal(seeding_rng), nu_(nu)
   {
     set_ivar(Ivar);
   }
 
-  Vec MVTP::draw(const Vec & old)const{
+  Vector MVTP::draw(const Vector & old)const{
     int n = old.size();
-    Vec ans(n);
+    Vector ans(n);
     for(int i = 0; i < n; ++i) ans[i] = rnorm_mt(rng(), 0,1);
     ans = chol_ * ans;
     if(std::isfinite(nu_) && nu_ > 0){
@@ -49,14 +49,14 @@ namespace BOOM{
   void MVTP::set_nu(double nu){nu_ = nu;}
   uint MVTP::dim()const{return siginv_.nrow();}
 
-  void MVTP::set_var(const Spd &V){
+  void MVTP::set_var(const SpdMatrix &V){
     Chol L(V);
     chol_ = L.getL();
     siginv_ = L.inv();
     ldsi_ = -2 * sum(log(diag(chol_)));
   }
 
-  void MVTP::set_ivar(const Spd &H){
+  void MVTP::set_ivar(const SpdMatrix &H){
     Chol cholesky(H);
     siginv_ = H;
     chol_ = cholesky.getL();
@@ -65,7 +65,7 @@ namespace BOOM{
     // now chol_ is an upper triangular matrix with chol_ * chol_.t() = Sigma
   }
 
-  double MVTP::logf(const Vec &x, const Vec & old)const{
+  double MVTP::logf(const Vector &x, const Vector & old)const{
     if(std::isfinite(nu_) && nu_>0){
       return dmvt(x, mu(old), siginv_, nu_, ldsi_, true);
     }
@@ -74,28 +74,30 @@ namespace BOOM{
 
 
   typedef MvtRwmProposal MVTR;
-  MVTR::MvtRwmProposal(const Spd &Ivar, double nu)
-      : MVTP(Ivar, nu)
+  MVTR::MvtRwmProposal(const SpdMatrix &Ivar, double nu, RNG &seeding_rng)
+      : MVTP(Ivar, nu, seeding_rng)
   {}
 
   typedef MvtIndepProposal MVTI;
-  MVTI::MvtIndepProposal(const Vec & mu, const Spd & Ivar, double nu)
-      : MVTP(Ivar, nu),
+  MVTI::MvtIndepProposal(const Vector & mu, const SpdMatrix & Ivar, double nu,
+                         RNG &seeding_rng)
+      : MVTP(Ivar, nu, seeding_rng),
         mu_(mu)
   {}
 
-  void MVTI::set_mu(const Vec & mu){ mu_ = mu; }
+  void MVTI::set_mu(const Vector & mu){ mu_ = mu; }
 
   //======================================================================
-  MH_ScalarProposal::MH_ScalarProposal()
-      : rng_(seed_rng())
+  MH_ScalarProposal::MH_ScalarProposal(RNG & seeding_rng)
+      : rng_(seed_rng(seeding_rng))
   {}
 
   //======================================================================
   typedef TScalarMhProposal TSP;
 
-  TSP::TScalarMhProposal(double Sd, double Df)
-    : sig_(Sd),
+  TSP::TScalarMhProposal(double Sd, double Df, RNG & seeding_rng)
+    : MH_ScalarProposal(seeding_rng),
+      sig_(Sd),
       nu_(Df)
   {}
 

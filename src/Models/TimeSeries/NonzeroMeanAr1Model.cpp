@@ -64,8 +64,8 @@ namespace BOOM{
     this->combine(*rhs);
   }
 
-  Vec Ar1Suf::vectorize(bool)const{
-    Vec ans(6);
+  Vector Ar1Suf::vectorize(bool)const{
+    Vector ans(6);
     ans[0] = first_value_;
     ans[1] = n_;
     ans[2] = sum_;
@@ -75,7 +75,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vec::const_iterator Ar1Suf::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator Ar1Suf::unvectorize(Vector::const_iterator &v, bool){
     first_value_ = *v;  ++v;
     n_ = *v;            ++v;
     sum_ = *v;          ++v;
@@ -85,8 +85,8 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator Ar1Suf::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator Ar1Suf::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return this->unvectorize(it, minimal);
   }
 
@@ -133,7 +133,7 @@ namespace BOOM{
         DataPolicy(new Ar1Suf)
   {}
 
-  NonzeroMeanAr1Model::NonzeroMeanAr1Model(const Vec &y)
+  NonzeroMeanAr1Model::NonzeroMeanAr1Model(const Vector &y)
       : ParamPolicy(new UnivParams(mean(y)),
                     new UnivParams(0),
                     new UnivParams(1.0)),
@@ -158,17 +158,17 @@ namespace BOOM{
     return new NonzeroMeanAr1Model(*this);}
 
   void NonzeroMeanAr1Model::mle(){
-    Spd xtx(2);
+    SpdMatrix xtx(2);
     xtx(0,0) = suf()->n() - 1;
     xtx(0,1) = suf()->lag_sum();
     xtx(1,0) = xtx(0,1);
     xtx(1,1) = suf()->lag_sumsq();
 
-    Vec xty(2);
+    Vector xty(2);
     xty[0] = suf()->sum_excluding_first();
     xty[1] = suf()->cross();
 
-    Vec beta = xtx.solve(xty);
+    Vector beta = xtx.solve(xty);
     double phi = beta[1];
     double mu = beta[0] / (1-phi);
     set_mu(mu);

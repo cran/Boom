@@ -4,7 +4,7 @@ CompareManyDensities <- function(list.of.arrays,
                                  color = NULL,
                                  gap = 0,
                                  burn = 0,
-                                 supress.labels = FALSE,
+                                 suppress.labels = FALSE,
                                  x.same.scale = TRUE,
                                  y.same.scale = FALSE,
                                  xlim = NULL,
@@ -30,7 +30,7 @@ CompareManyDensities <- function(list.of.arrays,
   ##   color:  A vector of colors to be used for representing the groups.
   ##   gap:  The gap (in lines) between plots).
   ##   burn:  The number of MCMC iterations to be discarded as burn-in.
-  ##   supress.labels: Logical.  If FALSE then the dimnames (if any)
+  ##   suppress.labels: Logical.  If FALSE then the dimnames (if any)
   ##     of the first element in list.of.arrays will be used to
   ##     annotate the plot.  If TRUE then no labels will be used.
   ##   x.same.scale: Logical indicating whether the same horizontal
@@ -222,7 +222,7 @@ CompareManyDensities <- function(list.of.arrays,
         }
 
         ## If the panel needs a label, add the label.
-        if (!supress.labels && !is.null(vector.labels)) {
+        if (!suppress.labels && !is.null(vector.labels)) {
           mtext(vector.labels[variable.number], line = -2)
         }
 
@@ -247,7 +247,7 @@ CompareManyDensities <- function(list.of.arrays,
             axis(1)
           }
         } else {
-          if (have.matrix.labels && !supress.labels) {
+          if (have.matrix.labels && !suppress.labels) {
             mtext(column.labels[j], side = 1, line = 2)
           }
         }
@@ -260,7 +260,7 @@ CompareManyDensities <- function(list.of.arrays,
             axis(3)
           }
         } else {
-          if (have.matrix.labels && !supress.labels) {
+          if (have.matrix.labels && !suppress.labels) {
             mtext(column.labels[j], side = 3, line = 2)
           }
         }
@@ -273,7 +273,7 @@ CompareManyDensities <- function(list.of.arrays,
             axis(4)
           }
         } else {
-          if (have.matrix.labels && !supress.labels) {
+          if (have.matrix.labels && !suppress.labels) {
             mtext(row.labels[i], side = 4, line = 2)
           }
         }
@@ -286,7 +286,7 @@ CompareManyDensities <- function(list.of.arrays,
             axis(2)
           }
         } else {
-          if (have.matrix.labels && !supress.labels) {
+          if (have.matrix.labels && !suppress.labels) {
             mtext(row.labels[i], side = 2, line = 2)
           }
         }

@@ -17,7 +17,6 @@
 */
 
 #include <Models/ZeroMeanGaussianModel.hpp>
-#include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
 #include <Models/GammaModel.hpp>
 #include <cpputil/math_utils.hpp>
 
@@ -57,23 +56,8 @@ namespace BOOM{
     else set_sigsq(1.0);
   }
 
-  void ZGM::set_conjugate_prior(double df, double sigma_guess){
-    double ss = pow(sigma_guess, 2) * df;
-    NEW(ZeroMeanGaussianConjSampler, pri)(this, df/2, ss/2);
-    set_conjugate_prior(pri);
-  }
-
-  void ZGM::set_conjugate_prior(Ptr<GammaModelBase> ivar){
-    NEW(ZeroMeanGaussianConjSampler, pri)(this, ivar);
-    set_conjugate_prior(pri);
-  }
-
-  void ZGM::set_conjugate_prior(Ptr<ZeroMeanGaussianConjSampler> pri){
-    ConjPriorPolicy::set_conjugate_prior(pri);
-  }
-
   double ZGM::Loglike(const Vector &sigsq_vec,
-                      Vec &g, Mat &h, uint nd)const{
+                      Vector &g, Matrix &h, uint nd)const{
     double sigsq = sigsq_vec[0];
     if(sigsq<0) return BOOM::negative_infinity();
 

@@ -25,28 +25,34 @@ namespace BOOM{
   class GaussianModelBase;
   class GammaModelBase;
 
-
   // draws sigma given mu
-
   class GaussianVarSampler : public PosteriorSampler{
    public:
     GaussianVarSampler(GaussianModelBase * m,
                        double prior_df,
-                       double prior_sigma_guess);
-    GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g);
-    virtual void draw();
-    double logpri()const;
+                       double prior_sigma_guess,
+                       RNG &seeding_rng = GlobalRng::rng);
+    GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g,
+                       RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
     // Call to ensure that sigma (standard deviation) remains below
     // the specified upper_truncation_point
     void set_sigma_upper_limit(double max_sigma);
+
+    // Sets mod->sigsq() to the posterior mode given the prior and mod->suf();
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
+
    protected:
     const Ptr<GammaModelBase> ivar()const;
    private:
-    Ptr<GammaModelBase> gam;
-    GaussianModelBase * mod;
+    Ptr<GammaModelBase> prior_;
+    GaussianModelBase * model_;
     GenericGaussianVarianceSampler sampler_;
   };
 
-
-}
+}  // namespace BOOM
 #endif // BOOM_GAUSSIAN_VARIANCE_METHOD_HPP

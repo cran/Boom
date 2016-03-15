@@ -26,22 +26,9 @@
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/EmMixtureComponent.hpp>
+
 namespace BOOM{
-
-  class BinomialLogitModel;
-  class BinomialLogitLogLikelihood
-      : public d2TargetFun
-  {
-   public:
-    BinomialLogitLogLikelihood(const BinomialLogitModel *m);
-    double operator()(const Vec &beta)const;
-    double operator()(const Vec &beta, Vec &g)const;
-    double operator()(const Vec &beta, Vec &g, Mat &H)const;
-   private:
-    const BinomialLogitModel *m_;
-  };
-
-// logistic regression model with binned training data
+  // Logistic regression model with binomial (binned) training data.
   class BinomialLogitModel
       : public GlmModel,
         public NumOptModel,
@@ -52,32 +39,37 @@ namespace BOOM{
   {
    public:
     BinomialLogitModel(uint beta_dim, bool include_all=true);
-    BinomialLogitModel(const Vec &beta);
-    BinomialLogitModel(const Mat &X, const Vec &y, const Vec &n);
+    BinomialLogitModel(const Vector &beta);
+
+    // Use this constructor if the model needs to share its
+    // coefficient vector with another model.
+    BinomialLogitModel(Ptr<GlmCoefs> beta);
+
+    BinomialLogitModel(const Matrix &X, const Vector &y, const Vector &n);
     BinomialLogitModel(const BinomialLogitModel &);
-    BinomialLogitModel *clone()const;
+    BinomialLogitModel *clone()const override;
 
-    virtual GlmCoefs & coef(){return ParamPolicy::prm_ref();}
-    virtual const GlmCoefs & coef()const{return ParamPolicy::prm_ref();}
-    virtual Ptr<GlmCoefs> coef_prm(){return ParamPolicy::prm();}
-    virtual const Ptr<GlmCoefs> coef_prm()const{return ParamPolicy::prm();}
+    GlmCoefs & coef() override{return ParamPolicy::prm_ref();}
+    const GlmCoefs & coef()const override{return ParamPolicy::prm_ref();}
+    Ptr<GlmCoefs> coef_prm() override{return ParamPolicy::prm();}
+    const Ptr<GlmCoefs> coef_prm()const override{return ParamPolicy::prm();}
 
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(const Data * dp, bool logscale)const override;
     virtual double pdf(dPtr dp, bool logscale)const;
     virtual double pdf(Ptr<BinomialRegressionData>, bool)const;
-    virtual double logp(uint y, uint n, const Vec &x, bool logscale)const;
-    virtual double logp_1(bool y, const Vec &x, bool logscale)const;
+    virtual double logp(double y, double n, const Vector &x, bool logscale)const;
+    virtual double logp_1(bool y, const Vector &x, bool logscale)const;
 
     // In the following, beta refers to the set of nonzero "included"
     // coefficients.
-    virtual double Loglike(const Vector &beta,
-                           Vector &g, Matrix &h, uint nd)const;
-    virtual double log_likelihood(const Vec &beta, Vec *g, Mat *h,
+    double Loglike(const Vector &beta,
+                           Vector &g, Matrix &h, uint nd)const override;
+    virtual double log_likelihood(const Vector &beta, Vector *g, Matrix *h,
                                   bool initialize_derivs = true)const;
 
-    BinomialLogitLogLikelihood log_likelihood_tf()const;
+    d2TargetFunPointerAdapter log_likelihood_tf()const;
 
-    virtual Spd xtx()const;
+    virtual SpdMatrix xtx()const;
 
     // see comments in LogisticRegressionModel
     void set_nonevent_sampling_prob(double alpha);
@@ -87,6 +79,6 @@ namespace BOOM{
     double log_alpha_;  // see comments in logistic_regression_model
   };
 
+}  // namespace BOOM
 
-}
 #endif// BOOM_BINOMIAL_LOGIT_MODEL_HPP_

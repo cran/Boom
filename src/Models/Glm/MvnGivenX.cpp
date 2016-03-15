@@ -26,7 +26,7 @@
 
 namespace BOOM{
 
-  MvnGivenX::MvnGivenX(const Vec &Mu, double nobs, double diag)
+  MvnGivenX::MvnGivenX(const Vector &Mu, double nobs, double diag)
     : ParamPolicy(new VectorParams(Mu), new UnivParams(nobs) ),
       diagonal_weight_(diag),
       Lambda_(Mu.length(), 0),
@@ -46,7 +46,7 @@ namespace BOOM{
 
   MvnGivenX::MvnGivenX(Ptr<VectorParams> Mu,
                        Ptr<UnivParams> nobs,
-                       const Vec & Lambda,
+                       const Vector & Lambda,
                        double diag)
     : ParamPolicy(Mu, nobs),
       diagonal_weight_(diag),
@@ -74,7 +74,7 @@ namespace BOOM{
 
   MvnGivenX * MvnGivenX::clone()const{return new MvnGivenX(*this);}
 
-  void MvnGivenX::add_x(const Vec &x, double w){
+  void MvnGivenX::add_x(const Vector &x, double w){
     xtwx_.add_outer(x, w, false);
     sumw_ += w;
     current_ = false;
@@ -86,7 +86,7 @@ namespace BOOM{
     current_ = false;
   }
 
-  const Spd & MvnGivenX::xtwx()const{ return xtwx_; }
+  const SpdMatrix & MvnGivenX::xtwx()const{ return xtwx_; }
 
   void MvnGivenX::initialize_params(){}
 
@@ -96,15 +96,15 @@ namespace BOOM{
   Ptr<UnivParams> MvnGivenX::Kappa_prm(){ return prm2(); }
   double MvnGivenX::diagonal_weight()const{return diagonal_weight_;}
   uint MvnGivenX::dim()const{ return mu().size(); }
-  const Vec & MvnGivenX::mu()const{ return Mu_prm()->value(); }
+  const Vector & MvnGivenX::mu()const{ return Mu_prm()->value(); }
   double MvnGivenX::kappa()const{ return Kappa_prm()->value(); }
 
-  const Spd & MvnGivenX::Sigma()const{
+  const SpdMatrix & MvnGivenX::Sigma()const{
     if(!current_) set_ivar();
     return ivar_->var();
   }
 
-  const Spd & MvnGivenX::siginv()const{
+  const SpdMatrix & MvnGivenX::siginv()const{
     if(!current_) set_ivar();
     return ivar_->ivar();
   }
@@ -115,7 +115,7 @@ namespace BOOM{
   }
 
   void MvnGivenX::set_ivar()const{
-    Spd ivar = xtwx_;
+    SpdMatrix ivar = xtwx_;
     if(sumw_>0.0){
       ivar/=sumw_;
       double w= diagonal_weight_;
@@ -136,14 +136,14 @@ namespace BOOM{
   }
 
 
-  Vec MvnGivenX::sim()const{
+  Vector MvnGivenX::sim()const{
     return rmvn(mu(), Sigma());
   }
 
 //______________________________________________________________________
 
   MvnGivenXMultinomialLogit::MvnGivenXMultinomialLogit(
-      const Vec &beta_prior_mean,
+      const Vector &beta_prior_mean,
       double prior_sample_size,
       double diagonal_weight)
       : ParamPolicy(new VectorParams(beta_prior_mean),
@@ -241,7 +241,7 @@ namespace BOOM{
     }
 
     if(diagonal_weight_ > 0){
-      Vec d(overall_xtx_.diag());
+      Vector d(overall_xtx_.diag());
       overall_xtx_ *= (1-diagonal_weight_);
       overall_xtx_.set_diag(d, false);
     }
@@ -256,7 +256,7 @@ namespace BOOM{
   const Vector & MvnGivenXMultinomialLogit::mu()const{
     return prm1_ref().value();
   }
-  void MvnGivenXMultinomialLogit::set_mu(const Vec &mu){
+  void MvnGivenXMultinomialLogit::set_mu(const Vector &mu){
     Mu_prm()->set(mu);
   }
 
@@ -274,12 +274,12 @@ namespace BOOM{
     current_ = false;
   }
 
-  const Spd & MvnGivenXMultinomialLogit::Sigma()const{
+  const SpdMatrix & MvnGivenXMultinomialLogit::Sigma()const{
     make_current();
     return Sigma_storage_->var();
   }
 
-  const Spd & MvnGivenXMultinomialLogit::siginv()const{
+  const SpdMatrix & MvnGivenXMultinomialLogit::siginv()const{
     make_current();
     return Sigma_storage_->ivar();
   }

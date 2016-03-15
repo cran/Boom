@@ -18,11 +18,11 @@
 #include <numopt/ScalarLaplaceApproximation.hpp>
 #include <numopt/ScalarNewtonMax.hpp>
 #include <cpputil/Constants.hpp>
-#include <stdexcept>
 
 namespace BOOM{
   typedef ScalarLaplaceApproximation SLA;
-  SLA::ScalarLaplaceApproximation(const d2ScalarTargetFun &logf, double starting_value)
+  SLA::ScalarLaplaceApproximation(const d2ScalarTargetFun &logf,
+                                  double starting_value)
       : logf_(logf)
   {
     find_mode(starting_value);
@@ -50,17 +50,31 @@ namespace BOOM{
     MgfTarget(const d2ScalarTargetFun &logf, double s)
         : logf_(logf), s_(s) {}
 
-    virtual double operator()(double u)const{
-      return logf_(u) + s_ * u; }
-    virtual double operator()(double u, double &g)const{
+    double operator()(double u) const override {
+      return logf_(u) + s_ * u;
+    }
+
+    double operator()(double u, double &g) const override {
       double ans = logf_(u,g) + s_ * u;
       g += s_;  // derivative is with respect to u
       return ans;
     }
-    virtual double operator()(double u, double &g, double &h)const{
+
+    double operator()(double u, double &g, double &h) const override {
       double ans = logf_(u,g,h) + s_ * u;
       g += s_;  // derivative is with respect to u
       return ans;
+    }
+
+    double operator()(
+        double u, double &g, double &h, uint nderiv) const override {
+      if (nderiv > 2) {
+        return (*this)(u, g, h);
+      } else if (nderiv == 1) {
+        return (*this)(u, g);
+      } else {
+        return (*this)(u);
+      }
     }
    private:
     const d2ScalarTargetFun &logf_;

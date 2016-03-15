@@ -28,7 +28,7 @@ namespace BOOM{
   SVM::SweptVarianceMatrix(uint d)
       : S(d), swept_(d, false), nswept_(0){}
 
-  SVM::SweptVarianceMatrix(const Spd &m)
+  SVM::SweptVarianceMatrix(const SpdMatrix &m)
       : S(m), swept_(m.nrow(), false), nswept_(0){}
 
   SVM::SweptVarianceMatrix
@@ -89,8 +89,8 @@ namespace BOOM{
   //------------------------------------------------------------
 
 
-  Mat SVM::Beta()const{   // E(y|x) = x*Beta
-    Mat ans(xdim(), ydim());
+  Matrix SVM::Beta()const{   // E(y|x) = x*Beta
+    Matrix ans(xdim(), ydim());
     uint ii=0;
     for(uint i = 0; i<S.dim(); ++i){
       if(swept_[i]==true){  // i is an 'x' dimension
@@ -103,7 +103,7 @@ namespace BOOM{
       if(ii==xdim()) break; }
     return ans; }
 
-  Vec SVM::E_y_given_x(const Vec &x, const Vec &mu){
+  Vector SVM::E_y_given_x(const Vector &x, const Vector &mu){
     assert(mu.size()==S.ncol());
     assert(x.size() == nswept_);
     std::vector<bool> isy(swept_);
@@ -112,8 +112,8 @@ namespace BOOM{
   }
   //------------------------------------------------------------
 
-  Spd SVM::V_y_given_x()const{
-    Spd ans(ydim());
+  SpdMatrix SVM::V_y_given_x()const{
+    SpdMatrix ans(ydim());
     uint ii=0;
     uint d = S.dim();
     for(uint i = 0; i<d; ++i){
@@ -126,8 +126,8 @@ namespace BOOM{
         ++ii;}}
     return ans;}
 
-  Spd SVM::ivar_x()const{
-    Spd ans(xdim());
+  SpdMatrix SVM::ivar_x()const{
+    SpdMatrix ans(xdim());
     uint ii=0;
     uint d = S.dim();
     for(uint i = 0; i<d; ++i){

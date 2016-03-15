@@ -26,9 +26,9 @@ namespace BOOM{
   // A mix-in class indicating that the model is capable of
   class SpdModel : virtual public MixtureComponent{
   public:
-    virtual double logp(const Spd &)const=0;
-    virtual SpdModel *clone()const =0;
-    virtual double pdf(const Data *dp, bool logscale)const;
+    virtual double logp(const SpdMatrix &)const=0;
+    SpdModel *clone()const override =0;
+    double pdf(const Data *dp, bool logscale)const override;
   };
 
 }  // namespace BOOM

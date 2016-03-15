@@ -57,30 +57,30 @@ namespace BOOM {
 
     class LogTransformation : public Transformation {
      public:
-      virtual double operator()(double y)const { return log(y); }
-      virtual double inverse(double z)const { return exp(z); }
+      double operator()(double y)const override { return log(y); }
+      double inverse(double z)const override { return exp(z); }
       // Jacobian is 1/y, so log is -log(y)
-      virtual double log_jacobian(double y)const { return -log(y); }
-      virtual string name()const{return "log";}
+      double log_jacobian(double y)const override { return -log(y); }
+      string name()const override{return "log";}
     };
 
     class SquareRootTransformation : public Transformation {
      public:
-      virtual double operator()(double y) const { return sqrt(y); }
-      virtual double inverse(double z) const { return z * z; }
+      double operator()(double y) const override { return sqrt(y); }
+      double inverse(double z) const override { return z * z; }
       // Jacobian is .5/sqrt(y), so log is log(.5) - .5*log(y)
-      virtual double log_jacobian(double y) const {
+      double log_jacobian(double y) const override {
         return -0.693147180559945 - .5*log(y);
       }
-      virtual string name()const{return "sqrt";}
+      string name()const override{return "sqrt";}
     };
 
     class IdentityTransformation : public Transformation {
      public:
-      virtual double operator()(double x) const { return x; }
-      virtual double inverse(double y) const { return y; }
-      virtual double log_jacobian(double y) const { return 0; }
-      virtual string name()const{return "";}
+      double operator()(double x) const override { return x; }
+      double inverse(double y) const override { return y; }
+      double log_jacobian(double y) const override { return 0; }
+      string name()const override{return "";}
     };
 
     //======================================================================
@@ -95,8 +95,8 @@ namespace BOOM {
       Group(const Group &rhs);
 
       // Virtual functions required by Data
-      virtual Group * clone()const;
-      virtual ostream & display(ostream &out)const;
+      Group * clone() const override;
+      ostream & display(ostream &out)const override;
       virtual uint size(bool minimal = true)const;
 
       // Add a new unit to an existing Group.  The RegressionData has two
@@ -116,7 +116,7 @@ namespace BOOM {
       // The full conditional distribution is proportional to f_finv(normal(y1,
       // mu1, sigma)) * finv(normal(sum - y1, mu2, sigma)), where muj =
       // beta.dot(x[j])
-      void distribute_total(const Vec &beta, double sigma);
+      void distribute_total(const Vector &beta, double sigma);
 
       // Call this method once all the information about a group has
       // been read in, but before calling distribute_total.  Ensures
@@ -143,10 +143,10 @@ namespace BOOM {
 
       // Workspace used for unit value calculation.  The invariant is
       // unit_values_[i] == exp(unit_data_[i]->y());
-      Vec unit_values_;
+      Vector unit_values_;
 
       // local storage simplifies the interface to ModifyUnitValue
-      const Vec * beta_;
+      const Vector * beta_;
       double sigma_;
 
       // Transformation to normality.
@@ -165,17 +165,17 @@ namespace BOOM {
    public:
     typedef Agreg::Group Group;
 
-    AggregatedRegressionModel(const Mat & design_matrix_,
+    AggregatedRegressionModel(const Matrix & design_matrix_,
                               const std::vector<string> & group_names,
-                              const Vec & group_values,
+                              const Vector & group_values,
                               const string &transformation);
 
     AggregatedRegressionModel(const AggregatedRegressionModel &rhs);
-    virtual AggregatedRegressionModel * clone()const;
+    AggregatedRegressionModel * clone() const override;
 
-    const Vec &beta()const{return model_->Beta();}
+    const Vector &beta()const{return model_->Beta();}
     double sigma()const{return model_->sigma();}
-    void set_beta(const Vec &beta);
+    void set_beta(const Vector &beta);
     void set_sigma(double sigma);
 
     // Gibbs sampler step that redistributes each group's total amount
@@ -196,9 +196,9 @@ namespace BOOM {
     //     There must be a one-to-one correspondence between the entries
     //     in group_names and group_values.  That is, if group_names[i] ==
     //     group_names[j] then group_values[i] should equal group_values[j].
-    void initialize_groups(const Mat &unit_level_predictors,
+    void initialize_groups(const Matrix &unit_level_predictors,
                            const std::vector<string> &group_names,
-                           const Vec &group_values);
+                           const Vector &group_values);
 
     // Create an appropriate transformation for use in the constructor.
     static Agreg::Transformation *create_transformation(const string &transformation);

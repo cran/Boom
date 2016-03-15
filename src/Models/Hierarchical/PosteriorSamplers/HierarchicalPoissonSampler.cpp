@@ -25,15 +25,17 @@ namespace BOOM {
   HierarchicalPoissonSampler::HierarchicalPoissonSampler(
       HierarchicalPoissonModel *model,
       Ptr<DoubleModel> gamma_mean_prior,
-      Ptr<DoubleModel> gamma_sample_size_prior)
-      : model_(model),
+      Ptr<DoubleModel> gamma_sample_size_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         gamma_mean_prior_(gamma_mean_prior),
         gamma_sample_size_prior_(gamma_sample_size_prior) {
 
     GammaModel *prior = model_->prior_model();
     prior->clear_methods();
     NEW(GammaPosteriorSampler, prior_sampler)(
-        prior, gamma_mean_prior_, gamma_sample_size_prior_);
+        prior, gamma_mean_prior_, gamma_sample_size_prior_, rng());
     prior->set_method(prior_sampler);
   }
 
@@ -51,7 +53,7 @@ namespace BOOM {
       if (data_model->number_of_sampling_methods() != 1) {
         data_model->clear_methods();
         NEW(PoissonGammaSampler, data_model_sampler)(
-            data_model, Ptr<GammaModel>(prior));
+            data_model, Ptr<GammaModel>(prior), rng());
         data_model->set_method(data_model_sampler);
       }
       data_model->sample_posterior();

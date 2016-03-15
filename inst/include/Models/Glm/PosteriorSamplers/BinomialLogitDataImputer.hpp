@@ -44,8 +44,8 @@ namespace BOOM {
     //   sum of the information weights.
     virtual std::pair<double, double> impute(
         RNG &rng,
-        int number_of_trials,
-        int number_of_successes,
+        double number_of_trials,
+        double number_of_successes,
         double log_odds) const = 0;
 
     // A finite mixture approximation to the logistic distribution.
@@ -61,8 +61,8 @@ namespace BOOM {
    protected:
     // Adds a human readable message to 'err'.
     void debug_status_message(ostream &err,
-                              int number_of_trials,
-                              int number_of_successes,
+                              double number_of_trials,
+                              double number_of_successes,
                               double eta) const;
   };
 
@@ -122,13 +122,13 @@ namespace BOOM {
     //
     //               sum_j (1.0 / v[i, j]).
     std::pair<double, double> impute(RNG &rng,
-                                     int number_of_trials,
-                                     int number_of_successes,
-                                     double log_odds)const;
+                                     double number_of_trials,
+                                     double number_of_successes,
+                                     double log_odds)const override;
 
     // The smallest number_of_trials where approximate augmentation
     // takes place.
-    virtual int clt_threshold() const;
+    int clt_threshold() const override;
 
    private:
     int clt_threshold_;
@@ -178,27 +178,27 @@ namespace BOOM {
     //   draw from the normal distribution with the appropriate
     //   moments.
     std::pair<double, double> impute(RNG &rng,
-                                     int number_of_trials,
-                                     int number_of_successes,
-                                     double log_odds) const;
+                                     double number_of_trials,
+                                     double number_of_successes,
+                                     double log_odds) const override;
 
     // The smallest number_of_trials for which approximate
     // augmentation takes place.
-    virtual int clt_threshold()const;
+    int clt_threshold()const override;
    private:
     int clt_threshold_;
 
     // Specific cases used to implement the public impute() method.
     std::pair<double, double> impute_small_sample(
         RNG &rng,
-        int number_of_trials,
-        int number_of_successes,
+        double number_of_trials,
+        double number_of_successes,
         double eta) const;
 
     std::pair<double, double> impute_large_sample(
         RNG &rng,
-        int number_of_trials,
-        int number_of_successes,
+        double number_of_trials,
+        double number_of_successes,
         double eta) const;
   };
 

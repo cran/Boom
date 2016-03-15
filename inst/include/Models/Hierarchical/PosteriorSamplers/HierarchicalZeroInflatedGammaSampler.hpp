@@ -68,9 +68,10 @@ namespace BOOM {
         Ptr<DoubleModel> gamma_shape_mean_prior,
         Ptr<DoubleModel> gamma_shape_shape_prior,
         Ptr<DoubleModel> positive_probability_mean_prior,
-        Ptr<DoubleModel> positive_probability_sample_size_prior);
-    virtual double logpri()const;
-    virtual void draw();
+        Ptr<DoubleModel> positive_probability_sample_size_prior,
+        RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
    private:
     // Check that a posterior sampler has been assigned to
     // *data_model.  If not, assign one.

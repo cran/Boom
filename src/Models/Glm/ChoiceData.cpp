@@ -82,24 +82,24 @@ namespace BOOM{
 
   void CHD::set_y(const string & y) {CategoricalData::set(y);}
 
-  const Vec & CHD::Xsubject()const{return xsubject_->value();}
+  const Vector & CHD::Xsubject()const{return xsubject_->value();}
 
-  const Vec & CHD::Xchoice(uint i)const{
+  const Vector & CHD::Xchoice(uint i)const{
     if (!xchoice_.empty()) {
       return xchoice_[i]->value();
     }
     else return null_;
   }
 
-  void CHD::set_Xsubject(const Vec &x) {
+  void CHD::set_Xsubject(const Vector &x) {
     xsubject_->set(x);
   }
 
-  void CHD::set_Xchoice(const Vec &x, uint i) {
+  void CHD::set_Xchoice(const Vector &x, uint i) {
     xchoice_[i]->set(x);
   }
 
-  const Mat & CHD::write_x(Mat &X, bool inc_zero)const{
+  const Matrix & CHD::write_x(Matrix &X, bool inc_zero)const{
     bool inc = inc_zero;
     uint pch= choice_nvars();
     uint psub=  subject_nvars();
@@ -108,9 +108,9 @@ namespace BOOM{
     X.resize(M,nc);
     X=0;
 
-    const Vec & xcu(Xsubject());
+    const Vector & xcu(Xsubject());
     for (uint m = 0; m < M; ++m) {
-      const Vec & xch(Xchoice(m));
+      const Vector & xch(Xchoice(m));
       VectorViewIterator it = X.row_begin(m);
       if (inc || m > 0) {
         it += (inc ? m : m-1)*psub;
@@ -122,7 +122,7 @@ namespace BOOM{
     return X;
   }
 
-  const Mat & CHD::X(bool inc_zeros)const{
+  const Matrix & CHD::X(bool inc_zeros)const{
     if (!check_big_x(inc_zeros)) {
       write_x(bigX_, inc_zeros);
     }

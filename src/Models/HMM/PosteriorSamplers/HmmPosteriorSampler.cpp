@@ -28,9 +28,14 @@ namespace BOOM{
 
 typedef HmmPosteriorSampler HS;
 
-  HS::HmmPosteriorSampler(HiddenMarkovModel *hmm)
-      : hmm_(hmm),
+  HS::HmmPosteriorSampler(HiddenMarkovModel *hmm, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+#ifndef NO_BOOST_THREADS
+        hmm_(hmm),
         use_threads_(false)
+#else
+        hmm_(hmm)
+#endif
   {}
 
   void HS::draw(){

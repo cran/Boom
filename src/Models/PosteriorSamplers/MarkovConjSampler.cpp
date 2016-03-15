@@ -24,9 +24,11 @@ namespace BOOM{
   typedef MarkovConjSampler MCS;
 
   MCS::MarkovConjSampler(MarkovModel *Mod,
-			 Ptr<ProductDirichletModel> Q,
-			 Ptr<DirichletModel> pi0)
-    : mod_(Mod),
+             Ptr<ProductDirichletModel> Q,
+             Ptr<DirichletModel> pi0,
+       RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       Q_(Q),
       pi0_(pi0)
     {
@@ -34,15 +36,19 @@ namespace BOOM{
     }
 
   MCS::MarkovConjSampler(MarkovModel * Mod,
-			 Ptr<ProductDirichletModel> Q)
-    : mod_(Mod),
+             Ptr<ProductDirichletModel> Q,
+       RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       Q_(Q)
     {}
 
   MCS::MarkovConjSampler(MarkovModel *Mod,
-                         const Mat & Nu,
-                         const Vec & nu)
-       : mod_(Mod),
+                         const Matrix & Nu,
+                         const Vector & nu,
+                         RNG &seeding_rng)
+       : PosteriorSampler(seeding_rng),
+         mod_(Mod),
          Q_(new ProductDirichletModel(Nu)),
          pi0_(new DirichletModel(nu))
    {
@@ -50,17 +56,16 @@ namespace BOOM{
    }
 
   MCS::MarkovConjSampler(MarkovModel * Mod,
-                         const Mat & Nu)
-       : mod_(Mod),
+                         const Matrix & Nu,
+                         RNG &seeding_rng)
+       : PosteriorSampler(seeding_rng),
+         mod_(Mod),
          Q_(new ProductDirichletModel(Nu))
    {}
 
-
-  MCS * MCS::clone()const{return new MCS(*this);}
-
   double MCS::logpri()const{
-    const Mat &Nu(this->Nu());
-    const Mat &Q(mod_->Q());
+    const Matrix &Nu(this->Nu());
+    const Matrix &Q(mod_->Q());
     assert(Nu.same_dim(Q));
     uint S = Nu.nrow();
     double ans = 0;
@@ -77,9 +82,9 @@ namespace BOOM{
 
 
   void MCS::draw(){
-    const Mat & Nu(this->Nu());
-    Mat Q(mod_->Q());
-    const Mat & N(mod_->suf()->trans());
+    const Matrix & Nu(this->Nu());
+    Matrix Q(mod_->Q());
+    const Matrix & N(mod_->suf()->trans());
     assert(Nu.same_dim(Q));
     uint S = Nu.nrow();
     for(uint s=0; s<S; ++s){
@@ -99,10 +104,10 @@ namespace BOOM{
   }
 
 
-  void MCS::find_posterior_mode(){
-    const Mat & Nu(this->Nu());
-    Mat Q(mod_->Q());
-    const Mat & N(mod_->suf()->trans());
+  void MCS::find_posterior_mode(double){
+    const Matrix & Nu(this->Nu());
+    Matrix Q(mod_->Q());
+    const Matrix & N(mod_->suf()->trans());
     assert(Nu.same_dim(Q));
     uint S = Nu.nrow();
     for(uint s=0; s<S; ++s){
@@ -118,8 +123,8 @@ namespace BOOM{
   }
 
 
-  const Mat & MCS::Nu()const{ return Q_->Nu(); }
-  const Vec & MCS::nu()const{
+  const Matrix & MCS::Nu()const{ return Q_->Nu(); }
+  const Vector & MCS::nu()const{
     check_nu();
     return pi0_->nu();
   }
@@ -128,20 +133,18 @@ namespace BOOM{
     if(!!pi0_) return;
     ostringstream err;
     err << "A Markov chain model has a free initial distribution "
-	<< "parameter (pi0) that was not assigned a prior."
-	<< endl
-	<< "Prior for transition counts was:" <<endl
-	<< Nu() << endl;
-    throw_exception<std::runtime_error>(err.str());
+    << "parameter (pi0) that was not assigned a prior."
+    << endl
+    << "Prior for transition counts was:" <<endl
+    << Nu() << endl;
+    report_error(err.str());
   }
 
   void MCS::check_nu()const{
     if(!!pi0_) return;
     ostringstream err;
     err << "MarkovConjugateSampler::nu()" << endl
-	<< "No prior distribution was set" << endl;
-    throw_exception<std::runtime_error>(err.str());
+    << "No prior distribution was set" << endl;
+    report_error(err.str());
   }
-
-
-}
+}  // namespace BOOM

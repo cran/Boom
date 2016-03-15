@@ -26,7 +26,7 @@ namespace BOOM{
 
     // Write progress to an arbitrary stream
     ProgressTracker(ostream &out, uint nskip=100, const string & prog_name="");
-    ~ProgressTracker();
+    ~ProgressTracker() override;
     ProgressTracker & operator++(){update(); return *this;}
     ProgressTracker & operator++(int){update(); return *this;}
     void update();

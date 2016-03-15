@@ -152,11 +152,11 @@ namespace BOOM {
     initial_state_mean_ = mu;
   }
 
-  Spd DynamicRegressionStateModel::initial_state_variance()const{
+  SpdMatrix DynamicRegressionStateModel::initial_state_variance()const{
     return initial_state_variance_;
   }
 
-  void DynamicRegressionStateModel::set_initial_state_variance(const Spd &V) {
+  void DynamicRegressionStateModel::set_initial_state_variance(const SpdMatrix &V) {
     check_size(V.nrow());
     initial_state_variance_ = V;
   }
@@ -183,6 +183,20 @@ namespace BOOM {
 
   const Ptr<UnivParams> DynamicRegressionStateModel::Sigsq_prm(int i)const{
     return coefficient_transition_model_[i]->Sigsq_prm();
+  }
+
+  void DynamicRegressionStateModel::add_forecast_data(
+      const Matrix &predictors) {
+    if (ncol(predictors) != xdim_) {
+      report_error("Forecast data has the wrong number of columns");
+    }
+    for (int i = 0; i < nrow(predictors); ++i){
+      SparseVector forecast_observation(xdim_);
+      for (int j = 0; j < xdim_; ++j) {
+        forecast_observation[j] = predictors(i, j);
+      }
+      X_.push_back(forecast_observation);
+    }
   }
 
   void DynamicRegressionStateModel::check_size(int n)const{

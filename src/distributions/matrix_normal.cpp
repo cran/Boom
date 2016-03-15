@@ -30,8 +30,8 @@
 
 namespace BOOM{
 
-  double dmatrix_normal_ivar(const Mat &Y,const Mat &Mu,
-			const Spd & Siginv, const Spd & Ominv,
+  double dmatrix_normal_ivar(const Matrix &Y,const Matrix &Mu,
+			const SpdMatrix & Siginv, const SpdMatrix & Ominv,
 			bool logscale){
 
     double ldoi = Ominv.logdet();
@@ -39,19 +39,19 @@ namespace BOOM{
     return dmatrix_normal_ivar(Y,Mu,Siginv, ldsi, Ominv, ldoi, logscale);
   }
 
-  double dmatrix_normal_ivar(const Mat &Y,const Mat &Mu,
-			const Spd & Siginv, double ldsi,
-			const Spd & Ominv, double ldoi,
+  double dmatrix_normal_ivar(const Matrix &Y,const Matrix &Mu,
+			const SpdMatrix & Siginv, double ldsi,
+			const SpdMatrix & Ominv, double ldoi,
 			bool logscale){
 
     // Y~ matrix_normal(Mu, Siginv, Ominv) if
-    // Vec(Y) ~ N(Vec(Mu), (Siginv \otimes Ominv)^{-1})
+    // Vector(Y) ~ N(Vector(Mu), (Siginv \otimes Ominv)^{-1})
     // Where dim(Y) = (xdim,ydim) , dim(Siginv) = ydim,
     // dim(Ominv) = xdim
 
-    Mat E =  Y-Mu;
-    Mat A = Ominv * E;
-    Mat B = E * Siginv;
+    Matrix E =  Y-Mu;
+    Matrix A = Ominv * E;
+    Matrix B = E * Siginv;
     double qform = traceAtB(A,B);
 
     // qform = vec(Y-Mu)^T (Siginv \otimes Ominv) vec(Y-Mu)
@@ -69,22 +69,22 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  Mat rmatrix_normal_ivar(const Mat & Mu, const Spd &Siginv, const Spd &Ominv){
+  Matrix rmatrix_normal_ivar(const Matrix & Mu, const SpdMatrix &Siginv, const SpdMatrix &Ominv){
     return rmatrix_normal_ivar_mt(GlobalRng::rng, Mu, Siginv, Ominv);}
 
-  Mat rmatrix_normal_ivar_mt(RNG & rng, const Mat & Mu,
-                             const Spd &Siginv, const Spd &Ominv){
+  Matrix rmatrix_normal_ivar_mt(RNG & rng, const Matrix & Mu,
+                             const SpdMatrix &Siginv, const SpdMatrix &Ominv){
 
     uint xdim = Mu.nrow();
     uint ydim = Mu.ncol();
-    Mat Z(xdim,ydim);
+    Matrix Z(xdim,ydim);
     double *zdata = Z.data();
     for(uint i=0; i<xdim*ydim; ++i){ zdata[i] = rnorm_mt(rng); }
 
-    Mat Ominv_U(t(Chol(Ominv).getL()));
-    Mat Lsig(Linv(Chol(Siginv).getL()));
+    Matrix Ominv_U(t(Chol(Ominv).getL()));
+    Matrix Lsig(Linv(Chol(Siginv).getL()));
 
-    Mat ans = Mu + Usolve(Ominv_U,Z) * Lsig;
+    Matrix ans = Mu + Usolve(Ominv_U,Z) * Lsig;
     return ans;
   }
 

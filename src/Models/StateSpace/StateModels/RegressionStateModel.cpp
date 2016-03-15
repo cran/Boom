@@ -71,11 +71,11 @@ namespace BOOM{
     return ans;
   }
 
-  Vec RegressionStateModel::initial_state_mean()const{
-    return Vec(1, 1.0);
+  Vector RegressionStateModel::initial_state_mean()const{
+    return Vector(1, 1.0);
   }
 
-  Spd RegressionStateModel::initial_state_variance()const{
-    return Spd(1, 0.0);
+  SpdMatrix RegressionStateModel::initial_state_variance()const{
+    return SpdMatrix(1, 0.0);
   }
 }

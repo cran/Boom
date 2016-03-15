@@ -48,14 +48,14 @@ namespace BOOM{
 		      Ptr<UnivParams> prior_ss, double diag_wgt=0);
     MvnGivenXandSigma(RegressionModel *, Ptr<VectorParams> Mu,
 		      Ptr<UnivParams> prior_ss,
-		      const Vec & Lambda, double diag_wgt=0);
+		      const Vector & Lambda, double diag_wgt=0);
     MvnGivenXandSigma(const MvnGivenXandSigma &rhs);
-    virtual MvnGivenXandSigma * clone()const;
+    MvnGivenXandSigma * clone() const override;
 
-    virtual const Vec & mu()const;
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv()const;
-    virtual double ldsi()const;
+    const Vector & mu()const override;
+    const SpdMatrix & Sigma()const override;
+    const SpdMatrix & siginv()const override;
+    double ldsi()const override;
 
     double prior_sample_size()const;
     virtual double pdf(Ptr<Data>, bool logscale)const;
@@ -66,11 +66,11 @@ namespace BOOM{
     Ptr<UnivParams> Kappa_prm();
     double diagonal_weight()const;
 
-    virtual Vec sim()const;
+    Vector sim()const override;
   private:
     RegressionModel *  mod_;
     mutable Ptr<SpdParams> ivar_;
-    Vec Lambda_;
+    Vector Lambda_;
     double diagonal_weight_;
 
     mutable bool current_;

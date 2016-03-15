@@ -24,8 +24,9 @@
 namespace BOOM{
 
   ArPosteriorSampler::ArPosteriorSampler(
-      ArModel *model, Ptr<GammaModelBase> siginv_prior)
-        : model_(model),
+      ArModel *model, Ptr<GammaModelBase> siginv_prior, RNG &seeding_rng)
+        : PosteriorSampler(seeding_rng),
+          model_(model),
           siginv_prior_(siginv_prior),
           max_number_of_regression_proposals_(3),
           sigsq_sampler_(siginv_prior)
@@ -46,9 +47,9 @@ namespace BOOM{
   void ArPosteriorSampler::draw_sigma(){
     // ss = y - xb  y - xb
     //     = yty - 2 bt xty + bt xtx b
-    const Vec &phi(model_->phi());
-    const Vec &xty(model_->suf()->xty());
-    const Spd &xtx(model_->suf()->xtx());
+    const Vector &phi(model_->phi());
+    const Vector &xty(model_->suf()->xty());
+    const SpdMatrix &xtx(model_->suf()->xtx());
     double ss = xtx.Mdist(phi) - 2 * phi.dot(xty) + model_->suf()->yty();
     double df = model_->suf()->n();
     double sigsq = sigsq_sampler_.draw(rng(), df, ss);
@@ -56,13 +57,13 @@ namespace BOOM{
   }
 
   void ArPosteriorSampler::draw_phi(){
-    const Spd &xtx(model_->suf()->xtx());
-    const Vec &xty(model_->suf()->xty());
-    Vec phi_hat = xtx.solve(xty);
+    const SpdMatrix &xtx(model_->suf()->xtx());
+    const Vector &xty(model_->suf()->xty());
+    Vector phi_hat = xtx.solve(xty);
     bool ok = false;
     int attempts = 0;
     while (!ok && ++attempts <= max_number_of_regression_proposals_) {
-      Vec phi = rmvn_ivar(phi_hat, xtx / model_->sigsq());
+      Vector phi = rmvn_ivar(phi_hat, xtx / model_->sigsq());
       ok = ArModel::check_stationary(phi);
       if(ok) model_->set_phi(phi);
     }
@@ -73,13 +74,13 @@ namespace BOOM{
 
   void ArPosteriorSampler::draw_phi_univariate() {
     int p = model_->phi().size();
-    Vec phi = model_->phi();
+    Vector phi = model_->phi();
     if (!model_->check_stationary(phi)) {
       report_error("ArPosteriorSampler::draw_phi_univariate was called with an "
                    "illegal initial value of phi.  That should never happen.");
     }
-    const Spd &xtx(model_->suf()->xtx());
-    const Vec &xty(model_->suf()->xty());
+    const SpdMatrix &xtx(model_->suf()->xtx());
+    const Vector &xty(model_->suf()->xty());
 
     for (int i = 0; i < p; ++i) {
       double initial_phi = phi[i];

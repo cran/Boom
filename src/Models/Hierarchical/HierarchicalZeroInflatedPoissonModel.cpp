@@ -75,9 +75,9 @@ namespace BOOM {
   }
 
   HZIP::HierarchicalZeroInflatedPoissonModel(
-      const std::vector<int> &trials,
-      const std::vector<int> &events,
-      const std::vector<int> &number_of_zeros)
+      const BOOM::Vector &trials,
+      const BOOM::Vector &events,
+      const BOOM::Vector &number_of_zeros)
       : prior_for_lambda_(new GammaModel(1.0, 1.0)),
         prior_for_zero_probability_(new BetaModel(1.0, 1.0))
   {

@@ -17,6 +17,7 @@
 */
 
 #include <distributions/BoundedAdaptiveRejectionSampler.hpp>
+#include <cpputil/report_error.hpp>
 #include <sstream>
 #include <stdexcept>
 
@@ -38,7 +39,7 @@ namespace BOOM{
           << "a        = " << a << std::endl
           << "logf(a)  = " << logf[0] << std::endl
           << "dlogf(a) = " << dlogf[0] << std::endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     update_cdf();
   }

@@ -71,15 +71,15 @@ namespace BOOM{
     class CholStorage : public Storage{
     public:
       CholStorage();
-      CholStorage(const Spd &S);
+      CholStorage(const SpdMatrix &S);
       CholStorage(const CholStorage &rhs);
-      CholStorage * clone()const;
-      virtual uint dim()const;
-      void set(const Mat &L, bool sig=true);
+      CholStorage * clone()const override;
+      uint dim()const override;
+      void set(const Matrix &L, bool sig=true);
       void refresh(const SpdStorage &);
-      const Mat & value()const;
+      const Matrix & value()const;
     private:
-      Mat L;
+      Matrix L;
     };
     typedef boost::shared_ptr<CholStorage> CholPtr;
 
@@ -87,22 +87,22 @@ namespace BOOM{
     class SpdStorage : public Storage{
     public:
       SpdStorage();
-      SpdStorage(const Spd &S);
+      SpdStorage(const SpdMatrix &S);
       SpdStorage(const SpdStorage &S);
-      SpdStorage * clone()const;
-      virtual uint dim()const;
-      const Spd & value()const;
-      void set(const Spd &, bool sig=true);
+      SpdStorage * clone()const override;
+      uint dim()const override;
+      const SpdMatrix & value()const;
+      void set(const SpdMatrix &, bool sig=true);
       void refresh_from_chol(const CholStorage&, bool inv=false);
       void refresh_from_inv(const SpdStorage &, CholStorage &);
     private:
-      Spd sig_;
+      SpdMatrix sig_;
     };
     typedef boost::shared_ptr<SpdStorage> SpdPtr;
   }
   //____________________________________________________________
 
-  // This class stores a Spd matrix in several different formats.  It
+  // This class stores a SpdMatrix matrix in several different formats.  It
   // keeps both the original matrix (though of as a variance matrix),
   // its inverse (ivar), as well as the cholesky triangles for these
   // two matrices.  This is extravagant, but it prevents excessive
@@ -112,32 +112,32 @@ namespace BOOM{
   {
   public:
     SpdData(uint n, double diag=1.0, bool ivar=false);
-    SpdData(const Spd &S, bool ivar=false);
+    SpdData(const SpdMatrix &S, bool ivar=false);
     SpdData(const SpdData &rhs);
-    SpdData * clone()const;
+    SpdData * clone()const override;
 
     virtual uint size(bool minimal=true)const;
     virtual uint dim()const;
-    virtual ostream & display(ostream &out)const;
+    ostream & display(ostream &out)const override;
 
-    virtual const Spd & value()const;
-    virtual void set(const Spd &v, bool sig=true);
+    const SpdMatrix & value()const override;
+    void set(const SpdMatrix &v, bool sig=true) override;
 
-    const Spd & var()const;
-    const Spd & ivar()const;
-    const Mat & var_chol()const;
-    const Mat & ivar_chol()const;
+    const SpdMatrix & var()const;
+    const SpdMatrix & ivar()const;
+    const Matrix & var_chol()const;
+    const Matrix & ivar_chol()const;
     double ldsi()const;
 
-    void set_var(const Spd &, bool signal=true);
-    void set_ivar(const Spd &, bool signal=true);
-    void set_var_chol(const Mat &L, bool signal=true);
-    void set_ivar_chol(const Mat &L, bool signal=true);
+    void set_var(const SpdMatrix &, bool signal=true);
+    void set_ivar(const SpdMatrix &, bool signal=true);
+    void set_var_chol(const Matrix &L, bool signal=true);
+    void set_ivar_chol(const Matrix &L, bool signal=true);
 
     // Args:
     //   sd:  A vector of standard deviations to go along the diagonal.
     //   L:  The lower cholesky triangle for a correlation matrix.
-    void set_S_Rchol(const Vec &sd, const Mat &L);
+    void set_S_Rchol(const Vector &sd, const Matrix &L);
 
     void ensure_ivar_current()const;
     void ensure_var_current()const;

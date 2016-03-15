@@ -32,7 +32,7 @@ namespace BOOM{
     Vector prior_inclusion_probabilities;
     Vector prior_beta_guess;
     double prior_beta_guess_weight;
-    Spd prior_beta_information;  // this is Omega^{-1} in the math below
+    SpdMatrix prior_beta_information;  // this is Omega^{-1} in the math below
     double prior_sigma_guess;
     double prior_sigma_guess_weight;
   };
@@ -65,7 +65,8 @@ namespace BOOM{
                   double prior_nobs,          // Omega is prior_nobs * XTX/n
                   double expected_rsq,        // sigsq_guess = sample var*this
                   double expected_model_size, // prior inc probs = this/dim
-                  bool first_term_is_intercept = true);
+                  bool first_term_is_intercept = true,
+                  RNG &seeding_rng = GlobalRng::rng);
 
     // Omega inverse is kappa*[(1-alpha)*XTX/n + alpha*(XTX/n)].
     // kappa is 'prior_beta_nobs', and alpha is 'diagonal_shrinkage'.
@@ -78,23 +79,26 @@ namespace BOOM{
                   double prior_beta_nobs,
                   double diagonal_shrinkage,
                   double prior_inclusion_probability,
-                  bool force_intercept = true);
+                  bool force_intercept = true,
+                  RNG &seeding_rng = GlobalRng::rng);
 
     // Use this constructor if you want full control over the
     // parameters of the prior distribution, but you don't want to
     // supply actual model objects.  You won't be able to modify the
     // values of the prior parameters afterwards.
     BregVsSampler(RegressionModel *,
-                  const Vec & b,
-                  const Spd & Omega_inverse,
+                  const Vector & b,
+                  const SpdMatrix & Omega_inverse,
                   double sigma_guess,
                   double df,
-                  const Vec &prior_inclusion_probs);
+                  const Vector &prior_inclusion_probs,
+                  RNG &seeding_rng = GlobalRng::rng);
 
     // Equivalent to the preceding constructor, but the prior
     // parameters are specified in a struct.
     BregVsSampler(RegressionModel *m,
-                  const ZellnerPriorParameters &prior);
+                  const ZellnerPriorParameters &prior,
+                  RNG &seeding_rng = GlobalRng::rng);
 
     // This constructor offers full control.  If external copies of
     // the pointers supplied to the constructor are kept then the
@@ -103,23 +107,30 @@ namespace BOOM{
     BregVsSampler(RegressionModel *m,
                   Ptr<MvnGivenScalarSigmaBase> bpri,
                   Ptr<GammaModelBase> sinv_pri,
-                  Ptr<VariableSelectionPrior> vpri);
+                  Ptr<VariableSelectionPrior> vpri,
+                  RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
     double log_model_prob(const Selector &inc)const;
 
     // Model selection can be turned on and off altogether, or if very
     // large sets of predictors are being considered then the number
     // of exploration steps can be limited to a specified number.
-    void supress_model_selection();
-    void allow_model_selection();
+    void suppress_model_selection();
+
+    // allow_model_selection takes an argument so its signature will
+    // match other similar spike and slab sampler classes.
+    void allow_model_selection(bool allow = true);
+
+    // Restrict model selection to be no more than 'nflips' locations
+    // per sweep.
     void limit_model_selection(uint nflips);
 
     // For testing purposes, the draw of beta and/or sigma can be
-    // supressed.  This is also useful in cases where sigma is known.
-    void supress_beta_draw();
-    void supress_sigma_draw();
+    // suppressed.  This is also useful in cases where sigma is known.
+    void suppress_beta_draw();
+    void suppress_sigma_draw();
     void allow_sigma_draw();
     void allow_beta_draw();
 
@@ -129,6 +140,21 @@ namespace BOOM{
     bool model_is_empty()const;
 
     void set_sigma_upper_limit(double sigma_upper_limit);
+
+    // Sets the model parameters to their posterior mode, conditional
+    // on the current include / exclude status of the regression
+    // coefficients.  Any coefficient that is included will be
+    // optimized.  Any coefficient that is excluded will continue to
+    // be set to zero.
+    void find_posterior_mode(double epsilon = 1e-5) override;
+
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
+
+    bool posterior_mode_found() const {
+      return true;
+    }
 
    protected:
     double draw_sigsq_given_sufficient_statistics(double df, double ss) {
@@ -174,8 +200,8 @@ namespace BOOM{
     bool draw_beta_;
     bool draw_sigma_;
 
-    mutable Vec beta_tilde_;      // this is work space for computing
-    mutable Spd iV_tilde_;        // posterior model probs
+    mutable Vector beta_tilde_;      // this is work space for computing
+    mutable SpdMatrix iV_tilde_;        // posterior model probs
     mutable double DF_, SS_;
 
     GenericGaussianVarianceSampler sigsq_sampler_;
@@ -190,5 +216,5 @@ namespace BOOM{
     // incompatible dimensions.
     void check_dimensions()const;
   };
-}
+}  // namespace BOOM
 #endif// BOOM_BREG_VS_SAMPLER_HPP

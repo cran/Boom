@@ -31,22 +31,26 @@ namespace BOOM{
   {
    public:
     GaussianConjSampler(GaussianModel *m,
-			Ptr<GaussianModelGivenSigma> mu,
-			Ptr<GammaModelBase> sig);
-    virtual void draw();
-    virtual double logpri()const;
+            Ptr<GaussianModelGivenSigma> mu,
+            Ptr<GammaModelBase> sig,
+      RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
 
     double mu()const;
     double kappa()const;
     double df()const;
     double ss()const;
 
-    void find_posterior_mode();
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
   private:
     GaussianModel *mod_;
     Ptr<GaussianModelGivenSigma> mu_;
     Ptr<GammaModelBase> siginv_;
     GenericGaussianVarianceSampler sigsq_sampler_;
   };
-}
+}  // namespace BOOM
 #endif// BOOM_GAUSSIAN_MODEL_CONJUGATE_SAMPLER_HPP

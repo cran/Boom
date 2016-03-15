@@ -38,12 +38,12 @@ namespace BOOM{
       CorrelationMatrix & operator=(const CorrelationMatrix &x);
       CorrelationMatrix & operator=(const Matrix &x);
 
-      virtual Vector vectorize(bool minimal=true)const;
-      virtual void unvectorize(const Vector &v, bool minimal=true);
+      Vector vectorize(bool minimal=true)const override;
+      void unvectorize(const Vector &v, bool minimal=true) override;
       virtual Vector::const_iterator unvectorize
       (Vector::const_iterator &b, bool minimal=true);
 
-      virtual uint nelem()const;   // number of potentially distinct elements
+      uint nelem()const override;   // number of potentially distinct elements
       bool operator==(const CorrelationMatrix &rhs)const;
       bool operator!=(const CorrelationMatrix &rhs)const;
     };

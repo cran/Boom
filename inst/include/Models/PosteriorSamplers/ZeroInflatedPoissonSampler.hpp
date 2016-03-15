@@ -28,9 +28,10 @@ namespace BOOM{
    public:
     ZeroInflatedPoissonSampler(ZeroInflatedPoissonModel *model,
                                Ptr<GammaModel> lambda_prior,
-                               Ptr<BetaModel> zero_probability_prior);
-    virtual void draw();
-    virtual double logpri()const;
+                               Ptr<BetaModel> zero_probability_prior,
+                               RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
    private:
     ZeroInflatedPoissonModel *model_;
     Ptr<GammaModel> lambda_prior_;

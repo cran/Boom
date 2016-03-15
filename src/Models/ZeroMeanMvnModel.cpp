@@ -29,12 +29,12 @@ namespace BOOM{
   {}
 
   ZMMM * ZMMM::clone()const{return new ZMMM(*this);}
-  const Vec &ZMMM::mu()const{return mu_;}
-  const Spd &ZMMM::Sigma()const{return prm()->var();}
-  const Spd &ZMMM::siginv()const{return prm()->ivar();}
+  const Vector &ZMMM::mu()const{return mu_;}
+  const SpdMatrix &ZMMM::Sigma()const{return prm()->var();}
+  const SpdMatrix &ZMMM::siginv()const{return prm()->ivar();}
   double ZMMM::ldsi()const{return prm()->ldsi();}
-  void ZMMM::set_Sigma(const Spd &v){ prm()->set_var(v);}
-  void ZMMM::set_siginv(const Spd &ivar){ prm()->set_ivar(ivar);}
+  void ZMMM::set_Sigma(const SpdMatrix &v){ prm()->set_var(v);}
+  void ZMMM::set_siginv(const SpdMatrix &ivar){ prm()->set_ivar(ivar);}
   Ptr<SpdParams> ZMMM::Sigma_prm(){return prm();}
   const Ptr<SpdParams> ZMMM::Sigma_prm()const{return prm();}
 
@@ -56,8 +56,8 @@ namespace BOOM{
     const double log2pi = 1.83787706641;
     double dim = mu_.size();
     double n = suf()->n();
-    const Vec ybar = suf()->ybar();
-    const Spd sumsq = suf()->center_sumsq();
+    const Vector ybar = suf()->ybar();
+    const SpdMatrix sumsq = suf()->center_sumsq();
 
     SpdMatrix siginv(dim);
     siginv.unvectorize(siginv_triangle, true);
@@ -70,4 +70,4 @@ namespace BOOM{
     double ans = nc - .5*qform;
     return ans;
   }
-}
+}  // namespace BOOM

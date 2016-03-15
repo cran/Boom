@@ -17,6 +17,7 @@
 */
 #include <Samplers/SliceSampler.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 #include <cmath>
 #include <cassert>
@@ -36,7 +37,7 @@ namespace BOOM{
     pstar = f(theta);
     if(!std::isfinite(pstar)){
       std::string msg = "invalid condition used to initialize SliceSampler";
-      throw_exception<std::runtime_error>(msg);
+      report_error(msg);
     }
 
     plo = f(theta-lo*z);
@@ -88,11 +89,11 @@ namespace BOOM{
       phi = p;}}
 
 
-  double SliceSampler::logp(const Vec &x)const{
+  double SliceSampler::logp(const Vector &x)const{
     return f(x);
   }
 
-  Vec SliceSampler::draw(const Vec &t){
+  Vector SliceSampler::draw(const Vector &t){
     theta = t;
     z = t;
 
@@ -100,7 +101,7 @@ namespace BOOM{
 
     pstar = f(theta) - rexp(1);
     find_limits();
-    Vec tstar(theta.size(), 0.0);
+    Vector tstar(theta.size(), 0.0);
     double p = pstar -1;
     do{
       double lam = runif_mt(rng(), -lo, hi);

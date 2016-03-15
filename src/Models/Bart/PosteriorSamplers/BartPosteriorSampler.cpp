@@ -145,8 +145,10 @@ namespace BOOM {
       double total_prediction_sd,
       double prior_tree_depth_alpha,
       double prior_tree_depth_beta,
-      boost::function<double(int)> log_prior_number_of_trees)
-      : model_(model),
+      boost::function<double(int)> log_prior_number_of_trees,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         log_prior_tree_depth_alpha_(log(prior_tree_depth_alpha)),
         prior_tree_depth_alpha_(prior_tree_depth_alpha),
         prior_tree_depth_beta_(prior_tree_depth_beta),

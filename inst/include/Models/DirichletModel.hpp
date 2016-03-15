@@ -22,7 +22,6 @@
 #include <Models/ModelTypes.hpp>
 #include <Models/VectorModel.hpp>
 
-#include <Models/EmMixtureComponent.hpp>
 #include <Models/ParamTypes.hpp>
 #include <Models/Sufstat.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
@@ -33,30 +32,30 @@ namespace BOOM{
 
   class DirichletSuf : public SufstatDetails<VectorData>
   {
-    Vec sumlog_;  // sum_i(log pi_j);
+    Vector sumlog_;  // sum_i(log pi_j);
     double n_;
   public:
     // constructor
     DirichletSuf(uint S);
     DirichletSuf(const DirichletSuf &sf);
-    DirichletSuf *clone() const;
+    DirichletSuf *clone() const override;
 
-    void clear();
-    void Update(const VectorData &x);
-    void add_mixture_data(const Vec &x, double prob);
+    void clear() override;
+    void Update(const VectorData &x) override;
+    void add_mixture_data(const Vector &x, double prob);
 
-    const Vec & sumlog()const;
+    const Vector & sumlog()const;
     double n()const;
-    DirichletSuf * abstract_combine(Sufstat *s);
+    DirichletSuf * abstract_combine(Sufstat *s) override;
     void combine(const DirichletSuf &);
     void combine(Ptr<DirichletSuf>);
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream & print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
+    ostream & print(ostream &out)const override;
   };
 
   //======================================================================
@@ -66,40 +65,44 @@ namespace BOOM{
     public PriorPolicy,
     public DiffVectorModel,
     public NumOptModel,
-    public EmMixtureComponent
+    public MixtureComponent
   {
   public:
-    DirichletModel(uint S);
-    DirichletModel(uint S, double Nu);
-    DirichletModel(const Vec &Nu);
+    explicit DirichletModel(uint S, double Nu = 1.0);
+    explicit DirichletModel(const Vector &Nu);
     DirichletModel(const DirichletModel &m);
-    DirichletModel *clone() const;
+    DirichletModel *clone() const override;
 
     Ptr<VectorParams> Nu();
     const Ptr<VectorParams> Nu()const;
 
-    uint size()const;
-    const Vec &nu() const;
+    uint dim() const;
+    const Vector &nu() const;
     const double & nu(uint i)const;
-    void set_nu(const Vec &);
+    void set_nu(const Vector &);
 
-    Vec pi()const;
+    Vector pi()const;
     double pi(uint i)const;
 
     double pdf(dPtr dp, bool logscale) const;
-    double pdf(const Data *, bool logscale) const;
-    double pdf(const Vec &pi, bool logscale) const;
-    double Logp(const Vec &p, Vec &g, Mat &h, uint lev) const ;
-    double Loglike(const Vector &nu, Vec &g, Mat &h, uint nderiv) const;
-    virtual void mle() {return d2LoglikeModel::mle();}
+    double pdf(const Data *, bool logscale) const override;
+    double pdf(const Vector &pi, bool logscale) const;
 
-    double nu_loglike(const Vec & nu)const;
+    // The first argument should have the first element of probs
+    // omitted, so the sum of probs is <= 1.0.  The gradient and
+    // Hessian are taken with respect to the free elements (i.e. not
+    // the first one).
+    double Logp(const Vector &probs,
+                Vector &gradient,
+                Matrix &Hessian,
+                uint nderiv) const override ;
+    double Loglike(const Vector &nu, Vector &g, Matrix &h, uint nderiv) const override;
+    void mle() override {return d2LoglikeModel::mle();}
 
-    Vec sim() const;
+    double nu_loglike(const Vector & nu)const;
+
+    Vector sim() const override;
     virtual void add_mixture_data(Ptr<Data>, double prob);
-
-  private:
-
   };
 
   //======================================================================

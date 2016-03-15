@@ -49,9 +49,9 @@ namespace BOOM {
       double y() const {return observed_response_->y();}
       double residual() const {return residual_;}
       void set_residual(double r) {residual_ = r;}
-      virtual void add_to_residual(double value) {residual_ += value;}
-      virtual void add_to_gaussian_suf(
-          GaussianBartSufficientStatistics &suf) const;
+      void add_to_residual(double value) override {residual_ += value;}
+      void add_to_gaussian_suf(
+          GaussianBartSufficientStatistics &suf) const override;
 
      private:
       const RegressionData *observed_response_;
@@ -61,11 +61,11 @@ namespace BOOM {
     class GaussianBartSufficientStatistics
         : public SufficientStatisticsBase {
      public:
-      virtual GaussianBartSufficientStatistics * clone() const {
+      GaussianBartSufficientStatistics * clone() const override {
         return new GaussianBartSufficientStatistics(*this);
       }
-      virtual void clear() {suf_.clear();}
-      virtual void update(const ResidualRegressionData &abstract_data) {
+      void clear() override {suf_.clear();}
+      void update(const ResidualRegressionData &abstract_data) override {
         abstract_data.add_to_gaussian_suf(*this);
       }
       virtual void update(const GaussianResidualRegressionData &data) {
@@ -105,30 +105,31 @@ namespace BOOM {
         double prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees);
+        boost::function<double(int)> log_prior_on_number_of_trees,
+        RNG &seeding_rng = GlobalRng::rng);
     //----------------------------------------------------------------------
     // Virtual function over-rides....
 
-    virtual void draw();
-    virtual double draw_mean(Bart::TreeNode *leaf);
+    void draw() override;
+    double draw_mean(Bart::TreeNode *leaf) override;
 
-    virtual double log_integrated_likelihood(
-        const Bart::SufficientStatisticsBase &suf) const;
+    double log_integrated_likelihood(
+        const Bart::SufficientStatisticsBase &suf) const override;
     double log_integrated_gaussian_likelihood(
         const Bart::GaussianBartSufficientStatistics &suf) const;
 
-    virtual double complete_data_log_likelihood(
-        const Bart::SufficientStatisticsBase &suf) const;
+    double complete_data_log_likelihood(
+        const Bart::SufficientStatisticsBase &suf) const override;
     double complete_data_gaussian_log_likelihood(
         const Bart::GaussianBartSufficientStatistics &suf) const;
 
-    virtual void clear_residuals();
-    virtual int residual_size() const;
-    virtual
-    Bart::GaussianResidualRegressionData * create_and_store_residual(int i);
-    virtual Bart::GaussianResidualRegressionData * residual(int i);
+    void clear_residuals() override;
+    int residual_size() const override;
+    
+    Bart::GaussianResidualRegressionData * create_and_store_residual(int i) override;
+    Bart::GaussianResidualRegressionData * residual(int i) override;
 
-    Bart::GaussianBartSufficientStatistics * create_suf() const {
+    Bart::GaussianBartSufficientStatistics * create_suf() const override {
       return new Bart::GaussianBartSufficientStatistics;
     }
 

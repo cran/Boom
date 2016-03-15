@@ -41,60 +41,61 @@ namespace BOOM{
     class SubjectTF : public TargetFun{
     public:
       SubjectTF(Ptr<Subject> s, Ptr<SubjectPrior> pri, Ptr<IMP> Imp);
-      double operator()(const Vec & )const;
+      double operator()(const Vector & )const;
       SubjectTF * clone()const{return new SubjectTF(*this);}
     private:
       Ptr<Subject> subject;
       Ptr<SubjectPrior> prior;
       Ptr<IMP> imp;
-      mutable Vec wsp;
+      mutable Vector wsp;
       mutable double ans;
       void loglike_contrib(std::pair<Ptr<Item>,Response>)const;
     };
 
     SubjectTF::SubjectTF(Ptr<Subject> s, Ptr<SubjectPrior> pri, Ptr<IMP> Imp)
       : subject(s),
-	prior(pri),
-	imp(Imp)
+    prior(pri),
+    imp(Imp)
       {
-	//	pri->add_data(s);  // THIS LOOKS DANGEROUS
+    //    pri->add_data(s);  // THIS LOOKS DANGEROUS
       }
 
-    double SubjectTF::operator()(const Vec &theta)const{
+    double SubjectTF::operator()(const Vector &theta)const{
       ParamHolder ph(theta, subject->Theta_prm(), wsp);
       ans=prior->pdf(subject, true);
       const ItemResponseMap &ir(subject->item_responses());
       for_each(ir.begin(),ir.end(),
-	       boost::bind(&SubjectTF::loglike_contrib, this, _1));
+           boost::bind(&SubjectTF::loglike_contrib, this, _1));
       return ans;
     }
     void SubjectTF::loglike_contrib(std::pair<Ptr<Item>,Response> ir)const{
       Ptr<Item> it = ir.first;
       Ptr<PCR> pcr = it.dcast<PCR>();
       Response r =ir.second;
-      const Vec &u(imp->get_u(r));
-      const Vec & eta(pcr->fill_eta(subject->Theta()));
+      const Vector &u(imp->get_u(r));
+      const Vector & eta(pcr->fill_eta(subject->Theta()));
       for(uint m=0; m<=it->maxscore(); ++m){
-	ans+= dexv(u[m], eta[m], 1, true);
+    ans+= dexv(u[m], eta[m], 1, true);
       }
     }
   }
     //======================================================================
 
     DAFE::DafePcrSubject(Ptr<Subject> Sub, Ptr<SubjectPrior> Pri,
-			 Ptr<IMP> Imp, double Tdf)
-      : subject(Sub),
-	pri(Pri),
-	imp(Imp),
-	sigsq(1.644934066848226), // pi^2/6
-	mean(Sub->Nscales()),
-	Ivar(Sub->Nscales())
+             Ptr<IMP> Imp, double Tdf, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+  subject(Sub),
+    pri(Pri),
+    imp(Imp),
+    sigsq(1.644934066848226), // pi^2/6
+    mean(Sub->Nscales()),
+    Ivar(Sub->Nscales())
     {
       SubjectTF target(subject, pri, imp);
       uint dim = subject->Nscales();
-      Spd Ominv(dim);
+      SpdMatrix Ominv(dim);
       Ominv.set_diag(1.0);
-      prop = new MvtIndepProposal(Vec(dim), Ominv, Tdf);
+      prop = new MvtIndepProposal(Vector(dim), Ominv, Tdf);
       sampler = new MetropolisHastings(target, prop);
     }
     //------------------------------------------------------------
@@ -112,7 +113,7 @@ namespace BOOM{
 
       const ItemResponseMap & items(subject->item_responses());
       for_each(items.begin(), items.end(),
-	       boost::bind(&DAFE::accumulate_moments, this, _1));
+           boost::bind(&DAFE::accumulate_moments, this, _1));
 
       mean = Ivar.solve(mean);
 
@@ -125,27 +126,27 @@ namespace BOOM{
       Ptr<Item> it = ir.first;
       Ptr<PCR> pcr = it.dcast<PCR>();
       Response r = ir.second;
-      const Vec & u(imp->get_u(r));
-      const Vec &beta(pcr->beta());  // size == M+1
+      const Vector & u(imp->get_u(r));
+      const Vector &beta(pcr->beta());  // size == M+1
       double a = pcr->a();
       uint M = it->maxscore();
       uint which = pcr->which_subscale();
 //      bool d0_fixed(pcr->is_d0_fixed());
 //       if(d0_fixed){
-// 	for(uint m=1; m<=M; ++m){
-// 	  double ma = m*a;
-// 	  double w = ma*ma;
-// 	  double tmp = (u[m]-beta[m-1])/ma;
-// 	  mean[which] += w*tmp/sigsq;
-// 	  Ivar(which,which) += w/sigsq;
-// 	}
+//     for(uint m=1; m<=M; ++m){
+//       double ma = m*a;
+//       double w = ma*ma;
+//       double tmp = (u[m]-beta[m-1])/ma;
+//       mean[which] += w*tmp/sigsq;
+//       Ivar(which,which) += w/sigsq;
+//     }
 //       }else{
       for(uint m=0; m<=M; ++m){
-	double ma = (m+1)*a;
-	double w = ma*ma;
-	double tmp = (u[m]-beta[m])/ma;
-	mean[which] += w*tmp/sigsq;
-	Ivar(which,which)+= w/sigsq;
+    double ma = (m+1)*a;
+    double w = ma*ma;
+    double tmp = (u[m]-beta[m])/ma;
+    mean[which] += w*tmp/sigsq;
+    Ivar(which,which)+= w/sigsq;
       }
 //      }
     }

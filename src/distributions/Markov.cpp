@@ -23,20 +23,20 @@
 
 namespace BOOM{
 
-  Vec get_stat_dist(const Mat &Q){
-    Mat P = Q.t();  // transpose
+  Vector get_stat_dist(const Matrix &Q){
+    Matrix P = Q.t();  // transpose
     P.diag()-= 1.0;
     P.row(0) = 1.0;
-    Vec ans(Q.nrow(), 0.0);
+    Vector ans(Q.nrow(), 0.0);
     ans[0]=1.0;
     return P.solve(ans); }
 
-  Mat compute_conditional_absorption_probs(const Mat &P, const Selector & abs){
+  Matrix compute_conditional_absorption_probs(const Matrix &P, const Selector & abs){
     Selector transient(abs.complement());
-    Mat Q = transient.select_square(P);
-    Mat R = abs.select_cols(transient.select_rows(P));
+    Matrix Q = transient.select_square(P);
+    Matrix R = abs.select_cols(transient.select_rows(P));
     uint ntrans = Q.nrow();
-    Mat F(ntrans, ntrans, 0.0);
+    Matrix F(ntrans, ntrans, 0.0);
     F.set_diag(1.0);
     F-= Q;                // F = I - Q is the fundamental matrix
     return F.solve(R);
@@ -46,7 +46,7 @@ namespace BOOM{
   // distribution pi0 and transition matrix Q enters state r before
   // entering state s
   double preceeds(const Selector & r, const Selector &s,
-                  const Vec &pi0, const Mat & P){
+                  const Vector &pi0, const Matrix & P){
     assert(P.ncol()==P.nrow());
     assert(pi0.size()==P.nrow());
     assert(r.nvars_possible()==P.nrow());
@@ -54,22 +54,22 @@ namespace BOOM{
     Selector absorbing = r.Union(s);
     Selector transient = absorbing.complement();
 
-    Mat Q = transient.select_square(P);
-    Mat R = absorbing.select_cols(transient.select_rows(P));
-    Mat F = Q.Id() - Q;;
+    Matrix Q = transient.select_square(P);
+    Matrix R = absorbing.select_cols(transient.select_rows(P));
+    Matrix F = Q.Id() - Q;;
 
-    Vec pi0_trans = transient.select(pi0);
-    Vec pi0_abs = absorbing.select(pi0);
-    Vec subtotal =  pi0_trans * F.solve(R);
+    Vector pi0_trans = transient.select(pi0);
+    Vector pi0_abs = absorbing.select(pi0);
+    Vector subtotal =  pi0_trans * F.solve(R);
 
     // rmask is a 0/1 vector of length absorbing.nvars(), with 1's
     // inidcating an 'r' position and 0 indicating an 's' position
-    Vec rmask = absorbing.select(r.vec());
+    Vector rmask = absorbing.select(r.to_Vector());
     double ans =  subtotal.dot(rmask) + pi0_abs.dot(rmask);
     return ans;
   }
 
-  double preceeds(uint r, uint s, const Vec &pi0, const Mat &P){
+  double preceeds(uint r, uint s, const Vector &pi0, const Matrix &P){
     // returns the probability that state r happens before state s in
     // a Markov chain with initial distribution pi0 and transition
     // matrix P.

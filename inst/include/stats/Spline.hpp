@@ -26,11 +26,11 @@ namespace BOOM{
   class Spline{
     //cubic "natural" spline
   public:
-    Spline(const Vec & Knots, uint Order=4);
+    Spline(const Vector & Knots, uint Order=4);
     int nknots()const;
-    Vec basis(double x)const;
-    const Vec & basis(double x, Vec &ans)const;
-    double eval(double x, const Vec &beta)const;
+    Vector basis(double x)const;
+    const Vector & basis(double x, Vector &ans)const;
+    double eval(double x, const Vector &beta)const;
     double evaluate_derivs(double x, int nder)const;
   private:
     int order_;
@@ -40,13 +40,13 @@ namespace BOOM{
     mutable bool boundary;  // must have knots[curs] <= x < knots[curs+1]
                             // except for the boundary case
 
-    Vec knots;       // knots
-    mutable Vec rdel;
-    mutable Vec ldel;
-    mutable Vec a;   // scratch array
+    Vector knots;       // knots
+    mutable Vector rdel;
+    mutable Vector ldel;
+    mutable Vector a;   // scratch array
 
     void set_cursor(double x)const;
-    void basis_funcs(double x, Vec &ans)const;
+    void basis_funcs(double x, Vector &ans)const;
     void diff_table(double x, int ordm1)const;
   };
 

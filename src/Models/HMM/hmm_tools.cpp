@@ -6,8 +6,8 @@
 namespace BOOM{
   using BOOM::uint;
 
-    double fwd_1(Vec &pi, Mat &P, const Mat &logQ, const Vec &logd,
-		 const Vec &one){
+    double fwd_1(Vector &pi, Matrix &P, const Matrix &logQ, const Vector &logd,
+		 const Vector &one){
       /*----------------------------------------------------------------------
        * Input: pi[0..S-1] is the conditionl distribution of h[t-1]|Y[t-1]
        *        one[0..S-1] is a vector of 1's
@@ -34,7 +34,7 @@ namespace BOOM{
       return m + log(nc);
     }
 
-    void bkwd_1(Vec &pi, Mat &P, Vec & wsp, const Vec &one){
+    void bkwd_1(Vector &pi, Matrix &P, Vector & wsp, const Vector &one){
       /*----------------------------------------------------------------------
        * Input:  pi[0..S-1]  is prob(h[t]|Y[n])
        *         P[0..S-1]^2 is prob(h[t-1],h[t] | Y[t])

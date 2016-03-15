@@ -24,9 +24,12 @@ namespace BOOM{
     typedef HomogeneousPoissonProcessPosteriorSampler HPS;
   }
 
-  HPS::HomogeneousPoissonProcessPosteriorSampler(HomogeneousPoissonProcess *model,
-                                                 Ptr<GammaModelBase> prior)
-      : model_(model),
+  HPS::HomogeneousPoissonProcessPosteriorSampler(
+      HomogeneousPoissonProcess *model,
+      Ptr<GammaModelBase> prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         prior_(prior)
   {}
 

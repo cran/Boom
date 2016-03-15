@@ -33,12 +33,15 @@ namespace BOOM {
       PoissonRegressionModel *model,
       Ptr<MvnBase> slab_prior,
       Ptr<VariableSelectionPrior> spike_prior,
-      int number_of_threads)
-      : PoissonRegressionAuxMixSampler(model, slab_prior, number_of_threads),
+      int number_of_threads,
+      RNG &seeding_rng)
+      : PoissonRegressionAuxMixSampler(model, slab_prior, number_of_threads,
+                                       seeding_rng),
         model_(model),
         sam_(model_, slab_prior, spike_prior),
         slab_prior_(slab_prior),
-        spike_prior_(spike_prior)
+        spike_prior_(spike_prior),
+        log_posterior_at_mode_(negative_infinity())
   {}
 
   void PRSS::draw() {
@@ -59,7 +62,8 @@ namespace BOOM {
     sam_.limit_model_selection(max_flips);
   }
 
-  double PRSS::find_posterior_mode() {
+  void PRSS::find_posterior_mode(double) {
+    log_posterior_at_mode_ = negative_infinity();
     const Selector &included(model_->inc());
     d2TargetFunPointerAdapter logpost(
         boost::bind(&PoissonRegressionModel::log_likelihood, model_,
@@ -69,20 +73,19 @@ namespace BOOM {
     Vector beta = model_->included_coefficients();
     int dim = beta.size();
     if (dim == 0) {
-      return negative_infinity();
+      return;
       // TODO: This logic prohibits an empty model.  Better to return
       // the actual value of the un-normalized log posterior, which in
       // this case would just be the likelihood portion.
     }
 
     Vector gradient(dim);
-    Spd hessian(dim);
-    double logf;
+    SpdMatrix hessian(dim);
     std::string error_message;
     bool ok = max_nd2_careful(beta,
                               gradient,
                               hessian,
-                              logf,
+                              log_posterior_at_mode_,
                               Target(logpost),
                               dTarget(logpost),
                               d2Target(logpost),
@@ -90,9 +93,10 @@ namespace BOOM {
                               error_message);
     if (ok) {
       model_->set_included_coefficients(beta, included);
-      return logf;
+      return;
     } else {
-      return negative_infinity();
+      log_posterior_at_mode_ = negative_infinity();
+      return;
     }
   }
 

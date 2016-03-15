@@ -29,9 +29,9 @@ namespace BOOM{
   typedef MultinomialProbitModel MNP;
 
 
-  MNP::MultinomialProbitModel(const Mat & beta_subject,
+  MNP::MultinomialProbitModel(const Matrix & beta_subject,
 			      const Vector & beta_choice,
-			      const Spd & Sig)
+			      const SpdMatrix & Sig)
     : ParamPolicy(make_beta(beta_subject, beta_choice), new SpdParams(Sig)),
       DataPolicy(),
       PriorPolicy(),
@@ -44,17 +44,17 @@ namespace BOOM{
     setup_suf();
   }
 
-  // the function make_catdat_ptrs can make a ResponseVec out of a
+  // the function make_catdat_ptrs can make a ResponseVector out of a
   // vector of strings or uints
-//   MNP::MultinomialProbitModel(ResponseVec responses,
-// 			      const Mat &Xsubject_info,
+//   MNP::MultinomialProbitModel(ResponseVector responses,
+// 			      const Matrix &Xsubject_info,
 // 			      const Arr3 &Xchoice_info)
 //     : ParamPolicy(make_beta(responses, Xsubject_info
 //   {}
   // dim(Xchoice_info) = [#obs, #choices, #choice x's]
 
-//   MNP::MultinomialProbitModel(ResponseVec responses,    // no choice information
-// 			      const Mat &Xsubject_info);
+//   MNP::MultinomialProbitModel(ResponseVector responses,    // no choice information
+// 			      const Matrix &Xsubject_info);
 
   MNP::MultinomialProbitModel(const std::vector<Ptr<ChoiceData> > &d)
     : ParamPolicy(make_beta(d), new SpdParams(d[0]->nchoices())),
@@ -91,7 +91,7 @@ namespace BOOM{
   //------------------------------------------------------------
   class TrunMvnTF : public TargetFun{
   public:
-    TrunMvnTF(const Spd & siginv)
+    TrunMvnTF(const SpdMatrix & siginv)
       : mu(siginv.nrow()),
 	Ivar(siginv),
 	ldsi(siginv.logdet()),
@@ -100,7 +100,7 @@ namespace BOOM{
 
     TrunMvnTF * clone()const{return new TrunMvnTF(*this); }
     void set_mu(const Vector &m){ mu = m;}
-    void set_Ivar(const Spd & ivar){
+    void set_Ivar(const SpdMatrix & ivar){
       Ivar = ivar;
       ldsi = Ivar.logdet();
     }
@@ -111,7 +111,7 @@ namespace BOOM{
     }
   private:
     Vector mu;
-    Spd Ivar;
+    SpdMatrix Ivar;
     double ldsi;
     uint y;
   };
@@ -147,7 +147,7 @@ namespace BOOM{
   //============================================================
   double MNP::pdf(Ptr<Data> dp, bool logsc)const{ return pdf(DAT(dp), logsc);}
   double MNP::pdf(Ptr<ChoiceData>, bool )const{
-    throw_exception<std::runtime_error>("MultinomialProbit::pdf has not been defined");
+    report_error("MultinomialProbit::pdf has not been defined");
     return 0.0;
   }
 
@@ -157,19 +157,19 @@ namespace BOOM{
   Vector MNP::beta_subject(uint choice)const{
     const Vector &b(beta());
     uint p = subject_nvars();
-    Vec::const_iterator cb = b.begin()+choice*p;
-    Vec::const_iterator ce = cb+p;
-    return Vec(cb,ce);
+    Vector::const_iterator cb = b.begin()+choice*p;
+    Vector::const_iterator ce = cb+p;
+    return Vector(cb,ce);
   }
 
   Vector MNP::beta_choice()const{
     const Vector &b(beta());
     uint p = choice_nvars();
-    return Vec(b.end()-p, b.end());
+    return Vector(b.end()-p, b.end());
   }
 
-  const Spd & MNP::Sigma()const{ return Sigma_prm()->var();}
-  const Spd & MNP::siginv()const{return Sigma_prm()->ivar();}
+  const SpdMatrix & MNP::Sigma()const{ return Sigma_prm()->var();}
+  const SpdMatrix & MNP::siginv()const{return Sigma_prm()->ivar();}
   double MNP::ldsi()const{return Sigma_prm()->ldsi();}
 
   Vector MNP::eta(Ptr<ChoiceData> dp)const{
@@ -205,12 +205,12 @@ namespace BOOM{
   void MNP::set_beta(const Vector &b){
     Beta_prm()->set_Beta(b);
   }
-  void MNP::set_Sigma(const Spd &S){Sigma_prm()->set_var(S);}
-  void MNP::set_siginv(const Spd &ivar){Sigma_prm()->set_ivar(ivar);}
+  void MNP::set_Sigma(const SpdMatrix &S){Sigma_prm()->set_var(S);}
+  void MNP::set_siginv(const SpdMatrix &ivar){Sigma_prm()->set_ivar(ivar);}
 
-  const Spd & MNP::xtx()const{return xtx_;}
+  const SpdMatrix & MNP::xtx()const{return xtx_;}
   double MNP::yty()const{return traceAB(siginv(), yyt_);}
-  const Spd & MNP::yyt()const{return yyt_;}
+  const SpdMatrix & MNP::yyt()const{return yyt_;}
   const Vector & MNP::xty()const{return xty_;}
 
   void MNP::add_data(Ptr<ChoiceData> dp){
@@ -227,7 +227,7 @@ namespace BOOM{
     add_data(DAT(dp));
   }
 
-  Ptr<GlmCoefs> MNP::make_beta(const Mat & beta_subject, const Vector & beta_choice){
+  Ptr<GlmCoefs> MNP::make_beta(const Matrix & beta_subject, const Vector & beta_choice){
     nchoices_ = beta_subject.ncol();
     subject_xdim_ = beta_subject.nrow();
     choice_xdim_ = beta_choice.size();
@@ -251,9 +251,9 @@ namespace BOOM{
   }
 
   void MNP::setup_suf(){
-    yyt_ = Spd(Nchoices(), 0.0);
-    xtx_ = Spd(xdim());
-    xty_ = Vec(xdim());
+    yyt_ = SpdMatrix(Nchoices(), 0.0);
+    xtx_ = SpdMatrix(xdim());
+    xty_ = Vector(xdim());
   }
 
   void MNP::impute_u(RNG &rng, Vector &u, Ptr<ChoiceData> dp, TrunMvnTF & target){
@@ -274,7 +274,7 @@ namespace BOOM{
 
 
   inline void rsw_mv(double &m, double &v, Vector &b, const Vector &u,
-		     const Vector &mu, const Spd &siginv, uint pos){
+		     const Vector &mu, const SpdMatrix &siginv, uint pos){
     // compute the mean and variance of one dimension of a MVN(mu,
     // siginv^{-1}) conditional on the other dimension.
     v = 1.0/siginv(pos,pos);  // residual variance
@@ -293,7 +293,7 @@ namespace BOOM{
     double second_largest = wsp[1];
     eta(dp, wsp);
 
-    const Spd &siginv(this->siginv());
+    const SpdMatrix &siginv(this->siginv());
     Vector b;
     double mean,v;
     rsw_mv(mean,v,b,u,wsp, siginv, y);
@@ -307,8 +307,8 @@ namespace BOOM{
   }
 
   void MNP::update_suf(const Vector &u, Ptr<ChoiceData> dp){
-    const Spd & siginv(this->siginv());
-    const Mat & X(dp->X());
+    const SpdMatrix & siginv(this->siginv());
+    const Matrix & X(dp->X());
 
     yyt_.add_outer(u);
     xtx_ += sandwich(X.t(), siginv);  // sum of XT siginv X

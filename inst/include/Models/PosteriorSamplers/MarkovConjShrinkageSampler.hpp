@@ -31,16 +31,18 @@ class MarkovConjShrinkageSampler :
       public PosteriorSampler
 {
  public:
-  MarkovConjShrinkageSampler(uint dim);
-  MarkovConjShrinkageSampler(const Mat & Nu);
-  MarkovConjShrinkageSampler(const Mat & Nu, const Vec & nu);
-  MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu);
+  MarkovConjShrinkageSampler(uint dim, RNG &seeding_rng = GlobalRng::rng);
+  MarkovConjShrinkageSampler(const Matrix & Nu, RNG &seeding_rng = GlobalRng::rng);
+  MarkovConjShrinkageSampler(const Matrix & Nu, const Vector & nu,
+                             RNG &seeding_rng = GlobalRng::rng);
   MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu,
-                             Ptr<DirichletModel> nu);
+                             RNG &seeding_rng = GlobalRng::rng);
+  MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu,
+                             Ptr<DirichletModel> nu,
+                             RNG &seeding_rng = GlobalRng::rng);
 
-  virtual MarkovConjShrinkageSampler * clone()const;
-  virtual void draw();
-  virtual double logpri()const;
+  void draw() override;
+  double logpri() const override;
 
   uint Nmodels()const;
   uint dim()const;

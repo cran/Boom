@@ -73,8 +73,8 @@ namespace BOOM {
     return abstract_combine_impl(this, s);
   }
 
-  Vec WGS::vectorize(bool)const{
-    Vec ans(4);
+  Vector WGS::vectorize(bool)const{
+    Vector ans(4);
     ans[0] = n_;
     ans[1] = sum_;
     ans[2] = sumsq_;
@@ -82,8 +82,8 @@ namespace BOOM {
     return ans;
   }
 
-  Vec::const_iterator WGS::unvectorize(
-      Vec::const_iterator &v, bool){
+  Vector::const_iterator WGS::unvectorize(
+      Vector::const_iterator &v, bool){
     n_ = *v; ++v;
     sum_ = *v; ++v;
     sumsq_ = *v; ++v;
@@ -91,9 +91,9 @@ namespace BOOM {
     return v;
   }
 
-  Vec::const_iterator WGS::unvectorize(
-      const Vec &v, bool minimal){
-    Vec::const_iterator b = v.begin();
+  Vector::const_iterator WGS::unvectorize(
+      const Vector &v, bool minimal){
+    Vector::const_iterator b = v.begin();
     return unvectorize(b, minimal);
   }
 

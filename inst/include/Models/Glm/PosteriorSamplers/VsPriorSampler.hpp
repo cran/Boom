@@ -34,15 +34,18 @@ namespace BOOM{
 
     typedef VariableSelectionPrior VSP;
   public:
-    VsPriorSampler(VSP *, Ptr<BetaModel>);
-    VsPriorSampler(VSP *, std::vector<Ptr<BetaModel> >);
-    VsPriorSampler(VSP *, const Vec & pi_guess, const Vec & wgt);
+    VsPriorSampler(VSP *, Ptr<BetaModel>, RNG &seeding_rng = GlobalRng::rng);
+    VsPriorSampler(VSP *, std::vector<Ptr<BetaModel> >,
+                   RNG &seeding_rng = GlobalRng::rng);
+    VsPriorSampler(VSP *, const Vector & pi_guess, const Vector & wgt,
+                   RNG &seeding_rng = GlobalRng::rng);
 
     VsPriorSampler(VSP *, std::vector<Ptr<BetaModel> >,
-		   const Selector & forced_in, const Selector &forced_out);
+           const Selector & forced_in, const Selector &forced_out,
+       RNG &seeding_rng = GlobalRng::rng);
 
-    void draw();
-    double logpri()const;
+    void draw() override;
+    double logpri()const override;
     uint potential_nvars()const;
   private:
 

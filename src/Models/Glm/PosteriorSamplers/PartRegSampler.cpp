@@ -26,11 +26,11 @@ namespace BOOM{
   typedef PartRegSampler PRS;
 
   PRS::PartRegSampler(uint Npart,
-                      const Spd & xtx,
-                      const Vec & xty,
+                      const SpdMatrix & xtx,
+                      const Vector & xty,
                       double yty,
-                      const Vec & prior_mean,
-                      const Spd & prior_ivar,
+                      const Vector & prior_mean,
+                      const SpdMatrix & prior_ivar,
                       double prior_df,
                       double prior_sigma_guess,
                       double inc_prob)
@@ -53,14 +53,14 @@ namespace BOOM{
 
 
   PRS::PartRegSampler(uint Npart,
-                      const Spd & xtx,
-                      const Vec & xty,
+                      const SpdMatrix & xtx,
+                      const Vector & xty,
                       double yty,
-                      const Vec & prior_mean,
-                      const Spd & prior_ivar,
+                      const Vector & prior_mean,
+                      const SpdMatrix & prior_ivar,
                       double prior_df,
                       double prior_sigma_guess,
-                      const Vec & inc_probs)
+                      const Vector & inc_probs)
       : suf_(new NeRegSuf(
             xtx,
             xty,
@@ -117,7 +117,7 @@ namespace BOOM{
 
 
   inline std::vector<PRS::Mlike> & fix_probs(std::vector<PRS::Mlike> &ans){
-    Vec prob(ans.size());
+    Vector prob(ans.size());
     for(uint i=0; i<ans.size(); ++i) prob[i] = ans[i].second;
     prob.normalize_logprob();
     for(uint i=0; i<ans.size(); ++i) ans[i].second = prob[i];
@@ -142,25 +142,24 @@ namespace BOOM{
     return fix_probs(ans);
   }
 
-  Vec PRS::marginal_inclusion_probs()const{
+  Vector PRS::marginal_inclusion_probs()const{
     uint N = models_.size();
     double prob = 1.0/N;
-    Vec ans(Nvars(), 0.0);
-    for(uint i=0; i<N; ++i) ans += prob*models_[i];
+    Vector ans(Nvars(), 0.0);
+    for (uint i=0; i<N; ++i) {
+      ans += prob * models_[i].to_Vector();
+    }
     return ans;
   }
 
-  FreqDist PRS::model_sizes()const{
+  FrequencyDistribution PRS::model_sizes()const{
     uint Nmod = models_.size();
     std::vector<uint> sizes(Nmod);
     for(uint i=0; i<Nmod; ++i){
       sizes[i] = models_[i].nvars();
     }
-
-    FreqDist ans(sizes);
-    return ans;
+    return FrequencyDistribution(sizes);
   }
-
 
   void PRS::draw_params(){
     uint Nmod = models_.size();
@@ -170,15 +169,14 @@ namespace BOOM{
     double DF = suf_->n() + prior_df_;
     for(uint i=0; i<Nmod; ++i){
       Selector g = models_[i];
-      Spd Ominv = g.select(prior_ivar_);
+      SpdMatrix Ominv = g.select(prior_ivar_);
       double SS = set_reg_post_params(g,Ominv);
       double sigsq = 1.0/rgamma(DF/2,SS/2);
-      Vec beta = rmvn_ivar(beta_tilde_, iV_tilde_/sigsq);
+      Vector beta = rmvn_ivar(beta_tilde_, iV_tilde_/sigsq);
       betas_[i] = beta;
       sigsq_[i] = sigsq;
     }
   }
-
 
   void PRS::resample_models(){
     uint N = Nparticles();
@@ -266,11 +264,11 @@ namespace BOOM{
     return n/models_.size();
   }
 
-  double PRS::set_reg_post_params(const Selector &g, const Spd &Ominv)const{
-    Vec b = g.select(prior_mean_);
+  double PRS::set_reg_post_params(const Selector &g, const SpdMatrix &Ominv)const{
+    Vector b = g.select(prior_mean_);
 
-    Spd xtx = suf_->xtx(g);
-    Vec xty = suf_->xty(g);
+    SpdMatrix xtx = suf_->xtx(g);
+    Vector xty = suf_->xty(g);
 
     iV_tilde_ = Ominv + xtx;
     beta_tilde_ = Ominv * b + xty;
@@ -284,7 +282,7 @@ namespace BOOM{
 
   double PRS::compute_log_model_prob(const Selector &g)const{
     if(g.nvars()==0) return BOOM::negative_infinity();
-    Spd Ominv = g.select(prior_ivar_);
+    SpdMatrix Ominv = g.select(prior_ivar_);
     double SS = set_reg_post_params(g,Ominv);
     double DF = suf_->n() + prior_df_;
     double ans = logprior(g);

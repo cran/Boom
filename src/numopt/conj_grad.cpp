@@ -18,6 +18,7 @@
 
 #include <cmath>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
@@ -31,7 +32,7 @@ namespace BOOM{
   const double acctol= 	0.0001;
   const double stepredn= 0.2;
 
-  double conj_grad(Vec & Bvec, Vec & X, Target target, dTarget dtarget,
+  double conj_grad(Vector & Bvec, Vector & X, Target target, dTarget dtarget,
  		   double abstol, double intol, conj_grad_method type,
 		   bool, int & fncount, int &grcount, int maxit){
     double Fmin;
@@ -50,9 +51,9 @@ namespace BOOM{
       return Fmin;
     }
 
-    Vec c(n);
-    Vec g(n);
-    Vec t(n);
+    Vector c(n);
+    Vector g(n);
+    Vector t(n);
 
     setstep = 1.7;
     cyclimit = n;
@@ -62,7 +63,7 @@ namespace BOOM{
     if(!std::isfinite(f)) {
       ostringstream err;
       err << "bad initial value: " << Bvec << " in conj_grad";
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
 
     Fmin = f;
@@ -81,7 +82,7 @@ namespace BOOM{
  	if (gradcount > maxit) {
  	  fncount = funcount;
  	  grcount = gradcount;
- 	  throw_exception<std::runtime_error>("max_iter_exceeded in conj_grad");
+ 	  report_error("max_iter_exceeded in conj_grad");
  	}
  	dtarget(Bvec, g);
 
@@ -98,7 +99,7 @@ namespace BOOM{
 	  G1 = g.normsq() - g.dot(c);
 	  G2 = t.dot(g) - t.dot(c);
 	}
-	else throw_exception<std::runtime_error>("unkonwn_type in CG method of optim");
+	else report_error("unkonwn_type in CG method of optim");
 	c=g;
 
  	if (G1 > tol) {

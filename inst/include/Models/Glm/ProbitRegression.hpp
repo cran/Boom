@@ -30,18 +30,6 @@
 
 namespace BOOM{
 
-  class ProbitRegressionModel;
-
-  class ProbitRegressionTarget : public d2TargetFun{
-   public:
-    ProbitRegressionTarget(const ProbitRegressionModel *m);
-    double operator()(const Vector &beta)const;
-    double operator()(const Vector &beta, Vector &g)const;
-    double operator()(const Vector &beta, Vector &g, Matrix &h)const;
-   private:
-    const ProbitRegressionModel *m_;
-  };
-
   class ProbitRegressionModel
       : public GlmModel,
         public NumOptModel,
@@ -53,12 +41,12 @@ namespace BOOM{
     ProbitRegressionModel(const Vector &beta);
     ProbitRegressionModel(const Matrix &X, const Vector &y);
     ProbitRegressionModel(const ProbitRegressionModel &);
-    ProbitRegressionModel *clone()const;
+    ProbitRegressionModel *clone()const override;
 
-    virtual GlmCoefs & coef();
-    virtual const GlmCoefs & coef()const;
-    virtual Ptr<GlmCoefs> coef_prm();
-    virtual const Ptr<GlmCoefs> coef_prm()const;
+    GlmCoefs & coef() override;
+    const GlmCoefs & coef()const override;
+    Ptr<GlmCoefs> coef_prm() override;
+    const Ptr<GlmCoefs> coef_prm()const override;
 
     virtual double pdf(dPtr, bool)const;
     virtual double pdf(Ptr<BinaryRegressionData>, bool)const;
@@ -66,8 +54,8 @@ namespace BOOM{
 
     // The dimension here and in log_likelihood is the number of
     // included variables.
-    virtual double Loglike(
-        const Vector &beta, Vector &g, Matrix &h, uint nd)const;
+    double Loglike(
+        const Vector &beta, Vector &g, Matrix &h, uint nd)const override;
 
     // call with *g=0 if you don't want any derivatives.  Call with
     // *g!=0 and *h=0 if you only want first derivatives.
@@ -75,7 +63,7 @@ namespace BOOM{
     // Otherwise they will be incremented.
     double log_likelihood(const Vector & beta, Vector *g, Matrix *h,
                           bool initialize_derivs = true)const;
-    ProbitRegressionTarget log_likelihood_tf()const;
+    d2TargetFunPointerAdapter log_likelihood_tf()const;
 
     bool sim(const Vector &x)const;
     Ptr<BinaryRegressionData> sim()const;

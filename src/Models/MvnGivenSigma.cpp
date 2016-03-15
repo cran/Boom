@@ -23,7 +23,7 @@ namespace BOOM{
 
   typedef MvnGivenSigma MGS;
 
-  MGS::MvnGivenSigma(const Vec &b, double k, const Spd & siginv)
+  MGS::MvnGivenSigma(const Vector &b, double k, const SpdMatrix & siginv)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
       DataPolicy(new MvnSuf(b.size())),
       PriorPolicy(),
@@ -31,7 +31,7 @@ namespace BOOM{
   {
   }
 
-  MGS::MvnGivenSigma(const Vec &b, double k)
+  MGS::MvnGivenSigma(const Vector &b, double k)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
       DataPolicy(new MvnSuf(b.size())),
       PriorPolicy()
@@ -39,7 +39,7 @@ namespace BOOM{
     // Sigma must be set before the class can be used_;
   }
 
-  MGS::MvnGivenSigma(const Vec &b, double k, Ptr<SpdData> Sigma)
+  MGS::MvnGivenSigma(const Vector &b, double k, Ptr<SpdData> Sigma)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
       DataPolicy(new MvnSuf(b.size())),
       PriorPolicy(),
@@ -78,7 +78,7 @@ namespace BOOM{
   MGS * MGS::clone()const{return new MGS(*this);}
 
   void MGS::set_Sigma(Ptr<SpdData> S){ Sigma_ = S;}
-  void MGS::set_Sigma(const Spd &V, bool ivar){
+  void MGS::set_Sigma(const SpdMatrix &V, bool ivar){
     NEW(SpdData, d)(V, ivar);
     this->set_Sigma(d);
   }
@@ -94,10 +94,10 @@ namespace BOOM{
     return ParamPolicy::prm2();}
 
   uint MGS::dim()const{return mu().size();}
-  const Vec & MGS::mu()const{ return Mu_prm()->value();}
+  const Vector & MGS::mu()const{ return Mu_prm()->value();}
   double MGS::kappa()const{return Kappa_prm()->value();}
 
-  void MGS::set_mu(const Vec &v){Mu_prm()->set(v);}
+  void MGS::set_mu(const Vector &v){Mu_prm()->set(v);}
   void MGS::set_kappa(double kap){Kappa_prm()->set(kap);}
 
   void MGS::mle(){
@@ -133,15 +133,15 @@ namespace BOOM{
     ostringstream err;
     err << "Sigma has not been set in instance of MvnGivenSigma."
 	<< endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error(err.str());
   }
 
-  const Spd & MGS::Sigma()const{
+  const SpdMatrix & MGS::Sigma()const{
     S = Sigma_->value()/kappa();
     return S;
   }
 
-  const Spd & MGS::siginv()const{
+  const SpdMatrix & MGS::siginv()const{
     S = Sigma_->ivar() * kappa();
     return S;
   }
@@ -152,9 +152,9 @@ namespace BOOM{
     return ans;
   }
 
-  double MGS::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
-    const Spd & siginv(this->siginv());
-    const Vec & mu(this->mu());
+  double MGS::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
+    const SpdMatrix & siginv(this->siginv());
+    const Vector & mu(this->mu());
     double ans = dmvn(x,mu, siginv, ldsi(), true);
     if(nd>0){
       g = -(siginv * (x-mu));
@@ -162,6 +162,6 @@ namespace BOOM{
     return ans;
   }
 
-  Vec MGS::sim()const{ return rmvn_ivar(mu(),siginv());  }
+  Vector MGS::sim()const{ return rmvn_ivar(mu(),siginv());  }
 
 }

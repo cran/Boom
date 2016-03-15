@@ -25,11 +25,12 @@
 namespace BOOM{
   class FiniteMixturePosteriorSampler : public PosteriorSampler{
    public:
-    FiniteMixturePosteriorSampler(FiniteMixtureModel *model)
-        : model_(model)
+    FiniteMixturePosteriorSampler(FiniteMixtureModel *model,
+                                  RNG &seeding_rng = GlobalRng::rng)
+        : PosteriorSampler(seeding_rng), model_(model)
     {}
 
-    virtual double logpri()const{
+    double logpri()const override{
       double ans = model_->mixing_distribution()->logpri();
       int S = model_->number_of_mixture_components();
       for(int s = 0; s < S; ++s){
@@ -38,7 +39,7 @@ namespace BOOM{
       return ans;
     }
 
-    virtual void draw(){
+    void draw() override{
       model_->impute_latent_data(rng());
       model_->mixing_distribution()->sample_posterior();
       for(int s = 0; s < model_->number_of_mixture_components(); ++s){

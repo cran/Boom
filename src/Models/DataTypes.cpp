@@ -30,6 +30,10 @@ namespace BOOM{
     d.display(out);
     return out;}
 
+  void print_data(const Data &d) {
+    std::cout << d << std::endl;
+  }
+
   void intrusive_ptr_add_ref(Data *d){
     d->up_count();}
   void intrusive_ptr_release(Data *d){
@@ -45,7 +49,7 @@ namespace BOOM{
   VectorData::VectorData(uint n, double X)
     : x(n,X)
   {}
-  VectorData::VectorData(const Vec &y)
+  VectorData::VectorData(const Vector &y)
     : x(y)
   {}
   VectorData::VectorData(const VectorData &rhs)
@@ -59,7 +63,7 @@ namespace BOOM{
   ostream & VectorData::display(ostream &out)const{
     out << x ; return out;}
 
-  void VectorData::set(const Vec &rhs, bool sig){
+  void VectorData::set(const Vector &rhs, bool sig){
     x =rhs;
     if(sig) signal();
   }
@@ -82,7 +86,7 @@ namespace BOOM{
     : x(r, c, val)
   {}
 
-  MatrixData::MatrixData(const Mat &y)
+  MatrixData::MatrixData(const Matrix &y)
     : Data(),
       x(y)
   {}
@@ -99,7 +103,7 @@ namespace BOOM{
     out << x << endl;
     return out;}
 
-  void MatrixData::set(const Mat &rhs, bool sig){
+  void MatrixData::set(const Matrix &rhs, bool sig){
     x = rhs;
     if(sig) signal();
   }
@@ -109,109 +113,4 @@ namespace BOOM{
     if(sig) signal();
   }
 
-  //------------------------------------------------------------
-  CorrData::CorrData(const Spd &y)
-    : R(var2cor(y))
-  {}
-
-  CorrData::CorrData(const Corr &y)
-    : R(y)
-  {}
-
-  CorrData::CorrData(const CorrData &rhs)
-    : Data(rhs),
-      Traits(rhs),
-      R(rhs.R)
-  {}
-  CorrData* CorrData::clone()const{
-    return new CorrData(*this);}
-  ostream & CorrData::display(ostream &out) const{
-    out << R << endl;
-    return out;}
-
-  const Corr & CorrData::value()const{return R;}
-  void CorrData::set(const Corr &rhs, bool sig){
-    R = rhs;
-    if(sig) signal();
-  }
-
-  //------------------------------------------------------------
-
-  typedef BinomialProcessData BPD;
-  typedef std::vector<bool> Vb;
-
-  bool BPD::space_output_(true);
-  void BPD::space_output(bool v){ space_output_ = v;}
-
-  BPD::BinomialProcessData(){}
-  BPD::BinomialProcessData(const Vb &rhs)
-    : dat(rhs)
-  {}
-  BPD::BinomialProcessData(const BPD &rhs)
-    : Data(rhs),
-      Traits(rhs),
-      dat(rhs.dat)
-  {}
-
-  BPD::BinomialProcessData(uint p, bool all)
-    : dat(p, all)
-  {}
-  BPD* BinomialProcessData::clone()const{
-    return new BPD(*this);}
-
-  BPD & BPD::operator=(const BPD &rhs){
-    if(&rhs!=this){
-      dat = rhs.dat;
-    }
-    return *this;
-  }
-
-  bool BPD::operator==(const BPD & rhs)const{
-    return dat==rhs.dat; }
-
-  bool BPD::operator==(const Vb & rhs)const{
-    return dat==rhs; }
-
-  bool BPD::operator<(const BPD &rhs)const{
-    return dat < rhs.dat;  }
-  bool BPD::operator>(const BPD &rhs)const{
-    return dat > rhs.dat;  }
-  bool BPD::operator>=(const BPD &rhs)const{
-    return dat >= rhs.dat;  }
-  bool BPD::operator<=(const BPD &rhs)const{
-    return dat <= rhs.dat;  }
-
-  ostream &BPD::display(ostream &out)const{
-    for(uint i = 0; i < dat.size(); ++i){
-      out << (dat[i] ? '1' : '0');
-      if(space_output_) out << ' ';}
-    return out;}
-
-  const Vb & BPD::value()const{ return dat; }
-  void BPD::set(const Vb &rhs, bool sig){
-    dat = rhs;
-    if(sig) signal();
-  }
-
-  bool BPD::operator[](uint i)const{return dat[i];}
-  void BPD::set_bit(uint i, bool val){ dat[i]=val;}
-  void BPD::swap(BPD &d){ std::swap(dat, d.dat); }
-
-  bool BPD::all()const{
-    if(std::find(dat.begin(), dat.end(), false)==dat.end())
-      return true;
-    return false;
-  }
-
-  bool BPD::none()const{
-    if(std::find(dat.begin(), dat.end(), true)==dat.end())
-      return true;
-    return false;}
-
-  Vb::const_iterator BPD::begin()const{
-    return dat.begin();}
-  Vb::const_iterator BPD::end()const{
-    return dat.end();}
-
-
-}// ends namespace BOOM
+}  // namespace BOOM

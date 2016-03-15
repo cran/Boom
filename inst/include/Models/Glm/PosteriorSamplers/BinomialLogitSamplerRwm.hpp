@@ -37,10 +37,11 @@ namespace BOOM{
    public:
     BinomialLogitSamplerRwm(BinomialLogitModel *model,
                             Ptr<MvnBase> prior,
-                            double nu = 3);
+                            double nu = 3,
+                            RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
     MvtRwmProposal * proposal(){return proposal_.get();}
     const MvtRwmProposal * proposal()const{return proposal_.get();}
 

@@ -133,14 +133,16 @@ namespace BOOM{
   GammaPosteriorSampler::GammaPosteriorSampler(
       GammaModel *model,
       Ptr<DoubleModel> mean_prior,
-      Ptr<DoubleModel> alpha_prior)
-      : model_(model),
+      Ptr<DoubleModel> alpha_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mean_prior_(mean_prior),
         alpha_prior_(alpha_prior),
         mean_sampler_(GammaMeanAlphaLogPosterior(
-            model_, mean_prior_.get()), true),
+            model_, mean_prior_.get()), true, 1.0, &seeding_rng),
         alpha_sampler_(GammaAlphaLogPosterior(
-            model_, alpha_prior_.get()), true)
+            model_, alpha_prior_.get()), true, 1.0, &seeding_rng)
   {
     mean_sampler_.set_lower_limit(0);
     alpha_sampler_.set_lower_limit(0);
@@ -168,14 +170,16 @@ namespace BOOM{
   GammaPosteriorSamplerBeta::GammaPosteriorSamplerBeta(
       GammaModel *model,
       Ptr<DoubleModel> mean_prior,
-      Ptr<DoubleModel> beta_prior)
-      : model_(model),
+      Ptr<DoubleModel> beta_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mean_prior_(mean_prior),
         beta_prior_(beta_prior),
         mean_sampler_(GammaMeanBetaLogPosterior(
-            model, mean_prior.get())),
+            model, mean_prior.get()), false, 1.0, &rng()),
         beta_sampler_(GammaBetaLogPosterior(
-            model, beta_prior.get()))
+            model, beta_prior.get()), false, 1.0, &rng())
   {}
 
   void GammaPosteriorSamplerBeta::draw(){

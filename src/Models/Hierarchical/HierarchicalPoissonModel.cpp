@@ -38,68 +38,15 @@ namespace BOOM {
   HierarchicalPoissonModel::HierarchicalPoissonModel(
       double lambda_prior_guess,
       double lambda_prior_sample_size)
-      : prior_(new GammaModel(
-            lambda_prior_sample_size, lambda_prior_guess, 0))
-  {
-    initialize();
-  }
+      : HierarchicalBase(new GammaModel(lambda_prior_sample_size,
+                                        lambda_prior_guess,
+                                        0)) {}
 
   HierarchicalPoissonModel::HierarchicalPoissonModel(Ptr<GammaModel> prior)
-      : prior_(prior)
-  {
-    initialize();
-  }
-
-  HierarchicalPoissonModel::HierarchicalPoissonModel(
-      const HierarchicalPoissonModel &rhs)
-      : Model(rhs),
-        ParamPolicy(rhs),
-        PriorPolicy(rhs),
-        prior_(rhs.prior_->clone())
-  {
-    initialize();
-    for (int i = 0; i < rhs.number_of_groups(); ++i) {
-      add_data_level_model(rhs.data_model(i)->clone());
-    }
-  }
+      : HierarchicalBase(prior) {}
 
   HierarchicalPoissonModel * HierarchicalPoissonModel::clone() const {
     return new HierarchicalPoissonModel(*this);
-  }
-
-  void HierarchicalPoissonModel::add_data_level_model(
-      Ptr<PoissonModel> data_level_model) {
-    data_level_models_.push_back(data_level_model);
-    ParamPolicy::add_model(data_level_model);
-  }
-
-  void HierarchicalPoissonModel::clear_data() {
-    data_level_models_.clear();
-    ParamPolicy::clear();
-    initialize();
-    prior_->clear_data();
-  }
-
-  void HierarchicalPoissonModel::clear_client_data() {
-    prior_->clear_data();
-    for (int i = 0; i < data_level_models_.size(); ++i) {
-      data_level_models_[i]->clear_data();
-    }
-  }
-
-  void HierarchicalPoissonModel::clear_methods() {
-    prior_->clear_methods();
-    for (int i = 0; i < data_level_models_.size(); ++i) {
-      data_level_models_[i]->clear_methods();
-    }
-  }
-
-  void HierarchicalPoissonModel::combine_data(const Model &rhs, bool) {
-    const HierarchicalPoissonModel & rhs_model(
-        dynamic_cast<const HierarchicalPoissonModel &>(rhs));
-    for(int i = 0; i < rhs_model.number_of_groups(); ++i) {
-      add_data_level_model(rhs_model.data_level_models_[i]);
-    }
   }
 
   void HierarchicalPoissonModel::add_data(Ptr<Data> dp) {
@@ -120,40 +67,12 @@ namespace BOOM {
     add_data_level_model(model);
   }
 
-  int HierarchicalPoissonModel::number_of_groups() const {
-    return data_level_models_.size();
-  }
-
-  PoissonModel * HierarchicalPoissonModel::data_model(int which_group) {
-    return data_level_models_[which_group].get();
-  }
-
-  const PoissonModel * HierarchicalPoissonModel::data_model(
-      int which_group) const {
-    return data_level_models_[which_group].get();
-  }
-
-  GammaModel * HierarchicalPoissonModel::prior_model() {
-    return prior_.get();
-  }
-
-  const GammaModel * HierarchicalPoissonModel::prior_model() const {
-    return prior_.get();
-  }
-
   double HierarchicalPoissonModel::prior_mean() const {
-    return prior_->mean();
+    return prior_model()->mean();
   }
 
   double HierarchicalPoissonModel::prior_sample_size() const {
-    return prior_->alpha();
-  }
-
-  void HierarchicalPoissonModel::initialize() {
-    ParamPolicy::add_model(prior_);
-    for (int i = 0; i < data_level_models_.size(); ++i) {
-      ParamPolicy::add_model(data_level_models_[i]);
-    }
+    return prior_model()->alpha();
   }
 
 }  // namespace BOOM

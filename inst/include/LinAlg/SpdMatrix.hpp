@@ -21,11 +21,6 @@
 #include <LinAlg/Matrix.hpp>
 
 namespace BOOM{
-  using std::ostream;
-  using std::istream;
-
-  class Vector;
-  class Matrix;
 
   class SpdMatrix
     : public Matrix
@@ -39,9 +34,15 @@ namespace BOOM{
     template <class FwdIt>
     explicit SpdMatrix(FwdIt Beg, FwdIt End);
     SpdMatrix(const SpdMatrix &sm);  // reference semantics
-    SpdMatrix(const Matrix &m, bool check=true);
-    SpdMatrix(const SubMatrix &m, bool check=true);
-    SpdMatrix(const ConstSubMatrix &m, bool check=true);
+
+    // Args:
+    //   m: A Matrix object that happens to be symmetric and positive
+    //     definite.
+    //   check: If true, then throw an exception if m is not
+    //     symmetric.  Skip the check if 'check' is false.
+    SpdMatrix(const Matrix &m, bool check = true);
+    SpdMatrix(const SubMatrix &m, bool check = true);
+    SpdMatrix(const ConstSubMatrix &m, bool check = true);
 
     SpdMatrix & operator=(const SpdMatrix &); // value semantics
     SpdMatrix & operator=(const Matrix &);
@@ -51,7 +52,7 @@ namespace BOOM{
     bool operator==(const SpdMatrix &)const;
 
     void  swap(SpdMatrix &rhs);
-    void randomize();  // fills entries with U(0,1) random variables,
+    void randomize() override;  // fills entries with U(0,1) random variables,
                        // then multiply by self-transpose.
 
     //-------- size and shape info ----------
@@ -71,13 +72,13 @@ namespace BOOM{
     Matrix chol(bool & ok) const;
     SpdMatrix inv()const;
     SpdMatrix inv(bool &ok)const;
-    double det() const;
+    double det() const override;
     double logdet() const;
     double logdet(bool &ok) const;
 
     // Returns this^{-1} * mat.  Throws an exception if this cannot be
     // inverted.
-    Matrix solve(const Matrix &mat) const;
+    Matrix solve(const Matrix &mat) const override;
 
     // Returns this^{-1} * v and sets ok to true.  If this cannot be
     // inverted ok is set to false and the return value a Vector of
@@ -86,10 +87,14 @@ namespace BOOM{
 
     // Returns this{-1} * v.  Throws an exception if this cannot be
     // inverted.
-    Vector solve(const Vector &v) const;
+    Vector solve(const Vector &v) const override;
 
     void reflect();   // copies upper triangle into lower triangle
+
+    // Returns the Mahalinobis distance:  (x - y)^T (*this) (x - y).
     double Mdist(const Vector &x, const Vector &y) const ;
+
+    // Mahalinobis distance from 0:  x^T (*this) x
     double Mdist(const Vector &x) const ;
 
     SpdMatrix & add_outer(const Vector &x, double w = 1.0,
@@ -116,20 +121,20 @@ namespace BOOM{
     SpdMatrix & add_outer2(const Vector &x, const Vector &y, double w = 1.0);
 
     //--------- Matrix multiplication ------------
-    Matrix & mult(const Matrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & Tmult(const Matrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & multT(const Matrix &B, Matrix &ans, double scal=1.0)const;
+    Matrix & mult(const Matrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & Tmult(const Matrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & multT(const Matrix &B, Matrix &ans, double scal=1.0)const override;
 
-    Matrix & mult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & Tmult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & multT(const SpdMatrix &B, Matrix &ans, double scal=1.0)const;
+    Matrix & mult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & Tmult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & multT(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
 
-    Matrix & mult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
-    Matrix & multT(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
+    Matrix & mult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & multT(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
 
-    Vector & mult(const Vector &v, Vector &ans, double scal=1.0)const;
-    Vector & Tmult(const Vector &v, Vector &ans, double scal=1.0)const;
+    Vector & mult(const Vector &v, Vector &ans, double scal=1.0)const override;
+    Vector & Tmult(const Vector &v, Vector &ans, double scal=1.0)const override;
 
     //------------- input/output ---------------
     virtual Vector vectorize(bool minimal=true)const;

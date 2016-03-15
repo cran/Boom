@@ -31,21 +31,21 @@ namespace BOOM{
 
       ======================================================================*/
   public:
-    ArmsSampler(Target, const Vec & initial_value, bool LogConvex=false);
+    ArmsSampler(Target, const Vector & initial_value, bool LogConvex=false);
 
     void find_limits();
-    virtual Vec draw(const Vec &old);
-    virtual double logp(const Vec &x)const;
+    Vector draw(const Vector &old) override;
+    virtual double logp(const Vector &x)const;
     void  set(double);
     double eval()const;
-    void set_limits(const Vec &lo, const Vec &hi);
-    void set_lower_limits(const Vec &lo);
-    void set_upper_limits(const Vec &hi);
+    void set_limits(const Vector &lo, const Vector &hi);
+    void set_lower_limits(const Vector &lo);
+    void set_upper_limits(const Vector &hi);
   private:
     Target f;
-    Vec x;
-    Vec lower_limits;
-    Vec upper_limits;
+    Vector x;
+    Vector lower_limits;
+    Vector upper_limits;
     uint which;
     uint ninit;
     bool log_convex;  // set false if not sure;

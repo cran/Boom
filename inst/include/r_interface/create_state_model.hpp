@@ -44,6 +44,7 @@ namespace BOOM{
   class DynamicRegressionStateModel;
   class ArStateModel;
   class StudentLocalLinearTrendStateModel;
+  class TrigStateModel;
 
   namespace RInterface{
 
@@ -123,6 +124,8 @@ namespace BOOM{
       ArStateModel * CreateArStateModel(
           SEXP r_state_component, const std::string &prefix);
       StudentLocalLinearTrendStateModel * CreateStudentLocalLinearTrend(
+          SEXP r_state_component, const std::string &prefix);
+      TrigStateModel * CreateTrigStateModel(
           SEXP r_state_component, const std::string &prefix);
 
       // A pointer to the object manaaging the R list that will record

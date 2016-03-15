@@ -28,34 +28,38 @@ namespace BOOM{
   class IndependentMvnSuf : public SufstatDetails<VectorData> {
    public:
     IndependentMvnSuf(int dim);
-    IndependentMvnSuf * clone()const;
+    IndependentMvnSuf * clone() const override;
 
-    void clear();
+    void clear() override;
     void resize(int dim);
-    void Update(const VectorData &);
-    void update_raw(const Vec &x);
-    void add_mixture_data(const Vec &x, double prob);
+    void Update(const VectorData &) override;
+    void update_raw(const Vector &x);
+    void add_mixture_data(const Vector &x, double prob);
+    void update_expected_value(double sample_size,
+                               const Vector &expected_sum,
+                               const Vector &expected_sum_of_squares);
 
-    double sum(int i)const;
-    double sumsq(int i)const;  // uncentered sum of squares
-    double n(int i)const;
+    double sum(int i) const;
+    double sumsq(int i) const;  // uncentered sum of squares
+    double centered_sumsq(int i, double mu) const;
+    double n() const;
 
-    double ybar(int i)const;
-    double sample_var(int i)const;
+    double ybar(int i) const;
+    double sample_var(int i) const;
 
-    IndependentMvnSuf * abstract_combine(Sufstat *s);
+    IndependentMvnSuf * abstract_combine(Sufstat *s) override;
     void combine(Ptr<IndependentMvnSuf>);
     void combine(const IndependentMvnSuf &);
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
-    virtual ostream & print(ostream &out)const;
+    Vector vectorize(bool minimal = true) const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                               bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                               bool minimal = true) override;
+    ostream & print(ostream &out) const override;
    private:
-    Vec sum_;
-    Vec sumsq_;
-    Vec n_;
+    Vector sum_;
+    Vector sumsq_;
+    double n_;
   };
 
   class IndependentMvnModel
@@ -70,39 +74,39 @@ namespace BOOM{
     IndependentMvnModel(const Vector &mean,
                         const Vector &variance);
     IndependentMvnModel(const IndependentMvnModel &rhs);
-    virtual IndependentMvnModel * clone()const;
+    IndependentMvnModel * clone() const override;
     // Several virtual functions from MvnBase are re-implemented here
     // for efficiency.
-    virtual double Logp(const Vec &x, Vec &g, Mat &h, uint nderiv)const;
-    virtual const Vec & mu() const;
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv() const;
-    virtual double ldsi()const;
-    virtual Vec sim()const;
+    double Logp(const Vector &x, Vector &g, Matrix &h, uint nderiv) const override;
+    const Vector & mu() const override;
+    const SpdMatrix & Sigma() const override;
+    const SpdMatrix & siginv() const override;
+    double ldsi() const override;
+    Vector sim() const override;
 
     Ptr<VectorParams> Mu_prm();
-    const Ptr<VectorParams> Mu_prm()const;
-    const VectorParams & Mu_ref()const;
+    const Ptr<VectorParams> Mu_prm() const;
+    const VectorParams & Mu_ref() const;
 
     Ptr<VectorParams> Sigsq_prm();
-    const Ptr<VectorParams> Sigsq_prm()const;
-    const VectorParams & Sigsq_ref()const;
+    const Ptr<VectorParams> Sigsq_prm() const;
+    const VectorParams & Sigsq_ref() const;
 
-    const Vec &sigsq()const;
-    double mu(int i)const;
-    double sigsq(int i)const;
-    double sigma(int i)const;
+    const Vector &sigsq() const;
+    double mu(int i) const;
+    double sigsq(int i) const;
+    double sigma(int i) const;
 
-    void set_mu(const Vec &mu);
+    void set_mu(const Vector &mu);
     void set_mu_element(double mu, int position);
-    void set_sigsq(const Vec &sigsq);
+    void set_sigsq(const Vector &sigsq);
     void set_sigsq_element(double sigsq, int position);
 
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(const Data * dp, bool logscale) const override;
    private:
-    mutable Spd sigma_scratch_;
-    mutable Vec g_;
-    mutable Mat h_;
+    mutable SpdMatrix sigma_scratch_;
+    mutable Vector g_;
+    mutable Matrix h_;
   };
 
 }

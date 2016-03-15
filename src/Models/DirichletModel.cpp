@@ -49,14 +49,15 @@ namespace BOOM{
 
   void DS::Update(const VectorData &x){
     n_+=1.0;
-    sumlog_+= log(x.value()); }
+    sumlog_+= log(x.value());
+  }
 
-  void DS::add_mixture_data(const Vec &x, double prob){
+  void DS::add_mixture_data(const Vector &x, double prob){
     n_ += prob;
     sumlog_.axpy(log(x), prob);
   }
 
-  const Vec & DS::sumlog()const{return sumlog_;}
+  const Vector & DS::sumlog()const{return sumlog_;}
   double DS::n()const{return n_;}
 
   void DS::combine(Ptr<DS> s){
@@ -72,24 +73,24 @@ namespace BOOM{
   DirichletSuf * DS::abstract_combine(Sufstat *s){
       return abstract_combine_impl(this, s);}
 
-  Vec DS::vectorize(bool)const{
-    Vec ans = sumlog_;
+  Vector DS::vectorize(bool)const{
+    Vector ans = sumlog_;
     ans.push_back(n_);
     return ans;
   }
 
-  Vec::const_iterator DS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator DS::unvectorize(Vector::const_iterator &v, bool){
     uint dim = sumlog_.size();
 
-    Vec tmp(v, v+dim);
+    Vector tmp(v, v+dim);
     v+=dim;
     sumlog_ = tmp;
     n_ = *v;
     return ++v;
   }
 
-  Vec::const_iterator DS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator DS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -98,22 +99,15 @@ namespace BOOM{
   }
   //======================================================================
   typedef DirichletModel DM;
-  typedef VectorParams VP;
-
-  DM::DirichletModel(uint S)
-    : ParamPolicy(new VP(S,1.0/S)),
-      DataPolicy(new DS(S) ),
-      PriorPolicy()
-    {}
 
   DM::DirichletModel(uint S, double Nu)
-    : ParamPolicy(new VP(S,Nu)),
+    : ParamPolicy(new VectorParams(S, Nu)),
       DataPolicy(new DS(S) ),
       PriorPolicy()
     {}
 
-  DM::DirichletModel(const Vec &Nu)
-    : ParamPolicy(new VP(Nu)),
+  DM::DirichletModel(const Vector &Nu)
+    : ParamPolicy(new VectorParams(Nu)),
       DataPolicy(new DS(Nu.size()) ),
       PriorPolicy()
     {}
@@ -126,7 +120,7 @@ namespace BOOM{
       PriorPolicy(rhs),
       DiffVectorModel(rhs),
       NumOptModel(rhs),
-      EmMixtureComponent(rhs)
+      MixtureComponent(rhs)
   {}
 
   DM *DM::clone() const{return new DirichletModel(*this);}
@@ -134,18 +128,17 @@ namespace BOOM{
   Ptr<VectorParams> DM::Nu(){return ParamPolicy::prm();}
   const Ptr<VectorParams> DM::Nu()const{return ParamPolicy::prm();}
 
-  uint DM::size()const{return nu().size();}
-  const Vec & DM::nu() const{return Nu()->value();}
+  uint DM::dim()const{return nu().size();}
+  const Vector & DM::nu() const{return Nu()->value();}
   const double & DM::nu(uint i)const{return nu()[i];}
-  void DM::set_nu(const Vec &newnu){Nu()->set(newnu);}
+  void DM::set_nu(const Vector &newnu){Nu()->set(newnu);}
 
-  Vec DM::pi()const{
-    Vec ans(nu());
+  Vector DM::pi()const{
+    Vector ans(nu());
     double nc=ans.sum();
     return ans/nc;
   }
   double DM::pi(uint i)const{return nu(i)/nu().sum();}
-
 
   double DM::pdf(dPtr dp, bool logscale) const{
     return pdf(DAT(dp)->value(),logscale);}
@@ -153,34 +146,65 @@ namespace BOOM{
   double DM::pdf(const Data *dp, bool logscale) const{
     return pdf(DAT(dp)->value(),logscale);}
 
-  double DM::pdf(const Vec &pi, bool logscale) const{
+  double DM::pdf(const Vector &pi, bool logscale) const{
     return ddirichlet(pi, nu(), logscale);}
 
-
-  double DirichletModel::Logp(const Vec &p, Vec &g, Mat &h, uint lev) const{
+  // Args:
+  //   probs: A vector of probabilities to be evaluated.  If no
+  //     derivatives are desired then probs can either match the
+  //     dimension of nu(), in which case it must sum to 1, or its
+  //     dimension must be one less, in which case its sum must be
+  //     non-negative but can't exceed 1.  Element 0 is assumed to be
+  //     the function of the other elements, so that probs0 = 1 -
+  //     sum(probs).  If derivatives are desired then probs.size()
+  //     must be nu().size() - 1.
+  //   gradient: The derivative of the unconstrained elements of
+  //     probs.  This is only accessed if nderivs > 0.  It will be
+  //     resized if needed, so that its dimension is one less than the
+  //     dimension of nu().
+  //   Hessian: Second derivative of logp with respect to the free
+  //     elements of probs (i.e. not the first one).  This matrix is
+  //     only accessed if nderiv > 1, in which case it will be resized.
+  //   nderiv:  The number of derivatives desired.
+  double DirichletModel::Logp(const Vector &probs,
+                              Vector &gradient,
+                              Matrix &Hessian,
+                              uint nderiv) const{
     // Because sum(p)=1, there are only p.size()-1 free elements in p.
     // The constraint is enforced by expressing the first element of p
     // as a function of the other variables.  The corresponding elements
     // in g and h are zeroed.
-
-    const Vec &n(nu());
-    double ans = ddirichlet(p, n, true);
-    if(lev>0){
-      int m = p.size();
-      g[0]=0;
-      for(int i = 0+1; i<m; ++i){
- 	g[i]  = (n[i]-1)/p[i] - (n[0]-1)/p[0];
- 	if(lev>1){
- 	  h(0,i) = h(i,0)=0.0;
- 	  for(int j = 0+1; j<m; ++j){
- 	    h(i,j) = (1.0-n[0])/(p[0]*p[0])
- 	      + (i==j ? (1.0-n[i])/(p[i]*p[i]) : 0.0);}}}}
-    return ans;}
-
+    if (probs.size() == nu().size() && nderiv == 0) {
+      return ddirichlet(probs, nu(), true);
+    } else if (probs.size() + 1 != nu().size()) {
+      report_error("probs is the wrong size in DirichletModel::Logp.  "
+                   "Its dimension should be one less than nu().size()");
+    }
+    const Vector &n(nu());
+    double p0 = 1 - sum(probs);
+    Vector full_probs(probs.size() + 1);
+    full_probs[0] = p0;
+    VectorView(full_probs, 1) = probs;
+    double ans = ddirichlet(full_probs, n, true);
+    if(nderiv > 0){
+      gradient.resize(probs.size());
+      for(int i = 0; i < probs.size(); ++i){
+        gradient[i]  = (n[i+1] - 1) / probs[i] - (n[0] - 1) / p0;
+        if(nderiv > 1){
+          Hessian.resize(probs.size(), probs.size());
+          for(int j = 0; j < probs.size(); ++j) {
+            Hessian(i,j) = -(n[0] - 1) / square(p0)
+                - (i==j ? (1.0-n[i+1]) / square(probs[i]) : 0.0);
+          }
+        }
+      }
+    }
+    return ans;
+  }
 
   //======================================================================
   double DirichletModel::Loglike(
-      const Vector &nu, Vec & g, Mat &h, uint nd) const{
+      const Vector &nu, Vector & g, Matrix &h, uint nd) const{
 
     /* returns log likelihood for the parameters of a Dirichlet
        distribution with sufficient statistic sumlogpi(lo..hi).  If
@@ -194,14 +218,14 @@ namespace BOOM{
 
     */
 
-    const Vec &sumlogpi(suf()->sumlog());
+    const Vector &sumlogpi(suf()->sumlog());
     double nobs = suf()->n();
-    Vec *G(nd>0 ? &g : 0);
-    Mat *H(nd>1 ? &h : 0);
+    Vector *G(nd>0 ? &g : 0);
+    Matrix *H(nd>1 ? &h : 0);
     return dirichlet_loglike(nu, G, H, sumlogpi, nobs);
   }
 
-  Vec DirichletModel::sim() const { return rdirichlet(nu()); }
+  Vector DirichletModel::sim() const { return rdirichlet(nu()); }
 
   void DirichletModel::add_mixture_data(Ptr<Data> dp, double prob){
     suf()->add_mixture_data(DAT(dp)->value(), prob);

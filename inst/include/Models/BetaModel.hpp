@@ -31,23 +31,23 @@ namespace BOOM{
   public:
     BetaSuf();
     BetaSuf(const BetaSuf &rhs);
-    BetaSuf *clone() const;
-    void clear(){n_=sumlog_ = sumlogc_ = 0.0;}
-    void Update(const DoubleData &);
+    BetaSuf *clone() const override;
+    void clear() override{n_=sumlog_ = sumlogc_ = 0.0;}
+    void Update(const DoubleData &) override;
     void update_raw(double theta);
     double n()const{return n_;}
     double sumlog()const{return sumlog_;}
     double sumlogc()const{return sumlogc_;}
-    BetaSuf * abstract_combine(Sufstat *s);
+    BetaSuf * abstract_combine(Sufstat *s) override;
     void combine(Ptr<BetaSuf> s);
     void combine(const BetaSuf & s);
-    virtual ostream &print(ostream &out)const;
+    ostream &print(ostream &out)const override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
    private:
     double n_, sumlog_, sumlogc_;
   };
@@ -72,7 +72,7 @@ namespace BOOM{
 
     BetaModel(const BetaModel &m);
 
-    BetaModel *clone() const;
+    BetaModel *clone() const override;
 
     Ptr<UnivParams> Alpha();
     Ptr<UnivParams> Beta();
@@ -94,10 +94,10 @@ namespace BOOM{
     void set_mean(double a_over_a_plus_b);
 
     // probability calculations
-    double Loglike(const Vector &ab, Vec &g, Mat &h, uint nd) const;
+    double Loglike(const Vector &ab, Vector &g, Matrix &h, uint nd) const override;
     double log_likelihood(double a, double b)const;
-    double Logp(double x, double &d1, double &d2, uint nd) const ;
-    double sim() const;
+    double Logp(double x, double &d1, double &d2, uint nd) const override ;
+    double sim() const override;
   private:
     double Logp_degenerate(double x, double &g, double &h, uint nd)const;
   };

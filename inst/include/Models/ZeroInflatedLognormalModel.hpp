@@ -20,7 +20,7 @@
 #define BOOM_ZERO_INFLATED_LOGNORMAL_MODEL_HPP_
 
 #include <Models/Policies/CompositeParamPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 #include <Models/DoubleModel.hpp>
 #include <Models/EmMixtureComponent.hpp>
 #include <Models/BinomialModel.hpp>
@@ -37,31 +37,24 @@ namespace BOOM{
    public:
     ZeroInflatedLognormalModel();
     ZeroInflatedLognormalModel(const ZeroInflatedLognormalModel &rhs);
-    virtual ZeroInflatedLognormalModel * clone()const;
+    ZeroInflatedLognormalModel * clone() const override;
 
-    virtual double pdf(Ptr<Data>, bool logscale)const;
-    virtual double pdf(const Data *, bool logscale)const;
-    virtual double logp(double x)const;
-    virtual double sim()const;
+    double pdf(Ptr<Data>, bool logscale)const override;
+    double pdf(const Data *, bool logscale)const override;
+    double logp(double x)const override;
+    double sim()const override;
 
     // This model does not keep copies of the original data set, it
     // uses the sufficient statistics for its component
     // models. instead.
-    virtual void add_data(Ptr<Data>);
+    void add_data(Ptr<Data>) override;
     void add_data_raw(double y);
-    virtual void add_mixture_data(Ptr<Data>, double weight);
+    void add_mixture_data(Ptr<Data>, double weight) override;
     void add_mixture_data_raw(double y, double weight);
-    virtual void clear_data();
-    virtual void combine_data(const Model &, bool just_suf = true);
+    void clear_data() override;
+    void combine_data(const Model &, bool just_suf = true) override;
 
-    virtual void find_posterior_mode();
-    virtual void mle();
-    void set_conjugate_prior(double normal_mean_guess,
-                             double normal_mean_weight,
-                             double normal_standard_deviation_guess,
-                             double normal_standard_deviation_weight,
-                             double nonzero_proportion_guess,
-                             double nonzero_proportion_weight);
+    void mle() override;
 
     // Mean and standard deviation of log of the positive observations.
     double mu()const;

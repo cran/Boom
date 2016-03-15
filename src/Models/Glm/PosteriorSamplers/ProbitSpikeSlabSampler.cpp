@@ -27,8 +27,9 @@ namespace BOOM{
       ProbitRegressionModel *model,
       Ptr<MvnBase> prior,
       Ptr<VariableSelectionPrior> vspri,
-      bool check_init)
-      : ProbitRegressionSampler(model, prior),
+      bool check_init,
+      RNG &seeding_rng)
+      : ProbitRegressionSampler(model, prior, seeding_rng),
         m_(model),
         beta_prior_(prior),
         gamma_prior_(vspri),
@@ -37,14 +38,14 @@ namespace BOOM{
   {
     if(check_init){
       if(!std::isfinite(this->logpri())){
-	ostringstream err;
-	err << "ProbitSpikeSampler initialized with an a priori "
+    ostringstream err;
+    err << "ProbitSpikeSampler initialized with an a priori "
             << "illegal value" << endl
-	    << "the initial Selector vector was: " << endl
-	    << m_->coef().inc() << endl
-	    << *gamma_prior_ << endl;
+        << "the initial Selector vector was: " << endl
+        << m_->coef().inc() << endl
+        << *gamma_prior_ << endl;
 
-	throw_exception<std::runtime_error>(err.str());
+    report_error(err.str());
       }
     }
   }
@@ -81,7 +82,7 @@ namespace BOOM{
     uint k = m_->xdim();
     max_nflips_ = n <= k ? n : k;
   }
-  void PSSS::supress_model_selection(){ allow_selection_ = false;}
+  void PSSS::suppress_model_selection(){ allow_selection_ = false;}
   void PSSS::allow_model_selection(){ allow_selection_ = true;}
   uint PSSS::max_nflips()const{ return max_nflips_;}
 
@@ -100,9 +101,9 @@ namespace BOOM{
       ostringstream err;
       err << "ProbitSpikeSlab::draw_gamma did not start with "
           << "a legal configuration." << endl
-	  << "Selector vector:  " << inc << endl
-	  << "beta: " << m_->included_coefficients() << endl;
-      throw_exception<std::runtime_error>(err.str());
+      << "Selector vector:  " << inc << endl
+      << "beta: " << m_->included_coefficients() << endl;
+      report_error(err.str());
     }
 
     // do the sampling in random order
@@ -129,17 +130,17 @@ namespace BOOM{
     num += .5*Ominv_.logdet();
     if(num == BOOM::negative_infinity()) return num;
 
-    Vec mu = g.select(beta_prior_->mu());
-    Vec Ominv_mu = Ominv_ * mu;
+    Vector mu = g.select(beta_prior_->mu());
+    Vector Ominv_mu = Ominv_ * mu;
     num -= .5*mu.dot(Ominv_mu);
 
     bool ok=true;
     iV_tilde_ = Ominv_ + g.select(xtx());
-    Mat L = iV_tilde_.chol(ok);
+    Matrix L = iV_tilde_.chol(ok);
     if(!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv_|
 
-    Vec S = g.select(xtz()) + Ominv_mu;
+    Vector S = g.select(xtz()) + Ominv_mu;
     Lsolve_inplace(L,S);
     denom-= .5*S.normsq();  // S.normsq =  beta_tilde ^T V_tilde beta_tilde
 

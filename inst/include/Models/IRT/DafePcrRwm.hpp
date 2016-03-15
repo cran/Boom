@@ -34,10 +34,11 @@ namespace BOOM{
     class DafePcrRwmItemSampler : public PosteriorSampler{
     public:
       DafePcrRwmItemSampler(Ptr<PartialCreditModel>,
-			    Ptr<MvnModel> Prior,
-			    double Tdf);
-      void draw();
-      double logpri()const;
+                Ptr<MvnModel> Prior,
+                double Tdf,
+          RNG &seeding_rng = GlobalRng::rng);
+      void draw() override;
+      double logpri()const override;
     private:
       Ptr<PartialCreditModel> mod;
       Ptr<MvnModel> prior;
@@ -46,8 +47,8 @@ namespace BOOM{
       //      Ptr<LocationScaleVectorModel> prop_model;
 
       const double sigsq;  //  = pi^2/6 = 1.64493406684
-      Spd xtx, ivar;
-      Vec b;
+      SpdMatrix xtx, ivar;
+      Vector b;
 
       void get_moments();
       void accumulate_moments(Ptr<Subject>);
@@ -57,10 +58,11 @@ namespace BOOM{
     class DafePcrRwmSubjectSampler : public PosteriorSampler{
     public:
       DafePcrRwmSubjectSampler(Ptr<Subject>,
-			       Ptr<SubjectPrior> Prior,
-			       double Tdf);
-      void draw();
-      double logpri()const;
+                   Ptr<SubjectPrior> Prior,
+                   double Tdf,
+             RNG &seeding_rng = GlobalRng::rng);
+      void draw() override;
+      double logpri()const override;
     private:
       Ptr<Subject> sub;
       Ptr<SubjectPrior> prior;
@@ -69,8 +71,8 @@ namespace BOOM{
       //      Ptr<LocationScaleVectorModel> prop_model;
 
       const double sigsq;  //  = pi^2/6 = 1.64493406684
-      Spd ivar;
-      Vec Theta;
+      SpdMatrix ivar;
+      Vector Theta;
 
       void get_moments();
       void accumulate_moments(std::pair<Ptr<Item>, Response>);

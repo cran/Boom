@@ -78,6 +78,8 @@ namespace BOOM{
   //----------------------------------------------------------------------
   ostream & operator<<(ostream & out, const Data &d);
   ostream & operator<<(ostream &out , const dPtr dp);
+  void print_data(const Data &d);
+
   //----------------------------------------------------------------------
 
   template <class DAT>
@@ -117,95 +119,44 @@ namespace BOOM{
   typedef UnivData<bool> BinaryData;
   //----------------------------------------------------------------------//
 
-  class VectorData : public DataTraits<Vec>{
+  class VectorData : public DataTraits<Vector>{
   public:
     explicit VectorData(uint n, double x=0);
-    VectorData(const Vec &y);
+    VectorData(const Vector &y);
     VectorData(const VectorData &d);
-    VectorData * clone()const;
+    VectorData * clone()const override;
 
     uint dim()const {return x.size();}
-    ostream & display(ostream &out) const;
+    ostream & display(ostream &out) const override;
 
-    virtual const Vec & value()const{return x;}
-    virtual void set(const Vec &rhs, bool signal=true);
+    const Vector & value()const override{return x;}
+    void set(const Vector &rhs, bool signal=true) override;
     virtual void set_element(double value, int position, bool signal = true);
 
     double operator[](uint)const;
     double & operator[](uint);
   private:
-    Vec x;
+    Vector x;
   };
   //----------------------------------------------------------------------//
   class MatrixData : public DataTraits<Mat>{
   public:
     MatrixData(int r, int c, double x=0.0);
-    MatrixData(const Mat &y);
+    MatrixData(const Matrix &y);
     MatrixData(const MatrixData &rhs);
-    MatrixData * clone()const;
+    MatrixData * clone()const override;
 
     uint nrow()const{return x.nrow();}
     uint ncol()const{return x.ncol();}
 
-    ostream & display(ostream &out) const;
+    ostream & display(ostream &out) const override;
 
-    virtual const Mat & value()const{return x;}
-    virtual void set(const Mat &rhs, bool signal=true);
+    const Matrix & value()const override{return x;}
+    void set(const Matrix &rhs, bool signal=true) override;
     virtual void set_element(double value, int row, int col, bool signal=true);
   private:
-    Mat x;
+    Matrix x;
   };
-  //----------------------------------------------------------------------//
-  class CorrData : public DataTraits<Corr>{
-  public:
-    CorrData(const Corr &y);
-    CorrData(const Spd &y);
-    CorrData(const CorrData &rhs);
-    CorrData * clone()const;
-    ostream & display(ostream &out) const;
-
-    virtual const Corr & value()const;
-    virtual void set(const Corr &rhs, bool signal=true);
-  private:
-    Corr R;
-  };
-  //----------------------------------------------------------------------//
-  class BinomialProcessData : public DataTraits<std::vector<bool> >{
-  public:
-    typedef std::vector<bool> Vb;
-    static void space_output(bool=true);
-
-    BinomialProcessData();
-    BinomialProcessData(const Vb &);
-    BinomialProcessData(const BinomialProcessData &);
-    BinomialProcessData(uint p, bool all=true);
-    BinomialProcessData * clone()const;
-    BinomialProcessData & operator=(const BinomialProcessData &rhs);
-
-    bool operator==(const BinomialProcessData &)const;
-    bool operator==(const Vb &)const;
-    bool operator<(const BinomialProcessData &)const;
-    bool operator<=(const BinomialProcessData &)const;
-    bool operator>(const BinomialProcessData &)const;
-    bool operator>=(const BinomialProcessData &)const;
-
-    ostream & display(ostream &out)const;
-
-    virtual void swap(BinomialProcessData &rhs);
-    bool all()const;   // true if all 1's
-    bool none()const;  // true if all 0's
-
-    const Vb & value()const;
-    virtual void set(const Vb&, bool signal=true);
-    bool operator[](uint i)const;
-    virtual void set_bit(uint i, bool val);
-
-    Vb::const_iterator begin()const;
-    Vb::const_iterator end()const;
-  private:
-    Vb dat;
-    static bool space_output_;
-  };
-}
+}  // namespace BOOM
 
 #endif // DATA_TYPES_H

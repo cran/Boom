@@ -30,7 +30,8 @@ namespace BOOM{
         nc_(chi-clo+1),
         stride(m.nrow())
   {
-    assert(rhi >= rlo   && chi >= clo);
+    assert(nr_ >= 0);
+    assert(nc_ >= 0);
     assert(rhi < m.nrow() && chi < m.ncol());
   }
 

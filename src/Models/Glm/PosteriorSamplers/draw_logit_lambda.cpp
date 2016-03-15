@@ -19,6 +19,7 @@
 #include <Models/Glm/PosteriorSamplers/draw_logit_lambda.hpp>
 #include <distributions.hpp>
 #include <distributions/inverse_gaussian.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   namespace Logit{
@@ -68,7 +69,7 @@ namespace BOOM{
         z+= jp1sq * pow(x, jp1sq-1);
         if(z < u) return false;
       }
-      throw_exception<std::runtime_error>(
+      report_error(
           "something terrible happened in Logit::check_right");
       return false;
     }
@@ -102,7 +103,7 @@ namespace BOOM{
         //      if(z>0 && (h + log(z) < logu) ) return false;
         if(h + log(z) < logu) return false;
       }
-      throw_exception<std::runtime_error>(
+      report_error(
           "something terrible happened in Logit::check_left");
       return false;
     }

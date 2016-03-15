@@ -21,8 +21,10 @@
 namespace BOOM {
   typedef MarkovModulatedPoissonProcessPosteriorSampler MMPPPS;
   MMPPPS::MarkovModulatedPoissonProcessPosteriorSampler(
-      MarkovModulatedPoissonProcess *mmpp, bool initialize_latent_data)
-      : model_(mmpp),
+      MarkovModulatedPoissonProcess *mmpp, bool initialize_latent_data,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(mmpp),
         first_time_(initialize_latent_data)
   {}
 

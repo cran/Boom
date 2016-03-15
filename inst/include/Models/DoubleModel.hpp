@@ -26,32 +26,32 @@ namespace BOOM{
   public:
     virtual double logp(double x)const=0;
     virtual double sim()const=0;
-    DoubleModel *clone()const =0;
+    DoubleModel *clone()const override =0;
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(const Data * dp, bool logscale)const override;
   };
 
   class dDoubleModel : public DoubleModel{
     // the 'diff' is for differentiable
   public:
     virtual double dlogp(double x, double &g) const =0;
-    dDoubleModel *clone()const =0;
+    dDoubleModel *clone()const override =0;
   };
 
   class d2DoubleModel : public dDoubleModel{
   public:
     virtual double d2logp(double x, double &g, double &h)const=0;
-    d2DoubleModel *clone()const =0;
+    d2DoubleModel *clone()const override =0;
   };
 
   class DiffDoubleModel : public d2DoubleModel{
     // the 'diff' is for differentiable
   public:
     virtual double Logp(double x, double &g, double &h, uint nd) const =0;
-    virtual double logp(double x)const;
-    virtual double dlogp(double x, double &g) const;
-    virtual double d2logp(double x, double &g, double &h)const;
-    DiffDoubleModel *clone()const =0;
+    double logp(double x)const override;
+    double dlogp(double x, double &g) const override;
+    double d2logp(double x, double &g, double &h)const override;
+    DiffDoubleModel *clone()const override =0;
   };
 }
 #endif// BOOM_DOUBLE_MODEL_HPP

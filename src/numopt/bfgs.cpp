@@ -41,7 +41,7 @@ namespace BOOM{
       in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
       converted by p2c then re-crafted by B.D. Ripley */
 
-  double bfgs(Vec &b, Target target, dTarget dtarget, int maxit, double abstol,
+  double bfgs(Vector &b, Target target, dTarget dtarget, int maxit, double abstol,
               double reltol, int &fncount, int & grcount, bool & fail,
               int trace_frequency){
     bool trace = trace_frequency>0;
@@ -56,7 +56,7 @@ namespace BOOM{
     int   n;
     int n0 = b.size();
 
-    Vec g(n0);  // gradient
+    Vector g(n0);  // gradient
     fail = false;
 
     if (maxit <= 0) {
@@ -67,16 +67,21 @@ namespace BOOM{
 
     //    vector<int> l(n0);
     n = n0;
-    Vec t(n);
-    Vec X(n);
-    Vec c(n);
-    Mat B(n,n);
+    Vector t(n);
+    Vector X(n);
+    Vector c(n);
+    Matrix B(n,n);
 
     f = target(b);
 
     if (!std::isfinite(f)){
-      report_warning("initial value in vmmin is not finite");
-      fail=true;
+      std::ostringstream err;
+      err << "Non-fatal warning: initial value in bfgs is not finite"
+          << endl
+          << "Initial x = " << b << endl
+          << "Initial f(x) = " << f << endl;
+      report_warning(err.str());
+      fail = true;
       return f;
     }
 
@@ -178,7 +183,7 @@ namespace BOOM{
       }
       if (trace && (iter % nREPORT == 0)) {
         ostringstream msg;
-        msg << "iter " << setw(4) << iter << " value " << f << endl;
+        msg << "iter " << std::setw(4) << iter << " value " << f << endl;
         report_message(msg);
       }
       if (iter >= maxit) break;

@@ -67,17 +67,17 @@ namespace BOOM {
         Ptr<VectorParams> unscaled_variance_diagonal,
         Ptr<UnivParams> sigsq);
 
-    virtual IndependentMvnModelGivenScalarSigma * clone()const;
+    IndependentMvnModelGivenScalarSigma * clone() const override;
 
-    virtual double Logp(const Vector &x,
+    double Logp(const Vector &x,
                         Vector &gradient,
                         Matrix &hessian,
-                        uint nderiv)const;
-    virtual const Vector &mu()const;
-    virtual const SpdMatrix &Sigma()const;
-    virtual const SpdMatrix &siginv()const;
-    virtual double ldsi()const;
-    virtual Vector sim()const;
+                        uint nderiv)const override;
+    const Vector &mu()const override;
+    const SpdMatrix &Sigma()const override;
+    const SpdMatrix &siginv()const override;
+    double ldsi()const override;
+    Vector sim()const override;
 
     // unscaled_variance_diagonal() * sigsq() is the diagonal of
     // Sigma().

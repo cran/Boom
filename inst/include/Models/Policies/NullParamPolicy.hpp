@@ -31,12 +31,12 @@ namespace BOOM{
 
     NullParamPolicy();
     NullParamPolicy(const NullParamPolicy &rhs);
-    virtual NullParamPolicy * clone()const=0;
+    NullParamPolicy * clone()const override =0;
     NullParamPolicy & operator=(const NullParamPolicy &);
 
     // over-rides for abstract base Model
-    virtual ParamVec t();
-    virtual const ParamVec t()const;
+    ParamVector t() override;
+    const ParamVector t()const override;
   };
   //------------------------------------------------------------
 

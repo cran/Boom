@@ -30,13 +30,13 @@ namespace BOOM {
    public:
     explicit PoissonData(int trials = 0, int events = 0);
     PoissonData(const PoissonData &rhs);
-    virtual PoissonData * clone()const;
+    PoissonData * clone() const override;
     PoissonData & operator=(const PoissonData &rhs);
     bool operator==(const PoissonData &rhs)const;
     bool operator!=(const PoissonData &rhs)const;
 
     virtual uint size(bool minimal = true)const;
-    virtual ostream &display(ostream &out)const;
+    ostream &display(ostream &out)const override;
 
     int number_of_trials()const;
     int number_of_events()const;
@@ -74,12 +74,12 @@ namespace BOOM {
     PoissonGammaModel(const std::vector<int> &number_of_trials,
                       const std::vector<int> &number_of_events);
     PoissonGammaModel(const PoissonGammaModel &rhs);
-    virtual PoissonGammaModel * clone()const;
+    PoissonGammaModel * clone() const override;
 
     virtual double loglike()const;
-    virtual double loglike(const Vector &ab)const;
+    double loglike(const Vector &ab)const override;
     double loglike(double a, double b)const;
-    virtual double Loglike(const Vector &ab, Vec &g, Mat &H, uint nd)const;
+    double Loglike(const Vector &ab, Vector &g, Matrix &H, uint nd)const override;
 
     Ptr<UnivParams> Alpha_prm();
     Ptr<UnivParams> Beta_prm();

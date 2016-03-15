@@ -25,8 +25,10 @@ namespace BOOM{
   typedef GaussianConjSampler GCS;
   GCS::GaussianConjSampler(GaussianModel *m,
                            Ptr<GaussianModelGivenSigma> mu,
-                           Ptr<GammaModelBase> sig)
-    : mod_(m),
+                           Ptr<GammaModelBase> sig,
+                           RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(m),
       mu_(mu),
       siginv_(sig),
       sigsq_sampler_(siginv_)
@@ -65,7 +67,7 @@ namespace BOOM{
     mod_->set_params(mu, sigsq);
   }
 
-  void GCS::find_posterior_mode(){
+  void GCS::find_posterior_mode(double){
     double n = mod_->suf()->n();
     double ybar = mod_->ybar();
 
@@ -83,4 +85,4 @@ namespace BOOM{
     mod_->set_params(mu_hat, SS/(DF-1));
   }
 
-}
+}  // namespace BOOM

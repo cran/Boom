@@ -31,9 +31,6 @@ namespace BOOM{
   class QR;
   class Chol;
 
-  typedef Vector Vec;
-  typedef Matrix Mat;
-  typedef SpdMatrix Spd;
   typedef CorrelationMatrix Corr;
 }
 #endif // BOOM_LIN_ALG_TYPES_HPP

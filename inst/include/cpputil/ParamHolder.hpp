@@ -28,24 +28,24 @@ namespace BOOM{
   class ParamHolder{
 
   private:
-    Vec & v;
+    Vector & v;
     Ptr<Params> prm;
   public:
-    ParamHolder(Ptr<Params> held_prm, Vec &Wsp);
-    ParamHolder(const Vec &x, Ptr<Params> held_prm, Vec &Wsp);
+    ParamHolder(Ptr<Params> held_prm, Vector &Wsp);
+    ParamHolder(const Vector &x, Ptr<Params> held_prm, Vector &Wsp);
     ~ParamHolder();
   };
 
-  class ParamVecHolder{
+  class ParamVectorHolder{
   public:
-    typedef std::vector<Ptr<Params> > ParamVec;
+    typedef std::vector<Ptr<Params> > ParamVector;
   private:
-    Vec & v;
-    ParamVec prm;
+    Vector & v;
+    ParamVector prm;
   public:
-    ParamVecHolder(const ParamVec &held, Vec &Wsp);
-    ParamVecHolder(const Vec &x, const ParamVec & held, Vec &Wsp);
-    ~ParamVecHolder();
+    ParamVectorHolder(const ParamVector &held, Vector &Wsp);
+    ParamVectorHolder(const Vector &x, const ParamVector & held, Vector &Wsp);
+    ~ParamVectorHolder();
   };
 }
 #endif// BOOM_PARAM_HOLDER_HPP

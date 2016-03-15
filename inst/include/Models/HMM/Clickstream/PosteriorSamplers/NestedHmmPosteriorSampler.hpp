@@ -30,9 +30,10 @@ namespace BOOM {
   class NestedHmmPosteriorSampler
       : public PosteriorSampler {
    public:
-    NestedHmmPosteriorSampler(NestedHmm *model);
-    virtual double logpri() const;
-    virtual void draw();
+    NestedHmmPosteriorSampler(NestedHmm *model,
+                              RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
    private:
     NestedHmm *model_;
     bool first_time_;

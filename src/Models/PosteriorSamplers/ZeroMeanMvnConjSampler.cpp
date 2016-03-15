@@ -24,21 +24,25 @@
 namespace BOOM{
   typedef ZeroMeanMvnConjSampler ZMMCS;
   ZMMCS::ZeroMeanMvnConjSampler(ZeroMeanMvnModel *m,
-                                Ptr<WishartModel> siginv_prior)
-      :m_(m),
+                                Ptr<WishartModel> siginv_prior,
+                                RNG &seeding_rng)
+      :PosteriorSampler(seeding_rng),
+       m_(m),
        siginv_prior_(siginv_prior)
   {}
   ZMMCS::ZeroMeanMvnConjSampler(ZeroMeanMvnModel *m,
                                 double prior_df,
-                                double sigma_guess)
-      :m_(m),
+                                double sigma_guess,
+                                RNG &seeding_rng)
+      :PosteriorSampler(seeding_rng),
+       m_(m),
        siginv_prior_(new WishartModel(m->dim(), prior_df, pow(sigma_guess, 2)))
   {}
 
   void ZMMCS::draw(){
     Ptr<MvnSuf> s = m_->suf();
     double df = s->n() + siginv_prior_->nu();
-    Spd S = s->center_sumsq(m_->mu()) + siginv_prior_->sumsq();
+    SpdMatrix S = s->center_sumsq(m_->mu()) + siginv_prior_->sumsq();
     S = rWish(df, S.inv());
     m_->prm()->set_ivar(S);
   }
@@ -48,9 +52,9 @@ namespace BOOM{
   }
 
   // posterior mode with respect to Sigma inverse.
-  void ZMMCS::find_posterior_mode(){
+  void ZMMCS::find_posterior_mode(double){
     Ptr<MvnSuf> s = m_->suf();
-    Spd Sumsq = s->center_sumsq(m_->mu()) + siginv_prior_->sumsq();
+    SpdMatrix Sumsq = s->center_sumsq(m_->mu()) + siginv_prior_->sumsq();
     double nu = s->n() + siginv_prior_->nu();
 
     nu = nu - m_->dim() - 1;

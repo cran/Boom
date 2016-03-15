@@ -17,12 +17,14 @@
 */
 #include <Samplers/MetropolisHastings.hpp>
 #include <distributions.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   typedef MetropolisHastings MH;
 
-  MH::MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop)
-      : f_(target),
+  MH::MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop, RNG *rng)
+      : Sampler(rng),
+        f_(target),
         prop_(prop),
         accepted_(false)
   {}
@@ -33,17 +35,37 @@ namespace BOOM{
 
   void MH::set_target(Target f){ f_ = f;}
 
-  Vec MH::draw(const Vec & old){
+  Vector MH::draw(const Vector & old){
     cand_ = prop_->draw(old);
-    double num = logp(cand_) - logp(old);
-    double denom = 0;
-    if(!prop_->sym()){
-      denom = prop_->logf(cand_,old) - prop_->logf(old,cand_);
+    double logp_cand = logp(cand_);
+    double logp_old = logp(old);
+    if (!std::isfinite(logp_cand)) {
+      if (std::isfinite(logp_old)) {
+        accepted_ = false;
+        return old;
+      } else {
+        std::ostringstream err;
+        err << "Argument to 'draw' resulted in a non-finite "
+            << "log posterior" << std::endl
+            << old;
+        report_error(err.str());
+      }
+    } else if (!std::isfinite(logp_old)) {
+      // In this case you started with an illegal value of old, but
+      // got a legal value of cand, so you should accept.
+      accepted_ = true;
+      return cand_;
     }
-//      cout << "MH::draw()... cand - old = " << cand_ - old << endl
-//           << "num   = " << num << endl
-//           << "denom = " << denom << endl
-//          ;
+
+    // Both log densities are finite, so it is safe to proceed.
+    double num = logp_cand - logp_old;
+    double denom, d1, d2;
+    denom = d1 = d2 = 0.0;
+    if (!prop_->sym()) {
+      d1 = prop_->logf(cand_, old);
+      d2 = prop_->logf(old, cand_);
+      denom = d1 - d2;
+    }
 
     double u = log(runif_mt(rng()));
     accepted_ = u < num - denom;
@@ -54,25 +76,50 @@ namespace BOOM{
     return accepted_;
   }
 
-  double MH::logp(const Vec &x)const{
+  double MH::logp(const Vector &x)const{
     return f_(x);
   }
 
-
   typedef ScalarMetropolisHastings SMH;
   SMH::ScalarMetropolisHastings(const ScalarTarget &f,
-                                Ptr<MH_ScalarProposal> prop)
-      : f_(f),
+                                Ptr<MH_ScalarProposal> prop,
+                                RNG *rng)
+      : ScalarSampler(rng),
+        f_(f),
         prop_(prop),
         accepted_(false)
   {}
 
   double SMH::draw(double old){
     double cand = prop_->draw(old);
-    double num = f_(cand) - f_(old);
-    double denom = 0;
+    double logp_cand = f_(cand);
+    double logp_old = f_(old);
+    if (!std::isfinite(logp_cand)) {
+      if (std::isfinite(logp_old)) {
+        accepted_ = false;
+        return old;
+      } else {
+        std::ostringstream err;
+        err << "Argument to 'draw' resulted in a non-finite "
+            << "log posterior" << std::endl
+            << old;
+        report_error(err.str());
+      }
+    } else if (!std::isfinite(logp_old)) {
+      // The candidate has a fininte log posterior, but the original
+      // does not.
+      accepted_ = true;
+      return cand;
+    }
+    // Both log densities are finite, so it is safe to proceed.
+    double num = logp_cand - logp(old);
+
+    double denom, d1, d2;
+    denom = d1 = d2 = 0;
     if(!prop_->sym()){
-      denom = prop_->logf(cand,old) - prop_->logf(old,cand);
+      d1 = prop_->logf(cand,old);
+      d2 = prop_->logf(old,cand);
+      denom = d1 - d2;
     }
     double u = log(runif_mt(rng()));
     accepted_ = u < num - denom;

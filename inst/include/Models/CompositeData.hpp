@@ -38,8 +38,8 @@ namespace BOOM{
     // already got the component data stored away in a vector.
     CompositeData(const std::vector<Ptr<Data> > &d);
 
-    virtual CompositeData * clone()const;
-    virtual ostream & display(ostream &)const;
+    CompositeData * clone() const override;
+    ostream & display(ostream &)const override;
 
     // Number of composite data elements.  This can be smaller than
     // size() when some elements are vectors, matrices, regression

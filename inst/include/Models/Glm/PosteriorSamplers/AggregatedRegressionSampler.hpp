@@ -32,10 +32,11 @@ class AggregatedRegressionSampler : public PosteriorSampler {
                               double prior_sigma_guess,
                               double prior_beta_nobs,
                               double prior_diagonal_shrinkage,
-                              double prior_variable_inclusion_probability);
+                              double prior_variable_inclusion_probability,
+                              RNG &seeding_rng = GlobalRng::rng);
 
-  virtual void draw();
-  virtual double logpri()const;
+  void draw() override;
+  double logpri() const override;
 
  private:
   AggregatedRegressionModel *model_;

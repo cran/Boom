@@ -34,9 +34,10 @@ namespace BOOM {
 
     BinomialLogitAuxmixSampler(BinomialLogitModel *model,
                                Ptr<MvnBase> prior,
-                               int clt_threshold = 10);
-    virtual double logpri() const;
-    virtual void draw();
+                               int clt_threshold = 10,
+                               RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
 
     void impute_latent_data();
     void draw_params();
@@ -63,6 +64,34 @@ namespace BOOM {
       mutable bool sym_;
     };
 
+    // By default, this class updates its own latent data through a
+    // call to impute_latent_data().  Calling this function with a
+    // 'true' argument (the default), sets a flag that turns
+    // impute_latent_data into a no-op.  The latent data can still be
+    // manipulated through calls to clear_sufficient_statistics() and
+    // update_sufficient_statistics(), but implicit data augmentation
+    // is turned off.  Calling this function with a 'false' argument
+    // turns data augmentation back on.
+    void fix_latent_data(bool fixed = true);
+
+    // Clear the complete data sufficient statistics.  This is
+    // normally unnecessary.  This function is primarily intended for
+    // nonstandard situations where the complete data sufficient
+    // statistics need to be manipulated by an outside actor.
+    void clear_complete_data_sufficient_statistics();
+
+    // Increment the complete data sufficient statistics with the
+    // given quantities.  This is normally unnecessary.  This function
+    // is primarily intended for nonstandard situations where the
+    // complete data sufficient statistics need to be manipulated by
+    // an outside actor.
+    void update_complete_data_sufficient_statistics(
+        double precision_weighted_sum,
+        double total_precision,
+        const Vector &x);
+
+    int clt_threshold() const {return clt_threshold_;}
+
    protected:
     const SufficientStatistics & suf() const {return suf_;}
 
@@ -74,13 +103,17 @@ namespace BOOM {
     ParallelLatentDataImputer<BinomialRegressionData,
                               SufficientStatistics,
                               BinomialLogitModel> parallel_data_imputer_;
+
+    // A flag that can be use to turn off data augmentation.  If this
+    // flag is set then impute_latent_data is a no-op.
+    bool latent_data_fixed_;
   };
 
   //======================================================================
   class BinomialLogisticRegressionDataImputer
       : public LatentDataImputer<
-    BinomialRegressionData,
-    BinomialLogitAuxmixSampler::SufficientStatistics> {
+                   BinomialRegressionData,
+                   BinomialLogitAuxmixSampler::SufficientStatistics> {
    public:
     typedef BinomialLogitAuxmixSampler::SufficientStatistics Suf;
 

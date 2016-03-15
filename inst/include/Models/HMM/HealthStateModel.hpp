@@ -34,8 +34,8 @@ namespace BOOM{
     HealthStateData(const HealthStateData &rhs);
 
     // Required virtual functions...
-    virtual HealthStateData * clone()const;
-    virtual ostream & display(ostream &out)const;
+    HealthStateData * clone() const override;
+    ostream & display(ostream &out)const override;
 
     // If the subject switched treatment groups during the time period
     // covered by this data point, then split_treatment can be used to
@@ -84,7 +84,7 @@ namespace BOOM{
                      const std::vector<Ptr<MarkovModel> > &mark);
 
     HealthStateModel(const HealthStateModel &rhs);
-    virtual HealthStateModel * clone()const;
+    HealthStateModel * clone() const override;
 
     double loglike()const;
 
@@ -111,10 +111,10 @@ namespace BOOM{
     // probability density of the given data point under each mixture
     // component.
     void fill_logp(Ptr<HealthStateData>);
-    void fill_logp(Ptr<HealthStateData>, Vec &logp)const;
+    void fill_logp(Ptr<HealthStateData>, Vector &logp)const;
 
     void fill_logQ(Ptr<HealthStateData>);
-    void fill_logQ(Ptr<HealthStateData>, Mat &logQ)const;
+    void fill_logQ(Ptr<HealthStateData>, Matrix &logQ)const;
 
     int sample_treatment(Ptr<HealthStateData>,
                          uint previous_state,
@@ -123,15 +123,15 @@ namespace BOOM{
     std::vector<Ptr<MixtureComponent> > mix_;
     std::vector<Ptr<MarkovModel> > mark_;
 
-    std::map<Ptr<HealthStateData>, Vec> state_prob_hist_;
+    std::map<Ptr<HealthStateData>, Vector> state_prob_hist_;
     double loglike_;
     double logpost_;
-    mutable Vec logp_;
-    mutable Mat logQ_;
+    mutable Vector logp_;
+    mutable Matrix logQ_;
 
     std::vector<Mat> P_;  // joint distribution of state in FB
-    mutable Vec pi_;    // marginal distribution of state in FB
-    Vec one_;   // vector of 1's of dimension state_space_size
+    mutable Vector pi_;    // marginal distribution of state in FB
+    Vector one_;   // vector of 1's of dimension state_space_size
   };
 
 }

@@ -5,38 +5,34 @@
 
 #include <cpputil/report_error.hpp>
 
-#include <Models/CompositeModel.hpp>
-#include <Models/PosteriorSamplers/CompositeModelSampler.hpp>
+#include <Models/BetaModel.hpp>
 #include <Models/ChisqModel.hpp>
+#include <Models/CompositeModel.hpp>
+#include <Models/GammaModel.hpp>
 #include <Models/GaussianModel.hpp>
 #include <Models/GaussianModelGivenSigma.hpp>
+#include <Models/Glm/BinomialLogitModel.hpp>
+#include <Models/Glm/PosteriorSamplers/BinomialLogitCompositeSpikeSlabSampler.hpp>
+#include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
+#include <Models/Glm/RegressionModel.hpp>
+#include <Models/Glm/VariableSelectionPrior.hpp>
+#include <Models/IndependentMvnModel.hpp>
+#include <Models/MultinomialModel.hpp>
+#include <Models/MvnModel.hpp>
+#include <Models/PoissonModel.hpp>
+#include <Models/PosteriorSamplers/BetaBinomialSampler.hpp>
+#include <Models/PosteriorSamplers/CompositeModelSampler.hpp>
 #include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
-#include <Models/ProductDirichletModel.hpp>
+#include <Models/PosteriorSamplers/IndependentMvnConjSampler.hpp>
 #include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
+#include <Models/PosteriorSamplers/MultinomialDirichletSampler.hpp>
+#include <Models/PosteriorSamplers/MvnConjSampler.hpp>
+#include <Models/PosteriorSamplers/PoissonGammaSampler.hpp>
+#include <Models/PosteriorSamplers/ZeroInflatedLognormalPosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/ZeroInflatedPoissonSampler.hpp>
+#include <Models/ProductDirichletModel.hpp>
 #include <Models/ZeroInflatedLognormalModel.hpp>
 #include <Models/ZeroInflatedPoissonModel.hpp>
-
-#include <Models/PoissonModel.hpp>
-#include <Models/GammaModel.hpp>
-#include <Models/BetaModel.hpp>
-
-#include <Models/PosteriorSamplers/PoissonGammaSampler.hpp>
-#include <Models/PosteriorSamplers/ZeroInflatedPoissonSampler.hpp>
-
-#include <Models/MvnModel.hpp>
-#include <Models/PosteriorSamplers/MvnConjSampler.hpp>
-
-#include <Models/IndependentMvnModel.hpp>
-#include <Models/PosteriorSamplers/IndependentMvnConjSampler.hpp>
-
-#include <Models/MultinomialModel.hpp>
-#include <Models/PosteriorSamplers/MultinomialDirichletSampler.hpp>
-
-#include <Models/Glm/BinomialLogitModel.hpp>
-#include <Models/Glm/VariableSelectionPrior.hpp>
-#include <Models/Glm/RegressionModel.hpp>
-#include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
-#include <Models/Glm/PosteriorSamplers/BinomialLogitCompositeSpikeSlabSampler.hpp>
 
 #include <r_interface/create_mixture_component.hpp>
 #include <r_interface/prior_specification.hpp>
@@ -373,14 +369,30 @@ namespace BOOM {
         BOOM::RInterface::NormalInverseGammaPrior normal_prior(
             getListElement(rmixture_component, "normal.inverse.gamma.prior"));
 
-        double a = beta_prior.a();
-        double b = beta_prior.b();
-        model->set_conjugate_prior(normal_prior.prior_mean_guess(),
-                                   normal_prior.prior_mean_sample_size(),
-                                   normal_prior.sd_prior().prior_guess(),
-                                   normal_prior.sd_prior().prior_df(),
-                                   a / (a+b),
-                                   a + b);
+        NEW(GaussianModelGivenSigma, mu_prior)(
+            model->Gaussian_model()->Sigsq_prm(),
+            normal_prior.prior_mean_guess(),
+            normal_prior.prior_mean_sample_size());
+        NEW(ChisqModel, siginv_prior)(
+            normal_prior.sd_prior().prior_df(),
+            normal_prior.sd_prior().prior_guess());
+        NEW(GaussianConjSampler, gaussian_sampler)(
+            model->Gaussian_model().get(),
+            mu_prior,
+            siginv_prior);
+        model->Gaussian_model()->set_method(gaussian_sampler);
+
+        NEW(BetaModel, positive_probability_prior)(
+            beta_prior.a(), beta_prior.b());
+        NEW(BetaBinomialSampler, positive_probability_sampler)(
+            model->Binomial_model().get(),
+            positive_probability_prior);
+        model->Binomial_model()->set_method(positive_probability_sampler);
+
+        NEW(ZeroInflatedLognormalPosteriorSampler, sampler)(
+            model.get());
+        model->set_method(sampler);
+
         return model;
       }
     };
@@ -425,19 +437,19 @@ namespace BOOM {
 
       virtual Ptr<MixtureComponent> Build(SEXP rmixture_component,
                                           RListIoManager *io_manager) const {
-        Vec prior_mean_guess(ToBoomVector(getListElement(
+        Vector prior_mean_guess(ToBoomVector(getListElement(
             rmixture_component, "prior.mean.guess")));
 
-        Vec prior_mean_sample_size(ToBoomVector(getListElement(
+        Vector prior_mean_sample_size(ToBoomVector(getListElement(
             rmixture_component, "prior.mean.sample.size")));
 
-        Vec prior_sd_guess(ToBoomVector(getListElement(
+        Vector prior_sd_guess(ToBoomVector(getListElement(
             rmixture_component, "prior.sd.guess")));
 
-        Vec prior_sd_sample_size(ToBoomVector(getListElement(
+        Vector prior_sd_sample_size(ToBoomVector(getListElement(
             rmixture_component, "prior.sd.sample.size")));
 
-        Vec sigma_upper_limit(ToBoomVector(getListElement(
+        Vector sigma_upper_limit(ToBoomVector(getListElement(
             rmixture_component, "sigma.upper.limit")));
         for (int i = 0; i < sigma_upper_limit.size(); ++i) {
           if (sigma_upper_limit[i] == R_PosInf) {

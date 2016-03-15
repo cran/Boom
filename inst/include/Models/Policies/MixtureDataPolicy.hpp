@@ -37,13 +37,13 @@ namespace BOOM{
    public:
     MixtureDataPolicy(uint S);
     MixtureDataPolicy(const MixtureDataPolicy &);
-    MixtureDataPolicy * clone()const=0;
+    MixtureDataPolicy * clone()const override =0;
     MixtureDataPolicy & operator=(const MixtureDataPolicy &);
 
-    virtual void clear_data();
+    void clear_data() override;
 
-    DatasetType & dat(){return *dat_;}
-    const DatasetType & dat()const{return *dat_;}
+    DatasetType & dat() override{return *dat_;}
+    const DatasetType & dat()const override{return *dat_;}
 
     std::vector<Ptr<CategoricalData> >  & latent_data();
     const std::vector<Ptr<CategoricalData> >  & latent_data()const;
@@ -53,8 +53,8 @@ namespace BOOM{
 
     template <class FwdIt>
     void set_data(FwdIt Beg, FwdIt End);
-    virtual void add_data(Ptr<Data> dp);
-    virtual void combine_data(const Model &, bool just_suf=true);
+    void add_data(Ptr<Data> dp) override;
+    void combine_data(const Model &, bool just_suf=true) override;
 
     void add_data_with_known_source(Ptr<Data>, int source);
 

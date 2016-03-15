@@ -36,10 +36,10 @@ namespace BOOM{
     UniformSuf(const std::vector<double> &d);
     UniformSuf(double low, double high);
     UniformSuf(const UniformSuf &rhs);
-    UniformSuf * clone()const;
+    UniformSuf * clone()const override;
 
-    void clear();
-    void Update(const DoubleData &d);
+    void clear() override;
+    void Update(const DoubleData &d) override;
     void update_raw(double x);
 
     double lo()const;
@@ -49,14 +49,14 @@ namespace BOOM{
     void set_hi(double b);
     void combine(Ptr<UniformSuf>);
     void combine(const UniformSuf &);
-    UniformSuf * abstract_combine(Sufstat *s);
+    UniformSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream &print(ostream &out)const override;
   private:
     double lo_, hi_;
   };
@@ -72,7 +72,7 @@ namespace BOOM{
     UniformModel(double a=0, double b=1);
     UniformModel(const std::vector<double> & data);
     UniformModel(const UniformModel&rhs);
-    UniformModel * clone()const;
+    UniformModel * clone()const override;
 
     double lo()const;
     double hi()const;
@@ -85,10 +85,10 @@ namespace BOOM{
     Ptr<UnivParams> HiParam();
     const Ptr<UnivParams> LoParam()const;
     const Ptr<UnivParams> HiParam()const;
-    virtual double Logp(double x, double &g, double &h, uint nd)const;
-    virtual double loglike(const Vector &support_lower_and_upper_limits)const;
-    virtual void mle();
-    virtual double sim()const;
+    double Logp(double x, double &g, double &h, uint nd)const override;
+    double loglike(const Vector &support_lower_and_upper_limits)const override;
+    void mle() override;
+    double sim()const override;
   };
 }
 #endif  // BOOM_UNIFORM_MODEL_HPP;

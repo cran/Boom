@@ -22,8 +22,9 @@
 namespace BOOM {
 
   ConditionalFiniteMixtureSampler::ConditionalFiniteMixtureSampler(
-      ConditionalFiniteMixtureModel *model)
-      : model_(model)
+      ConditionalFiniteMixtureModel *model, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model)
   {}
 
   void ConditionalFiniteMixtureSampler::draw() {

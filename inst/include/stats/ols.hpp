@@ -23,7 +23,7 @@
 
 namespace BOOM{
 
-  std::pair<Vec, double> ols(const Mat &X, const Vec &y);
+  std::pair<Vector, double> ols(const Matrix &X, const Vector &y);
 
 }
 #endif// BOOM_STATS_OLS_HPP

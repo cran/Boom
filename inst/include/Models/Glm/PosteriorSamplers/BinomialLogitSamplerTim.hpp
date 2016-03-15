@@ -26,20 +26,48 @@
 
 namespace BOOM{
 
+  // A posterior sampler for the BinomialLogitModel based on tailored
+  // independence Metropolis (TIM).  The sampler approximates the
+  // posterior distribution with a T distribution centered on the
+  // mode, with scatter determined by the Fisher information matrix,
+  // and with pre-specified degrees of freedom.  The approximation is
+  // used as a proposal distribution for a independence
+  // Metropolis-Hastings sampler.
   class BinomialLogitSamplerTim : public PosteriorSampler{
    public:
+    // Args:
+    //   model:  The model for which posterior samples are desired.
+    //   prior: The prior distribution on the set of logistic
+    //     regression coefficients.  If some elements of the
+    //     coefficient vector are excluded using the GlmCoefs include
+    //     / exclude mechanism then only the included components of
+    //     the prior mean and prior information matrix are used.
+    //   mode_is_stable: If true then the posterior mode will not
+    //     change once it is found.  If the predictor matrix or
+    //     response vector for the model will change (e.g. if the
+    //     model contains random effects) then set this to false so
+    //     the posterior mode will be located each time.  Otherwise
+    //     set it to true, so the mode will only be found once.
+    //   nu: The degrees of freedom parameter for the proposal
+    //     distribution.  Positive close to zero correspond to heavy
+    //     tails, with nu = 1 corresponding to the Cauchy
+    //     distribution.  If nu <= 0 then a Gaussian proposal will be
+    //     used.
+    //   seeding_rng: The random number generator used to set the seed
+    //     for this sampler's RNG.
     BinomialLogitSamplerTim(BinomialLogitModel *model,
                             Ptr<MvnBase> prior,
                             bool mode_is_stable = true,
-                            double nu = 3);
+                            double nu = 3,
+                            RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     double logp(const Vector &beta)const;
     double dlogp(const Vector &beta, Vector &g)const;
-    double d2logp(const Vector &beta, Vector &g, Mat &H)const;
-    double Logp(const Vector &beta, Vector &g, Mat &h, int nd)const;
+    double d2logp(const Vector &beta, Vector &g, Matrix &H)const;
+    double Logp(const Vector &beta, Vector &g, Matrix &h, int nd)const;
    private:
     BinomialLogitModel *m_;
     Ptr<MvnBase> pri_;

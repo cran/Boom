@@ -25,8 +25,10 @@ namespace BOOM{
 
   SSS::SharedSigsqSampler(const std::vector<GaussianModelBase*> &models,
                           Ptr<UnivParams> sigsq,
-                          Ptr<GammaModelBase> pri)
-    : models_(models),
+                          Ptr<GammaModelBase> pri,
+                          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      models_(models),
       sigsq_(sigsq),
       pri_(pri),
       sigsq_sampler_(pri_)

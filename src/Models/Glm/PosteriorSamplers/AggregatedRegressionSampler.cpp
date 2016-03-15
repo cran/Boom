@@ -35,8 +35,10 @@ namespace BOOM{
       double prior_sigma_guess,
       double prior_beta_nobs,
       double prior_diagonal_shrinkage,
-      double prior_variable_inclusion_probability)
-      : model_(model),
+      double prior_variable_inclusion_probability,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         sam_(new BregVsSampler(model_->regression_model(),
                                prior_sigma_nobs,
                                prior_sigma_guess,

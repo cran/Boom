@@ -34,18 +34,18 @@ namespace BOOM{
   {
   public:
     explicit SpdParams(uint p, double diag = 1.0, bool ivar=false);
-    SpdParams(const Spd &V, bool ivar);
+    SpdParams(const SpdMatrix &V, bool ivar);
     SpdParams(const SpdParams &rhs);
     SpdParams(const SpdData &rhs);
-    SpdParams * clone()const;
+    SpdParams * clone()const override;
 
-    virtual uint size(bool minimal = true)const{
+    uint size(bool minimal = true)const override{
       return SpdData::size(minimal);}
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
- 					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
- 					    bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+ 					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+ 					    bool minimal=true) override;
 
   };
 

@@ -28,14 +28,14 @@ namespace BOOM{
       pri(Pri)
   { }
 
-  double SLT::operator()(const Vec &x)const{
+  double SLT::operator()(const Vector &x)const{
     double ans = loglike(x);
     ans += pri->logp(x[0]);
     return ans;
   }
 
   double SLT::operator()(double x)const{
-    Vec v(1,x);
+    Vector v(1,x);
     double ans = loglike(v);
     ans += pri->logp(x);
     return ans;

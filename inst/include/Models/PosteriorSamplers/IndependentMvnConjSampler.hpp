@@ -32,30 +32,32 @@ namespace BOOM {
   class IndependentMvnConjSampler : public PosteriorSampler {
    public:
     IndependentMvnConjSampler(IndependentMvnModel *model,
-                              const Vec &mean_guess,
-                              const Vec & mean_sample_size,
-                              const Vec &sd_guess,
-                              const Vec &sd_sample_size,
-                              const Vec &sigma_upper_limit);
+                              const Vector &mean_guess,
+                              const Vector & mean_sample_size,
+                              const Vector &sd_guess,
+                              const Vector &sd_sample_size,
+                              const Vector &sigma_upper_limit,
+                              RNG &seeding_rng = GlobalRng::rng);
 
     IndependentMvnConjSampler(IndependentMvnModel *model,
                               double mean_guess,
                               double mean_sample_size,
                               double sd_guess,
                               double sd_sample_size,
-                              double sigma_upper_limit = infinity());
+                              double sigma_upper_limit = infinity(),
+                              RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
    private:
     void check_sizes(const Vector &sigma_upper_limit);
-    void check_vector_size(const Vec &v, const char *vector_name);
+    void check_vector_size(const Vector &v, const char *vector_name);
 
     IndependentMvnModel *model_;
-    Vec mean_prior_guess_;
-    Vec mean_prior_sample_size_;
-    Vec prior_ss_;
-    Vec prior_df_;
+    Vector mean_prior_guess_;
+    Vector mean_prior_sample_size_;
+    Vector prior_ss_;
+    Vector prior_df_;
     std::vector<GenericGaussianVarianceSampler> sigsq_samplers_;
   };
 

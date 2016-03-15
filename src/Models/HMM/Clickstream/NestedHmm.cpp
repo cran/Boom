@@ -194,7 +194,7 @@ namespace BOOM {
           fill_logd(event);
           // use logQ1_ if the first event in a session.
           // use logQ2_ otherwise
-          const Mat & logQ(j == 0 ? logQ1_ : logQ2_);
+          const Matrix & logQ(j == 0 ? logQ1_ : logQ2_);
           ans+= fwd_1(pi_, P[event_num], logQ, logd_, one_);
           if(!std::isfinite(ans)  || !std::isfinite(pi_[0])){
             ostringstream err;
@@ -222,9 +222,9 @@ namespace BOOM {
     int Nsessions = u->nsessions();
     int event_num = u->number_of_events_including_eos();
 
-    Vec hinit, Hinit;
-    Mat htrans, Htrans;
-    Vec wsp(S2_ * S1_);
+    Vector hinit, Hinit;
+    Matrix htrans, Htrans;
+    Vector wsp(S2_ * S1_);
 
     for(int i = Nsessions; i != 0; --i){
       Ptr<Session> session(u->session(i - 1));
@@ -275,20 +275,20 @@ namespace BOOM {
   }   // closes function
 
   //----------------------------------------------------------------------
-  ConstVectorView NestedHmm::get_hinit(const Vec &pi, int H)const{
+  ConstVectorView NestedHmm::get_hinit(const Vector &pi, int H)const{
     ConstVectorView ans(pi.data() + H * S1_,
                         S1_,
                         pi.stride());
     return ans;
   }
   //----------------------------------------------------------------------
-  Vec NestedHmm::get_Hinit(const Vec &pi)const{
-    Vec ans(S2_);
+  Vector NestedHmm::get_Hinit(const Vector &pi)const{
+    Vector ans(S2_);
     for(int H = 0; H < S2_; ++H) ans[H] = get_hinit(pi, H).sum();
     return ans;
   }
   //----------------------------------------------------------------------
-  ConstSubMatrix NestedHmm::get_block(const Mat &P, int H1, int H2)const{
+  ConstSubMatrix NestedHmm::get_block(const Matrix &P, int H1, int H2)const{
     ConstSubMatrix ans(P, H1 * S1_,
                        (H1 + 1) * S1_ - 1,
                        H2 * S1_,
@@ -296,12 +296,12 @@ namespace BOOM {
     return ans;
   }
   //----------------------------------------------------------------------
-  ConstSubMatrix NestedHmm::get_htrans(const Mat &P, int H)const{
+  ConstSubMatrix NestedHmm::get_htrans(const Matrix &P, int H)const{
     return get_block(P, H, H);
   }
   //----------------------------------------------------------------------
-  Mat NestedHmm::get_Htrans(const Mat &P)const{
-    Mat ans(S2_,S2_);
+  Matrix NestedHmm::get_Htrans(const Matrix &P)const{
+    Matrix ans(S2_,S2_);
     for(int H1 = 0; H1 < S2_; ++H1){
       for(int H2 = 0; H2 < S2_; ++H2){
         ans(H1, H2) = get_block(P, H1, H2).sum();
@@ -578,7 +578,7 @@ namespace BOOM {
   }
   //----------------------------------------------------------------------
   void NestedHmm::pass_params_to_workers(){
-    Vec v = this->vectorize_params();
+    Vector v = this->vectorize_params();
     for(int i = 0; i<workers_.size(); ++i) workers_[i]->unvectorize_params(v);
   }
   //----------------------------------------------------------------------
@@ -639,17 +639,17 @@ namespace BOOM {
   void NestedHmm::randomize_starting_values(){
     clear_client_data();
 
-    Vec nu2(S2_, 1.0);
-    Mat Q2(S2_,S2_);
+    Vector nu2(S2_, 1.0);
+    Matrix Q2(S2_,S2_);
     for(int H = 0; H < S2_; ++H){
       Q2.row(H) = rdirichlet(nu2);
     }
     session_model()->set_Q(Q2);
     session_model()->set_pi0(rdirichlet(nu2));
 
-    Vec nu1(S1_, 1.0);
+    Vector nu1(S1_, 1.0);
     for(int H = 0; H < S2_; ++H){
-      Mat Q(S1_,S1_);
+      Matrix Q(S1_,S1_);
       for(int h = 0; h < S1_; ++h){
         Q.row(h) = rdirichlet(nu1);
       }
@@ -657,17 +657,17 @@ namespace BOOM {
       event_model(H)->set_pi0(rdirichlet(nu1));
     }
 
-    Vec nu0(S0_, 1.0);
+    Vector nu0(S0_, 1.0);
     for(int H = 0; H < S2_; ++H){
       for(int h = 0; h < S1_; ++h){
-        Mat Q(S0_, S0_);
+        Matrix Q(S0_, S0_);
         for(int r = 0; r<S0_; ++r){
           Q.row(r) = rdirichlet(nu0);
         }
         Q.last_row() = 0.0;
         Q.last_row().back()=1.0;
         mix(H, h)->set_Q(Q);
-        Vec pi0 = rdirichlet(nu0);
+        Vector pi0 = rdirichlet(nu0);
         pi0.back() = 0;
         pi0 /= pi0.sum();
         mix(H, h)->set_pi0(pi0);
@@ -727,16 +727,16 @@ namespace BOOM {
 
 
     int i = 0;
-    const Vec & phi2(session_model()->pi0());
+    const Vector & phi2(session_model()->pi0());
     std::vector<Mat> stacked_phi1(S2_);
     for(int H = 0; H < S2_; ++H){
-      const Vec & pi0(event_model(H)->pi0());
-      Mat Pi0(S1_, S1_);
+      const Vector & pi0(event_model(H)->pi0());
+      Matrix Pi0(S1_, S1_);
       for(int h = 0; h < S1_; ++h) Pi0.row(h) = pi0;
       stacked_phi1[H] = Pi0;
     }
 
-    const Mat & Phi2(session_model_->Q());
+    const Matrix & Phi2(session_model_->Q());
 
     for(int H = 0; H < S2_; ++H){
 
@@ -775,12 +775,12 @@ namespace BOOM {
   }
 
   // transition probability matrix in (h,y) space
-  Mat NestedHmm::augmented_Q(int H)const{
+  Matrix NestedHmm::augmented_Q(int H)const{
     int S0 = this->S0();
     int S1 = this->S1();
     int S = S0 * S1;
-    Mat ans(S, S);
-    const Mat & Phi1 = event_model(H)->Q();
+    Matrix ans(S, S);
+    const Matrix & Phi1 = event_model(H)->Q();
 
     for(int h0 = 0; h0 < S1; ++h0){
       for(int h1 = 0; h1 < S1; ++h1){
@@ -793,12 +793,12 @@ namespace BOOM {
     return ans;
   }
 
-  Vec NestedHmm::augmented_pi0(int H)const{
+  Vector NestedHmm::augmented_pi0(int H)const{
     int S0 = this->S0();
     int S1 = this->S1();
     int S = S0 * S1;
-    Vec ans(S);
-    const Vec  & event_pi0(event_model(H)->pi0());
+    Vector ans(S);
+    const Vector  & event_pi0(event_model(H)->pi0());
     for(int h = 0; h < S1; ++h){
       BOOM::VectorView tmp(ans, h * S0, S0);
       tmp = mix(H, h)->pi0() * event_pi0[h];

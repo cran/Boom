@@ -38,15 +38,18 @@ class MixtureComponentSampler{
 class HmmPosteriorSampler
     : public PosteriorSampler{
  public:
-  HmmPosteriorSampler(HiddenMarkovModel *hmm);
-  virtual void draw();
-  virtual double logpri()const;
+  HmmPosteriorSampler(HiddenMarkovModel *hmm,
+                      RNG &seeding_rng = GlobalRng::rng);
+  void draw() override;
+  double logpri() const override;
   void use_threads(bool yn = true);
   void draw_mixture_components();
  private:
   HiddenMarkovModel *hmm_;
   std::vector<boost::shared_ptr<MixtureComponentSampler> > workers_;
+#ifndef NO_BOOST_THREADS
   bool use_threads_;
+#endif
 };
 
 

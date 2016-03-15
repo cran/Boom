@@ -19,10 +19,42 @@
 #include <Models/Glm/Glm.hpp>
 #include <distributions.hpp>
 #include <LinAlg/Types.hpp>
+#include <sstream>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
-  typedef GlmModel GLM;
+  GlmBaseData::GlmBaseData(const Vector &x)
+      : x_(new VectorData(x))
+  {}
+
+  GlmBaseData::GlmBaseData(Ptr<VectorData> x)
+      : x_(x)
+  {}
+
+  GlmBaseData::GlmBaseData(const GlmBaseData &rhs)
+      : x_(rhs.x_->clone())
+  {}
+
+  uint GlmBaseData::xdim() const {
+    return x_->dim();
+  }
+
+  const Vector &GlmBaseData::x()const{ return x_->value();}
+
+  void GlmBaseData::set_x(const Vector &X, bool allow_any){
+    if (allow_any || x_->dim() == X.size()) {
+      x_->set(X);
+    } else {
+      std::ostringstream err;
+      err << "Vector sizes are incompatible in set_x." << endl
+          << "New vector is " << X << endl
+          << "Old vector is " << x() << endl;
+      report_error(err.str());
+    }
+    signal();
+  }
+
   GlmModel::GlmModel() {}
   GlmModel::GlmModel(const GlmModel & rhs) : Model(rhs) {}
   uint GlmModel::xdim()const{ return coef().nvars_possible();}
@@ -35,17 +67,17 @@ namespace BOOM{
   const Selector & GlmModel::inc()const{return coef().inc();}
   bool GlmModel::inc(uint p)const{return coef().inc(p);}
 
-  double GlmModel::predict(const Vec &x)const{
+  double GlmModel::predict(const Vector &x)const{
     return coef().predict(x);}
   double GlmModel::predict(const VectorView &x)const{
     return coef().predict(x);}
   double GlmModel::predict(const ConstVectorView &x)const{
     return coef().predict(x);}
 
-  Vec GlmModel::included_coefficients()const{
+  Vector GlmModel::included_coefficients()const{
     return coef().included_coefficients();
   }
-  void GlmModel::set_included_coefficients(const Vec &b){
+  void GlmModel::set_included_coefficients(const Vector &b){
     coef().set_included_coefficients(b);
   }
   void GlmModel::set_included_coefficients(const Vector &beta,
@@ -54,8 +86,8 @@ namespace BOOM{
   }
 
   // reports 0 for excluded positions
-  const Vec & GlmModel::Beta()const{return coef().Beta();}
-  void GlmModel::set_Beta(const Vec &B){coef().set_Beta(B);}
+  const Vector & GlmModel::Beta()const{return coef().Beta();}
+  void GlmModel::set_Beta(const Vector &B){coef().set_Beta(B);}
   double GlmModel::Beta(uint I)const{return coef().Beta(I);}
 
 }  // namespace BOOM;

@@ -21,8 +21,8 @@
 #include <cpputil/math_utils.hpp>
 
 namespace BOOM{
-OneWayChiSquareTest::OneWayChiSquareTest(const Vec & observed,
-                             const Vec & distribution)
+OneWayChiSquareTest::OneWayChiSquareTest(const Vector & observed,
+                             const Vector & distribution)
     : observed_(observed),
       expected_(distribution * sum(observed_)),
       chi_square_(0),
@@ -67,13 +67,13 @@ std::ostream & OneWayChiSquareTest::print(std::ostream &out)const{
 }
 
 
-TwoWayChiSquareTest::TwoWayChiSquareTest(const Mat &observed)
+TwoWayChiSquareTest::TwoWayChiSquareTest(const Matrix &observed)
     : chi_square_(0.0),
       df_((nrow(observed) - 1) * (ncol(observed) - 1)),
       assumptions_are_met_(true)
 {
-  Vec row_margin = observed * Vec(ncol(observed), 1.0);
-  Vec col_margin = Vec(nrow(observed), 1.0) * observed;
+  Vector row_margin = observed * Vector(ncol(observed), 1.0);
+  Vector col_margin = Vector(nrow(observed), 1.0) * observed;
   double total = sum(observed);
   for(int i = 0; i < nrow(observed); ++i) {
     for(int j =  0; j < ncol(observed); ++j) {

@@ -30,10 +30,11 @@ namespace BOOM {
    public:
     PoissonGammaPosteriorSampler(PoissonGammaModel *model,
                                  Ptr<DoubleModel> mean_prior_distribution,
-                                 Ptr<DoubleModel> sample_size_prior);
+                                 Ptr<DoubleModel> sample_size_prior,
+                                 RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     double logp(double prior_mean, double prior_sample_size)const;
 

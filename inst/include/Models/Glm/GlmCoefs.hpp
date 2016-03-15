@@ -33,7 +33,7 @@ namespace BOOM{
     explicit GlmCoefs(const Vector &b, bool infer_model_selection=false);
     GlmCoefs(const Vector &b, const Selector &Inc);
     GlmCoefs(const GlmCoefs &rhs);
-    virtual GlmCoefs *clone()const;
+    GlmCoefs * clone() const override;
 
     //---     model selection  -----------
     const Selector &inc()const;
@@ -46,7 +46,7 @@ namespace BOOM{
     void add_all();
 
     //---- size querries...
-    uint size(bool minimal=true)const; // number included/possible covariates
+    uint size(bool minimal=true)const override; // number included/possible covariates
     uint nvars()const;
     uint nvars_possible()const;
     uint nvars_excluded()const;
@@ -80,10 +80,10 @@ namespace BOOM{
     // Drop all coefficients with value 0.  Add all others.
     void infer_sparsity();
 
-    virtual Vector vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(
-        Vec::const_iterator &v, bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vector &v, bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(
+        Vector::const_iterator &v, bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v, bool minimal=true) override;
 
   private:
     Selector inc_;

@@ -28,15 +28,21 @@ namespace BOOM{
    {
     public:
      ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                 Ptr<GammaModelBase>);
+                                 Ptr<GammaModelBase>,
+                                 RNG &seeding_rng = GlobalRng::rng);
      ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                 double df, double sigma_guess);
+                                 double df, double sigma_guess,
+                                 RNG &seeding_rng = GlobalRng::rng);
 
      ZeroMeanGaussianConjSampler * clone()const;
      // The posterior mode is with respect to d sigsq, not d siginv.
-     void find_posterior_mode();
+     void find_posterior_mode(double epsilon = 1e-5) override;
+     bool can_find_posterior_mode() const override {
+       return true;
+     }
+
     private:
      ZeroMeanGaussianModel * mod;
    };
-}
+}  // namespace BOOM
 #endif // BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_

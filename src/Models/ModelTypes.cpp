@@ -19,9 +19,11 @@
 
 #include <Models/DoubleModel.hpp>
 #include <Models/ModelTypes.hpp>
+#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/VectorModel.hpp>
 #include <TargetFun/Loglike.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <numopt.hpp>
 
 namespace BOOM{
@@ -32,8 +34,8 @@ namespace BOOM{
     : RefCounted()
   {}
 
-  Vec Model::vectorize_params(bool minimal)const{
-    ParamVec prm(t());
+  Vector Model::vectorize_params(bool minimal)const{
+    ParamVector prm(t());
     uint nprm = prm.size();
     uint N(0), nmax(0);
     for(uint i=0; i<nprm; ++i){
@@ -41,9 +43,9 @@ namespace BOOM{
       N += n;
       nmax = std::max(nmax, n);
     }
-    Vec ans(N);
-    Vec wsp(nmax);
-    Vec::iterator it = ans.begin();
+    Vector ans(N);
+    Vector wsp(nmax);
+    Vector::iterator it = ans.begin();
     for(uint i=0; i<nprm; ++i){
       wsp = prm[i]->vectorize(minimal);
       it = std::copy(wsp.begin(), wsp.end(), it);
@@ -51,10 +53,30 @@ namespace BOOM{
     return ans;
   }
 
-  void Model::unvectorize_params(const Vec &v, bool minimal){
-    ParamVec prm(t());
-    Vec::const_iterator b = v.begin();
+  void Model::unvectorize_params(const Vector &v, bool minimal){
+    ParamVector prm(t());
+    Vector::const_iterator b = v.begin();
     for(uint i=0; i<prm.size(); ++i) b = prm[i]->unvectorize(b, minimal);
+  }
+
+  //============================================================
+  void PosteriorModeModel::find_posterior_mode(double epsilon) {
+    if (number_of_sampling_methods() != 1) {
+      report_error("find_posterior_mode requires a single posterior sampler.");
+    }
+    PosteriorSampler *posterior_sampler = sampler(0);
+    if (!posterior_sampler->can_find_posterior_mode()) {
+      report_error("Posterior sampler does not implement find_posterior_mode.");
+    } else {
+      posterior_sampler->find_posterior_mode(epsilon);
+    }
+  }
+
+  bool PosteriorModeModel::can_find_posterior_mode() const {
+    if (number_of_sampling_methods() != 1) {
+      return false;
+    }
+    return sampler(0)->can_find_posterior_mode();
   }
 
   //============================================================
@@ -63,14 +85,14 @@ namespace BOOM{
   //============================================================
   void LoglikeModel::mle(){
     LoglikeTF loglike(this);
-    Vec prms = vectorize_params(true);
+    Vector prms = vectorize_params(true);
     max_nd0(prms, Target(loglike));
     unvectorize_params(prms, true);
   }
 
   void dLoglikeModel::mle(){
     dLoglikeTF loglike(this);
-    Vec prms = vectorize_params(true);
+    Vector prms = vectorize_params(true);
     double logf;
     bool ok = max_nd1_careful(prms,
                               logf,
@@ -92,9 +114,9 @@ namespace BOOM{
     mle_result(gradient, Hessian);
   }
 
-  double d2LoglikeModel::mle_result(Vec &gradient, Mat &Hessian){
+  double d2LoglikeModel::mle_result(Vector &gradient, Matrix &Hessian){
     d2LoglikeTF loglike(this);
-    Vec parameters = vectorize_params(true);
+    Vector parameters = vectorize_params(true);
     uint p = parameters.size();
     gradient.resize(p);
     Hessian.resize(p, p);
@@ -141,14 +163,14 @@ namespace BOOM{
   double DiffDoubleModel::d2logp(double x, double &g, double &h)const{
     return Logp(x,g,h,2);}
   //======================================================================
-  double DiffVectorModel::logp(const Vec &x)const{
-    Vec g;
-    Mat h;
+  double DiffVectorModel::logp(const Vector &x)const{
+    Vector g;
+    Matrix h;
     return Logp(x,g,h,0);}
-  double DiffVectorModel::dlogp(const Vec &x, Vec &g)const{
-    Mat h;
+  double DiffVectorModel::dlogp(const Vector &x, Vector &g)const{
+    Matrix h;
     return Logp(x,g,h,1);}
-  double DiffVectorModel::d2logp(const Vec &x, Vec &g, Mat &h)const{
+  double DiffVectorModel::d2logp(const Vector &x, Vector &g, Matrix &h)const{
     return Logp(x,g,h,2);}
 
 }  // namespace BOOM

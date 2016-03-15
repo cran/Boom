@@ -28,16 +28,16 @@ namespace BOOM{
     : public NullParamPolicy,
       public IID_DataPolicy<SpdParams>,
       public PriorPolicy,
-      public CorrModel
+      public CorrelationModel
   {
   public:
     UniformCorrelationModel(uint dim);
     UniformCorrelationModel(const UniformCorrelationModel &);
-    UniformCorrelationModel * clone()const;
+    UniformCorrelationModel * clone()const override;
 
     void initialize_params();
     double pdf(Ptr<Data>, bool logscale)const;
-    double logp(const Corr &)const;
+    double logp(const Corr &)const override;
 
     uint dim()const;
     Corr sim()const;

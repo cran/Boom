@@ -33,9 +33,10 @@ namespace BOOM {
         ZeroInflatedGammaModel *model,
         Ptr<BetaModel> prior_for_positive_probability,
         Ptr<DoubleModel> prior_for_gamma_mean,
-        Ptr<DoubleModel> prior_for_gamma_shape);
-    virtual double logpri() const;
-    virtual void draw();
+        Ptr<DoubleModel> prior_for_gamma_shape,
+        RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
    private:
     Ptr<BetaBinomialSampler> binomial_sampler_;
     Ptr<GammaPosteriorSampler> gamma_sampler_;

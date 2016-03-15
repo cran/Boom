@@ -25,8 +25,10 @@ namespace BOOM {
       Ptr<DoubleModel> gamma_mean_mean_prior,
       Ptr<DoubleModel> gamma_mean_shape_prior,
       Ptr<DoubleModel> gamma_shape_mean_prior,
-      Ptr<DoubleModel> gamma_shape_shape_prior)
-      : model_(model),
+      Ptr<DoubleModel> gamma_shape_shape_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         gamma_mean_mean_prior_(gamma_mean_mean_prior),
         gamma_mean_shape_prior_(gamma_mean_shape_prior),
         gamma_shape_mean_prior_(gamma_shape_mean_prior),

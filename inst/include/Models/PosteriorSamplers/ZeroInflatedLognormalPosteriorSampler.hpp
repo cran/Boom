@@ -25,10 +25,11 @@ namespace BOOM{
   class ZeroInflatedLognormalModel;
   class ZeroInflatedLognormalPosteriorSampler : public PosteriorSampler {
    public:
-    ZeroInflatedLognormalPosteriorSampler(ZeroInflatedLognormalModel *model)
-        : model_(model) {}
-    virtual double logpri()const;
-    virtual void draw();
+    ZeroInflatedLognormalPosteriorSampler(ZeroInflatedLognormalModel *model,
+                                          RNG &seeding_rng = GlobalRng::rng)
+        : PosteriorSampler(seeding_rng), model_(model) {}
+    double logpri() const override;
+    void draw() override;
    private:
     ZeroInflatedLognormalModel *model_;
   };

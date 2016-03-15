@@ -21,8 +21,10 @@
 namespace BOOM{
   class PoissonClusterPosteriorSampler : public PosteriorSampler{
    public:
-    PoissonClusterPosteriorSampler(PoissonClusterProcess *model)
-        : model_(model)
+    PoissonClusterPosteriorSampler(PoissonClusterProcess *model,
+                                   RNG &seeding_rng = GlobalRng::rng)
+        : PosteriorSampler(seeding_rng),
+          model_(model)
     {}
     virtual void draw(){
       model_->impute_latent_data(rng());

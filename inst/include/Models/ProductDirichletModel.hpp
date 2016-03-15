@@ -32,23 +32,23 @@ namespace BOOM{
   public:
     ProductDirichletSuf(uint p);
     ProductDirichletSuf(const ProductDirichletSuf &rhs);
-    ProductDirichletSuf * clone()const;
-    const Mat & sumlog()const;
+    ProductDirichletSuf * clone()const override;
+    const Matrix & sumlog()const;
     double n()const;
-    void Update(const MatrixData &);
-    void clear();
+    void Update(const MatrixData &) override;
+    void clear() override;
     void combine(Ptr<ProductDirichletSuf>);
     void combine(const ProductDirichletSuf &);
-    ProductDirichletSuf * abstract_combine(Sufstat *s);
+    ProductDirichletSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
+    ostream &print(ostream &out)const override;
   private:
-    Mat sumlog_;
+    Matrix sumlog_;
     double n_;
   };
 
@@ -66,28 +66,28 @@ namespace BOOM{
   {
   public:
     ProductDirichletModel(uint p);  // default is uniform:  Nu = 1
-    ProductDirichletModel(const Mat &NU);
-    ProductDirichletModel(const Vec &wgt, const Mat &Pi);
+    ProductDirichletModel(const Matrix &NU);
+    ProductDirichletModel(const Vector &wgt, const Matrix &Pi);
     ProductDirichletModel(const ProductDirichletModel &);
 
-    ProductDirichletModel * clone()const;
+    ProductDirichletModel * clone()const override;
     uint dim()const;
     Ptr<MatrixParams> Nu_prm();
     const Ptr<MatrixParams> Nu_prm()const;
-    const Mat & Nu()const;
+    const Matrix & Nu()const;
 
-    void set_Nu(const Mat &Nu);
+    void set_Nu(const Matrix &Nu);
 
     double pdf(Ptr<Data>, bool logscale)const;
-    double pdf(const Mat &Pi, bool logscale)const;
-    //    double Logp(const Vec &, Vec &, Mat &, uint nd)const;
+    double pdf(const Matrix &Pi, bool logscale)const;
+    //    double Logp(const Vector &, Vector &, Matrix &, uint nd)const;
 
     // The argument is a vector created by stacking the columns of the
     // parameter Nu.
-    double loglike(const Vector &Nu_columns)const;
-    double dloglike(const Vector &Nu_columns, Vector &g)const;
+    double loglike(const Vector &Nu_columns)const override;
+    double dloglike(const Vector &Nu_columns, Vector &g)const override;
 
-    Mat sim()const;
+    Matrix sim()const;
   };
 }
 

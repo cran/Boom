@@ -28,12 +28,13 @@ namespace BOOM{
     : public PosteriorSampler{
   public:
     ExponentialGammaSampler(ExponentialModel *Mod,
-			    Ptr<GammaModel> Pri);
-    virtual void draw();
-    virtual double logpri()const;
+                Ptr<GammaModel> Pri,
+          RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
     double a()const;
     double b()const;
-    void find_posterior_mode();
+    void find_posterior_mode(double epsilon = 1e-5) override;
   private:
     ExponentialModel* mod;
     Ptr<GammaModel> pri;

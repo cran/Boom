@@ -84,13 +84,16 @@ namespace BOOM {
   BetaPosteriorSampler::BetaPosteriorSampler(
       BetaModel *model,
       Ptr<DoubleModel> mean_prior,
-      Ptr<DoubleModel> sample_size_prior)
-      : model_(model),
+      Ptr<DoubleModel> sample_size_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mean_prior_(mean_prior),
         sample_size_prior_(sample_size_prior),
-        mean_sampler_(BetaMeanLogPosterior(model_, mean_prior_.get())),
+        mean_sampler_(BetaMeanLogPosterior(
+            model_, mean_prior_.get()), false, 1.0, &rng()),
         sample_size_sampler_(BetaSampleSizeLogPosterior(
-            model_, sample_size_prior_.get()))
+            model_, sample_size_prior_.get()), false, 1.0, &rng())
   {
     mean_sampler_.set_limits(0.0, 1.0);
     sample_size_sampler_.set_lower_limit(0.0);

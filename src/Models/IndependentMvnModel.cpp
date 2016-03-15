@@ -32,7 +32,7 @@ namespace BOOM{
   IndependentMvnSuf::IndependentMvnSuf(int dim)
       : sum_(dim),
         sumsq_(dim),
-        n_(dim)
+        n_(0)
   {}
 
   IndependentMvnSuf * IndependentMvnSuf::clone()const{
@@ -48,7 +48,6 @@ namespace BOOM{
   void IndependentMvnSuf::resize(int dim){
     sum_.resize(dim);
     sumsq_.resize(dim);
-    n_.resize(dim);
     clear();
   }
 
@@ -72,24 +71,38 @@ namespace BOOM{
     }
   }
 
+  void IndependentMvnSuf::update_expected_value(
+      double sample_size,
+      const Vector &expected_sum,
+      const Vector &expected_sum_of_squares) {
+    n_ += sample_size;
+    sum_ += expected_sum;
+    sumsq_ += expected_sum_of_squares;
+  }
+
   double IndependentMvnSuf::sum(int i)const{
     return sum_[i];
   }
   double IndependentMvnSuf::sumsq(int i)const{
     return sumsq_[i];
   }
-  double IndependentMvnSuf::n(int i)const{
-    return n_[i];
+
+  double IndependentMvnSuf::centered_sumsq(int i, double mu) const {
+    return sumsq_[i] - 2 * mu * sum_[i] + n_ * square(mu);
+  }
+
+  double IndependentMvnSuf::n()const{
+    return n_;
   }
 
   double IndependentMvnSuf::ybar(int i)const{
-    double ni = n_[i];
+    double ni = n_;
     if(ni < 1e-7) return 0;
     return sum_[i] / ni;
   }
 
   double IndependentMvnSuf::sample_var(int i)const{
-    double ni = n_[i];
+    double ni = n_;
     if(ni - 1 < std::numeric_limits<double>::epsilon()){
       return 0;
     }
@@ -112,18 +125,18 @@ namespace BOOM{
   }
 
   Vector IndependentMvnSuf::vectorize(bool)const{
-    Vector ans(n_);
-    ans.reserve(3 * n_.size());
+    Vector ans(1, n_);
+    ans.reserve(1 + 2 * sum_.size());
     ans.concat(sum_);
     ans.concat(sumsq_);
     return(ans);
   }
 
-  Vec::const_iterator IndependentMvnSuf::unvectorize(
-      Vec::const_iterator &v, bool){
+  Vector::const_iterator IndependentMvnSuf::unvectorize(
+      Vector::const_iterator &v, bool){
     int dim = sum_.size();
-    n_.assign(v, v+dim);
-    v += dim;
+    n_ = *v;
+    v += 1;
     sum_.assign(v, v+dim);
     v += dim;
     sumsq_.assign(v, v+dim);
@@ -131,18 +144,17 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator IndependentMvnSuf::unvectorize(
+  Vector::const_iterator IndependentMvnSuf::unvectorize(
       const Vector &v, bool minimal){
-    Vec::const_iterator vi = v.begin();
+    Vector::const_iterator vi = v.begin();
     return unvectorize(vi, minimal);
   }
 
   ostream & IndependentMvnSuf::print(ostream &out)const{
-    Matrix tmp(n_.size(), 3);
-    tmp.col(0) = n_;
-    tmp.col(1) = sum_;
-    tmp.col(2) = sumsq_;
-    out << tmp;
+    Matrix tmp(sum_.size(), 2);
+    tmp.col(0) = sum_;
+    tmp.col(1) = sumsq_;
+    out << n_ << std::endl << tmp;
     return out;
   }
 
@@ -186,7 +198,7 @@ namespace BOOM{
     return new IndependentMvnModel(*this);}
 
   double IndependentMvnModel::Logp(
-      const Vector &x, Vector &g, Mat &h, uint nderivs)const{
+      const Vector &x, Vector &g, Matrix &h, uint nderivs)const{
     int d = x.size();
     double qform = 0;
     double ldsi = 0;
@@ -214,12 +226,12 @@ namespace BOOM{
     return Mu_ref().value();
   }
 
-  const Spd & IndependentMvnModel::Sigma()const{
+  const SpdMatrix & IndependentMvnModel::Sigma()const{
     sigma_scratch_.set_diag(sigsq());
     return sigma_scratch_;
   }
 
-  const Spd & IndependentMvnModel::siginv()const{
+  const SpdMatrix & IndependentMvnModel::siginv()const{
     sigma_scratch_.set_diag(1.0/sigsq());
     return sigma_scratch_;
   }

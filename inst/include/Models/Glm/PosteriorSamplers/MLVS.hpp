@@ -65,10 +65,11 @@ namespace BOOM{
          Ptr<MvnBase> Pri,
          Ptr<VariableSelectionPrior> vPri,
          uint nthreads=1,
-         bool check_initial_condition = true);
+         bool check_initial_condition = true,
+         RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     // The individual steps needed to implement the draw.
     void impute_latent_data();
@@ -80,11 +81,11 @@ namespace BOOM{
     void set_number_of_workers(int n);
 
     // Functions to control Bayesian variable selection.  If
-    // supress_model_selection is called then the current
+    // suppress_model_selection is called then the current
     // include/exclude state of the coefficients will not be modified
     // by the sampler.  A call to allow_model_selection() turns model
     // selection back on.  It is on by default.
-    void supress_model_selection();
+    void suppress_model_selection();
     void allow_model_selection();
 
     // If the predictor space is very large, then you can save time by
@@ -109,13 +110,13 @@ namespace BOOM{
                               LocalSuf,
                               MultinomialLogitModel> parallel_imputer_;
 
-    const Vec & log_sampling_probs_;
+    const Vector & log_sampling_probs_;
     const bool downsampling_;
     bool select_;
     uint max_nflips_;
 
-    Spd Ominv;
-    Spd iV_tilde_;
+    SpdMatrix Ominv;
+    SpdMatrix iV_tilde_;
     virtual void draw_inclusion_vector();
     double log_model_prob(const Selector &inc);
   };

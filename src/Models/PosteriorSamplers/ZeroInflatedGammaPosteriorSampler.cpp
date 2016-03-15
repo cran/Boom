@@ -25,14 +25,18 @@ namespace BOOM {
       ZeroInflatedGammaModel *model,
       Ptr<BetaModel> prior_for_nonzero_probability,
       Ptr<DoubleModel> prior_for_gamma_mean,
-      Ptr<DoubleModel> prior_for_gamma_shape)
-      : binomial_sampler_(new BetaBinomialSampler(
+      Ptr<DoubleModel> prior_for_gamma_shape,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        binomial_sampler_(new BetaBinomialSampler(
             model->Binomial_model().get(),
-            prior_for_nonzero_probability)),
+            prior_for_nonzero_probability,
+            seeding_rng)),
         gamma_sampler_(new GammaPosteriorSampler(
             model->Gamma_model().get(),
             prior_for_gamma_mean,
-            prior_for_gamma_shape))
+            prior_for_gamma_shape,
+            seeding_rng))
   {}
 
   double ZeroInflatedGammaPosteriorSampler::logpri() const {

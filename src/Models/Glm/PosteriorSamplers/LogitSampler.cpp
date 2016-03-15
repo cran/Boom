@@ -20,13 +20,16 @@
 #include <Models/Glm/PosteriorSamplers/draw_logit_lambda.hpp>
 #include <Models/Glm/WeightedRegressionModel.hpp>
 #include <distributions.hpp>
+#include <TargetFun/Loglike.hpp>
+#include <TargetFun/LogPost.hpp>
 
 namespace BOOM{
 
   typedef LogitSampler LS;
   LS::LogitSampler(LogisticRegressionModel *mod,
-		   Ptr<MvnBase> pri)
-    : mod_(mod),
+           Ptr<MvnBase> pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(mod),
       pri_(pri),
       suf_(new WeightedRegSuf(pri->dim()))
   {}
@@ -49,7 +52,7 @@ namespace BOOM{
     suf_->clear();
     for(uint i=0; i<n; ++i){
       Ptr<BRD> dp = dat[i];
-      const Vec &x(dp->x());
+      const Vector &x(dp->x());
       double eta = mod_->predict(x) + log_alpha;
       double z = draw_z(dp->y(), eta);
       double lam = draw_lambda(fabs(z- eta));
@@ -74,4 +77,15 @@ namespace BOOM{
     return Logit::draw_lambda_mt(rng(), r);
   }
 
-}
+  void LS::find_posterior_mode(double epsilon) {
+    d2LoglikeTF log_likelihood(mod_);
+    d2LogPostTF logpost(log_likelihood, pri_);
+    Vector b = mod_->Beta();
+    uint dim = b.size();
+    Vector g(dim);
+    Matrix h(dim,dim);
+    logpost_at_mode_ = max_nd2(b, g, h, Target(logpost), dTarget(logpost),
+                               d2Target(logpost), epsilon);
+    mod_->set_Beta(b);
+  }
+}  // namespace BOOM

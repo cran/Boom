@@ -25,9 +25,10 @@ namespace BOOM{
     // draws beta given Sigma for the multinomial probit model
     // assuming the prior beta|Sigma ~ N(b, Ominv)
   public:
-    MnpBetaSampler(MultinomialProbitModel *Mod, Ptr<MvnModel> Pri);
-    virtual void draw();
-    virtual double logpri()const;
+    MnpBetaSampler(MultinomialProbitModel *Mod, Ptr<MvnModel> Pri,
+                   RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
     void fix_beta0(bool=true);
   private:
     MultinomialProbitModel *mnp;

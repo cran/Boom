@@ -16,7 +16,7 @@ RErrorReporter::~RErrorReporter() {
     SEXP s_error_message = PROTECT(Rf_mkChar(error_->c_str()));
     delete error_;
 
-    Rf_error(CHAR(s_error_message));
+    Rf_error("%s", CHAR(s_error_message));
   }
 }
 

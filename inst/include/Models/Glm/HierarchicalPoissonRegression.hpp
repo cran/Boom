@@ -44,14 +44,14 @@ namespace BOOM {
     HierarchicalPoissonRegressionModel(Ptr<MvnModel> data_parent_model);
     HierarchicalPoissonRegressionModel(
         const HierarchicalPoissonRegressionModel &rhs);
-    virtual HierarchicalPoissonRegressionModel * clone()const;
+    HierarchicalPoissonRegressionModel * clone() const override;
 
     void add_data_level_model(Ptr<PoissonRegressionModel>);
 
     // Required data policy virtual functions
-    virtual void clear_data();
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
-    virtual void add_data(Ptr<Data>);
+    void clear_data() override;
+    void combine_data(const Model &rhs, bool just_suf = true) override;
+    void add_data(Ptr<Data>) override;
 
     int xdim()const;
     int number_of_groups()const;

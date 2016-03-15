@@ -23,13 +23,17 @@
 namespace BOOM{
   typedef GaussianMeanSampler GMS;
 
-  GMS::GaussianMeanSampler(GaussianModel *Mod, double mu, double tau)
-    : mod_(Mod),
+  GMS::GaussianMeanSampler(GaussianModel *Mod, double mu, double tau,
+                           RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       pri(new GaussianModel(mu, tau))
   {}
 
-  GMS::GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri)
-    : mod_(Mod),
+  GMS::GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri,
+                           RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       pri(Pri)
   {}
 

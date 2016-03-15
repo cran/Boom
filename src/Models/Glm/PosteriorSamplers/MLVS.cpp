@@ -41,8 +41,10 @@ namespace BOOM{
 
   MLVS::MLVS(MLM *Mod, Ptr<MvnBase> Pri,
              Ptr<VariableSelectionPrior> Vpri,
-             uint nthreads, bool check_initial_condition)
-      : mod_(Mod),
+             uint nthreads, bool check_initial_condition,
+             RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        mod_(Mod),
         pri(Pri),
         vpri(Vpri),
         suf_(mod_->beta_size(false)),
@@ -79,7 +81,7 @@ namespace BOOM{
     }
     parallel_imputer_.clear_workers();
     for (int i = 0; i < n; ++i) {
-      parallel_imputer_.add_worker(new MlvsDataImputer(mod_));
+      parallel_imputer_.add_worker(new MlvsDataImputer(mod_), rng());
     }
     parallel_imputer_.assign_data();
   }
@@ -107,13 +109,13 @@ namespace BOOM{
   void MLVS::draw_beta() {
     const Selector  &inc(mod_->coef().inc());
     uint N = inc.nvars_possible();
-    Vec Beta(N, 0.);
+    Vector Beta(N, 0.);
     if (inc.nvars() > 0) {
-      Spd Ominv = inc.select(pri->siginv());
-      Spd ivar = Ominv + inc.select(suf_.xtwx());
-      Vec b = inc.select(suf_.xtwu()) + Ominv *inc.select(pri->mu());
+      SpdMatrix Ominv = inc.select(pri->siginv());
+      SpdMatrix ivar = Ominv + inc.select(suf_.xtwx());
+      Vector b = inc.select(suf_.xtwu()) + Ominv *inc.select(pri->mu());
       b = ivar.solve(b);
-      Vec beta = rmvn_ivar(b,ivar);
+      Vector beta = rmvn_ivar(b,ivar);
       uint n = b.size();
       for (uint i=0; i<n; ++i) {
         uint I = inc.indx(i);
@@ -156,7 +158,7 @@ namespace BOOM{
     mod_->coef().set_inc(inc);
   }
 
-  void MLVS::supress_model_selection() { select_ = false;}
+  void MLVS::suppress_model_selection() { select_ = false;}
   void MLVS::allow_model_selection() { select_ = true;}
   void MLVS::limit_model_selection(uint n) {max_nflips_ = n;}
   uint MLVS::max_nflips()const{return max_nflips_;}
@@ -176,17 +178,17 @@ namespace BOOM{
     num += .5*Ominv.logdet();
     if (num == BOOM::negative_infinity()) return num;
 
-    Vec mu = g.select(pri->mu());
-    Vec Ominv_mu = Ominv * mu;
+    Vector mu = g.select(pri->mu());
+    Vector Ominv_mu = Ominv * mu;
     num -= .5*mu.dot(Ominv_mu);
 
     bool ok=true;
     iV_tilde_ = Ominv + g.select(suf_.xtwx());
-    Mat L = iV_tilde_.chol(ok);
+    Matrix L = iV_tilde_.chol(ok);
     if (!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv|
 
-    Vec S = g.select(suf_.xtwu()) + Ominv_mu;
+    Vector S = g.select(suf_.xtwu()) + Ominv_mu;
     Lsolve_inplace(L,S);
     denom-= .5*S.normsq();  // S.normsq =  beta_tilde ^T V_tilde beta_tilde
 

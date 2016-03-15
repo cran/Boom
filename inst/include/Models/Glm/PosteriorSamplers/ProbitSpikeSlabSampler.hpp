@@ -28,16 +28,17 @@ class ProbitSpikeSlabSampler : public ProbitRegressionSampler{
   ProbitSpikeSlabSampler(ProbitRegressionModel *model,
                          Ptr<MvnBase> prior,
                          Ptr<VariableSelectionPrior> vspri,
-                         bool check_initial_condition = true);
-  virtual double logpri()const;
-  virtual void draw();
+                         bool check_initial_condition = true,
+                         RNG &seeding_rng = GlobalRng::rng);
+  double logpri() const override;
+  void draw() override;
   void limit_model_selection(uint n);
-  void supress_model_selection();
+  void suppress_model_selection();
   void allow_model_selection();
   uint max_nflips()const;
 
   void draw_gamma();
-  virtual void draw_beta();
+  void draw_beta() override;
  private:
   bool keep_flip(double logp_new, double logp_old)const;
   double log_model_prob(const Selector &inc);
@@ -46,11 +47,11 @@ class ProbitSpikeSlabSampler : public ProbitRegressionSampler{
   Ptr<MvnBase> beta_prior_;
   Ptr<VariableSelectionPrior> gamma_prior_;
 
-  Spd Ominv_;
-  Spd iV_tilde_;
+  SpdMatrix Ominv_;
+  SpdMatrix iV_tilde_;
   uint max_nflips_;
   bool allow_selection_;
-  Vec beta_, wsp_;
+  Vector beta_, wsp_;
 };
 
 

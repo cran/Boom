@@ -59,31 +59,31 @@ namespace BOOM {
     //   time_zero: The date at t = 0, where t is an integer number of
     //     days.
     RandomWalkHolidayStateModel(Holiday *holiday, const Date &time_zero);
-    virtual RandomWalkHolidayStateModel * clone()const;
-    virtual void observe_state(const ConstVectorView then,
+    RandomWalkHolidayStateModel * clone() const override;
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
+                               int time_now) override;
 
-    virtual uint state_dimension()const;
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    uint state_dimension()const override;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
-    virtual SparseVector observation_matrix(int t)const;
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    SparseVector observation_matrix(int t)const override;
+    Vector initial_state_mean()const override;
+    SpdMatrix initial_state_variance()const override;
 
-    void set_initial_state_mean(const Vec &v);
-    void set_initial_state_variance(const Spd &Sigma);
+    void set_initial_state_mean(const Vector &v);
+    void set_initial_state_variance(const SpdMatrix &Sigma);
     void set_time_zero(const Date &time_zero);
 
-    virtual void set_sigsq(double sigsq);
+    void set_sigsq(double sigsq) override;
    private:
     // TODO(stevescott): Make this a unique_ptr once available.
     boost::shared_ptr<Holiday> holiday_;
     Date time_zero_;
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
+    Vector initial_state_mean_;
+    SpdMatrix initial_state_variance_;
     Ptr<IdentityMatrix> identity_transition_matrix_;
     Ptr<ZeroMatrix> zero_state_variance_matrix_;
     std::vector<Ptr<SingleSparseDiagonalElementMatrix> > active_state_variance_matrix_;

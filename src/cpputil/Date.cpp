@@ -49,7 +49,7 @@ namespace BOOM{
   {
     time_t time_value;
     time(&time_value);
-    time_value += local_time_zone_ * seconds_in_an_hour_;
+    time_value += local_time_zone_gmt_offset_minutes_ * 60;
     long days = time_value / seconds_in_a_day_;
     set(days);
   }
@@ -367,7 +367,7 @@ namespace BOOM{
 
   time_t Date::to_time_t()const{
     time_t ans = days_after_origin_ * seconds_in_a_day_
-        + local_time_zone_ * seconds_in_an_hour_;
+        + local_time_zone_gmt_offset_minutes_ * 60;
     return ans;
   }
 
@@ -471,24 +471,31 @@ namespace BOOM{
   int Date::compute_local_time_zone(){
     time_t now;
     time(&now);
-    int ans = localtime(&now)->tm_hour - gmtime(&now)->tm_hour;
-    if (ans < -12) {
-      ans += 24;
-    } else if (ans > 12) {
-      ans -= 24;
+    struct tm local_time = *localtime(&now);
+    int local_minutes_after_midnight =
+        local_time.tm_hour * 60 + local_time.tm_min;
+
+    struct tm standard_time = *gmtime(&now);
+    int standard_minutes_after_midnight =
+        standard_time.tm_hour * 60 + standard_time.tm_min;
+    int minutes = local_minutes_after_midnight
+        - standard_minutes_after_midnight;
+
+    if (minutes < -12 * 60) {
+      minutes += 24 * 60;
+    } else if (minutes > 12 * 60) {
+      minutes -= 24 * 60;
     }
-#ifndef _WIN32
-    assert(ans == localtime(&now)->tm_gmtoff / seconds_in_an_hour_);
-#endif
-    return ans;
+    return minutes;
   }
 
-  int Date::local_time_zone(){return local_time_zone_;}
-  void Date::set_local_time_zone(int tz){
-    local_time_zone_ = tz;
+  int Date::local_time_zone(){return local_time_zone_gmt_offset_minutes_;}
+  void Date::set_local_time_zone(int time_zone_offset_in_minutes){
+    local_time_zone_gmt_offset_minutes_ = time_zone_offset_in_minutes;
   }
 
-  int Date::local_time_zone_(Date::compute_local_time_zone());
+  int Date::local_time_zone_gmt_offset_minutes_(
+      Date::compute_local_time_zone());
   Date::print_order Date::po(mdy);
   Date::date_format Date::df(slashes);
   calendar_format Date::month_format(Abbreviations);

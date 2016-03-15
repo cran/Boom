@@ -30,14 +30,14 @@ namespace BOOM{
       : public NullParamPolicy,
         public IID_DataPolicy<SpdParams>,
         public PriorPolicy,
-        public CorrModel
+        public CorrelationModel
   {
    public:
     MarginallyUniformCorrelationModel(uint dim);
-    virtual MarginallyUniformCorrelationModel * clone()const;
+    MarginallyUniformCorrelationModel * clone() const override;
 
     virtual double pdf(Ptr<Data>, bool logscale)const;
-    virtual double logp(const Corr &)const;
+    double logp(const Corr &)const override;
     uint dim()const;
     Corr sim()const;
    private:

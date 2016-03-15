@@ -29,6 +29,8 @@
 
 #include <Models/CategoricalData.hpp>
 
+#include <stats/DataTable.hpp>
+
 //======================================================================
 // Note that the functions listed here throw exceptions.  Code that
 // uses them should be wrapped in a try-block where the catch
@@ -153,9 +155,14 @@ namespace BOOM{
   Matrix ToBoomMatrix(SEXP r_matrix);
   ConstSubMatrix ToBoomMatrixView(SEXP r_matrix);
 
+  // If 'r_data_frame' is an R data frame object, then it will be
+  // converted into a BOOM::DataTable.  Otherwise an exception will be
+  // thrown.  The return value is a copy, not a reference.
+  DataTable ToBoomDataTable(SEXP r_data_frame);
+
   // If 'my_matrix' is an R matrix, it is converted to a BOOM::Spd.  If
   // the conversion fails then an exception will be thrown.
-  Spd ToBoomSpd(SEXP my_matrix);
+  SpdMatrix ToBoomSpdMatrix(SEXP my_matrix);
 
   // If 'my_vector' is an R logical vector, then it is converted to a
   // std::vector<bool>.  Otherwise an exception will be thrown.
@@ -209,6 +216,9 @@ namespace BOOM{
     const std::vector<std::string> labels() const {
       return levels_->labels();
     }
+
+    // Allocates and returns a vector of categorical data objects.
+    std::vector<Ptr<CategoricalData> > vector_of_observations() const;
 
    private:
     std::vector<int> values_;

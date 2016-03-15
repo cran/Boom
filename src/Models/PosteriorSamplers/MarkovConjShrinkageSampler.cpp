@@ -23,30 +23,36 @@
 namespace BOOM{
 typedef MarkovConjShrinkageSampler MCSS;
 
-MCSS::MarkovConjShrinkageSampler(uint dim)
-  : pri_(new ProductDirichletModel(dim))
+MCSS::MarkovConjShrinkageSampler(uint dim, RNG &seeding_rng)
+  : PosteriorSampler(seeding_rng),
+    pri_(new ProductDirichletModel(dim))
 {}
 
-MCSS::MarkovConjShrinkageSampler(const Mat & Nu)
-  : pri_(new ProductDirichletModel(Nu))
+MCSS::MarkovConjShrinkageSampler(const Matrix & Nu, RNG &seeding_rng)
+  : PosteriorSampler(seeding_rng),
+    pri_(new ProductDirichletModel(Nu))
 {}
 
-MCSS::MarkovConjShrinkageSampler(const Mat & Nu, const Vec & nu)
-    : pri_(new ProductDirichletModel(Nu)),
+MCSS::MarkovConjShrinkageSampler(const Matrix & Nu, const Vector & nu,
+                                 RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      pri_(new ProductDirichletModel(Nu)),
       ipri_(new DirichletModel(nu))
 {}
 
-MCSS::MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu)
-  : pri_(Nu)
+MCSS::MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu,
+                                 RNG &seeding_rng)
+  : PosteriorSampler(seeding_rng),
+    pri_(Nu)
 {}
 
 MCSS::MarkovConjShrinkageSampler(Ptr<ProductDirichletModel> Nu,
-                                 Ptr<DirichletModel> nu)
-    : pri_(Nu),
+                                 Ptr<DirichletModel> nu,
+                                 RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      pri_(Nu),
       ipri_(nu)
 {}
-
-MCSS * MCSS::clone()const{return new MCSS(*this);}
 
 void MCSS::draw(){
   pri_->clear_data();
@@ -55,16 +61,16 @@ void MCSS::draw(){
   MarkovModel *m;
   for(uint i=0; i<Nmodels(); ++i){
     m=models_[i];
-    Mat N = pri_->Nu() + m->suf()->trans();
-    Mat Q(N);
+    Matrix N = pri_->Nu() + m->suf()->trans();
+    Matrix Q(N);
     for(uint s=0; s<dim(); ++s)
       Q.row(s) = rdirichlet_mt(rng(), N.row(s));
     m->set_Q(Q);
     pri_->add_data(Ptr<MatrixData>(m->Q_prm()));
 
     if(!!ipri_){
-      Vec n = ipri_->nu() + m->suf()->init();
-      Vec pi0 = rdirichlet_mt(rng(), n);
+      Vector n = ipri_->nu() + m->suf()->init();
+      Vector pi0 = rdirichlet_mt(rng(), n);
       m->set_pi0(pi0);
       ipri_->add_data(Ptr<VectorData>(m->Pi0_prm()));
     }
@@ -96,9 +102,9 @@ void MCSS::check_dim(uint d){
     err << "Attempt to add a Markov Model of dimension " << d
         << " to a MarkovConjShrinkageSampler of dimension " << dim()
         << "." << endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error(err.str());
   }
-  Mat Nu(d,d,1.0);
+  Matrix Nu(d,d,1.0);
   pri_->set_Nu(Nu);
 }
 

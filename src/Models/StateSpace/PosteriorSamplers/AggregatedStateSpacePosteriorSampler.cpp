@@ -22,8 +22,10 @@ namespace BOOM{
   typedef AggregatedStateSpacePosteriorSampler ASSPS;
 
   ASSPS::AggregatedStateSpacePosteriorSampler(
-      AggregatedStateSpaceRegression *model)
-      : m_(model)
+      AggregatedStateSpaceRegression *model,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model)
   {}
 
   void ASSPS::draw(){

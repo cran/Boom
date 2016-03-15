@@ -27,20 +27,25 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    MultinomialDirichletSampler(MultinomialModel *mod, const Vec & nu);
+    MultinomialDirichletSampler(MultinomialModel *mod, const Vector & nu,
+                                RNG &seeding_rng = GlobalRng::rng);
 
-    MultinomialDirichletSampler(MultinomialModel *mod, Ptr<DirichletModel>);
+    MultinomialDirichletSampler(MultinomialModel *mod, Ptr<DirichletModel>,
+                                RNG &seeding_rng = GlobalRng::rng);
 
     MultinomialDirichletSampler(const MultinomialDirichletSampler &rhs);
     MultinomialDirichletSampler * clone()const;
 
-    void draw();
-    double logpri()const;
-    void find_posterior_mode();
+    void draw() override;
+    double logpri() const override;
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
   private:
     MultinomialModel *mod_;
     Ptr<DirichletModel> pri_;
   };
 
-}
+} // namespace BOOM
 #endif// BOOM_MULTINOMIAL_DIRICHLET_SAMPLER_HPP

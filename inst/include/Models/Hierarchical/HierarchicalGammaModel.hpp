@@ -31,10 +31,10 @@ namespace BOOM {
   class HierarchicalGammaData : public Data {
    public:
     HierarchicalGammaData(const GammaSuf &suf) : suf_(suf){}
-    virtual HierarchicalGammaData * clone() const {
+    HierarchicalGammaData * clone() const override {
       return new HierarchicalGammaData(*this);
     }
-    virtual ostream &display(ostream &out) const {
+    ostream &display(ostream &out) const override {
       return out << suf_;
     }
     const GammaSuf &suf()const {return suf_;}
@@ -53,19 +53,19 @@ namespace BOOM {
         const std::vector<double> &sum_of_logs_of_positives_per_group);
 
     HierarchicalGammaModel(const HierarchicalGammaModel &rhs);
-    virtual HierarchicalGammaModel * clone()const;
+    HierarchicalGammaModel * clone() const override;
 
-    virtual void clear_methods();
+    void clear_methods();
 
     // Removes all data_level_models and their associated parameters
     // and data.
-    virtual void clear_data();
+    void clear_data() override;
 
     // Adds the data_level_models from rhs to this.
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
+    void combine_data(const Model &rhs, bool just_suf = true) override;
 
     // Creates a new data_level_model with data assigned.
-    virtual void add_data(Ptr<Data>);
+    void add_data(Ptr<Data>) override;
 
     // Returns the number of data_level_models managed by this model.
     int number_of_groups()const;

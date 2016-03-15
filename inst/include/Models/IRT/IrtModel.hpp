@@ -38,21 +38,21 @@ namespace BOOM{
         public PriorPolicy
     {
     public:
-      typedef std::vector<string> StringVec;
+      typedef std::vector<string> StringVector;
       typedef Ptr<SubjectPrior> PriPtr;
       enum ModelTypeName{MultiSubscaleLogitCut};
 
       IrtModel();
       IrtModel(uint Nsub);
-      IrtModel(const StringVec &Subscale_Names);
+      IrtModel(const StringVector &Subscale_Names);
       IrtModel(const IrtModel &rhs);
-      IrtModel * clone()const;
+      IrtModel * clone()const override;
 
       virtual double pdf(Ptr<Data> dp, bool logsc)const;
       virtual double pdf(Ptr<Subject> dp, bool logsc)const;
 
-      void set_subscale_names(const StringVec &);
-      const StringVec & subscale_names();
+      void set_subscale_names(const StringVector &);
+      const StringVector & subscale_names();
       ostream & print_subscales(ostream &, bool nl=true, bool decorate=true);
 
       uint nscales()const; // number of subscales
@@ -83,12 +83,12 @@ namespace BOOM{
       void item_report(const string &fname)const;
     private:
       // see IRT.hpp for types
-      StringVec subscale_names_;
+      StringVector subscale_names_;
       SubjectSet subjects_;
       ItemSet items;
 
       uint theta_freq, item_freq, R_freq, niter;
-      bool theta_supressed;
+      bool theta_suppressed;
       std::vector<Ptr<Subject> > subject_subset;
 
       PriPtr subject_prior_;

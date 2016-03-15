@@ -48,11 +48,17 @@ namespace BOOM{
   void SCM::set_nu(double nu){Nu_prm()->set(nu);}
 
   // probability calculations
-  double SCM::Loglike(const Vector &nu_vector, Vector &g, Matrix &h, uint nd) const {
+  double SCM::log_likelihood(double nu) const {
+    Vector nu_vector(1, nu);
+    Vector g;
+    Matrix h;
+    return Loglike(nu_vector, g, h, 0);
+  }
 
-    // loglike is a function of nu, derivatives are with respect to
-    // nu.  however the model is w~Ga(nu/2, nu/2)
-
+  double SCM::Loglike(const Vector &nu_vector, Vector &g,
+                      Matrix &h, uint nd) const {
+    // Log likelihood is a function of nu, and its derivatives are
+    // with respect to nu.  however the model is w~Ga(nu/2, nu/2)
     double n = suf()->n();
     double sum =suf()->sum();
     double sumlog = suf()->sumlog();
@@ -61,8 +67,8 @@ namespace BOOM{
     if(nu <=0){
       double ans = negative_infinity();
       if(nd>0){
-	g[0] = -nu;
-	if(nd>1) h(0,0) = -1;
+        g[0] = -nu;
+        if(nd>1) h(0,0) = -1;
       }
       return ans;
     }
@@ -73,8 +79,8 @@ namespace BOOM{
       double halfn = n/2.0;
       g.front()=  halfn*(lognu2 + 1 - digamma(nu2)) + .5*(sum - sumlog);
       if(nd>1){
- 	uint lo = 0;
- 	h(lo,lo) = halfn*(1.0/nu - .5*trigamma(nu2));}}
+        uint lo = 0;
+        h(lo,lo) = halfn*(1.0/nu - .5*trigamma(nu2));}}
     return ans;}
 
 }  // namespace BOOM

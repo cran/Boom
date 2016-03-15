@@ -32,23 +32,28 @@ namespace BOOM{
     AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                Ptr<ProductDirichletModel> Q,
                                Ptr<DirichletModel> pi0,
-                               std::vector<uint> absorbing_states);
+                               std::vector<uint> absorbing_states,
+                               RNG &seeding_rng = GlobalRng::rng);
     AbsorbingMarkovConjSampler(MarkovModel * Mod,
                                Ptr<ProductDirichletModel> Q,
-                               std::vector<uint> absorbing_states);
+                               std::vector<uint> absorbing_states,
+                               RNG &seeding_rng = GlobalRng::rng);
     AbsorbingMarkovConjSampler(MarkovModel * Mod,
-                               const Mat & Nu,
-                               std::vector<uint> absorbing_states);
+                               const Matrix & Nu,
+                               std::vector<uint> absorbing_states,
+                               RNG &seeding_rng = GlobalRng::rng);
     AbsorbingMarkovConjSampler(MarkovModel * Mod,
-                               const Mat & Nu,
-                               const Vec & nu,
-                               std::vector<uint> absorbing_states);
+                               const Matrix & Nu,
+                               const Vector & nu,
+                               std::vector<uint> absorbing_states,
+                               RNG &seeding_rng = GlobalRng::rng);
 
-    virtual AbsorbingMarkovConjSampler * clone()const;
-
-    virtual double logpri()const;
-    virtual  void draw();
-    virtual void find_posterior_mode();
+    double logpri() const override;
+    void draw() override;
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
 
   private:
     MarkovModel * mod_;
@@ -56,7 +61,6 @@ namespace BOOM{
     Selector trans_;
   };
 
-
-}
+}  // namespace BOOM
 
 #endif// BOOM_ABSORBING_MARKOV_CONJUGATE_SAMPLER_HPP

@@ -36,12 +36,14 @@ namespace BOOM {
       Ptr<GammaModelBase> siginv_prior,
       const Vector &prior_inclusion_probabilities,
       double complete_data_information_matrix_fudge_factor,
-      double fallback_probability)
+      double fallback_probability,
+      RNG &seeding_rng)
       : BregVsSampler(model,
                       beta_prior,
                       siginv_prior,
                       new VariableSelectionPrior(
-                          prior_inclusion_probabilities)),
+                          prior_inclusion_probabilities),
+                      seeding_rng),
         model_(model),
         beta_prior_(beta_prior),
         siginv_prior_(siginv_prior),
@@ -253,7 +255,7 @@ namespace BOOM {
     }
     const RegSuf &suf(*(model_->suf()));
 
-    Spd posterior_information = suf.xtx(inclusion_indicators);
+    SpdMatrix posterior_information = suf.xtx(inclusion_indicators);
     Vector unscaled_prior_information = 1.0 / inclusion_indicators.select(
         beta_prior_->unscaled_variance_diagonal());
     posterior_information.diag() += unscaled_prior_information;
@@ -352,7 +354,7 @@ namespace BOOM {
     }
 
     // Set xtx_missing to the scaled version of D - centered_xtx.
-    Spd xtx_missing = -centered_xtx;
+    SpdMatrix xtx_missing = -centered_xtx;
     xtx_missing.diag() += complete_data_xtx_diagonal_;
     detect_numerical_zeros(xtx_missing);
 

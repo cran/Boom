@@ -70,10 +70,10 @@ namespace BOOM {
                      const std::vector<double> &exposures,
                      const Matrix &predictors);
     PoissonBartModel(const PoissonBartModel &rhs);
-    virtual PoissonBartModel * clone()const;
-    virtual int sample_size()const;
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<PoissonRegressionData>);
+    PoissonBartModel * clone() const override;
+    int sample_size()const override;
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<PoissonRegressionData>) override;
 
    private:
     // Sets the model to predict log_lambda for all predictor values.

@@ -25,18 +25,20 @@
 namespace BOOM{
   typedef MvnCorrelationSampler CS;
   CS::MvnCorrelationSampler(MvnModel *Mod,
-			    Ptr<CorrModel> Pri,
-			    bool refresh_suf)
-      : mod_(Mod),
+                            Ptr<CorrelationModel> Pri,
+                            bool refresh_suf,
+                            RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        mod_(Mod),
         pri_(Pri)
   {}
   //----------------------------------------------------------------------
   void CS::draw(){
-    const Vec & mu(mod_->mu());
+    const Vector & mu(mod_->mu());
     int n = mu.size();
     Sumsq_ = mod_->suf()->center_sumsq(mu);
     df_ = mod_->suf()->n();
-    Vec sigma = sqrt(diag(mod_->Sigma()));
+    Vector sigma = sqrt(diag(mod_->Sigma()));
     R_ = var2cor(mod_->Sigma());
     for(int i = 0; i < n; ++i){
       Sumsq_.row(i)/=sigma[i];
@@ -114,7 +116,7 @@ namespace BOOM{
         return;
       }
     }
-    throw_exception<std::runtime_error>("never get here");
+    report_error("never get here");
   }
 
   void CS::check_limits(double oldr, double eps){

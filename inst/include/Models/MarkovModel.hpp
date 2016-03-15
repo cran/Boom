@@ -28,7 +28,7 @@
 #include <Models/CategoricalData.hpp>
 
 #include <Models/Policies/ParamPolicy_2.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 
 #include <Models/TimeSeries/MarkovLink.hpp>
 #include <Models/TimeSeries/TimeSeries.hpp>
@@ -49,8 +49,8 @@ namespace BOOM{
   public:
     //------- onstructors, destructors, copy, = ==
     MarkovData(uint val, uint Nlevels);
-    MarkovData(uint val, pKey labs);
-    MarkovData(const string &lab, pKey labs, bool grow=false);
+    MarkovData(uint val, Ptr<CatKey> labs);
+    MarkovData(const string &lab, Ptr<CatKey> labs, bool grow=false);
 
     MarkovData(uint val, Ptr<MarkovData> last);
     MarkovData(const string &lab, Ptr<MarkovData> last, bool grow=false);
@@ -58,7 +58,7 @@ namespace BOOM{
     MarkovData(const MarkovData &, bool copy_links=false);
 
     virtual MarkovData * create()const;  // does not copy links
-    virtual MarkovData * clone()const;   // copies links
+    MarkovData * clone() const override;   // copies links
 
     MarkovData * prev()const;
     MarkovData * next()const;
@@ -68,7 +68,7 @@ namespace BOOM{
     void set_prev(Ptr<MarkovData > p);
     void set_next(Ptr<MarkovData > n);
 
-    ostream & display(ostream & )const;
+    ostream & display(ostream & )const override;
     //    istream & read(istream &in);
   };
   //=====================================================================
@@ -87,32 +87,32 @@ namespace BOOM{
 
     MarkovSuf(uint S);
     MarkovSuf(const MarkovSuf &sf);
-    MarkovSuf *clone() const;
+    MarkovSuf *clone() const override;
 
     uint state_space_size()const{ return trans().nrow() ;}
     void resize(uint p);
-    void clear(){ trans_=0.0; init_=0.0; }
-    void Update(const MarkovData &);
+    void clear() override{ trans_=0.0; init_=0.0; }
+    void Update(const MarkovData &) override;
     void add_mixture_data(Ptr<MarkovData>, double prob);
-    void add_transition_distribution(const Mat &P);
-    void add_initial_distribution(const Vec &pi);
+    void add_transition_distribution(const Matrix &P);
+    void add_initial_distribution(const Vector &pi);
     void add_transition(uint from, uint to);
     void add_initial_value(uint val);
-    const Mat & trans()const{return trans_;}
-    const Vec & init()const{return init_;}
-    std::ostream &print(std::ostream &)const;
+    const Matrix & trans()const{return trans_;}
+    const Vector & init()const{return init_;}
+    std::ostream &print(std::ostream &)const override;
     void combine(Ptr<MarkovSuf>);
     void combine(const MarkovSuf &);
-    MarkovSuf * abstract_combine(Sufstat *s);
+    MarkovSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
   private:
-    Mat trans_; // transition counts
-    Vec init_; // initial count, typically one 1 and rest 0's
+    Matrix trans_; // transition counts
+    Vector init_; // initial count, typically one 1 and rest 0's
   };
   //=====================================================================
   std::ostream & operator<<(std::ostream &out, Ptr<MarkovSuf> sf);
@@ -123,7 +123,7 @@ namespace BOOM{
   public:
     typedef std::vector<Ptr<VectorParams> > Rows;
     MatrixRowsObserver(Rows&);
-    void operator()(const Mat &);
+    void operator()(const Matrix &);
   private:
     Rows  & rows;
   };
@@ -131,7 +131,7 @@ namespace BOOM{
   class StationaryDistObserver{
   public:
     StationaryDistObserver(Ptr<VectorParams>);
-    void operator()(const Mat &);
+    void operator()(const Matrix &);
   private:
     Ptr<VectorParams> stat;
   };
@@ -139,10 +139,10 @@ namespace BOOM{
   class RowObserver{
   public:
     RowObserver(Ptr<MatrixParams> M, uint I);
-    void operator()(const Vec &v);
+    void operator()(const Vector &v);
   private:
     Ptr<MatrixParams> mp;
-    Mat m;
+    Matrix m;
     uint i;
   };
 
@@ -152,14 +152,14 @@ namespace BOOM{
      : public MatrixParams{
   public:
     TransitionProbabilityMatrix(uint S);
-    TransitionProbabilityMatrix(const Mat &);
+    TransitionProbabilityMatrix(const Matrix &);
     TransitionProbabilityMatrix(const TransitionProbabilityMatrix &);
-    TransitionProbabilityMatrix * clone()const;
+    TransitionProbabilityMatrix * clone()const override;
 
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v, bool minimal=true);
-    virtual void set(const Mat &m, bool signal=true);
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v, bool minimal=true) override;
+    void set(const Matrix &m, bool signal=true) override;
 
     void add_observer(Ptr<VectorParams>)const;
     void delete_observer(Ptr<VectorParams>)const;
@@ -175,59 +175,57 @@ namespace BOOM{
   class MarkovConjSampler;
 
   class MarkovModel
-    : public ParamPolicy_2<TransitionProbabilityMatrix,VectorParams>,
+    : public ParamPolicy_2<TransitionProbabilityMatrix, VectorParams>,
       public TimeSeriesSufstatDataPolicy<MarkovData, MarkovDataSeries,
                                          MarkovSuf>,
-      public ConjugatePriorPolicy<MarkovConjSampler>,
+      public PriorPolicy,
       public LoglikeModel,
       public EmMixtureComponent
   {
-
   public:
     typedef MarkovData DataPointType;
     typedef MarkovDataSeries DataSeriesType;
     typedef TransitionProbabilityMatrix TPM;
 
     MarkovModel(uint S);
-    MarkovModel(const Mat &Q);
-    MarkovModel(const Mat & Q, const Vec & pi0);
+    MarkovModel(const Matrix &Q);
+    MarkovModel(const Matrix & Q, const Vector & pi0);
     MarkovModel(const std::vector<uint> & );
     MarkovModel(const std::vector<string> & );
 
     MarkovModel(const MarkovModel &rhs);
-    virtual MarkovModel * clone()const;
+    MarkovModel * clone() const override;
 
-    void fix_pi0(const Vec &Pi0);
+    void fix_pi0(const Vector &Pi0);
     void fix_pi0_stationary();
     void fix_pi0_uniform();
     void free_pi0();
     bool pi0_fixed()const;
 
     double pdf(Ptr<Data> dp, bool logscale) const;
-    double pdf(const Data * dp, bool logscale) const;
+    double pdf(const Data * dp, bool logscale) const override;
     double pdf(Ptr<DataPointType> dp, bool logscale) const;
     double pdf(Ptr<DataSeriesType> dp, bool logscale) const;
     double pdf(const DataPointType &dat, bool logscale) const;
     double pdf(const DataSeriesType &dat, bool logscale) const;
 
-    virtual void add_mixture_data(Ptr<Data>, double prob);
+    void add_mixture_data(Ptr<Data>, double prob) override;
 
     uint state_space_size()const;
 
     Ptr<TPM> Q_prm();
     const Ptr<TPM> Q_prm()const;
-    virtual const Mat &Q()const;
-    virtual void set_Q(const Mat &Q)const;
+    virtual const Matrix &Q()const;
+    virtual void set_Q(const Matrix &Q)const;
     double Q(uint, uint)const;
 
     Ptr<VectorParams> Pi0_prm();
     const Ptr<VectorParams> Pi0_prm()const;
-    virtual const Vec & pi0()const;
-    void set_pi0(const Vec &pi0);
+    virtual const Vector & pi0()const;
+    void set_pi0(const Vector &pi0);
     double pi0(int)const;
 
-    void mle();
-    virtual void find_posterior_mode();
+    void mle() override;
     void set_conjugate_prior(Ptr<ProductDirichletModel>);
     void set_conjugate_prior(Ptr<ProductDirichletModel>, Ptr<DirichletModel>);
     void set_conjugate_prior(Ptr<MarkovConjSampler>);
@@ -236,8 +234,8 @@ namespace BOOM{
     // state space size.  The final S-1 are the initial distribution.
     // The first S * (S-1) elements are the first (S-1) columns of the
     // transition probability matrix.  The final
-    double loglike(const Vector &serialized_params)const;
-    Vec stat_dist()const;
+    double loglike(const Vector &serialized_params)const override;
+    Vector stat_dist()const;
 
   protected:
     virtual void resize(uint S);

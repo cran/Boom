@@ -31,7 +31,8 @@ class DynamicRegressionPosteriorSampler : public PosteriorSampler {
   // The prior distribution for siginv_prior should be set before
   // passing it to this constructor.
   DynamicRegressionPosteriorSampler(DynamicRegressionStateModel *model,
-                                    Ptr<GammaModel> siginv_prior);
+                                    Ptr<GammaModel> siginv_prior,
+                                    RNG &seeding_rng = GlobalRng::rng);
 
   // By default the class will take control of siginv_prior, updating
   // it when draw() is called, and adding its contribution to
@@ -43,12 +44,12 @@ class DynamicRegressionPosteriorSampler : public PosteriorSampler {
   // logpri() returns the prior with respect to sigma[i].  It does not
   // return the hyperprior of siginv_prior.  A separate call to
   // siginv_prior->logpri() will return that.
-  virtual double logpri()const;
+  double logpri() const override;
 
   // draw() will update each sigma[i] and update the sufficient
   // statistics for siginv_prior_.  You still need to call
   // siginv_prior_->sample_posterior().
-  virtual void draw();
+  void draw() override;
 
  private:
   DynamicRegressionStateModel *model_;

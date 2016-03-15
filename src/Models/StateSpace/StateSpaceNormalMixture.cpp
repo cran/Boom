@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2008 Steven L. Scott
+  Copyright (C) 2005-2015 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -16,20 +16,23 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#ifndef BOOM_SCALAR_KALMAN_FILTER_HPP
-#define BOOM_SCALAR_KALMAN_FILTER_HPP
+#include <Models/StateSpace/StateSpaceNormalMixture.hpp>
 
-namespace BOOM{
-  class ScalarKalmanFilter
-    : private RefCounted
-  {
-  public:
-    double fwd(const TimeSeries<DoubleData> &);
-    void bkwd_sampling(const TimeSeries<DoubleData> &);
-  private:
-    Ptr<ScalarHomogeneousStateSpaceModel> m_;
-    std::vector<ScalarKalmanStorage> f_;
-  };
-}
+namespace BOOM {
 
-#endif // BOOM_SCALAR_KALMAN_FILTER_HPP
+  StateSpaceNormalMixture::StateSpaceNormalMixture(bool has_regression)
+      : has_regression_(has_regression)
+  {}
+
+  Vector StateSpaceNormalMixture::regression_contribution() const {
+    if (!has_regression_) {
+      return Vector();
+    }
+    Vector ans(time_dimension());
+    for (int i = 0; i < ans.size(); ++i) {
+      ans[i] = observation_model()->predict(data(i).x());
+    }
+    return ans;
+  }
+
+}  // namespace BOOM

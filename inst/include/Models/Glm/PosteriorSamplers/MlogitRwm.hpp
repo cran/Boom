@@ -26,17 +26,19 @@
 namespace BOOM{
   class MlogitRwm : public PosteriorSampler{
   public:
-    MlogitRwm(MultinomialLogitModel *mlm, Ptr<MvnBase> pri);
+    MlogitRwm(MultinomialLogitModel *mlm, Ptr<MvnBase> pri,
+        RNG &seeding_rng = GlobalRng::rng);
     MlogitRwm(MultinomialLogitModel *mlm,
-	      const Vec &mu,
-	      const Spd & Ominv);
-    virtual void draw();
-    virtual double logpri()const;
+          const Vector &mu,
+          const SpdMatrix & Ominv,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
   private:
     MultinomialLogitModel *mlm_;
     Ptr<MvnBase> pri_;
-    Vec mu,g, b, bstar;
-    Spd H, ivar;
+    Vector mu,g, b, bstar;
+    SpdMatrix H, ivar;
   };
 
 }

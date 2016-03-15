@@ -25,6 +25,8 @@
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
+#include <Models/ScaledChisqModel.hpp>
+#include <Models/WeightedMvnModel.hpp>
 #include <distributions/rng.hpp>
 
 namespace BOOM{
@@ -33,7 +35,6 @@ namespace BOOM{
 
   class MvtModel
     : public CompositeParamPolicy,
-      //ParamPolicy_3<VectorParams, SpdParams, UnivParams>,
       public IID_DataPolicy<VectorData>,
       public PriorPolicy,
       public LatentVariableModel,
@@ -42,12 +43,12 @@ namespace BOOM{
   {
   public:
     MvtModel(uint p, double mu=0.0, double sig=1.0, double nu =30.0);
-    MvtModel(const Vec &mean, const Spd &Var, double Nu);
+    MvtModel(const Vector &mean, const SpdMatrix &Var, double Nu);
     MvtModel(const MvtModel &m);
 
-    MvtModel *clone() const;
+    MvtModel *clone() const override;
 
-    void initialize_params();
+    void initialize_params() override;
 
     Ptr<VectorParams> Mu_prm();
     Ptr<SpdParams> Sigma_prm();
@@ -58,34 +59,36 @@ namespace BOOM{
     const Ptr<UnivParams> Nu_prm()const;
 
     int dim()const;
-    const Vec &mu()const;
-    const Spd &Sigma()const;
-    const Spd &siginv()const;
-    double ldsi()const;
+    const Vector &mu()const override;
+    const SpdMatrix &Sigma()const override;
+    const SpdMatrix &siginv()const override;
+    const Matrix &Sigma_chol()const;
+    double ldsi()const override;
     double nu() const;
 
-    void set_mu(const Vec &);
-    void set_Sigma(const Spd &);
-    void set_siginv(const Spd &);
-    void set_S_Rchol(const Vec &S, const Mat &L);
+    void set_mu(const Vector &) override;
+    void set_Sigma(const SpdMatrix &) override;
+    void set_siginv(const SpdMatrix &) override;
+    void set_S_Rchol(const Vector &S, const Matrix &L) override;
     void set_nu(double);
 
-    double logp(const Vec &x)const;
+    double logp(const Vector &x)const override;
 
     double pdf(Ptr<VectorData>, bool logscale)const;
     double pdf(dPtr dp, bool logscale) const;
-    double pdf(const Vec &x, bool logscale) const;
+    double pdf(const Vector &x, bool logscale) const;
 
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<VectorData>);
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<VectorData>) override;
 
-    void mle();  // ECME
-    virtual double loglike(const Vector &mu_siginv_triangle_nu)const;
-    virtual void impute_latent_data(RNG &rng);
+    void mle() override;  // ECME
+    double loglike(const Vector &mu_siginv_triangle_nu)const override;
+    void impute_latent_data(RNG &rng) override;
     void Estep();  // E step for EM/ECME
 
     virtual double complete_data_loglike()const;
-    Vec sim()const;
+    Vector sim()const override;
+    Vector sim(RNG &rng)const;
   private:
     void Impute(bool sample, RNG &rng = GlobalRng::rng);
     Ptr<WeightedMvnModel> mvn;

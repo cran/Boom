@@ -65,21 +65,21 @@ namespace BOOM{
   ExpSuf * ExpSuf::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this, s);}
 
-  Vec ExpSuf::vectorize(bool)const{
-    Vec ans(2);
+  Vector ExpSuf::vectorize(bool)const{
+    Vector ans(2);
     ans[0] = sum_;
     ans[1] = n_;
     return ans;
   }
 
-  Vec::const_iterator ExpSuf::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator ExpSuf::unvectorize(Vector::const_iterator &v, bool){
     sum_ = *v; ++v;
     n_ = *v;   ++v;
     return v;
   }
 
-  Vec::const_iterator ExpSuf::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator ExpSuf::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -92,20 +92,20 @@ namespace BOOM{
   EM::ExponentialModel()
     : ParamPolicy(new UnivParams(1.0)),
       DataPolicy(new ExpSuf()),
-      ConjPriorPolicy()
+      PriorPolicy()
   {}
 
   EM::ExponentialModel(double lam)
     : ParamPolicy(new UnivParams(lam)),
       DataPolicy(new ExpSuf()),
-      ConjPriorPolicy()
+      PriorPolicy()
   {}
 
   EM::ExponentialModel(const EM &rhs)
     : Model(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
-      ConjPriorPolicy(rhs),
+      PriorPolicy(rhs),
       DiffDoubleModel(rhs),
       NumOptModel(rhs),
       EmMixtureComponent(rhs)
@@ -132,10 +132,11 @@ namespace BOOM{
   }
 
   void EM::set_conjugate_prior(Ptr<ExponentialGammaSampler> pri){
-    ConjPriorPolicy::set_conjugate_prior(pri);  }
+    set_method(pri);
+  }
 
   double ExponentialModel::Loglike(const Vector &lambda_vector,
-                                   Vec &g, Mat &h, uint nd) const{
+                                   Vector &g, Matrix &h, uint nd) const{
     if (lambda_vector.size() != 1) {
       report_error("Wrong size argument.");
     }

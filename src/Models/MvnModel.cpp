@@ -40,7 +40,7 @@ namespace BOOM{
     return MvnBase::log_likelihood(mu, siginv, *suf());
   }
 
-  void MvnModel::add_raw_data(const Vec &y){
+  void MvnModel::add_raw_data(const Vector &y){
     NEW(VectorData, dp)(y);
     this->add_data(dp);
   }
@@ -55,25 +55,29 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  double MvnModel::pdf(const Vec &x, bool logscale)const{
+  double MvnModel::pdf(const Vector &x, bool logscale)const{
     double ans = logp(x);
     return logscale ? ans : exp(ans);
   }
 
-  Vec MvnModel::sim()const{
-    return rmvn(mu(), Sigma());
+  Vector MvnModel::sim()const{
+    return sim(GlobalRng::rng);
+  }
+
+  Vector MvnModel::sim(RNG &rng)const{
+    return rmvn_L_mt(rng, mu(), Sigma_chol());
   }
 
   void MvnModel::set_conjugate_prior(Ptr<MvnGivenSigma> Mu,
-				     Ptr<WishartModel> Siginv){
+                                     Ptr<WishartModel> Siginv){
     Mu->set_Sigma(Sigma_prm());
     NEW(MvnConjSampler, pri)(this, Mu,Siginv);
     set_conjugate_prior(pri);
   }
 
   void MvnModel::set_conjugate_prior(Ptr<MvnConjSampler> pri){
-    ConjPriorPolicy::set_conjugate_prior(pri); }
-
+    set_method(pri);
+  }
 
   //======================================================================
 
@@ -82,7 +86,7 @@ namespace BOOM{
       DataPolicy(new MvnSuf(p))
   {}
 
-  MvnModel::MvnModel(const Vec &mean, const Spd &Var, bool ivar) // N(mu, Var)
+  MvnModel::MvnModel(const Vector &mean, const SpdMatrix &Var, bool ivar)
     : Base(mean,Var, ivar),
       DataPolicy(new MvnSuf(mean.size()))
   {}
@@ -92,10 +96,10 @@ namespace BOOM{
       DataPolicy(new MvnSuf(mu->dim()))
   {}
 
-  MvnModel::MvnModel(const std::vector<Vec> &v)       // N(mu.hat, V.hat)
+  MvnModel::MvnModel(const std::vector<Vector> &v)
     : Base(v[0].size()),
       DataPolicy(new MvnSuf(v[0].size())),
-      ConjPriorPolicy()
+      PriorPolicy()
   {
     set_data_raw(v.begin(), v.end());
     mle();
@@ -108,7 +112,7 @@ namespace BOOM{
       Base(rhs),
       LoglikeModel(rhs),
       DataPolicy(rhs),
-      ConjPriorPolicy(rhs),
+      PriorPolicy(rhs),
       EmMixtureComponent(rhs)
   {}
 

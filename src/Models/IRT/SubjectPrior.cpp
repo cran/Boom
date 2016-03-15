@@ -68,10 +68,10 @@ namespace BOOM{
       add_data(s);
     }
 
-    Vec MSP::mean(Ptr<Subject>)const{
+    Vector MSP::mean(Ptr<Subject>)const{
       return mvn->mu();}
 
-    Spd MSP::siginv()const{
+    SpdMatrix MSP::siginv()const{
       return mvn->siginv();}
 
   }  // namespace IRT

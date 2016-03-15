@@ -39,12 +39,12 @@ namespace BOOM{
       bool sync();
     public:
       constrained_mvn_params(uint ThetaDim);
-      constrained_mvn_params(const Spd &R);
+      constrained_mvn_params(const SpdMatrix &R);
       constrained_mvn_params(const constrained_mvn_params &rhs);
       constrained_mvn_params * clone()const;
 
       constrained_mvn_params& operator=(const Corr &);
-      constrained_mvn_params & set_Rinv(const Spd & rinv);
+      constrained_mvn_params & set_Rinv(const SpdMatrix & rinv);
 
       const Corr & R()const;
       const Corr & Rinv()const;
@@ -68,15 +68,15 @@ namespace BOOM{
       //  theta[i] ~ N(0, R)
     public:
       SubjectPrior(uint ThetaDim);
-      SubjectPrior(const Spd &R);
+      SubjectPrior(const SpdMatrix &R);
       SubjectPrior(const SubjectPrior &rhs);
       SubjectPrior * clone()const;
 
       double pdf(Ptr<data>, bool logscale)const;
-      const Spd & Rinv()const;
-      const Spd & R()const;
+      const SpdMatrix & Rinv()const;
+      const SpdMatrix & R()const;
       const double & ldri()const;
-      double loglike(const Vec &x)const;
+      double loglike(const Vector &x)const;
       void draw_children_params();
       void draw_theta_slice();
       void draw_theta_MH();

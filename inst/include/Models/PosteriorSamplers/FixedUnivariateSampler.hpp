@@ -26,17 +26,19 @@ namespace BOOM{
   class FixedUnivariateSampler : public PosteriorSampler{
    public:
     FixedUnivariateSampler(Ptr<UnivParams> prm,
-                    double value)
-        : prm_(prm),
+                    double value,
+                    RNG &seeding_rng = GlobalRng::rng)
+        : PosteriorSampler(seeding_rng),
+          prm_(prm),
           value_(value)
     {}
 
-    virtual void draw() {
+    void draw() override {
       if(prm_->value() == value_) return;
       prm_->set(value_);
     }
 
-    virtual double logpri()const{
+    double logpri()const override{
       if(prm_->value() == value_) return 0;
       return BOOM::negative_infinity();
     }

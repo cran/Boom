@@ -21,12 +21,12 @@
 
 namespace BOOM{
 
-  double Negate::operator()(const Vec & x)const{ return -1*f(x);}
-  double dNegate::operator()(const Vec &x, Vec &g)const{
+  double Negate::operator()(const Vector & x)const{ return -1*f(x);}
+  double dNegate::operator()(const Vector &x, Vector &g)const{
       double ans = df(x,g);
       g*= -1;
       return -1*ans;}
-  double d2Negate::operator()(const Vec &x, Vec &g, Mat &h)const{
+  double d2Negate::operator()(const Vector &x, Vector &g, Matrix &h)const{
     double ans = d2f(x,g,h);
     g*= -1;
     h*= -1.0;

@@ -32,7 +32,7 @@ namespace BOOM{
   const double E1 =  1.7182818;  /* exp(1.0)-1.0 */
   const double big =  1.0e+35;    /*a very large number*/
 
-  double simulated_annealing(Vec & pb, Target target, int maxit,
+  double simulated_annealing(Vector & pb, Target target, int maxit,
 			     int tmax, double ti){
 
     /* Given a starting point pb[0..n-1], simulated annealing
@@ -49,9 +49,9 @@ namespace BOOM{
     //  double *p, *dp, *ptry;
 
     int n = pb.size();
-    Vec p(n);
-    Vec dp(n);
-    Vec ptry(n);
+    Vector p(n);
+    Vector dp(n);
+    Vector ptry(n);
     double yb = target(pb);
     if(!std::isfinite(yb)) yb = big;
 

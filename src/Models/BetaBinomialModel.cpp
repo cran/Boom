@@ -23,10 +23,11 @@
 #include <stats/moments.hpp>
 
 namespace BOOM {
+  using Rmath::lgammafn;
   using Rmath::trigamma;
   using Rmath::digamma;
 
-  BinomialData::BinomialData(int n, int y)
+  BinomialData::BinomialData(int64_t n, int64_t y)
       : trials_(n), successes_(y)
   {
     check_size(n, y);
@@ -57,21 +58,21 @@ namespace BOOM {
     return out;
   }
 
-  int BinomialData::trials()const{return trials_;}
-  int BinomialData::n()const{return trials_;}
-  void BinomialData::set_n(int trials){
+  int64_t BinomialData::trials()const{return trials_;}
+  int64_t BinomialData::n()const{return trials_;}
+  void BinomialData::set_n(int64_t trials){
     check_size(trials, successes_);
     trials_ = trials;
   }
 
-  int BinomialData::successes()const{return successes_;}
-  int BinomialData::y()const{return successes_;}
-  void BinomialData::set_y(int successes){
+  int64_t BinomialData::successes()const{return successes_;}
+  int64_t BinomialData::y()const{return successes_;}
+  void BinomialData::set_y(int64_t successes){
     check_size(trials_, successes);
     successes_ = successes;
   }
 
-  void BinomialData::check_size(int n, int y)const{
+  void BinomialData::check_size(int64_t n, int64_t y)const{
     if (n < 0 || y < 0) {
       ostringstream err;
       err << "Number of trials and successes must both be non-negative "
@@ -97,18 +98,20 @@ namespace BOOM {
       : ParamPolicy(new UnivParams(a),
                     new UnivParams(b)),
         DataPolicy(),
-        PriorPolicy()
+        PriorPolicy(),
+        lgamma_n_y_(0.0)
   {
     check_positive(a, "BetaBinomialModel");
     check_positive(b, "BetaBinomialModel");
   }
 
-  BetaBinomialModel::BetaBinomialModel(const std::vector<int> &trials,
-                                       const std::vector<int> &successes)
+  BetaBinomialModel::BetaBinomialModel(const BOOM::Vector &trials,
+                                       const BOOM::Vector &successes)
       : ParamPolicy(new UnivParams(1.0),
                     new UnivParams(1.0)),
         DataPolicy(),
-        PriorPolicy()
+        PriorPolicy(),
+        lgamma_n_y_(0.0)
   {
     if(trials.size() != successes.size()){
       ostringstream err;
@@ -140,11 +143,28 @@ namespace BOOM {
       : Model(rhs),
         ParamPolicy(rhs),
         DataPolicy(rhs),
-        PriorPolicy(rhs)
+        PriorPolicy(rhs),
+        lgamma_n_y_(0.0)
   {}
 
   BetaBinomialModel * BetaBinomialModel::clone()const{
     return new BetaBinomialModel(*this);}
+
+  void BetaBinomialModel::clear_data() {
+    lgamma_n_y_ = 0.0;
+    IID_DataPolicy<BinomialData>::clear_data();
+  }
+
+  void BetaBinomialModel::add_data(Ptr<Data> dp) {
+    return this->add_data(DAT(dp));
+  }
+
+  void BetaBinomialModel::add_data(Ptr<BinomialData> data) {
+    IID_DataPolicy<BinomialData>::add_data(data);
+    const int64_t n = data->n();
+    const int64_t y = data->y();
+    lgamma_n_y_ += lgammafn(n+1) - lgammafn(y+1) - lgammafn(n-y+1);
+  }
 
   double BetaBinomialModel::loglike()const{
     return loglike(a(), b());
@@ -157,7 +177,7 @@ namespace BOOM {
   }
 
   double BetaBinomialModel::Loglike(
-      const Vector &ab, Vec &g, Mat &h, uint nd)const{
+      const Vector &ab, Vector &g, Matrix &h, uint nd)const{
     if (ab.size() != 2) {
       report_error("Wrong size argument.");
     }
@@ -166,7 +186,8 @@ namespace BOOM {
     if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     const std::vector<Ptr<BinomialData> > &data(dat());
     int nobs = data.size();
-    double ans = 0;
+    double ans = nobs * (lgammafn(a+b) - lgammafn(a) - lgammafn(b)) +
+                 lgamma_n_y_;
     if (nd > 0) {
       g[0] = nobs * (digamma(a+b) - digamma(a));
       g[1] = nobs * (digamma(a+b) - digamma(b));
@@ -178,9 +199,9 @@ namespace BOOM {
     }
 
     for(int i = 0; i < nobs; ++i){
-      int y = data[i]->y();
-      int n = data[i]->n();
-      ans += logp(n, y, a, b);
+      int64_t y = data[i]->y();
+      int64_t n = data[i]->n();
+      ans -= lgammafn(n+a+b) - lgammafn(a+y) - lgammafn(b+n-y);
       if (nd > 0) {
         double psin = digamma(a + b + n);
         g[0] += digamma(a + y) - psin;
@@ -197,11 +218,11 @@ namespace BOOM {
     return ans;
   }
 
-  double BetaBinomialModel::logp(int n, int y, double a, double b)const{
+  double BetaBinomialModel::logp(int64_t n, int64_t y, double a, double b)const{
     if(a <= 0 || b <= 0) return BOOM::negative_infinity();
-    double ans = lgamma(n+1) - lgamma(y+1) - lgamma(n-y+1);
-    ans += lgamma(a+b) - lgamma(a) - lgamma(b);
-    ans -= lgamma(n+a+b) - lgamma(a+y) - lgamma(b+n-y);
+    double ans = lgammafn(n+1) - lgammafn(y+1) - lgammafn(n-y+1);
+    ans += lgammafn(a+b) - lgammafn(a) - lgammafn(b);
+    ans -= lgammafn(n+a+b) - lgammafn(a+y) - lgammafn(b+n-y);
     return ans;
   }
 
@@ -209,11 +230,12 @@ namespace BOOM {
     if(a <= 0 || b <= 0) return BOOM::negative_infinity();
     const std::vector<Ptr<BinomialData> > &data(dat());
     int nobs = data.size();
-    double ans = 0;
+    double ans = nobs * (lgammafn(a+b) - lgammafn(a) - lgammafn(b)) +
+                 lgamma_n_y_;
     for(int i = 0; i < nobs; ++i){
-      int y = data[i]->y();
-      int n = data[i]->n();
-      ans += logp(n, y, a, b);
+      int64_t y = data[i]->y();
+      int64_t n = data[i]->n();
+      ans -= lgammafn(n+a+b) - lgammafn(a+y) - lgammafn(b+n-y);
     }
     return ans;
   }
@@ -224,10 +246,10 @@ namespace BOOM {
   // exit without changing the model.
   void BetaBinomialModel::method_of_moments(){
     const std::vector<Ptr<BinomialData> > &data(dat());
-    Vec p_hat;
+    Vector p_hat;
     p_hat.reserve(data.size());
     for (int i = 0; i < data.size(); ++i) {
-      int trials = data[i]->trials();
+      int64_t trials = data[i]->trials();
       if (trials > 0) {
         double successes = data[i]->successes();
         p_hat.push_back(successes / trials);
@@ -314,6 +336,18 @@ namespace BOOM {
         << ".  Argument must be srictly positive and strictly less than 1."
         << endl;
     report_error(err.str());
+  }
+
+  std::ostream & BetaBinomialModel::print_model_summary(std::ostream &out) const {
+    using std::endl;
+    out << "Model parameters:  " << endl
+        << "a = " << a() << endl
+        << "b = " << b() << endl
+        << "Data consists of " << dat().size() << " observations: " << endl;
+    for (size_t i = 0; i < dat().size(); ++i) {
+      out << *(dat()[i]) << endl;
+    }
+    return out;
   }
 
 }   // namespace BOOM:

@@ -84,7 +84,7 @@ namespace BOOM{
       explicit Ar1CoefficientPrior(SEXP prior);
       bool force_stationary()const {return force_stationary_;}
       bool force_positive()const {return force_positive_;}
-      std::ostream & print(std::ostream &out)const;
+      std::ostream & print(std::ostream &out)const override;
 
      private:
       bool force_stationary_;
@@ -131,11 +131,11 @@ namespace BOOM{
     class DirichletPrior {
      public:
       explicit DirichletPrior(SEXP prior);
-      const Vec & prior_counts()const;
+      const Vector & prior_counts()const;
       int dim()const;
 
      private:
-      Vec prior_counts_;
+      Vector prior_counts_;
     };
 
     //----------------------------------------------------------------------
@@ -148,16 +148,16 @@ namespace BOOM{
     class MarkovPrior {
      public:
       explicit MarkovPrior(SEXP prior);
-      const Mat & transition_counts()const {return transition_counts_;}
-      const Vec & initial_state_counts()const {return initial_state_counts_;}
+      const Matrix & transition_counts()const {return transition_counts_;}
+      const Vector & initial_state_counts()const {return initial_state_counts_;}
       int dim()const {return transition_counts_.nrow();}
       std::ostream & print(std::ostream &out)const;
       // Creates a Markov model with this as a prior.
       BOOM::MarkovModel * create_markov_model()const;
 
      private:
-      Mat transition_counts_;
-      Vec initial_state_counts_;
+      Matrix transition_counts_;
+      Vector initial_state_counts_;
     };
 
     //----------------------------------------------------------------------
@@ -189,29 +189,29 @@ namespace BOOM{
     class MvnPrior {
      public:
       explicit MvnPrior(SEXP prior);
-      const Vec & mu()const{return mu_;}
-      const Spd & Sigma()const{return Sigma_;}
+      const Vector & mu()const{return mu_;}
+      const SpdMatrix & Sigma()const{return Sigma_;}
       std::ostream & print(std::ostream &out)const;
 
      private:
-      Vec mu_;
-      Spd Sigma_;
+      Vector mu_;
+      SpdMatrix Sigma_;
     };
 
     //----------------------------------------------------------------------
     class NormalInverseWishartPrior {
      public:
       NormalInverseWishartPrior(SEXP prior);
-      const Vec & mu_guess()const{return mu_guess_;}
+      const Vector & mu_guess()const{return mu_guess_;}
       double mu_guess_weight()const{return mu_guess_weight_;}
-      const Spd & Sigma_guess()const{return sigma_guess_;}
+      const SpdMatrix & Sigma_guess()const{return sigma_guess_;}
       double Sigma_guess_weight()const{return sigma_guess_weight_;}
       std::ostream & print(std::ostream &out)const;
 
      private:
-      Vec mu_guess_;
+      Vector mu_guess_;
       double mu_guess_weight_;
-      Spd sigma_guess_;
+      SpdMatrix sigma_guess_;
       double sigma_guess_weight_;
     };
 
@@ -240,18 +240,53 @@ namespace BOOM{
     };
 
     //----------------------------------------------------------------------
+    // A discrete prior over the integers {lo, ..., hi}.
+    class DiscreteUniformPrior {
+     public:
+      DiscreteUniformPrior(SEXP prior);
+      double logp(int value) const;
+      int lo() const {return lo_;}
+      int hi() const {return hi_;}
+     private:
+      int lo_, hi_;
+      double log_normalizing_constant_;
+    };
+
+
+    // A poisson prior, potentially truncated to the set {lo, ..., hi}.
+    class PoissonPrior {
+     public:
+      PoissonPrior(SEXP prior);
+      double logp(int value) const;
+      double lambda() const {return lambda_;}
+     private:
+      double lambda_;
+      double lo_, hi_;
+      double log_normalizing_constant_;
+    };
+
+    class PointMassPrior {
+     public:
+      PointMassPrior(SEXP prior);
+      double logp(int value) const;
+      int location() const {return location_;}
+     private:
+      int location_;
+    };
+
+    //----------------------------------------------------------------------
     // This class is for handling spike and slab priors where there is
     // no residual variance parameter.  See the R help files for
     // SpikeSlabPrior or IndependentSpikeSlabPrior.
     class SpikeSlabGlmPrior {
      public:
       // Args:
-      //   prior: An R object inheriting from SpikeSlabPriorBase.
+      //   r_prior: An R object inheriting from SpikeSlabPriorBase.
       //     Elements of 'prior' relating to the residual variance are
       //     ignored.  If 'prior' inherits from
       //     IndependentSpikeSlabPrior then the slab will be an
       //     IndependentMvnModel.  Otherwise it will be an MvnModel.
-      SpikeSlabGlmPrior(SEXP prior);
+      SpikeSlabGlmPrior(SEXP r_prior);
       virtual ~SpikeSlabGlmPrior() {}
       const Vector &prior_inclusion_probabilities() {
         return prior_inclusion_probabilities_;
@@ -267,17 +302,18 @@ namespace BOOM{
       int max_flips_;
     };
 
+    //----------------------------------------------------------------------
     // This is for the standard Zellner G prior in the regression
     // setting.  See the R help files for SpikeSlabPrior.
     class RegressionConjugateSpikeSlabPrior {
      public:
       // Args:
-      //   prior: The R object containing the information needed to
+      //   r_prior: The R object containing the information needed to
       //     construct the prior.
       //   residual_variance: The residual variance parameter from the
       //     regression model described by the prior.
       RegressionConjugateSpikeSlabPrior(
-          SEXP prior,
+          SEXP r_prior,
           Ptr<UnivParams> residual_variance);
       const Vector &prior_inclusion_probabilities() {
         return prior_inclusion_probabilities_;}
@@ -295,6 +331,21 @@ namespace BOOM{
       double sigma_upper_limit_;
     };
 
+    //----------------------------------------------------------------------
+    // A version of the RegressionConjugateSpikeSlabPrior for
+    // regression models with Student T errors.
+     class StudentRegressionConjugateSpikeSlabPrior
+         : public RegressionConjugateSpikeSlabPrior {
+      public:
+       StudentRegressionConjugateSpikeSlabPrior(
+           SEXP r_prior, Ptr<UnivParams> residual_variance);
+       Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+      private:
+       Ptr<DoubleModel> df_prior_;
+     };
+
+
+    //----------------------------------------------------------------------
     // This is for the standard Zellner G prior in the regression
     // setting.  See the R help files for SpikeSlabPrior or
     // IndependentSpikeSlabPrior.
@@ -317,12 +368,6 @@ namespace BOOM{
       //   - sigma.guess:  A guess at the residual variance
       RegressionNonconjugateSpikeSlabPrior(SEXP prior);
 
-      // A non-conjugate spike and slab prior for regression models,
-      // formed combining a SpikeSlabGlmPrior with an independent
-      // chi-square prior on the reciprocal residual variance.
-      RegressionNonconjugateSpikeSlabPrior(
-          SEXP prior,
-          Ptr<UnivParams> residual_variance);
       Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
       double sigma_upper_limit() const {return sigma_upper_limit_;}
 
@@ -331,6 +376,20 @@ namespace BOOM{
       double sigma_upper_limit_;
     };
 
+
+    //----------------------------------------------------------------------
+    // A version of RegressionNonconjugateSpikeSlabPrior for
+    // regression models with Student T errors.
+    class StudentRegressionNonconjugateSpikeSlabPrior
+        : public RegressionNonconjugateSpikeSlabPrior {
+     public:
+      StudentRegressionNonconjugateSpikeSlabPrior(SEXP r_prior);
+       Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+     private:
+      Ptr<DoubleModel> df_prior_;
+    };
+
+    //----------------------------------------------------------------------
     // Use this class for the Clyde and Ghosh data augmentation scheme
     // for regression models.  See the R help files for
     // IndependentSpikeSlabPrior.
@@ -355,6 +414,18 @@ namespace BOOM{
       double sigma_upper_limit_;
     };
 
+    //----------------------------------------------------------------------
+    // A version of IndependentRegressionSpikeSlabPrior for regression
+    // models with Student T errors.
+    class StudentIndependentSpikeSlabPrior
+        : public IndependentRegressionSpikeSlabPrior {
+     public:
+      StudentIndependentSpikeSlabPrior(SEXP prior, Ptr<UnivParams> sigsq);
+      Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+     private:
+      Ptr<DoubleModel> df_prior_;
+    };
+
     inline std::ostream & operator<<(std::ostream &out, const NormalPrior &p) {
       return p.print(out); }
     inline std::ostream & operator<<(std::ostream &out, const SdPrior &p) {
@@ -372,9 +443,20 @@ namespace BOOM{
     // Creates a pointer to a DoubleModel based on the given
     // specification.  The specification must correspond to a BOOM model
     // type inheriting from DoubleModel.  Legal values for specification
-    // are objects inheriting from GammaPrior, BetaPrior and
+    // are objects inheriting from GammaPrior, UniformPrior, BetaPrior and
     // NormalPrior.  More may be added later.
     Ptr<DoubleModel> create_double_model(SEXP specification);
+
+    // As in create_double_model, but the model's log density is twice
+    // differentiable.
+    Ptr<DiffDoubleModel> create_diff_double_model(SEXP specification);
+
+    // Creates a pointer to a IntModel based on the given
+    // specification.  The specification must correspond to a BOOM model
+    // type inheriting from IntModel.  Legal values for specification
+    // are objects inheriting from DiscreteUniformPrior, PoissonPrior and
+    // PointMassPrior.  More may be added later.
+    Ptr<IntModel> create_int_model(SEXP specification);
 
   }  // namespace RInterface
 }  // namespace BOOM

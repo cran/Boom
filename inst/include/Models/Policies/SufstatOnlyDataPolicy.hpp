@@ -27,5 +27,5 @@ namesapce BOOM{
    private:
   }
 
-}
+};
 #endif// BOOM_SUFSTAT_ONLY_DATA_POLICY_HPP

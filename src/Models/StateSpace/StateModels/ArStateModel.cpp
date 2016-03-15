@@ -105,7 +105,7 @@ namespace BOOM {
   }
 
   //======================================================================
-  Vec ArStateModel::initial_state_mean()const{
+  Vector ArStateModel::initial_state_mean()const{
     if (initial_state_mean_.size() != state_dimension()) {
       report_error("mu_.size() != state_dimension() in "
                    "ArStateModel::initial_state_mean()");
@@ -113,15 +113,15 @@ namespace BOOM {
     return initial_state_mean_;
   }
   //======================================================================
-  Spd ArStateModel::initial_state_variance()const{
+  SpdMatrix ArStateModel::initial_state_variance()const{
     if (initial_state_variance_.nrow() != state_dimension()) {
       report_error("Sigma_.nrow() != state_dimension() in "
                    "ArStateModel::initial_state_mean()");
     }
-    Spd & Sigma(const_cast<Spd &>(initial_state_variance_));
+    SpdMatrix & Sigma(const_cast<SpdMatrix &>(initial_state_variance_));
 
     if (stationary_initial_distribution_) {
-      Vec gamma = autocovariance(state_dimension());
+      Vector gamma = autocovariance(state_dimension());
       Sigma.diag() = gamma[0];
       for(int i = 1; i < state_dimension(); ++i){
         Sigma.superdiag(i) = gamma[i];
@@ -132,7 +132,7 @@ namespace BOOM {
   }
 
   //======================================================================
-  void ArStateModel::set_initial_state_mean(const Vec &mu){
+  void ArStateModel::set_initial_state_mean(const Vector &mu){
     if(mu.size() != state_dimension()){
       report_error("attempt to set mu to the wrong size in "
                    "ArStateModel::set_initial_state_mean");
@@ -141,7 +141,7 @@ namespace BOOM {
   }
 
   //======================================================================
-  void ArStateModel::set_initial_state_variance(const Spd &Sigma){
+  void ArStateModel::set_initial_state_variance(const SpdMatrix &Sigma){
     if(Sigma.nrow() != state_dimension()){
       report_error("attempt to set Sigma to the wrong size in "
                    "ArStateModel::set_initial_state_mean");

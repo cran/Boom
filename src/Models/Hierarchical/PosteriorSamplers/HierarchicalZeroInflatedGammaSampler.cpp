@@ -27,8 +27,10 @@ namespace BOOM {
       Ptr<DoubleModel> gamma_shape_mean_prior,
       Ptr<DoubleModel> gamma_shape_shape_prior,
       Ptr<DoubleModel> positive_probability_mean_prior,
-      Ptr<DoubleModel> positive_probability_sample_size_prior)
-      :     model_(model),
+      Ptr<DoubleModel> positive_probability_sample_size_prior,
+      RNG &seeding_rng)
+      :     PosteriorSampler(seeding_rng),
+            model_(model),
             gamma_mean_mean_prior_(gamma_mean_mean_prior),
             gamma_mean_shape_prior_(gamma_mean_shape_prior),
             gamma_shape_mean_prior_(gamma_shape_mean_prior),
@@ -39,15 +41,18 @@ namespace BOOM {
             gamma_mean_sampler_(new GammaPosteriorSampler(
                 model_->prior_for_mean_parameters(),
                 gamma_mean_mean_prior,
-                gamma_mean_shape_prior)),
+                gamma_mean_shape_prior,
+                seeding_rng)),
             gamma_shape_sampler_(new GammaPosteriorSampler(
                 model_->prior_for_shape_parameters(),
                 gamma_shape_mean_prior,
-                gamma_shape_shape_prior)),
+                gamma_shape_shape_prior,
+                seeding_rng)),
             positive_probability_prior_sampler_(new BetaPosteriorSampler(
                 model_->prior_for_positive_probability(),
                 positive_probability_mean_prior,
-                positive_probability_sample_size_prior))
+                positive_probability_sample_size_prior,
+                seeding_rng))
   {
     model_->prior_for_positive_probability()->set_method(
         positive_probability_prior_sampler_);
@@ -91,7 +96,8 @@ namespace BOOM {
           data_model,
           model_->prior_for_positive_probability(),
           model_->prior_for_mean_parameters(),
-          model_->prior_for_shape_parameters());
+          model_->prior_for_shape_parameters(),
+          rng());
       data_model->set_method(sampler);
     }
   }

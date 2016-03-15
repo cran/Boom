@@ -17,6 +17,7 @@
 */
 #include <cpputil/Split.hpp>
 #include <cpputil/string_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <cctype>
 #include <string>
 #include <vector>
@@ -55,9 +56,9 @@ namespace BOOM{
       return ans;
 
     }catch (std::exception &e){
-      throw_exception<std::runtime_error>(e.what());
+      report_error(e.what());
     }catch(...){
-      throw_exception<std::runtime_error>(
+      report_error(
           "caught unknown exception in StringSplitter::operator()");
     }
     vector<string> result;  // never get here

@@ -19,13 +19,14 @@
 #ifndef BOOM_LINALG_VECTOR_HPP
 #define BOOM_LINALG_VECTOR_HPP
 
-#include <boost/operators.hpp>
-
-#include <iosfwd>
 #include <cmath>
-#include <vector>
+#include <initializer_list>
+#include <iosfwd>
 #include <string>
+#include <vector>
+#include <boost/operators.hpp>
 #include <uint.hpp>
+#include <functional>
 
 namespace BOOM{
   class SpdMatrix;
@@ -35,14 +36,13 @@ namespace BOOM{
 
   class Vector
       : public std::vector<double>,
-      boost::field_operators<Vector,
-      boost::addable<Vector,double,
-      boost::subtractable<Vector,double,
-      boost::multipliable<Vector,double,
-      boost::dividable<Vector,double> > > > >
+        boost::field_operators<Vector,
+          boost::addable<Vector,double,
+            boost::subtractable<Vector,double,
+              boost::multipliable<Vector,double,
+                boost::dividable<Vector,double> > > > >
   {
    public:
-    typedef unsigned int uint;
     typedef std::vector<double> dVector;
     typedef dVector::iterator iterator;
     typedef dVector::const_iterator const_iterator;
@@ -53,11 +53,13 @@ namespace BOOM{
     Vector();
     explicit Vector(uint n, double x=0);
 
-
     // Create a vector from a string that is comma or white space separated
     explicit Vector(const std::string &s);
+
     // Create a vector from a string that is delimited with delimiter 'sep'
     Vector(const std::string &s, const std::string &sep);
+
+    Vector(const std::initializer_list<double> &init);
 
     // A vector can be build using a stream of numbers, e.g. from a file.
     explicit Vector(std::istream &in);
@@ -73,6 +75,8 @@ namespace BOOM{
     Vector(const VectorView &);
     Vector(const ConstVectorView &);
 
+    Vector(Vector &&v) = default;
+
     // This constructors works with arbitrary STL containers.
     template <typename NUMERIC, template <typename ELEM,
                                           typename ALLOC = std::allocator<ELEM>
@@ -82,19 +86,24 @@ namespace BOOM{
     {}
 
     Vector & operator=(const Vector &);  // value semantics
-    Vector & operator=(const double &);  // value semantics
-    Vector & operator=(const dVector &);
+    Vector & operator=(double);  // value semantics
     Vector & operator=(const VectorView &);
     Vector & operator=(const ConstVectorView &);
 
     Vector & swap(Vector &);
     bool operator==(const Vector &rhs)const;
 
+    // Returns true if empty, or if std::isfinite returns true on all
+    // elements.  Returns false otherwise.
+    bool all_finite() const;
+
     Vector zero()const;  // returns a same sized Vector filled with 0's
     Vector one()const;   // returns a same sized Vector filled with 1's
     Vector & randomize();    // fills the Vector with U(0,1) random numbers
     template <class RNG>
     Vector & randomize(RNG f);
+    // Fill the Vector with random numbers, but leave element 0 as 1.0.
+    Vector & randomize_with_intercept();
 
     //-------------- STL vector stuff ---------------------
     double *data();
@@ -174,9 +183,12 @@ namespace BOOM{
     uint imin()const;
     double sum() const;
     double abs_norm()const;  // sum of absolute values.. faster than sum
+    double max_abs()const;  // returns -1 if empty.
     double prod() const;
 
     Vector & sort();
+    // apply fun to each element of *this, and return *this.
+    Vector & transform(std::function<double(double)> fun);
    private:
     bool inrange(uint n)const{return n< size();}
   };
@@ -280,6 +292,7 @@ namespace BOOM{
   inline double prod(const Vector &x){return x.prod();}
   inline double max(const Vector &x){return x.max();}
   inline double min(const Vector &x){return x.min();}
+
   std::pair<double, double> range(const Vector &x);
   std::pair<double, double> range(const VectorView &x);
   std::pair<double, double > range(const ConstVectorView &x);
@@ -289,6 +302,7 @@ namespace BOOM{
   std::ostream & operator<<(std::ostream & out, const Vector &x);
   // prints to stdout.  This function is here so it can be called from gdb.
   void print(const Vector &v);
+  void print_vector(const Vector &v);
   std::istream & operator>>(std::istream &, Vector &);
   Vector read_Vector(std::istream &in);
 
@@ -330,6 +344,11 @@ namespace BOOM{
   Vector rev(const VectorView &v);
   Vector rev(const ConstVectorView &v);
 
+  // Round the elements to the nearest integer using lround.
+  std::vector<int> round(const Vector &v);
+  std::vector<int> round(const VectorView &v);
+  std::vector<int> round(const ConstVectorView &v);
+
   template <class V1, class V2>
   Vector linear_combination(double a, const V1 &x,
                             double b, const V2 &y) {
@@ -338,5 +357,6 @@ namespace BOOM{
     ans.axpy(y, b);
     return ans;
   }
-}
-#endif //BOOM_LINALG_VECTOR_HPP
+}  // namespace BOOM
+
+#endif  //BOOM_LINALG_VECTOR_HPP

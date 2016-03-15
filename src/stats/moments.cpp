@@ -25,35 +25,35 @@
 
 namespace BOOM{
   inline double SQ(double x){return x*x;}
-  Vec mean(const Mat &m){
+  Vector mean(const Matrix &m){
     int nr = nrow(m);
-    Vec ave(nr, 1.0/nr);
-    Vec ans = ave * m;
+    Vector ave(nr, 1.0/nr);
+    Vector ans = ave * m;
     return ans;
   }
 
-  Spd var(const Mat &m){
-    Spd ans(m.ncol(), 0.0);
-    Vec mu = mean(m);
+  SpdMatrix var(const Matrix &m){
+    SpdMatrix ans(m.ncol(), 0.0);
+    Vector mu = mean(m);
     for(uint i = 0; i<m.nrow(); ++i){
-      Vec tmp = m.row(i)- mu;
+      Vector tmp = m.row(i)- mu;
       ans.add_outer(tmp);}
     ans/=(m.nrow()-1);
     return ans;
   }
 
-  Spd cor(const Mat &m){
-    Spd V = var(m);
-    Vec sd = sqrt(diag(V));
-    Spd d(sd.size());
+  SpdMatrix cor(const Matrix &m){
+    SpdMatrix V = var(m);
+    Vector sd = sqrt(diag(V));
+    SpdMatrix d(sd.size());
     d.set_diag(1.0/sd);
 
-    Spd ans = d * V * d;
+    SpdMatrix ans = d * V * d;
     return ans;
   }
 
-  double mean(const Vec &x){ return x.sum()/x.size();}
-  double var(const Vec &x){
+  double mean(const Vector &x){ return x.sum()/x.size();}
+  double var(const Vector &x){
     double mu = mean(x);
     double sumsq = 0;
     uint n = x.size();
@@ -61,7 +61,7 @@ namespace BOOM{
     return sumsq/(n-1);
   }
 
-  double sd(const Vec &x){return sqrt(var(x));}
+  double sd(const Vector &x){return sqrt(var(x));}
 
   double mean(const std::vector<double> &x){
     if(x.size()==0) return 0.0;

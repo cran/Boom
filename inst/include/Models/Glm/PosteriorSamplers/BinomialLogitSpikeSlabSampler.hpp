@@ -28,11 +28,11 @@ namespace BOOM{
     BinomialLogitSpikeSlabSampler(BinomialLogitModel *m,
                                   Ptr<MvnBase> pri,
                                   Ptr<VariableSelectionPrior> vpri,
-                                  int clt_threshold
-                                  );
+                                  int clt_threshold,
+                                  RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     void draw_model_indicators();
     virtual void draw_beta();
@@ -52,9 +52,21 @@ namespace BOOM{
     void limit_model_selection(int max_flips);
 
     // Locate and set model paramters to the posterior mode of the
-    // included variables, given inclusion.  Returns the un-normalized
-    // log posterior (the objective function).
-    double find_posterior_mode();
+    // included variables, given inclusion.  Save the un-normalized
+    // log posterior (the objective function) in posterior_mode_value_;.
+    void find_posterior_mode(double epsilon = 1e-5) override;
+
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
+
+    bool posterior_mode_found() const {
+      return posterior_mode_found_;
+    }
+
+    double log_posterior_at_mode() const {
+      return log_posterior_at_mode_;
+    }
 
    private:
     double mcmc_one_flip(Selector &mod, uint which_var, double logp_old);
@@ -63,7 +75,9 @@ namespace BOOM{
     Ptr<VariableSelectionPrior> vpri_;
     bool allow_model_selection_;
     int max_flips_;
+    bool posterior_mode_found_;
+    double log_posterior_at_mode_;
   };
 
-}
+}  // namespace BOOM
 #endif // BOOM_BINOMIAL_LOGIT_SPIKE_SLAB_SAMPLER_HPP_

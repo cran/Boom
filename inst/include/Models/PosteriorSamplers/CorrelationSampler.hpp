@@ -30,32 +30,33 @@ namespace BOOM{
   {
   public:
     CorrTF(Ptr<SpdParams>,
-	   Ptr<LoglikeModel>,
-	   Ptr<CorrModel>);
+       Ptr<LoglikeModel>,
+       Ptr<CorrelationModel>);
     CorrTF(const CorrTF &rhs);
     //    CorrTF * clone()const;
-    virtual double operator()(const Vec &x)const;
+    double operator()(const Vector &x)const override;
   private:
     mutable Corr R, R2;
     mutable Ptr<SpdParams> spd;
     mutable Ptr<LoglikeModel> mod;
-    mutable Vec wsp;
-    Ptr<CorrModel> pri;
+    mutable Vector wsp;
+    Ptr<CorrelationModel> pri;
     bool refresh;
   };
 
   // Draws from the posterior distribution of the correlation matrix
   // in a Gaussian model with known means and variances given a
-  // CorrModel prior distribution on the correlation matrix
+  // CorrelationModel prior distribution on the correlation matrix
   class MvnCorrelationSampler
     : public PosteriorSampler
   {
   public:
     MvnCorrelationSampler(MvnModel *,
-			  Ptr<CorrModel>,
-			  bool refresh_suf = false);
-    void draw();
-    double logpri()const;
+              Ptr<CorrelationModel>,
+              bool refresh_suf = false,
+        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
   private:
     double logp(double r);
     void find_limits();
@@ -64,10 +65,10 @@ namespace BOOM{
     void set_r(double r);
     void check_limits(double oldr, double eps);
 
-    MvnModel *mod_;       // supplies likelihood
-    Ptr<CorrModel> pri_;      // prior for R
-    Corr R_;                  // workspace
-    Spd Sumsq_;
+    MvnModel *mod_;              // supplies likelihood
+    Ptr<CorrelationModel> pri_;  // prior for R
+    CorrelationMatrix R_;        // workspace
+    SpdMatrix Sumsq_;
     double df_;
     int i_, j_;
     double lo_, hi_;

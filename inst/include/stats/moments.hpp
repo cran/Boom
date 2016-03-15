@@ -25,13 +25,13 @@
 
 namespace BOOM{
 
-  Vec mean(const Mat &m);
-  Spd var(const Mat &m);
-  Spd cor(const Mat &m);
+  Vector mean(const Matrix &m);
+  SpdMatrix var(const Matrix &m);
+  SpdMatrix cor(const Matrix &m);
 
-  double mean(const Vec &x);
-  double var(const Vec &x);
-  double sd(const Vec &v);
+  double mean(const Vector &x);
+  double var(const Vector &x);
+  double sd(const Vector &v);
 
   double mean(const std::vector<double> &x);
   double var(const std::vector<double> &x);

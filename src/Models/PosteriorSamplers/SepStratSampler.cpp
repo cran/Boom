@@ -30,8 +30,10 @@
 namespace BOOM{
 
   SepStratSampler::SepStratSampler(MvnModel *mod,
-                                   const std::vector<Ptr<GammaModel> > & ivar)
-      : mod_(mod),
+                                   const std::vector<Ptr<GammaModel> > & ivar,
+                                   RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        mod_(mod),
         Rpri_(new UniformCorrelationModel(mod->dim())),
         sinv_pri_(ivar)
   {
@@ -39,9 +41,11 @@ namespace BOOM{
   }
 
   SepStratSampler::SepStratSampler(MvnModel *mod,
-                                   Ptr<CorrModel> cor,
-                                   const std::vector<Ptr<GammaModel> > & ivar)
-      : mod_(mod),
+                                   Ptr<CorrelationModel> cor,
+                                   const std::vector<Ptr<GammaModel> > & ivar,
+                                   RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        mod_(mod),
         Rpri_(cor),
         sinv_pri_(ivar),
         fast_count_(0),
@@ -122,7 +126,7 @@ namespace BOOM{
   // the prior times a fraction alpha_ of the likelihood.  The
   // likelihood assumes that n_ and the cholesky factor of sumsq_ have
   // been precomputed.
-    double SepStratSampler::logp0(const Spd & Sigma, double alpha)const{
+    double SepStratSampler::logp0(const SpdMatrix & Sigma, double alpha)const{
     Chol L(Sigma);
     if(!L.is_pos_def()) return BOOM::negative_infinity();
 
@@ -139,7 +143,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   // log of the prior distribution at an arbitrary value of Sigma
-  double SepStratSampler::logprior(const Spd & Sigma)const{
+  double SepStratSampler::logprior(const SpdMatrix & Sigma)const{
     // Prior is with respect to Sigma
 
     int d = Sigma.nrow();
@@ -165,7 +169,7 @@ namespace BOOM{
   double SepStratSampler::logp_slice_R(double r){
     set_R(r);
     fill_siginv(false);  // false means we need to compute Rinv
-    const Spd & Siginv(cand_);
+    const SpdMatrix & Siginv(cand_);
     double ans =  .5 * n_ * logdet(Siginv);  // positive .5
     ans +=  -.5 * traceAB(Siginv, sumsq_);
     ans += Rpri_->logp(R_);
@@ -181,7 +185,7 @@ namespace BOOM{
 
     sd_[i_] = 1.0/sqrt(ivar);
     fill_siginv(true);
-    const Spd & Siginv(cand_);
+    const SpdMatrix & Siginv(cand_);
     ans += -.5 * traceAB(Siginv, sumsq_);        // exponential
 
     double logsd = log(sd_[i_]);                 // jacobian Sigma -> S
@@ -217,7 +221,7 @@ namespace BOOM{
             << "n             = " << n_ << endl
             << "alpha         = " << alpha_ << endl
             << "(1-alpha) * n = " << a * n_;
-        throw_exception<std::runtime_error>(err.str());
+        report_error(err.str());
       }
       cand_ = rWishChol(df, sqrt(a) * sumsq_upper_chol_, true);
       if(logp0(cand_, alpha_) > slice){
@@ -259,7 +263,7 @@ namespace BOOM{
     mutable SepStratSampler *s_;
   };
   //----------------------------------------------------------------------
-  Spd SepStratSampler::Sigma(){
+  SpdMatrix SepStratSampler::Sigma(){
     fill_sigma();
     return cand_;
   }
@@ -270,14 +274,14 @@ namespace BOOM{
         : sam(s),
           Sigma_(s->Sigma())
     {}
-    double operator()(const Vec & x)const{
+    double operator()(const Vector & x)const{
       Sigma_.unvectorize(x, true);
       return sam->logp0(Sigma_, 1.0);
     }
 
    private:
     SepStratSampler *sam;
-    mutable Spd Sigma_;
+    mutable SpdMatrix Sigma_;
   };
 
   //----------------------------------------------------------------------

@@ -34,46 +34,53 @@ namespace BOOM{
      // resized to the dimension of the first data point passed to it
      // in update().
      MvnSuf(uint p=0);
-     MvnSuf(double n, const Vec &ybar, const Spd &sumsq);
+     MvnSuf(double n, const Vector &ybar, const SpdMatrix&sumsq);
      MvnSuf(const MvnSuf &sf);
-     MvnSuf *clone() const;
+     MvnSuf *clone() const override;
 
-     void clear();
+     void clear() override;
      void resize(uint p);  // clears existing data
-     void Update(const VectorData &x);
-     void update_raw(const Vec &x);
-     void add_mixture_data(const Vec &x, double prob);
+     void Update(const VectorData &x) override;
+     void update_raw(const Vector &x);
+     void add_mixture_data(const Vector &x, double prob);
+     void update_expected_value(double sample_size,
+                                const Vector &expected_sum,
+                                const SpdMatrix &expected_sum_of_squares);
 
-     Vec sum()const;
-     Spd sumsq()const;       // Un-centered sum of squares
+     // Remove the vector x from the set of sufficient statistics,
+     // assuming that x was previously added.
+     void remove_data(const Vector &x);
+
+     Vector sum()const;
+     SpdMatrix sumsq()const;       // Un-centered sum of squares
      double n()const;
-     const Vec & ybar()const;
-     Spd sample_var()const;  // divides by n-1
-     Spd var_hat()const;     // divides by n
-     Spd center_sumsq(const Vec &mu)const;
-     const Spd & center_sumsq()const;
+     const Vector & ybar()const;
+     SpdMatrix sample_var()const;  // divides by n-1
+     SpdMatrix var_hat()const;     // divides by n
+     SpdMatrix center_sumsq(const Vector &mu)const;
+     const SpdMatrix & center_sumsq()const;
 
      void combine(Ptr<MvnSuf>);
      void combine(const MvnSuf &);
-     MvnSuf * abstract_combine(Sufstat *s);
+     MvnSuf * abstract_combine(Sufstat *s) override;
 
-     virtual Vec vectorize(bool minimal=true)const;
-     virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                             bool minimal=true);
-     virtual Vec::const_iterator unvectorize(const Vec &v,
-                                             bool minimal=true);
+     Vector vectorize(bool minimal=true)const override;
+     Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                             bool minimal=true) override;
+     Vector::const_iterator unvectorize(const Vector &v,
+                                             bool minimal=true) override;
 
-     virtual ostream & print(ostream &)const;
+     ostream & print(ostream &)const override;
     private:
-     Vec ybar_;
-     Vec wsp_;
-     mutable Spd sumsq_;     // centered at ybar
+     Vector ybar_;
+     Vector wsp_;
+     mutable SpdMatrix sumsq_;     // centered at ybar
      double n_;              // sample size
      mutable bool sym_;
      void check_symmetry()const;
 
      // resizes if empty, otherwise throws if dimension is wrong.
-     void check_dimension(const Vec &y);
+     void check_dimension(const Vector &y);
    };
 
   inline ostream & operator<<(ostream &out, const MvnSuf &s){
@@ -84,9 +91,12 @@ namespace BOOM{
     : public DiffVectorModel
   {
   public:
-    virtual MvnBase * clone()const=0;
+    MvnBase * clone()const override =0;
     virtual uint dim()const;
-    virtual double Logp(const Vec &x, Vec &g, Mat &h, uint nderiv)const;
+    double Logp(const Vector &x,
+                        Vector &g,
+                        Matrix &h,
+                        uint nderiv)const override;
 
     // Args:
     //   x_subset: A subset (determined by 'inclusion') of the vector
@@ -122,14 +132,14 @@ namespace BOOM{
     // Returns the multivariate normal log likelihood.  Assumes all
     // variables are included.
     double log_likelihood(const Vector &mu,
-                          const Spd &siginv,
+                          const SpdMatrix &siginv,
                           const MvnSuf &suf)const;
 
-    virtual const Vec & mu() const=0;
-    virtual const Spd & Sigma()const=0;
-    virtual const Spd & siginv() const=0;
+    virtual const Vector & mu() const=0;
+    virtual const SpdMatrix & Sigma()const=0;
+    virtual const SpdMatrix & siginv() const=0;
     virtual double ldsi()const=0;
-    virtual Vec sim()const;
+    Vector sim()const override;
   };
 
   //____________________________________________________________
@@ -141,26 +151,27 @@ namespace BOOM{
   public:
     MvnBaseWithParams(uint p, double mu=0.0, double sig=1.0);
     // N(mu,V)... if(ivar) then V is the inverse variance.
-    MvnBaseWithParams(const Vec &mean, const Spd &V,
+    MvnBaseWithParams(const Vector &mean, const SpdMatrix &V,
                       bool ivar=false);
     MvnBaseWithParams(Ptr<VectorParams>, Ptr<SpdParams>);
     MvnBaseWithParams(const MvnBaseWithParams &);
-    MvnBaseWithParams * clone()const=0;
+    MvnBaseWithParams * clone()const override =0;
 
     Ptr<VectorParams> Mu_prm();
     const Ptr<VectorParams> Mu_prm()const;
     Ptr<SpdParams> Sigma_prm();
     const Ptr<SpdParams> Sigma_prm()const;
 
-    virtual const Vec & mu() const;
-    virtual  const Spd & Sigma()const;
-    virtual  const Spd & siginv() const;
-    virtual double ldsi()const;
+    const Vector & mu() const override;
+     const SpdMatrix & Sigma()const override;
+     const SpdMatrix & siginv() const override;
+    double ldsi()const override;
+    const Matrix & Sigma_chol() const;
 
-    virtual void set_mu(const Vec &);
-    virtual void set_Sigma(const Spd &);
-    virtual void set_siginv(const Spd &);
-    virtual void set_S_Rchol(const Vec &sd, const Mat &L);
+    void set_mu(const Vector &) override;
+    void set_Sigma(const SpdMatrix &) override;
+    void set_siginv(const SpdMatrix &) override;
+    void set_S_Rchol(const Vector &sd, const Matrix &L) override;
   };
 
 

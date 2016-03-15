@@ -76,15 +76,15 @@ namespace BOOM{
     return ans;
   }
 
-  Vec LocalLevelStateModel::initial_state_mean()const{
+  Vector LocalLevelStateModel::initial_state_mean()const{
     return initial_state_mean_;
   }
 
-  Spd LocalLevelStateModel::initial_state_variance()const{
+  SpdMatrix LocalLevelStateModel::initial_state_variance()const{
     return initial_state_variance_;
   }
 
-  void LocalLevelStateModel::set_initial_state_mean(const Vec &m){
+  void LocalLevelStateModel::set_initial_state_mean(const Vector &m){
     initial_state_mean_ = m;
   }
 
@@ -92,7 +92,7 @@ namespace BOOM{
     initial_state_mean_[0] = m;
   }
 
-  void LocalLevelStateModel::set_initial_state_variance(const Spd &v){
+  void LocalLevelStateModel::set_initial_state_variance(const SpdMatrix &v){
     initial_state_variance_ = v;
   }
 

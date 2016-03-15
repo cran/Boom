@@ -34,12 +34,13 @@ namespace BOOM{
   class DafeMlmBase : public PosteriorSampler{
    public:
     DafeMlmBase(MultinomialLogitModel *mod,
-		Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
-		Ptr<MvnModel> ChoicePri,
-		bool draw_b0=false);
-    virtual double logpri()const;
-    const Spd & xtx_subject()const;
-    const Spd & xtx_choice()const;
+        Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
+        Ptr<MvnModel> ChoicePri,
+        bool draw_b0=false,
+    RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    const SpdMatrix & xtx_subject()const;
+    const SpdMatrix & xtx_choice()const;
     uint mlo()const{return mlo_;}
    protected:
     Ptr<MvnModel> subject_pri()const;
@@ -49,8 +50,8 @@ namespace BOOM{
     Ptr<MvnModel> subject_pri_;
     Ptr<MvnModel> choice_pri_;
 
-    Spd xtx_subject_;
-    Spd xtx_choice_;
+    SpdMatrix xtx_subject_;
+    SpdMatrix xtx_choice_;
     uint mlo_;
 
     void compute_xtx();
@@ -59,11 +60,11 @@ namespace BOOM{
   class DafeMlm : public DafeMlmBase{
   public:
     DafeMlm(MultinomialLogitModel *mod,
-	    Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
-	    Ptr<MvnModel> ChoicePri,
-	    double tdf,
-	    bool draw_b0=false);
-    void draw();
+        Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
+        Ptr<MvnModel> ChoicePri,
+        double tdf,
+        bool draw_b0=false);
+    void draw() override;
     void draw_choice();
     void draw_subject(uint i);
     void impute_latent_data();
@@ -76,21 +77,21 @@ namespace BOOM{
 
     Ptr<MetropolisHastings> choice_sampler_;
     Ptr<MvtIndepProposal> choice_proposal_;
-    Vec Ominv_mu_subject;
-    Vec Ominv_mu_choice;
-    Mat U;   // latent data
-    std::vector<Vec> xtu_subject;
-    Vec xtu_choice;
+    Vector Ominv_mu_subject;
+    Vector Ominv_mu_choice;
+    Matrix U;   // latent data
+    std::vector<Vector> xtu_subject;
+    Vector xtu_choice;
   };
 
   //------------------------------------------------------------
   class DafeRMlm : public DafeMlmBase{
   public:
     DafeRMlm(MultinomialLogitModel *mod,
-	     Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
-	     Ptr<MvnModel> ChoicePri,
-	     double tdf);
-    void draw();
+         Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
+         Ptr<MvnModel> ChoicePri,
+         double tdf);
+    void draw() override;
     void draw_choice();
     void draw_subject(uint i);
   private:

@@ -39,11 +39,11 @@ namespace BOOM{
     public:
       ItemLoglikeTF(Ptr<PCR>);
       ItemLoglikeTF * clone()const;
-      double operator()(const Vec &beta)const;
+      double operator()(const Vector &beta)const;
     private:
       Ptr<PCR> pcr;
       Ptr<VectorParams> v;
-      mutable Vec wsp;
+      mutable Vector wsp;
     };
 
     typedef ItemLoglikeTF TF;
@@ -52,11 +52,11 @@ namespace BOOM{
 
     TF::ItemLoglikeTF(Ptr<PCR> item)
       : pcr(item),
-	v(item->Beta_prm()),
-	wsp(item->beta())
+    v(item->Beta_prm()),
+    wsp(item->beta())
     {}
 
-    double TF::operator()(const Vec &b)const{
+    double TF::operator()(const Vector &b)const{
       ParamHolder ph(b, v, wsp);
       if(pcr->a()<= 0.0) return BOOM::negative_infinity();
       double ans = pcr->loglike();
@@ -68,23 +68,25 @@ namespace BOOM{
 
     struct Logp{
       Logp(const TF &F, Ptr<MvnModel> P) : f(F), pri(P){}
-      double operator()(const Vec &x)const{ return f(x) + pri->logp(x);}
+      double operator()(const Vector &x)const{ return f(x) + pri->logp(x);}
       const TF & f;
       Ptr<MvnModel> pri;
     };
 
-    ISAM::DafePcrRwmItemSampler(Ptr<PCR> item, Ptr<MvnModel> Prior, double Tdf)
-      : mod(item),
-	prior(Prior),
-	sigsq(1.644934066848226), // pi^2/6
-	xtx(mod->nlevels()),
-	ivar(mod->nlevels())
+    ISAM::DafePcrRwmItemSampler(Ptr<PCR> item, Ptr<MvnModel> Prior, double Tdf,
+                                RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+  mod(item),
+    prior(Prior),
+    sigsq(1.644934066848226), // pi^2/6
+    xtx(mod->nlevels()),
+    ivar(mod->nlevels())
     {
       TF loglike(mod);
       Logp target(loglike, prior);
       uint dim = mod->beta().size();
 
-      prop = new MvtRwmProposal(Spd(dim).Id(), Tdf);
+      prop = new MvtRwmProposal(SpdMatrix(dim).Id(), Tdf);
       sampler = new MetropolisHastings(target,prop);
     }
 
@@ -102,13 +104,13 @@ namespace BOOM{
       xtx=0.0;
       const SubjectSet &subjects(mod->subjects());
       for_each(subjects.begin(), subjects.end(),
-	       boost::bind(&ISAM::accumulate_moments, this, _1));
+           boost::bind(&ISAM::accumulate_moments, this, _1));
 
       ivar = prior->siginv() + xtx/sigsq;
     }
 
     void ISAM::accumulate_moments(Ptr<Subject> s){
-      const Mat &X(mod->X(s->Theta()));
+      const Matrix &X(mod->X(s->Theta()));
       xtx.add_inner(X);
     }
 

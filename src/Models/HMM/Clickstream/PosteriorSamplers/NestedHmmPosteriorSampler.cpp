@@ -20,8 +20,10 @@
 
 namespace BOOM {
 
-  NestedHmmPosteriorSampler::NestedHmmPosteriorSampler(NestedHmm *model)
-      : model_(model),
+  NestedHmmPosteriorSampler::NestedHmmPosteriorSampler(NestedHmm *model,
+                                                       RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         first_time_(true)
   {}
 

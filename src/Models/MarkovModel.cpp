@@ -46,13 +46,13 @@ namespace BOOM{
     clear_links();
   }
 
-  MD::MarkovData(uint val, pKey labs)
+  MD::MarkovData(uint val, Ptr<CatKey> labs)
     : CD(val, labs)
   {
     clear_links();
   }
 
-  MD::MarkovData(const string &lab, pKey labs, bool grow)
+  MD::MarkovData(const string &lab, Ptr<CatKey> labs, bool grow)
     : CD(lab, labs, grow)
   {
     clear_links();
@@ -116,8 +116,8 @@ namespace BOOM{
 
   template <class T>
   Ptr<MarkovDataSeries> make_mds(const std::vector<T> &raw_data,
-				 Ptr<CatKey> pk){
-    NEW(MarkovData,last)(raw_data[0],pk);
+				 Ptr<CatKey> key){
+    NEW(MarkovData,last)(raw_data[0], key);
     uint n = raw_data.size();
     std::vector<Ptr<MarkovData> > dvec;
     dvec.reserve(n);
@@ -173,11 +173,11 @@ namespace BOOM{
       int newx = dat.value();
       trans_( oldx, newx) += 1; }}
 
-  void MarkovSuf::add_transition_distribution(const Mat &P){
+  void MarkovSuf::add_transition_distribution(const Matrix &P){
     trans_ += P;
   }
 
-  void MarkovSuf::add_initial_distribution(const Vec &pi){
+  void MarkovSuf::add_initial_distribution(const Vector &pi){
     init_ += pi;
   }
 
@@ -208,8 +208,8 @@ namespace BOOM{
 
   void MarkovSuf::resize(uint p){
     if(state_space_size()!=p){
-      trans_ = Mat(p,p, 0.0);
-      init_ = Vec(p, 0.0);}}
+      trans_ = Matrix(p,p, 0.0);
+      init_ = Vector(p, 0.0);}}
 
   void MarkovSuf::combine(Ptr<MarkovSuf> s){
     trans_ += s->trans_;
@@ -223,15 +223,15 @@ namespace BOOM{
   MarkovSuf * MarkovSuf::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec MarkovSuf::vectorize(bool)const{
-    Vec ans(trans_.begin(), trans_.end());
+  Vector MarkovSuf::vectorize(bool)const{
+    Vector ans(trans_.begin(), trans_.end());
     ans.concat(init_);
     return ans;
   }
 
-  Vec::const_iterator MarkovSuf::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator MarkovSuf::unvectorize(Vector::const_iterator &v, bool){
     uint d = trans_.nrow();
-    Mat tmp(v, v+d*d, d, d);
+    Matrix tmp(v, v+d*d, d, d);
     trans_ = tmp;
     v += d*d;
     init_.assign(v, v+d);
@@ -239,8 +239,8 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator MarkovSuf::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator MarkovSuf::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -252,10 +252,10 @@ namespace BOOM{
     : rows(r)
   {}
 
-  void MRO::operator()(const Mat &m){
+  void MRO::operator()(const Matrix &m){
     uint n = m.nrow();
     assert(rows.size()==n);
-    Vec x;
+    Vector x;
     for(uint i=0; i<n; ++i){
       x = m.row(i);
       rows[i]->set(x,false);}}
@@ -267,8 +267,8 @@ namespace BOOM{
     : stat(p)
   {}
 
-  void SDO::operator()(const Mat &m){
-    Vec x = get_stat_dist(m);
+  void SDO::operator()(const Matrix &m){
+    Vector x = get_stat_dist(m);
     stat->set(x);
   }
 
@@ -281,7 +281,7 @@ namespace BOOM{
     m = mp->value();
   }
 
-  void RowObserver::operator()(const Vec &v){
+  void RowObserver::operator()(const Vector &v){
     assert(v.size()==m.ncol());
     m= mp->value();
     std::copy(v.begin(), v.end(), m.row_begin(i));
@@ -298,7 +298,7 @@ namespace BOOM{
      : MP(S,S,1.0/S)
    {}
 
-   TPM::TransitionProbabilityMatrix(const Mat &M)
+   TPM::TransitionProbabilityMatrix(const Matrix &M)
      : MP(M)
    {}
 
@@ -310,19 +310,19 @@ namespace BOOM{
 
    TPM * TPM::clone()const{return new TPM(*this);}
 
-   Vec::const_iterator TPM::unvectorize(Vec::const_iterator &v, bool minimal){
-     Vec::const_iterator ans = MP::unvectorize(v, minimal);
+   Vector::const_iterator TPM::unvectorize(Vector::const_iterator &v, bool minimal){
+     Vector::const_iterator ans = MP::unvectorize(v, minimal);
      notify();
      return ans;
    }
 
-   Vec::const_iterator TPM::unvectorize(const Vec &v, bool minimal){
-     Vec::const_iterator ans = MP::unvectorize(v, minimal);
+   Vector::const_iterator TPM::unvectorize(const Vector &v, bool minimal){
+     Vector::const_iterator ans = MP::unvectorize(v, minimal);
      notify();
      return ans;
    }
 
-  void TPM::set(const Mat &m, bool){
+  void TPM::set(const Matrix &m, bool){
      MP::set(m);
      notify();
    }
@@ -348,13 +348,13 @@ namespace BOOM{
     : ParamPolicy(new TPM(StateSize),
 		  new VectorParams(StateSize)),
       DataPolicy(new MarkovSuf(StateSize)),
-      ConjPriorPolicy(),
+      PriorPolicy(),
       LoglikeModel()
   {
     fix_pi0_uniform();
   }
 
-  MarkovModel::MarkovModel(const Mat &Q)
+  MarkovModel::MarkovModel(const Matrix &Q)
     : ParamPolicy(new TPM(Q),
 		  new VectorParams(Q.nrow())),
       DataPolicy(new MarkovSuf(Q.nrow()))
@@ -362,7 +362,7 @@ namespace BOOM{
     fix_pi0_uniform();
   }
 
-  MarkovModel::MarkovModel(const Mat &Q, const Vec &Pi0)
+  MarkovModel::MarkovModel(const Matrix &Q, const Vector &Pi0)
     : ParamPolicy(new TPM(Q),
 		  new VectorParams(Pi0)),
       DataPolicy(new MarkovSuf(Q.nrow()))
@@ -407,7 +407,7 @@ namespace BOOM{
       DataInfoPolicy(rhs),
       ParamPolicy(rhs),
       DataPolicy(rhs),
-      ConjPriorPolicy(rhs),
+      PriorPolicy(rhs),
       LoglikeModel(rhs),
       EmMixtureComponent(rhs),
       pi0_status(rhs.pi0_status)
@@ -468,22 +468,18 @@ namespace BOOM{
     return logscale? ans : exp(ans); }
 
   void MarkovModel::mle(){
-    Mat Q(this->Q());
+    Matrix Q(this->Q());
     for(uint i=0; i< Q.nrow(); ++i){
-      Vec tmp(suf()->trans().row(i));
+      Vector tmp(suf()->trans().row(i));
       Q.set_row(i, tmp/tmp.sum());}
     set_Q(Q);
 
     if(pi0_status==Free){
-      const Vec &tmp(suf()->init());
+      const Vector &tmp(suf()->init());
       set_pi0(tmp/sum(tmp));
     }else if(pi0_status==Stationary){
       set_pi0(get_stat_dist(Q));
     }
-  }
-
-  void MarkovModel::find_posterior_mode(){
-    ConjPriorPolicy::find_posterior_mode();
   }
 
   void MarkovModel::set_conjugate_prior(Ptr<ProductDirichletModel> pri){
@@ -498,19 +494,18 @@ namespace BOOM{
   }
 
   void MarkovModel::set_conjugate_prior(Ptr<MarkovConjSampler> p){
-    ConjPriorPolicy::set_conjugate_prior(p);
+    set_method(p);
   }
 
-
   double MarkovModel::loglike(const Vector &serialized_params)const{
-    const Vec &icount(suf()->init());
-    const Mat &tcount(suf()->trans());
+    const Vector &icount(suf()->init());
+    const Matrix &tcount(suf()->trans());
 
     int S = state_space_size();
     TransitionProbabilityMatrix transition_probabilities(S);
 
-    Vec logpi0(log(pi0()));
-    Mat logQ(log(Q()));
+    Vector logpi0(log(pi0()));
+    Matrix logQ(log(Q()));
 
     double ans= icount.dot(logpi0);
     ans+= el_mult_sum(tcount, logQ);
@@ -518,15 +513,15 @@ namespace BOOM{
   }
 
 
-  Vec MarkovModel::stat_dist()const{
+  Vector MarkovModel::stat_dist()const{
     return get_stat_dist(Q()); }
 
-  void MarkovModel::fix_pi0(const Vec &Pi0){
+  void MarkovModel::fix_pi0(const Vector &Pi0){
     set_pi0(Pi0);
     pi0_status=Known;  }
   void MarkovModel::fix_pi0_uniform(){
     uint S = state_space_size();
-    set_pi0(Vec(S, 1.0/S));
+    set_pi0(Vector(S, 1.0/S));
     pi0_status=Uniform;  }
   void MarkovModel::fix_pi0_stationary(){
     // need to observe Q and change when it changes
@@ -549,9 +544,9 @@ namespace BOOM{
   const Ptr<TPM> MarkovModel::Q_prm()const{
     return ParamPolicy::prm1();}
 
-  const Mat &MarkovModel::Q()const{
+  const Matrix &MarkovModel::Q()const{
     return Q_prm()->value();}
-  void MarkovModel::set_Q(const Mat &Q)const{
+  void MarkovModel::set_Q(const Matrix &Q)const{
     Q_prm()->set(Q);}
   double MarkovModel::Q(uint i,uint j)const{
     return Q()(i,j);}
@@ -561,10 +556,10 @@ namespace BOOM{
   const Ptr<VectorParams> MarkovModel::Pi0_prm()const{
     return ParamPolicy::prm2();}
 
-   const Vec & MarkovModel::pi0()const{
+   const Vector & MarkovModel::pi0()const{
      return Pi0_prm()->value();}
 
-  void MarkovModel::set_pi0(const Vec &pi0){
+  void MarkovModel::set_pi0(const Vector &pi0){
     Pi0_prm()->set(pi0);}
 
 
@@ -575,8 +570,8 @@ namespace BOOM{
 
   void MarkovModel::resize(uint S){
     suf()->resize(S);
-    set_pi0(Vec(S, 1.0/S));
-    set_Q(Mat(S,S,1.0/S));
+    set_pi0(Vector(S, 1.0/S));
+    set_Q(Matrix(S,S,1.0/S));
   }
 
   //______________________________________________________________________

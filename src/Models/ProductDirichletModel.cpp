@@ -36,7 +36,7 @@ namespace BOOM{
 
   PDS * PDS::clone()const{return new PDS(*this);}
 
-  const Mat & PDS::sumlog()const{return sumlog_;}
+  const Matrix & PDS::sumlog()const{return sumlog_;}
   double PDS::n()const{return n_;}
 
   void PDS::Update(const MatrixData &d){
@@ -62,23 +62,23 @@ namespace BOOM{
   ProductDirichletSuf * PDS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec PDS::vectorize(bool)const{
-    Vec ans(sumlog_.begin(), sumlog_.end());
+  Vector PDS::vectorize(bool)const{
+    Vector ans(sumlog_.begin(), sumlog_.end());
     ans.push_back(n_);
     return ans;
   }
 
-  Vec::const_iterator PDS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator PDS::unvectorize(Vector::const_iterator &v, bool){
     uint dim = sumlog_.nrow();
-    Mat tmp(v, v + dim*dim, dim, dim);
+    Matrix tmp(v, v + dim*dim, dim, dim);
     v+= dim*dim;
     sumlog_ = tmp;
     n_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator PDS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator PDS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -95,18 +95,18 @@ namespace BOOM{
       PriorPolicy()
   {}
 
-  PDM::ProductDirichletModel(const Mat &N)
+  PDM::ProductDirichletModel(const Matrix &N)
     : ParamPolicy(new MatrixParams(N)),
       DataPolicy(new PDS(N.nrow())),
       PriorPolicy()
   {}
 
-  PDM::ProductDirichletModel(const Vec &wgt, const Mat &Pi)
+  PDM::ProductDirichletModel(const Vector &wgt, const Matrix &Pi)
     : ParamPolicy(new MatrixParams(Pi)),
       DataPolicy(new PDS(wgt.size())),
       PriorPolicy()
   {
-    Spd W(wgt.size());
+    SpdMatrix W(wgt.size());
     W.set_diag(wgt);
     set_Nu(W*Nu());
   }
@@ -127,15 +127,15 @@ namespace BOOM{
     return ParamPolicy::prm();}
   const Ptr<MatrixParams> PDM::Nu_prm()const{
     return ParamPolicy::prm();}
-  const Mat & PDM::Nu()const{return Nu_prm()->value();}
+  const Matrix & PDM::Nu()const{return Nu_prm()->value();}
 
-  void PDM::set_Nu(const Mat &Nu){
+  void PDM::set_Nu(const Matrix &Nu){
     Nu_prm()->set(Nu);}
 
   double PDM::pdf(Ptr<Data> dp, bool logscale)const{
     return pdf(DAT(dp)->value(), logscale); }
 
-  double PDM::pdf(const Mat &Pi, bool logscale)const{
+  double PDM::pdf(const Matrix &Pi, bool logscale)const{
     double ans(0);
     for(uint i=0; i<Pi.nrow(); ++i){
       ans += ddirichlet(Pi.row(i), Nu().row(1), true);
@@ -145,7 +145,7 @@ namespace BOOM{
 
   double PDM::loglike(const Vector &Nu_columns)const{
     Matrix Nu(dim(), dim(), Nu_columns.data());
-    const Mat & sumlog(suf()->sumlog());
+    const Matrix & sumlog(suf()->sumlog());
     double n=  suf()->n();
 
     double ans=0;
@@ -154,14 +154,14 @@ namespace BOOM{
     return ans;
   }
 
-  double PDM::dloglike(const Vector &Nu_columns, Vec &g)const{
+  double PDM::dloglike(const Vector &Nu_columns, Vector &g)const{
     Matrix Nu(dim(), dim(), Nu_columns.data());
-    const Mat & sumlog(suf()->sumlog());
+    const Matrix & sumlog(suf()->sumlog());
     double n=  suf()->n();
 
     uint nr = nrow(Nu);
-    Mat G(nr,nr);
-    Vec g_row(nr);
+    Matrix G(nr,nr);
+    Vector g_row(nr);
 
     double ans=0;
     for(uint i=0; i<nrow(Nu); ++i){
@@ -176,9 +176,9 @@ namespace BOOM{
     return ans;
   }
 
-  Mat PDM::sim()const{
+  Matrix PDM::sim()const{
     uint d = dim();
-    Mat ans(d,d);
+    Matrix ans(d,d);
     for(uint i=0; i<d; ++i) ans.row(i) = rdirichlet(Nu().row(i));
     return ans;
   }

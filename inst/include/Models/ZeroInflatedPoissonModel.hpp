@@ -33,18 +33,18 @@ namespace BOOM {
     ZeroInflatedPoissonSuf(double number_of_zero_trials,
                            double number_of_positive_trials,
                            double total_number_of_events);
-    ZeroInflatedPoissonSuf * clone()const;
+    ZeroInflatedPoissonSuf * clone()const override;
 
     // Required virtual functions..
-    virtual void clear();
-    virtual void Update(const IntData &);
-    virtual ZeroInflatedPoissonSuf * abstract_combine(Sufstat *s);
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
-    virtual ostream & print(ostream &)const;
+    void clear() override;
+    void Update(const IntData &) override;
+    ZeroInflatedPoissonSuf * abstract_combine(Sufstat *s) override;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream & print(ostream &)const override;
 
     void combine(Ptr<ZeroInflatedPoissonSuf>);
     void combine(const ZeroInflatedPoissonSuf &rhs);
@@ -75,7 +75,7 @@ namespace BOOM {
    public:
     ZeroInflatedPoissonModel(double lambda = 1.0, double zero_prob = 0.5);
     ZeroInflatedPoissonModel(const ZeroInflatedPoissonModel &rhs);
-    ZeroInflatedPoissonModel * clone()const;
+    ZeroInflatedPoissonModel * clone()const override;
 
     Ptr<UnivParams> Lambda_prm();
     const UnivParams * Lambda_prm()const;
@@ -90,7 +90,7 @@ namespace BOOM {
     void set_sufficient_statistics(const ZeroInflatedPoissonSuf &suf);
 
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(const Data * dp, bool logscale)const override;
     double logp(int y)const;
    private:
     mutable double log_zero_prob_;

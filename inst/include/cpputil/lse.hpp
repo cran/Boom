@@ -19,16 +19,24 @@
 #define BOOM_LSE_HPP
 #include <LinAlg/Types.hpp>
 #include <cmath>
-//#include <tr1/cmath>
 
 namespace BOOM{
-  double lse(const Vec &v);
-  double lse_safe(const Vec &v);
-  double lse_fast(const Vec &v);
+  double lse(const Vector &v);
+  double lse_safe(const Vector &v);
+  double lse_fast(const Vector &v);
+
+  // The log of the sum of 2 exponentials.  log(exp(x) + exp(y))
   inline double lse2(double x, double y){
     // returns log( exp(x) + exp(y));
     if(x<y){ double tmp(x); x=y; y=tmp; }
     return x + ::log1p(::exp(y-x));
   }
+
+  // The log of the difference of 2 exponentials.  log(exp(x) -
+  // exp(y)).  Must be called with x >= y.  If x == y then
+  // negative_infinity() is returned.  If x < y then an exception is
+  // thrown.
+  double lde2(double x, double y);
+
 }
 #endif // BOOM_LSE_HPP

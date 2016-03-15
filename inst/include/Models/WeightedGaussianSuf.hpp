@@ -34,15 +34,15 @@ namespace BOOM {
                                  double sumsq = 0,
                                  double n = 0,
                                  double sumw = 0);
-    virtual WeightedGaussianSuf * clone()const;
+    WeightedGaussianSuf * clone() const override;
 
-    virtual void clear();
-    virtual void Update(const WeightedDoubleData &data);
+    void clear() override;
+    void Update(const WeightedDoubleData &data) override;
 
     void update_raw(double data, double weight);
     void add_mixture_data(double y, double weight, double prob);
 
-    WeightedGaussianSuf * abstract_combine(Sufstat *s);
+    WeightedGaussianSuf * abstract_combine(Sufstat *s) override;
     void combine(Ptr<WeightedGaussianSuf>);
     void combine(const WeightedGaussianSuf &);
 
@@ -52,12 +52,12 @@ namespace BOOM {
     double sumsq()const{return sumsq_;}
     double sumw()const{return sumw_;}
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
-    virtual ostream & print(ostream &)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream & print(ostream &)const override;
 
    private:
     double sum_;    // sum y[i] * w[i]

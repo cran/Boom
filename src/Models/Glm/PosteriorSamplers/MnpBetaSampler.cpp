@@ -23,24 +23,25 @@
 namespace BOOM{
   typedef MnpBetaSampler MBS;
   typedef MultinomialProbitModel MNP;
-  MBS::MnpBetaSampler(MNP *Mod, Ptr<MvnModel> Pri)
-    : mnp(Mod),
+  MBS::MnpBetaSampler(MNP *Mod, Ptr<MvnModel> Pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mnp(Mod),
       pri(Pri),
       b0_fixed(true)
   {}
 
   void MBS::draw(){
-    Spd ivar = mnp->xtx() + pri->siginv();
-    Vec mean = mnp->xty() + pri->siginv()*pri->mu();
+    SpdMatrix ivar = mnp->xtx() + pri->siginv();
+    Vector mean = mnp->xty() + pri->siginv()*pri->mu();
     mean = ivar.solve(mean);
-    Vec beta = rmvn_ivar(mean, ivar);
+    Vector beta = rmvn_ivar(mean, ivar);
     if(b0_fixed){
       uint start = 0;
       uint p = mnp->subject_nvars();
-      Vec b0(beta.begin(), beta.begin()+p);
+      Vector b0(beta.begin(), beta.begin()+p);
       for(uint i=0; i<mnp->Nchoices(); ++i){
         VectorView(beta, start, p) -= b0;
-	start+=p;}}
+    start+=p;}}
     mnp->set_beta(beta);
   }
 

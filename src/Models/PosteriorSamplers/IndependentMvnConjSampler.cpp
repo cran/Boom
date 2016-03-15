@@ -26,12 +26,14 @@ namespace BOOM {
 
   IndependentMvnConjSampler::IndependentMvnConjSampler(
       IndependentMvnModel *model,
-      const Vec &mean_guess,
-      const Vec & mean_sample_size,
-      const Vec &sd_guess,
-      const Vec &sd_sample_size,
-      const Vec &sigma_upper_limit)
-      : model_(model),
+      const Vector &mean_guess,
+      const Vector & mean_sample_size,
+      const Vector &sd_guess,
+      const Vector &sd_sample_size,
+      const Vector &sigma_upper_limit,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mean_prior_guess_(mean_guess),
         mean_prior_sample_size_(mean_sample_size),
         prior_ss_(sd_guess * sd_guess * sd_sample_size),
@@ -53,8 +55,10 @@ namespace BOOM {
       double mean_sample_size,
       double sd_guess,
       double sd_sample_size,
-      double sigma_upper_limit)
-      : model_(model),
+      double sigma_upper_limit,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mean_prior_guess_(model->dim(), mean_guess),
         mean_prior_sample_size_(model->dim(), mean_sample_size),
         prior_ss_(model->dim(), sd_guess * sd_guess * sd_sample_size),
@@ -70,8 +74,8 @@ namespace BOOM {
 
   double IndependentMvnConjSampler::logpri()const{
     int dim = model_->dim();
-    const Vec &mu(model_->mu());
-    const Vec &sigsq(model_->sigsq());
+    const Vector &mu(model_->mu());
+    const Vector &sigsq(model_->sigsq());
     double ans = 0;
     for(int i = 0; i < dim; ++i){
       ans += dgamma(1.0/sigsq[i], prior_df_[i] / 2, prior_ss_[i] / 2, true);
@@ -92,7 +96,7 @@ namespace BOOM {
   }
 
   void IndependentMvnConjSampler::check_vector_size(
-      const Vec &v, const char *vector_name) {
+      const Vector &v, const char *vector_name) {
     if (v.size() != model_->dim()) {
       ostringstream err;
       err << "One of the elements of IndependentMvnConjSampler does not "
@@ -106,10 +110,10 @@ namespace BOOM {
   void IndependentMvnConjSampler::draw(){
     int dim = model_->dim();
     const IndependentMvnSuf &suf(*(model_->suf()));
-    Vec mu(dim);
-    Vec sigsq(dim);
+    Vector mu(dim);
+    Vector sigsq(dim);
     for(int i = 0; i < dim; ++i){
-      double n = suf.n(i);
+      double n = suf.n();
       double ybar = suf.ybar(i);
       double v = suf.sample_var(i);
 

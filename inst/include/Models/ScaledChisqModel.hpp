@@ -36,7 +36,7 @@ namespace BOOM{
   public:
     ScaledChisqModel(double nu=30.0);
     ScaledChisqModel(const ScaledChisqModel &rhs);
-    ScaledChisqModel * clone()const;
+    ScaledChisqModel * clone()const override;
 
     Ptr<UnivParams> Nu_prm();
     const Ptr<UnivParams> Nu_prm()const;
@@ -44,12 +44,13 @@ namespace BOOM{
     const double & nu() const;
     void set_nu(double);
 
-    virtual double alpha()const{return nu()/2;}
-    virtual double beta()const{return nu()/2;}
+    double alpha()const override{return nu()/2;}
+    double beta()const override{return nu()/2;}
 
     // probability calculations
-    double Loglike(const Vector &nu, Vec &g, Mat &h, uint nd) const ;
-    void mle() {d2LoglikeModel::mle();}
+    double Loglike(const Vector &nu, Vector &g, Matrix &h, uint nd) const override;
+    double log_likelihood(double nu) const;
+    void mle() override {d2LoglikeModel::mle();}
 
   };
 

@@ -26,8 +26,10 @@ namespace BOOM{
       NonzeroMeanAr1Model *model,
       Ptr<GaussianModelBase> mean_prior,
       Ptr<GaussianModelBase> phi_prior,
-      Ptr<GammaModelBase> siginv_prior)
-  : m_(model),
+      Ptr<GammaModelBase> siginv_prior,
+      RNG &seeding_rng)
+  : PosteriorSampler(seeding_rng),
+    m_(model),
     mean_prior_(mean_prior),
     phi_prior_(phi_prior),
     siginv_prior_(siginv_prior),

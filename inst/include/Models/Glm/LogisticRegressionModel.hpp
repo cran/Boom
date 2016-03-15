@@ -30,18 +30,6 @@
 
 namespace BOOM{
 
-  class LogisticRegressionModel;
-
-  class LogitLogLikelihood : public d2TargetFun{
-   public:
-    LogitLogLikelihood(const LogisticRegressionModel *m);
-    double operator()(const Vec & beta)const;
-    double operator()(const Vec & beta, Vec &g)const;
-    double operator()(const Vec & beta, Vec &g, Mat &h)const;
-   private:
-    const LogisticRegressionModel *m_;
-  };
-
   class LogisticRegressionModel
       : public GlmModel,
         public NumOptModel,
@@ -52,35 +40,36 @@ namespace BOOM{
   {
   public:
     LogisticRegressionModel(uint beta_dim, bool include_all=true);
-    LogisticRegressionModel(const Vec &beta);
-    LogisticRegressionModel(const Mat &X, const Vec &y, bool add_int);
+    LogisticRegressionModel(const Vector &beta);
+    LogisticRegressionModel(const Matrix &X, const Vector &y, bool add_int);
     LogisticRegressionModel(const LogisticRegressionModel &);
-    LogisticRegressionModel *clone()const;
+    LogisticRegressionModel *clone()const override;
 
-    virtual GlmCoefs &coef(){return ParamPolicy::prm_ref();}
-    virtual const GlmCoefs &coef()const{return ParamPolicy::prm_ref();}
-    virtual Ptr<GlmCoefs> coef_prm(){return ParamPolicy::prm();}
-    virtual const Ptr<GlmCoefs> coef_prm()const{return ParamPolicy::prm();}
+    GlmCoefs &coef() override{return ParamPolicy::prm_ref();}
+    const GlmCoefs &coef()const override{return ParamPolicy::prm_ref();}
+    Ptr<GlmCoefs> coef_prm() override{return ParamPolicy::prm();}
+    const Ptr<GlmCoefs> coef_prm()const override{return ParamPolicy::prm();}
 
     virtual double pdf(dPtr dp, bool logscale)const;
-    virtual double pdf(const Data * dp, bool logscale)const;
-    double logp(bool y, const Vec &x)const;
+    double pdf(const Data * dp, bool logscale)const override;
+    double logp(bool y, const Vector &x)const;
 
     // In the following, 'beta' refers to the set of nonzero
     // "included" coefficients, so its dimension might be less than
     // the number of columns in the design matrix.
-    virtual double Loglike(const Vector &beta, Vec &g, Mat &h, uint nd)const;
-    virtual double log_likelihood(const Vec &beta, Vec *g, Mat *h,
+    double Loglike(const Vector &beta, Vector &g, Matrix &h, uint nd)const override;
+    virtual double log_likelihood(const Vector &beta, Vector *g, Matrix *h,
                                   bool initialize_derivs = true)const;
 
-    LogitLogLikelihood log_likelihood_tf()const;
+    d2TargetFunPointerAdapter log_likelihood_tf()const;
 
-    virtual Spd xtx()const;
+    virtual SpdMatrix xtx()const;
 
     // when modeling rare events it can be convenient to retain all
     // the events and 100 * alpha% of the non-events.
     void set_nonevent_sampling_prob(double alpha);
     double log_alpha()const;
+
    private:
     double log_alpha_;  // alpha is the probability that a 'zero'
                         // (non-event) is retained in the data.  It is
@@ -88,34 +77,6 @@ namespace BOOM{
                         // events and 100 alpha% of the non-events
   };
 
-  class MvnBase;
-  // Logistic regression specialized to be an EM mixture component
-  class LogitEMC
-    : public LogisticRegressionModel,
-      public EmMixtureComponent
-  {
-  public:
-    LogitEMC(uint beta_dim, bool all=true);
-    LogitEMC(const Vec &beta);
-    LogitEMC * clone()const;
-    virtual void add_mixture_data(Ptr<Data>, double prob);
-    virtual void clear_data();
-    virtual double pdf(Ptr<Data> dp, bool logscale)const{
-      return LogisticRegressionModel::pdf(dp, logscale);}
-    virtual double pdf(const Data *dp, bool logscale)const{
-      return LogisticRegressionModel::pdf(dp, logscale);}
-    void set_prior(Ptr<MvnBase>);
-    void find_posterior_mode();
-    virtual Spd xtx()const;    // incorporates probs
-    virtual void mle() {
-      LogisticRegressionModel::mle();
-    }
-  private:
-    Vec probs_;
-    Ptr<MvnBase> pri_;
-  };
-
-
-}// ends namespace BOOM
+}  // ends namespace BOOM
 
 #endif //LOGISTIC_REGRESSION_HPP

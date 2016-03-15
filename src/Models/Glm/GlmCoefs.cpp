@@ -54,7 +54,7 @@ namespace BOOM{
           << "GlmCoefs.  nvars_possible = " << N
           << " but nvars = " << n << ".  explain that one."
           << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     uint p = b.size();
     if(p>N){
@@ -62,7 +62,7 @@ namespace BOOM{
       err << "cannot build GlmCoefs with vector of size "
           << p << " and 'Selector' of size "
           << N << ". " << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
 
     if(p<N){
@@ -74,7 +74,7 @@ namespace BOOM{
             << " (" << p << ") must match either nvars ("
             << n << ") or nvars_possible (" << N
             << ")." << endl;
-        throw_exception<std::runtime_error>(err.str());
+        report_error(err.str());
       }
     }
   }
@@ -121,7 +121,7 @@ namespace BOOM{
 
   void GlmCoefs::drop_all(){
     inc_.drop_all();
-    set_Beta(Vec(nvars_possible()));
+    set_Beta(Vector(nvars_possible()));
   }
 
   void GlmCoefs::add_all(){
@@ -223,6 +223,13 @@ namespace BOOM{
     return VectorParams::operator[](i);}
 
   void GlmCoefs::set_Beta(const Vector &tmp){
+    if (tmp.size() != nvars_possible()) {
+      std::ostringstream err;
+      err << "set_Beta called with wrong size input." << std::endl
+          << "current size = " << nvars_possible() << endl
+          << "Beta.size()  = " << tmp.size() << endl;
+      report_error(err.str());
+    }
     included_coefficients_current_ = false;
     VectorParams::set(tmp);
   }
@@ -247,12 +254,12 @@ namespace BOOM{
     return VectorParams::vectorize();
   }
 
-  Vec::const_iterator GlmCoefs::unvectorize(
-      Vec::const_iterator &v, bool minimal){
+  Vector::const_iterator GlmCoefs::unvectorize(
+      Vector::const_iterator &v, bool minimal){
     included_coefficients_current_ = false;
     if(minimal){
       included_coefficients_.resize(nvars());
-      Vec::const_iterator e = v+included_coefficients_.size();
+      Vector::const_iterator e = v+included_coefficients_.size();
       std::copy(v,e, included_coefficients_.begin());
       set_included_coefficients(included_coefficients_);
       return e;
@@ -260,8 +267,8 @@ namespace BOOM{
     return VectorParams::unvectorize(v);
   }
 
-  Vec::const_iterator GlmCoefs::unvectorize(const Vector &v, bool min){
-    Vec::const_iterator b = v.begin();
+  Vector::const_iterator GlmCoefs::unvectorize(const Vector &v, bool min){
+    Vector::const_iterator b = v.begin();
     return unvectorize(b, min);}
 
   //____________________ private stuff ___________
@@ -278,7 +285,7 @@ namespace BOOM{
     msg << "wrong size argument given to set_beta" << endl
         << "current size  = " << nvars() << endl
         << "argument size = " << b.size() << endl;
-    throw_exception<std::runtime_error>(msg.str());
+    report_error(msg.str());
   }
 
   void GlmCoefs::fill_beta()const{

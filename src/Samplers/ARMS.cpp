@@ -20,6 +20,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <cstdlib>
 #include <limits>
 #include <numopt.hpp>
@@ -34,7 +35,7 @@ namespace BOOM{
     return obj->eval();
   }
 
-  ARMS::ArmsSampler(Target target, const Vec & initial_value, bool lc)
+  ARMS::ArmsSampler(Target target, const Vector & initial_value, bool lc)
     : f(target),
       x(initial_value),
       lower_limits(initial_value),
@@ -51,7 +52,7 @@ namespace BOOM{
     upper_limits = x+1.0;  // these get adjusted later
   }
 
-  Vec ARMS::draw(const Vec &old){
+  Vector ARMS::draw(const Vector &old){
     using std::endl;
     x=old;
     for(uint i=0; i<x.size(); ++i){
@@ -72,7 +73,7 @@ namespace BOOM{
 	    << "log_convex = " << log_convex << endl
 	    << "now   = " << now << endl
 	    << "ans   = " << ans <<endl;
-	throw_exception<std::runtime_error>(msg.str());
+	report_error(msg.str());
       }
       double width = hi-lo;
       if( fabs(hi-ans) < 1.0) upper_limits[i] += .5*width;
@@ -82,16 +83,16 @@ namespace BOOM{
     return x;
   }
 
-  double ARMS::logp(const Vec &v)const{ return f(v);}
+  double ARMS::logp(const Vector &v)const{ return f(v);}
   double ARMS::eval()const{return logp(x);}
   void ARMS::set(double y){x[which]=y;}
-  void ARMS::set_limits(const Vec &lo, const Vec &hi){
+  void ARMS::set_limits(const Vector &lo, const Vector &hi){
     lower_limits = lo;
     upper_limits = hi;
   }
-  void ARMS::set_lower_limits(const Vec &lo){
+  void ARMS::set_lower_limits(const Vector &lo){
     lower_limits = lo;}
-  void ARMS::set_upper_limits(const Vec &hi){
+  void ARMS::set_upper_limits(const Vector &hi){
     upper_limits=hi;}
 
 }

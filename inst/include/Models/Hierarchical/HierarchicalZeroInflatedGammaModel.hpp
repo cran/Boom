@@ -33,8 +33,8 @@ namespace BOOM {
   class HierarchicalZeroInflatedGammaData : public Data {
    public:
     HierarchicalZeroInflatedGammaData(int n0, int n1, double sum, double sumlog);
-    virtual HierarchicalZeroInflatedGammaData * clone()const;
-    virtual ostream & display(ostream &out)const;
+    HierarchicalZeroInflatedGammaData * clone() const override;
+    ostream & display(ostream &out)const override;
     int number_of_zeros()const;
     int number_of_positives()const;
     double sum()const;
@@ -116,31 +116,34 @@ namespace BOOM {
     //   sum_of_logs_of_positive_observations: The sum of the
     //     (natural) logs of the positive observations in each group.
     //     If a group has no positive observations then this is zero.
+    //   seeding_rng: The random-number generator to use for seeding the model's
+    //     internal posterior samplers.
     HierarchicalZeroInflatedGammaModel(
-        const std::vector<int> &number_of_zeros_per_group,
-        const std::vector<int> &number_of_positives_per_group,
-        const std::vector<double> &sum_of_positive_observations_per_group,
-        const std::vector<double> &sum_of_logs_of_positive_observations);
+        const BOOM::Vector &number_of_zeros_per_group,
+        const BOOM::Vector &number_of_positives_per_group,
+        const BOOM::Vector &sum_of_positive_observations_per_group,
+        const BOOM::Vector &sum_of_logs_of_positive_observations,
+        BOOM::RNG &seeding_rng = BOOM::GlobalRng::rng);
 
     HierarchicalZeroInflatedGammaModel(
         const HierarchicalZeroInflatedGammaModel &rhs);
 
-    virtual HierarchicalZeroInflatedGammaModel * clone()const;
+    HierarchicalZeroInflatedGammaModel * clone() const override;
 
     // TODO(stevescott): Should have a HierarchicalPriorPolicy that
     // implements clear_methods() by calling it on the data-level
     // models.
-    virtual void clear_methods();
+    void clear_methods();
 
     // Removes all data_level_models and their associated parameters
     // and data.
-    virtual void clear_data();
+    void clear_data() override;
 
     // Adds the data_level_models from rhs to this.
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
+    void combine_data(const Model &rhs, bool just_suf = true) override;
 
     // Creates a new data_level_model with data assigned.
-    virtual void add_data(Ptr<Data>);
+    void add_data(Ptr<Data>) override;
 
     // Returns the number of data_level_models managed by this model.
     int number_of_groups()const;

@@ -59,41 +59,44 @@ namespace BOOM{
         public PriorPolicy
   {
    public:
-    MvnGivenScalarSigma(const Spd &ominv, Ptr<UnivParams> sigsq);
-    MvnGivenScalarSigma(const Vec &mean,
-                        const Spd &ominv,
+    MvnGivenScalarSigma(const SpdMatrix &ominv, Ptr<UnivParams> sigsq);
+    MvnGivenScalarSigma(const Vector &mean,
+                        const SpdMatrix &ominv,
                         Ptr<UnivParams> sigsq);
 
     MvnGivenScalarSigma(const MvnGivenScalarSigma & rhs);
-    virtual MvnGivenScalarSigma * clone()const;
+    MvnGivenScalarSigma * clone() const override;
 
     Ptr<VectorParams> Mu_prm();
     const Ptr<VectorParams> Mu_prm()const;
 
-    virtual uint dim()const;
-    virtual const Vec & mu() const;
+    uint dim()const override;
+    const Vector & mu() const override;
 
     // Sigma refers to the actual variance matrix of beta given sigma
     // and Omega, i.e. Omega * sigsq.  siginv and ldsi refer to its
     // inverse and the log of the determinant of its inverse.
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv()const;
-    virtual double ldsi()const;
+    const SpdMatrix & Sigma()const override;
+    const SpdMatrix & siginv()const override;
+    double ldsi()const override;
 
     // Omega refers to the proportional variance matrix of beta
     // (i.e. not multiplied by sigsq).  ominv and ldoi refer to the
     // inverse of this matrix and the log of the determinant of the
     // inverse.
-    const Spd & Omega()const;
-    const Spd & ominv()const;
+    const SpdMatrix & Omega()const;
+    const SpdMatrix & ominv()const;
     double ldoi()const;
 
-    void set_mu(const Vec &);
-    void mle();
-    double loglike(const Vector &mu_ominv)const;
+    void set_mu(const Vector &);
+
+    void set_unscaled_precision(const SpdMatrix &omega_inverse);
+
+    void mle() override;
+    double loglike(const Vector &mu_ominv)const override;
     double pdf(Ptr<Data>, bool)const;
    private:
-    // ominv_ is stored as SpdParams instead of as a raw Spd because
+    // ominv_ is stored as SpdParams instead of as a raw SpdMatrix because
     // SpdParams keeps track of the matrix, its inverse, and its log
     // determinant.
     SpdData omega_;
@@ -101,7 +104,7 @@ namespace BOOM{
     // The following is workspace used to comply with the
     // return-by-reference interface promised by MvnBase for Sigma(),
     // siginv(), and ldsi().
-    mutable Spd wsp_;
+    mutable SpdMatrix wsp_;
   };
 
 }

@@ -40,13 +40,29 @@ namespace BOOM{
 
   enum calendar_format{Full,full,Abbreviations, abbreviations,numeric};
 
-  MonthNames str2month(const string &m);
-  DayNames str2day(const string &d);
+  // Args:
+  //   month_name: The following formats are acceptable
+  //   * Full month name (either with initial caps or all lower case)
+  //   * Three letter abbreviation (either initial caps or all lower case).
+  //   * Month number (with January = 1, February = 2, etc).  A
+  //     leading "0" for months prior to October is optional.
+  // Returns:
+  //   The enum corresponding to the month in the input string.
+  MonthNames str2month(const string &month_name);
+
+  // Args:
+  //   day_name: Name of the day of the week.  The following formats
+  //     are acceptable:
+  //   * Full day name (initial caps or all lower case),
+  //   * Three letter abbreviation (initial caps or all lower case).
+  // Returns:
+  //   The enum corresponding to the day of the week in the input string.
+  DayNames str2day(const string &day_name);
 
   ostream & operator<<(ostream &, const DayNames &);
 
   class Date{
-  public:
+   public:
     enum print_order{mdy, dmy, ymd};
     enum date_format{slashes, dashes, script};
 
@@ -110,7 +126,8 @@ namespace BOOM{
     static void set_date_format(date_format f);
 
     static bool is_leap_year(int yyyy){
-      //divisible by 4, not if divisible by 100, but true if divisible by 400
+      // Divisible by 4, not if divisible by 100, but true if divisible
+      // by 400.
       return (!(yyyy % 4))  && ((yyyy % 100) || (!(yyyy % 400)));
     }
     static int days_after_jan_1_1970(MonthNames month, int day, int year);
@@ -120,7 +137,8 @@ namespace BOOM{
       if(month == Feb) return leap_year ? 29 : 28;
       return days_in_month_[month];}
 
-    // The number of days (month,day) is into the year.  Unit based, so Jan 1 is 1.
+    // The number of days (month,day) is into the year.  Unit based,
+    // so Jan 1 is 1.
     static int days_into_year(MonthNames month, int day, bool leap){
       int ans = leap ?
           days_before_month_in_leap_year_[month] + day :
@@ -131,21 +149,34 @@ namespace BOOM{
     // The local time zone is the time zone of the computer on which
     // the program is run.  It is used only for the default
     // constructor.
-    static void set_local_time_zone(int);
+    //
+    // Args: minutes_after_gmt: The number of minutes difference
+    //   between current time in the local time zone and current time
+    //   gmt.
+    static void set_local_time_zone(int minutes_after_gmt);
+
+    // The number of minutes after gmt in the local time zone.  The
+    // unit is minutes instead of hours because some time
+    // zones are half an hour or 45 minutes off.
     static int local_time_zone();
 
     // Returns the number of full years since Jan 1, 1970 that have
     // been exhausted by the first argument.  The second argument
     // returns the number of days AFTER Jan 1 of the following year.
-    static int years_after_jan_1_1970(int days_after_jan_1_1970, int *days_remaining);
-    static int years_before_jan_1_1970(int days_before_jan_1_1970, int *days_remaining);
+    static int years_after_jan_1_1970(int days_after_jan_1_1970,
+                                      int *days_remaining);
+    static int years_before_jan_1_1970(int days_before_jan_1_1970,
+                                       int *days_remaining);
 
     // The number of leap years in [1970, year).
-    static int number_of_leap_years_after_1970(int year, bool include_endpoint = false);
+    static int number_of_leap_years_after_1970(int year,
+                                               bool include_endpoint = false);
     // The number of leap years in (year, 1970].
-    static int number_of_leap_years_before_1970(int year, bool include_endpoint = false);
-    static void find_month_and_day(int days_into_year, bool leap, MonthNames *month, int *day);
-  private:
+    static int number_of_leap_years_before_1970(int year,
+                                                bool include_endpoint = false);
+    static void find_month_and_day(int days_into_year, bool leap,
+                                   MonthNames *month, int *day);
+   private:
     MonthNames month_;
     int day_;
     int year_;
@@ -157,7 +188,11 @@ namespace BOOM{
     static print_order po;
     static const int seconds_in_a_day_;
     static const int seconds_in_an_hour_;
-    static int local_time_zone_;  // number of hours difference from GMT;
+
+    // The number of minutes past GMT in the local time zone.  Minutes
+    // are used instead of hours in order to handle time zones that
+    // differ from GMT by an additional 30 or 45 minutes.
+    static int local_time_zone_gmt_offset_minutes_;
     static const int days_in_month_[13];
     static const int days_before_month_[13];
     static const int days_before_month_in_leap_year_[13];

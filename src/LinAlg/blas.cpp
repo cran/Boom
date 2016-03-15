@@ -447,5 +447,85 @@ namespace BOOM {
              &M, &N, &alpha, A, &lda, B, &ldb);
     }
 
+    void initialize_blas_globals() {
+      double A, B, C, X, Y = 1.0;
+      dsymv(UPLO::Upper,
+            1,
+            1.0,
+            &A,
+            1,
+            &X,
+            1,
+            1.0,
+            &Y,
+            1);
+      dtrsv(UPLO::Upper,
+            TRANSPOSE::NoTrans,
+            DIAG::Unit,
+            1,
+            &A,
+            1,
+            &X,
+            1);
+      dtrmv(UPLO::Upper,
+            TRANSPOSE::NoTrans,
+            DIAG::Unit,
+            1,
+            &A,
+            1,
+            &X,
+            1);
+      dgemv(TRANSPOSE::NoTrans,
+            1,
+            1,
+            1.0,
+            &A,
+            1,
+            &X,
+            1,
+            1.0,
+            &Y,
+            1);
+      dtrsm(SIDE::Left,
+            UPLO::Upper,
+            TRANSPOSE::NoTrans,
+            DIAG::Unit,
+            1,
+            1,
+            1.0,
+            &A,
+            1,
+            &B,
+            1);
+      dtrmm(SIDE::Left,
+            UPLO::Upper,
+            TRANSPOSE::NoTrans,
+            DIAG::Unit,
+            1,
+            1,
+            1.0,
+            &A,
+            1,
+            &B,
+            1);
+      dsyrk(UPLO::Upper,
+            TRANSPOSE::NoTrans,
+            1,
+            1,
+            1.0,
+            &A,
+            1,
+            1.0,
+            &C,
+            1);
+      dsyr(UPLO::Upper,
+           1,
+           1.0,
+           &X,
+           1,
+           &A,
+           1);
+    }
+
   }  // namespace blas
 }  // namespace BOOM

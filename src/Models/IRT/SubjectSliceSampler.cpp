@@ -30,12 +30,12 @@ namespace BOOM{
     typedef SubjectTF TF;
     TF::SubjectTF(Ptr<Subject> s, Ptr<SubjectPrior> p)
       : sub(s),
-	pri(p),
-	prms(sub->Theta_prm()),
-	wsp(sub->Theta())
+    pri(p),
+    prms(sub->Theta_prm()),
+    wsp(sub->Theta())
     {}
 
-    double TF::operator()(const Vec &v)const{
+    double TF::operator()(const Vector &v)const{
       ParamHolder ph(v, prms, wsp);
       double ans = pri->pdf(sub, true);
       if(ans==BOOM::negative_infinity()) return ans;
@@ -46,11 +46,13 @@ namespace BOOM{
     //======================================================================
 
     typedef SubjectSliceSampler SSS;
-    SSS::SubjectSliceSampler(Ptr<Subject> s, Ptr<SubjectPrior> p)
-      : sub(s),
-	pri(p),
-	target(sub, pri),
-	sam(new SliceSampler(target))
+    SSS::SubjectSliceSampler(Ptr<Subject> s, Ptr<SubjectPrior> p,
+                             RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+  sub(s),
+    pri(p),
+    target(sub, pri),
+    sam(new SliceSampler(target))
     { }
 
     SSS * SSS::clone()const{return new SSS(*this);}

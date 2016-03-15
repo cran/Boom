@@ -45,18 +45,18 @@ namespace BOOM{
     FiniteMixtureModel(FwdIt Beg, FwdIt End, Ptr<MultinomialModel>);
 
     FiniteMixtureModel(const FiniteMixtureModel &rhs);
-    FiniteMixtureModel * clone()const;
+    FiniteMixtureModel * clone()const override;
 
     void clear_component_data();
-    virtual void impute_latent_data(RNG &rng);
-    void class_membership_probability(Ptr<Data>, Vec &ans)const;
+    void impute_latent_data(RNG &rng) override;
+    void class_membership_probability(Ptr<Data>, Vector &ans)const;
     double last_loglike()const;
 
     double pdf(dPtr dp, bool logscale)const;
     uint number_of_mixture_components()const;
 
-    const Vec & pi()const;
-    const Vec & logpi()const;
+    const Vector & pi()const;
+    const Vector & logpi()const;
 
     Ptr<MultinomialModel> mixing_distribution();
     const MultinomialModel * mixing_distribution()const;
@@ -67,37 +67,37 @@ namespace BOOM{
     // Returns a matrix of class membership probabilities for each
     // observation.  The table of membership probabilities is
     // re-written with each call to impute_latent_data().
-    const Mat & class_membership_probability()const;
+    const Matrix & class_membership_probability()const;
 
     // Returns a vector giving the latent class to which each
     // observation was assigned during the most recent call to
     // impute_latent_data().
-    Vec class_assignment()const;
+    Vector class_assignment()const;
 
   protected:
     void set_logpi()const;
-    mutable Vec wsp_;
+    mutable Vector wsp_;
 
     // Save the class membership probabilities for user i.
-    void update_class_membership_probabilities(int i, const Vec &probs);
+    void update_class_membership_probabilities(int i, const Vector &probs);
   private:
     std::vector<Ptr<MixtureComponent> > mixture_components_;
     Ptr<MultinomialModel> mixing_dist_;
-    mutable Vec logpi_;
+    mutable Vector logpi_;
     mutable bool logpi_current_;
     void observe_pi()const;
     void set_observers();
     virtual std::vector<Ptr<MixtureComponent> > models();
     virtual const std::vector<Ptr<MixtureComponent> > models()const;
     double last_loglike_;
-    Mat class_membership_probabilities_;
+    Matrix class_membership_probabilities_;
     std::vector<int> which_mixture_component_;
   };
   //----------------------------------------------------------------------
   template <class FwdIt>
   FiniteMixtureModel::FiniteMixtureModel(FwdIt Beg, FwdIt End,
                                          Ptr<MultinomialModel> MixDist)
-    : DataPolicy(MixDist->size()),
+    : DataPolicy(MixDist->dim()),
       mixture_components_(Beg,End),
       mixing_dist_(MixDist)
   {
@@ -107,7 +107,7 @@ namespace BOOM{
   template <class M>
   FiniteMixtureModel::FiniteMixtureModel(std::vector<Ptr<M> > Models,
                                          Ptr<MultinomialModel> MixDist)
-    : DataPolicy(MixDist->size()),
+    : DataPolicy(MixDist->dim()),
       mixture_components_(Models.begin(), Models.end()),
       mixing_dist_(MixDist)
   {
@@ -137,7 +137,7 @@ namespace BOOM{
     {}
 
     EmFiniteMixtureModel(const EmFiniteMixtureModel &rhs);
-    EmFiniteMixtureModel * clone()const;
+    EmFiniteMixtureModel * clone()const override;
 
     double loglike()const;
     void mle();

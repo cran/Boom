@@ -154,10 +154,10 @@ namespace BOOM{
   class RealValuedRListIoElement : public RListIoElement {
    public:
     RealValuedRListIoElement(const std::string &name);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
    protected:
-    virtual void StoreBuffer(SEXP buffer);
+    void StoreBuffer(SEXP buffer) override;
     double *data();
    private:
     double *data_;
@@ -167,7 +167,7 @@ namespace BOOM{
   class ListValuedRListIoElement : public RListIoElement {
    public:
     ListValuedRListIoElement(const std::string &name);
-    virtual SEXP prepare_to_write(int niter);
+    SEXP prepare_to_write(int niter) override;
   };
 
   //----------------------------------------------------------------------
@@ -178,8 +178,8 @@ namespace BOOM{
                           const std::string &param_name,
                           int which,
                           bool report_sd);
-    virtual void write();
-    virtual void stream();
+    void write() override;
+    void stream() override;
    private:
     void CheckSize();
     Ptr<SpdParams> prm_;
@@ -192,8 +192,8 @@ namespace BOOM{
   class UnivariateListElement : public RealValuedRListIoElement {
    public:
     UnivariateListElement(Ptr<UnivParams>, const std::string &name);
-    virtual void write();
-    virtual void stream();
+    void write() override;
+    void stream() override;
    private:
     Ptr<UnivParams> prm_;
   };
@@ -227,10 +227,10 @@ namespace BOOM{
     NativeUnivariateListElement(ScalarIoCallback *callback,
                                 const std::string &name,
                                 double *streaming_buffer = NULL);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
    private:
     boost::shared_ptr<ScalarIoCallback> callback_;
     double *streaming_buffer_;
@@ -244,8 +244,8 @@ namespace BOOM{
    public:
     StandardDeviationListElement(
         Ptr<UnivParams>, const std::string &name);
-    virtual void write();
-    virtual void stream();
+    void write() override;
+    void stream() override;
    private:
     Ptr<UnivParams> variance_;
   };
@@ -257,10 +257,10 @@ namespace BOOM{
     VectorListElement(Ptr<VectorParams> m,
                       const std::string &param_name);
     // Allocate a matrix
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
    private:
     void CheckSize();
     Ptr<VectorParams> prm_;
@@ -275,7 +275,7 @@ namespace BOOM{
    public:
     GlmCoefsListElement(Ptr<GlmCoefs> m,
                         const std::string &param_name);
-    virtual void stream();
+    void stream() override;
    private:
     Ptr<GlmCoefs> coefs_;
 
@@ -291,7 +291,7 @@ namespace BOOM{
     NamedVectorListElement(Ptr<VectorParams> m,
                            const std::string &param_name,
                            const std::vector<string> &element_names);
-    virtual SEXP prepare_to_write(int niter);
+    SEXP prepare_to_write(int niter) override;
    private:
     const std::vector<string> element_names_;
   };
@@ -302,10 +302,10 @@ namespace BOOM{
    public:
     SdVectorListElement(Ptr<VectorParams> v,
                         const std::string &param_name);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
    private:
     void CheckSize();
     Ptr<VectorParams> prm_;
@@ -342,13 +342,13 @@ namespace BOOM{
                       const std::string &param_name);
 
     // Allocate an array to hold the matrix draws.
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
 
-    virtual int nrow()const;
-    virtual int ncol()const;
+    int nrow()const override;
+    int ncol()const override;
    private:
     void CheckSize();
     Ptr<MatrixParams> prm_;
@@ -363,13 +363,13 @@ namespace BOOM{
                       const std::string &param_name);
 
     // Allocate an array to hold the matrix draws.
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
 
-    virtual int nrow()const;
-    virtual int ncol()const;
+    int nrow()const override;
+    int ncol()const override;
    private:
     void CheckSize();
     Ptr<SpdParams> prm_;
@@ -387,10 +387,10 @@ namespace BOOM{
    public:
     virtual ~VectorIoCallback(){}
     virtual int dim()const=0;
-    virtual Vec get_vector()const=0;
+    virtual Vector get_vector()const=0;
   };
 
-  // A NativeVectorListElement manages a native BOOM Vec that is not
+  // A NativeVectorListElement manages a native BOOM Vector that is not
   // stored in a VectorParams.
   class NativeVectorListElement : public RealValuedRListIoElement{
    public:
@@ -400,19 +400,19 @@ namespace BOOM{
     //     for streaming.  If it is non-NULL then this class takes
     //     ownership and deletes the callback on destruction.
     //   name:  the name of the entry in the R list.
-    //   streaming_buffer: A pointer to a BOOM Vector/Vec that will
+    //   streaming_buffer: A pointer to a BOOM Vector/Vector that will
     //     receive the contents of the R list when streaming.  This
     //     can be NULL if streaming is not desired.
     NativeVectorListElement(VectorIoCallback *callback,
                          const std::string &name,
-                         Vec *streaming_buffer);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+                         Vector *streaming_buffer);
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
    private:
     boost::shared_ptr<VectorIoCallback> callback_;
-    Vec *streaming_buffer_;
+    Vector *streaming_buffer_;
     SubMatrix matrix_view_;
   };
 
@@ -423,7 +423,7 @@ namespace BOOM{
     virtual ~MatrixIoCallback(){}
     virtual int nrow()const = 0;
     virtual int ncol()const = 0;
-    virtual Mat get_matrix()const=0;
+    virtual Matrix get_matrix()const=0;
   };
 
   // A NativeMatrixListElement manages a BOOM Mat/Matrix that is not
@@ -444,17 +444,17 @@ namespace BOOM{
     // callback and streaming_buffer are NULL.
     NativeMatrixListElement(MatrixIoCallback *callback,
                             const std::string &name,
-                            Mat *streaming_buffer);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+                            Matrix *streaming_buffer);
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
 
-    virtual int nrow()const;
-    virtual int ncol()const;
+    int nrow()const override;
+    int ncol()const override;
    private:
     boost::shared_ptr<MatrixIoCallback> callback_;
-    Mat *streaming_buffer_;
+    Matrix *streaming_buffer_;
     ArrayView array_view_;
   };
 
@@ -503,10 +503,10 @@ namespace BOOM{
     //     managed by its RListIoManager.
     NativeArrayListElement(ArrayIoCallback *callback,
                            const std::string &name);
-    virtual SEXP prepare_to_write(int niter);
-    virtual void prepare_to_stream(SEXP object);
-    virtual void write();
-    virtual void stream();
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
    private:
     // Returns an ArrayView pointing to the next position (MCMC
     // iteration) in the buffer.  The ArrayView has one less dimension

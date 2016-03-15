@@ -89,11 +89,11 @@ namespace BOOM{
   class OrdinaryAnnualHoliday : public Holiday{
    public:
     OrdinaryAnnualHoliday(int days_before, int days_after);
-    virtual Date earliest_influence(const Date &holiday_date)const;
-    virtual Date latest_influence(const Date &holiday_date)const;
-    virtual int maximum_window_width()const;
-    virtual Date date_on_or_after(const Date &d)const;
-    virtual Date date_on_or_before(const Date &d)const;
+    Date earliest_influence(const Date &holiday_date)const override;
+    Date latest_influence(const Date &holiday_date)const override;
+    int maximum_window_width()const override;
+    Date date_on_or_after(const Date &d)const override;
+    Date date_on_or_before(const Date &d)const override;
 
     // The date the holiday occurs on a given year.  For floating
     // holidays, the date() function might be expensive to compute
@@ -122,7 +122,7 @@ namespace BOOM{
     // month is an integer between 1 and 12.
     FixedDateHoliday(int month, int day_of_month, int days_before = 1,
                      int days_after = 1);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
    private:
     // MonthNames is an enum in the range 1:12 defined in Date.hpp
     const MonthNames month_name_;
@@ -137,7 +137,7 @@ namespace BOOM{
    public:
     NthWeekdayInMonthHoliday(int which_week, DayNames day, MonthNames month,
                              int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
    private:
     int which_week_;
     DayNames day_name_;
@@ -152,7 +152,7 @@ namespace BOOM{
    public:
     LastWeekdayInMonthHoliday(DayNames day, MonthNames month,
                               int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
    private:
     DayNames day_name_;
     MonthNames month_name_;
@@ -186,7 +186,7 @@ namespace BOOM{
   class SuperBowlSunday : public FloatingHoliday{
    public:
     SuperBowlSunday(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
   };
 
   class PresidentsDay : public NthWeekdayInMonthHoliday{
@@ -213,19 +213,19 @@ namespace BOOM{
   class USDaylightSavingsTimeBegins : public FloatingHoliday{
    public:
     USDaylightSavingsTimeBegins(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
   };
 
   class USDaylightSavingsTimeEnds : public FloatingHoliday{
    public:
     USDaylightSavingsTimeEnds(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
   };
 
   class EasterSunday : public FloatingHoliday{
    public:
     EasterSunday(int days_before, int days_after);
-    virtual Date compute_date(int year)const;
+    Date compute_date(int year)const override;
   };
 
   // The US definition of Mother's day: second Sunday in May.

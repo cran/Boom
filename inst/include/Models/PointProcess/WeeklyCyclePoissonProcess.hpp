@@ -30,45 +30,45 @@ namespace BOOM{
   class WeeklyCyclePoissonSuf : public SufstatDetails<PointProcess> {
    public:
     WeeklyCyclePoissonSuf();
-    virtual WeeklyCyclePoissonSuf * clone()const;
-    virtual void clear();
+    WeeklyCyclePoissonSuf * clone() const override;
+    void clear() override;
 
-    void Update(const PointProcess &data);
+    void Update(const PointProcess &data) override;
     void add_exposure_window(const DateTime &t0, const DateTime &t1);
     void add_event(const DateTime &t);
 
     WeeklyCyclePoissonSuf * combine(Ptr<WeeklyCyclePoissonSuf>);
     WeeklyCyclePoissonSuf * combine(const WeeklyCyclePoissonSuf &);
-    virtual WeeklyCyclePoissonSuf * abstract_combine(Sufstat *s);
+    WeeklyCyclePoissonSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
-    virtual ostream & print(ostream &out)const;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
+    ostream & print(ostream &out)const override;
 
-    Vec daily_event_count()const;
-    Vec weekday_hourly_event_count()const;
-    Vec weekend_hourly_event_count()const;
+    Vector daily_event_count()const;
+    Vector weekday_hourly_event_count()const;
+    Vector weekend_hourly_event_count()const;
 
     // Returns a matrix where the (day, hour) element gives the total
     // exposure time (measured in fractoins of a day) for that hour in
     // that day of the week.
-    const Mat &exposure()const;
-    const Mat &count()const;
+    const Matrix &exposure()const;
+    const Matrix &count()const;
    private:
     // Keeps track of the number of events that take place during each
     // hour of the week.  Indexed by (day, hour).
-    Mat count_;
+    Matrix count_;
 
     // Keeps track of the number of hours (including fractional hours)
     // exposed during each hour of the week.  Time in each cell is
     // measured in days (not hours).
-    Mat exposure_;
+    Matrix exposure_;
 
-    static const Vec one_7;
-    static const Vec one_24;
+    static const Vector one_7;
+    static const Vector one_24;
   };
 
   // A Poisson process containing a day of week and hour of day cycle.
@@ -84,7 +84,7 @@ namespace BOOM{
   {
    public:
     WeeklyCyclePoissonProcess();
-    WeeklyCyclePoissonProcess * clone()const;
+    WeeklyCyclePoissonProcess * clone()const override;
 
     // Concatenate a collection of 4 parameters into a single vector
     // that can be passed to loglike().
@@ -103,30 +103,30 @@ namespace BOOM{
         const Vector &daily,
         const Vector &weekday_hourly,
         const Vector &weekend_hourly);
-    virtual double loglike(const Vector &lam0_delta_weekday_weekend)const;
-    virtual void mle();
+    double loglike(const Vector &lam0_delta_weekday_weekend)const override;
+    void mle() override;
 
-    virtual double event_rate(const DateTime &t)const;
+    double event_rate(const DateTime &t)const override;
     double event_rate(DayNames day, int hour)const;
 
-    virtual double expected_number_of_events(const DateTime &t0,
-                                             const DateTime &t1)const;
+    double expected_number_of_events(const DateTime &t0,
+                                             const DateTime &t1)const override;
     double average_daily_rate()const;
     void set_average_daily_rate(double lambda);
 
-    const Vec &day_of_week_pattern()const;        // sums to 7
-    void set_day_of_week_pattern(const Vec &pattern);
+    const Vector &day_of_week_pattern()const;        // sums to 7
+    void set_day_of_week_pattern(const Vector &pattern);
 
-    const Vec &weekday_hourly_pattern()const;     // sums to 24
-    void set_weekday_hourly_pattern(const Vec &pattern);
+    const Vector &weekday_hourly_pattern()const;     // sums to 24
+    void set_weekday_hourly_pattern(const Vector &pattern);
 
-    const Vec &weekend_hourly_pattern()const;     // sums to 24
-    void set_weekend_hourly_pattern(const Vec &pattern);
+    const Vector &weekend_hourly_pattern()const;     // sums to 24
+    void set_weekend_hourly_pattern(const Vector &pattern);
 
-    virtual PointProcess simulate(
+    PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator())const;
+        boost::function<Data*()> mark_generator = NullDataGenerator())const override;
 
     Ptr<UnivParams> average_daily_event_rate_prm();
     const Ptr<UnivParams> average_daily_event_rate_prm()const;
@@ -138,10 +138,10 @@ namespace BOOM{
     const Ptr<VectorParams> weekend_hour_of_day_cycle_prm()const;
 
     void add_data_raw(const PointProcess &);
-    virtual void add_exposure_window(const DateTime &t0, const DateTime &t1);
-    virtual void add_event(const DateTime &t);
+    void add_exposure_window(const DateTime &t0, const DateTime &t1) override;
+    void add_event(const DateTime &t) override;
    private:
-    const Vec &hourly_pattern(int day)const;
+    const Vector &hourly_pattern(int day)const;
     void maximize_average_daily_rate();
     void maximize_daily_pattern();
     void maximize_hourly_pattern();

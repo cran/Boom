@@ -31,9 +31,10 @@ namespace BOOM {
    public:
     GammaPosteriorSampler(GammaModel *model,
                           Ptr<DoubleModel> mean_prior,
-                          Ptr<DoubleModel> alpha_prior);
-    virtual void draw();
-    virtual double logpri()const;
+                          Ptr<DoubleModel> alpha_prior,
+                          RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
 
    private:
     GammaModel *model_;
@@ -49,9 +50,10 @@ namespace BOOM {
    public:
     GammaPosteriorSamplerBeta(GammaModel *model,
                               Ptr<DoubleModel> mean_prior,
-                              Ptr<DoubleModel> beta_prior);
-    virtual void draw();
-    virtual double logpri()const;
+                              Ptr<DoubleModel> beta_prior,
+                              RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
 
    private:
     GammaModel *model_;

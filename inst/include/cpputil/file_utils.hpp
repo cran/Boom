@@ -22,10 +22,11 @@
 #include <BOOM.hpp>
 #include <vector>
 #include <cpputil/gll.hpp>
+#include <uint.hpp>
 
 namespace BOOM{
 
-  unsigned int count_lines(const std::string &fname);
+  uint count_lines(const std::string &fname);
   std::string add_to_path(const std::string &path, const std::string &s);
   void legalize_file_name(std::string &);
 

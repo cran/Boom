@@ -32,13 +32,15 @@ namespace BOOM{
 
   public:
     MnpBetaGivenSigmaSampler(MultinomialProbitModel *Mod,
-			     Ptr<VectorParams> B,
-			     Ptr<UnivParams> K);
+                 Ptr<VectorParams> B,
+                 Ptr<UnivParams> K,
+           RNG &seeding_rng = GlobalRng::rng);
     MnpBetaGivenSigmaSampler(MultinomialProbitModel *Mod,
-			     const Vec &B,
-			     double K);
-    virtual void draw();
-    virtual double logpri()const;
+                 const Vector &B,
+                 double K,
+           RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
     void fix_beta0(bool=true);
   private:
     MultinomialProbitModel *mnp;

@@ -24,13 +24,11 @@
 namespace BOOM{
   class EmMixtureComponent:
       virtual public MixtureComponent,
-      public MLE_Model {
+      virtual public MLE_Model,
+      virtual public PosteriorModeModel {
   public:
-    virtual EmMixtureComponent * clone()const=0;
-    virtual void add_mixture_data(Ptr<Data>, double wgt)=0;
-
-    // this will eventually need to be refactored into a PriorPolicy
-    virtual void find_posterior_mode();
+    EmMixtureComponent * clone()const override = 0;
+    virtual void add_mixture_data(Ptr<Data>, double weight) = 0;
    };
-}
+}  // namespace BOOM
 #endif// BOOM_EM_MIXTURE_COMPONENT_HPP

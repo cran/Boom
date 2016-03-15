@@ -33,14 +33,14 @@ namespace BOOM{
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs),
-      CorrModel(rhs),
+      CorrelationModel(rhs),
       dim_(rhs.dim_)
   {}
 
   UCM * UCM::clone()const{return new UCM(*this);}
   void UCM::initialize_params(){}
 
-  double UCM::logp(const Corr &m)const{
+  double UCM::logp(const CorrelationMatrix &m)const{
     return m.is_pos_def() ? 0.0 : BOOM::negative_infinity();
   }
 
@@ -51,7 +51,7 @@ namespace BOOM{
 
   uint UCM::dim()const{return dim_;}
 
-  Corr UCM::sim()const{
+  CorrelationMatrix UCM::sim()const{
     return random_cor(dim());
   }
 }

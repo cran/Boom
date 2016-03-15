@@ -30,8 +30,8 @@ namespace BOOM{
     typedef WeeklyCyclePoissonProcess WP;
   }
 
-  const Vec WS::one_7(7, 1.0);
-  const Vec WS::one_24(24, 1.0);
+  const Vector WS::one_7(7, 1.0);
+  const Vector WS::one_24(24, 1.0);
 
   WS::WeeklyCyclePoissonSuf()
       : count_(7, 24, 0.0),
@@ -113,21 +113,21 @@ namespace BOOM{
     return abstract_combine_impl(this, s);
   }
 
-  Vec WS::vectorize(bool)const{
-    Vec ans(24 * 7 * 2);
+  Vector WS::vectorize(bool)const{
+    Vector ans(24 * 7 * 2);
     std::copy(count_.begin(), count_.end(), ans.begin());
     std::copy(exposure_.begin(), exposure_.end(), ans.begin() + 168);
     return ans;
   }
 
-  Vec::const_iterator WS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator WS::unvectorize(Vector::const_iterator &v, bool){
     count_.assign(v, v + 168); v+=168;
     exposure_.assign(v, v + 168); v+=168;
     return v;
   }
 
-  Vec::const_iterator WS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator WS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return this->unvectorize(it, minimal);
   }
 
@@ -155,19 +155,19 @@ namespace BOOM{
     return out;
   }
 
-  Vec WS::daily_event_count()const{
+  Vector WS::daily_event_count()const{
     return count_ * one_24;
   }
 
-  Vec WS::weekend_hourly_event_count()const{
-    Vec ans(24, 0.0);
+  Vector WS::weekend_hourly_event_count()const{
+    Vector ans(24, 0.0);
     ans += count_.row(Sat);
     ans += count_.row(Sun);
     return ans;
   }
 
-  Vec WS::weekday_hourly_event_count()const{
-    Vec ans(24, 0.0);
+  Vector WS::weekday_hourly_event_count()const{
+    Vector ans(24, 0.0);
     for(int d = 0; d < 7; ++d){
       if(d==Sat || d==Sun) continue;
       ans += count_.row(d);
@@ -175,11 +175,11 @@ namespace BOOM{
     return ans;
   }
 
-  const Mat & WS::count()const{
+  const Matrix & WS::count()const{
     return count_;
   }
 
-  const Mat & WS::exposure()const{
+  const Matrix & WS::exposure()const{
     return exposure_;
   }
 
@@ -235,8 +235,8 @@ namespace BOOM{
   }
 
   double WP::loglike(const Vector &lam0_delta_weekday_weekend)const{
-    const Mat &exposure(suf()->exposure());
-    const Mat & count(suf()->count());
+    const Matrix &exposure(suf()->exposure());
+    const Matrix & count(suf()->count());
 
     double lambda0 = lam0_delta_weekday_weekend[0];
     Vector delta(7, 0.0);
@@ -258,7 +258,7 @@ namespace BOOM{
 
     double ans = 0;
     for(int d = 0; d < 7; ++d){
-      const Vec &eta( (d==Sat || d==Sun) ? eta_weekend : eta_weekday);
+      const Vector &eta( (d==Sat || d==Sun) ? eta_weekend : eta_weekday);
       for(int h = 0; h < 24; ++h){
         double lam = lambda0 * delta[d] * eta[h] * exposure(d, h);
         ans += dpois(count(d, h), lam, true);
@@ -267,7 +267,7 @@ namespace BOOM{
     return ans;
   }
 
-  const Vec &WP::hourly_pattern(int day)const{
+  const Vector &WP::hourly_pattern(int day)const{
     if(day==Sat || day==Sun) return weekend_hourly_pattern();
     return weekday_hourly_pattern();
   }
@@ -326,13 +326,13 @@ namespace BOOM{
   }
 
   void WP::maximize_average_daily_rate(){
-    const Mat &count(suf()->count());
-    const Mat &exposure(suf()->exposure());
+    const Matrix &count(suf()->count());
+    const Matrix &exposure(suf()->exposure());
     double total_count = 0;
     double total_exposure = 0;
-    const Vec &delta(day_of_week_pattern());
+    const Vector &delta(day_of_week_pattern());
     for(int d = 0; d < 7; ++d){
-      const Vec &eta(hourly_pattern(d));
+      const Vector &eta(hourly_pattern(d));
       for(int h = 0; h < 24; ++h){
         total_count += count(d, h);
         total_exposure += delta[d] * eta[h] * exposure(d, h);
@@ -342,12 +342,12 @@ namespace BOOM{
   }
 
   void WP::maximize_daily_pattern(){
-    const Mat &count(suf()->count());
-    const Mat &exposure(suf()->exposure());
-    Vec delta(7);
+    const Matrix &count(suf()->count());
+    const Matrix &exposure(suf()->exposure());
+    Vector delta(7);
     double lambda = average_daily_rate();
     for(int d = 0; d < 7; ++d){
-      const Vec &eta(hourly_pattern(d));
+      const Vector &eta(hourly_pattern(d));
       double total_count = 0;
       double total_exposure = 0;
       for(int h = 0; h < 24; ++h){
@@ -361,12 +361,12 @@ namespace BOOM{
   }
 
   void WP::maximize_hourly_pattern(){
-    const Mat &count(suf()->count());
-    const Mat &exposure(suf()->exposure());
-    const Vec &delta(day_of_week_pattern());
+    const Matrix &count(suf()->count());
+    const Matrix &exposure(suf()->exposure());
+    const Vector &delta(day_of_week_pattern());
     double lambda = average_daily_rate();
-    Vec eta_weekend(24, 0.0);
-    Vec eta_weekday(24, 0.0);
+    Vector eta_weekend(24, 0.0);
+    Vector eta_weekday(24, 0.0);
     for(int h = 0; h < 24; ++h){
       double total_count_weekday = 0;
       double total_exposure_weekday = 0;
@@ -398,23 +398,23 @@ namespace BOOM{
   void WP::set_average_daily_rate(double lam){
     average_daily_event_rate_prm()->set(lam);
   }
-  const Vec & WP::day_of_week_pattern()const{
+  const Vector & WP::day_of_week_pattern()const{
     return day_of_week_cycle_prm()->value();
   }
-  void WP::set_day_of_week_pattern(const Vec &delta){
+  void WP::set_day_of_week_pattern(const Vector &delta){
     day_of_week_cycle_prm()->set(delta);
   }
-  const Vec & WP::weekend_hourly_pattern()const{
+  const Vector & WP::weekend_hourly_pattern()const{
     return weekend_hour_of_day_cycle_prm()->value();
   }
-  void WP::set_weekend_hourly_pattern(const Vec &eta){
+  void WP::set_weekend_hourly_pattern(const Vector &eta){
     weekend_hour_of_day_cycle_prm()->set(eta);
   }
 
-  const Vec & WP::weekday_hourly_pattern()const{
+  const Vector & WP::weekday_hourly_pattern()const{
     return weekday_hour_of_day_cycle_prm()->value();
   }
-  void WP::set_weekday_hourly_pattern(const Vec &eta){
+  void WP::set_weekday_hourly_pattern(const Vector &eta){
     weekday_hour_of_day_cycle_prm()->set(eta);
   }
 
@@ -433,7 +433,7 @@ namespace BOOM{
 
     double duration = t1 - t0;
     int number_of_candidate_events = rpois(max_rate * duration);
-    Vec times(number_of_candidate_events);
+    Vector times(number_of_candidate_events);
     for(int i = 0; i < number_of_candidate_events; ++i){
       times[i] = runif(0, duration);
     }

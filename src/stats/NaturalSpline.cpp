@@ -22,15 +22,16 @@
 #include <algorithm>
 #include <BOOM.hpp>
 #include <LinAlg/Matrix.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
   typedef NaturalSpline NS;
 
   QR NS::make_qr_const(double lo, double hi)const{
-    Vec tmplo = basis(lo,2);
-    Vec tmphi = basis(hi,2);
-    Mat tmp = rbind(tmplo, tmphi);
+    Vector tmplo = basis(lo,2);
+    Vector tmphi = basis(hi,2);
+    Matrix tmp = rbind(tmplo, tmphi);
     QR qr(tmp.t());
     return qr;
   }
@@ -67,10 +68,10 @@ namespace BOOM{
 
   void NS::too_few_knots()const{
     string msg = "you must have at least one knot to use a NaturalSpline";
-    throw_exception<std::runtime_error>(msg);
+    report_error(msg);
   }
 
-  NS::NaturalSpline(const Vec &Knots, double lo, double hi, bool intercept)
+  NS::NaturalSpline(const Vector &Knots, double lo, double hi, bool intercept)
     : curs(0),
       boundary(false),
       knots_(Knots),
@@ -89,7 +90,7 @@ namespace BOOM{
 	  << "boundary knots must be outside interior knots:"<<endl
 	  << "you supplied: " << endl
 	  << "[" << lo << "] " << knots_ << " [" << hi <<"]" <<endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     if(lo>hi) std::swap(hi,lo);
     for(int j=0; j<order_; ++j){
@@ -108,8 +109,8 @@ namespace BOOM{
   }
 
   //======================================================================
-  Vec NS::operator()(double x)const{
-    Vec ans(order_);
+  Vector NS::operator()(double x)const{
+    Vector ans(order_);
     if(x < knots_.front()){
       double dx = x-knots_.front();
       ans = basis_left + dx*deriv_left;
@@ -120,8 +121,8 @@ namespace BOOM{
       ans = basis(x);
     }
 
-    Vec tmp(qr_const.Qty(ans));
-    Vec final_ans(tmp.begin()+2, tmp.end());
+    Vector tmp(qr_const.Qty(ans));
+    Vector final_ans(tmp.begin()+2, tmp.end());
     return final_ans;
   }
 
@@ -133,7 +134,7 @@ namespace BOOM{
     return static_cast<int>(knots_.size());
   }
 
-  Vec NS::knots()const{ return knots_; }
+  Vector NS::knots()const{ return knots_; }
 
   //======================================================================
 
@@ -164,7 +165,7 @@ namespace BOOM{
 
   //======================================================================
 
-  Vec NS::basis(double x, uint nder)const{
+  Vector NS::basis(double x, uint nder)const{
     if(x < knots_.front() || x> knots_.back())
       return basis_exterior(x, nder);
     return basis_interior(x, nder);
@@ -177,28 +178,28 @@ namespace BOOM{
     return ans-2;
   }
 
-  Vec NS::basis_exterior(double, uint)const{
+  Vector NS::basis_exterior(double, uint)const{
     uint sz = nknots() - order_;
     if(!icpt) --sz;
-    return Vec(basis_dim(), 0.0);
+    return Vector(basis_dim(), 0.0);
   }
 
   //======================================================================
 
-  Vec NS::basis_interior(double x, uint nd)const{
+  Vector NS::basis_interior(double x, uint nd)const{
     int nk = nknots();
     assert(nk >= order_);
     uint sz = nk - order_;
-    Vec ans(sz, 0.0);
+    Vector ans(sz, 0.0);
     minimal_basis(x, nd);
     std::copy(wsp.begin(), wsp.end(), ans.begin()+offsets);
     if(icpt) return ans;
-    return Vec(ans.begin()+1, ans.end());
+    return Vector(ans.begin()+1, ans.end());
   }
 
   //======================================================================
 
-  const Vec & NS::minimal_basis(double x, uint nd)const{
+  const Vector & NS::minimal_basis(double x, uint nd)const{
     set_cursor(x);
     int j = curs - order_;
     offsets=j;
@@ -209,7 +210,7 @@ namespace BOOM{
 	  << " you can't have x inside the left or right " << order_
 	  << " knots." << endl
 	  << "x = " << x << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     if(nd>0){
       for(int ii=0; ii<order_; ++ii){
@@ -235,7 +236,7 @@ namespace BOOM{
   //======================================================================
 
   /* fast evaluation of basis functions */
-  void NS::basis_funcs(double x, Vec &b)const
+  void NS::basis_funcs(double x, Vector &b)const
   {
     diff_table(x, ordm1_);
     b[0] = 1.;
@@ -251,11 +252,11 @@ namespace BOOM{
   }
   //======================================================================
 
-  double NS::predict(double x, const Vec &beta)const{
+  double NS::predict(double x, const Vector &beta)const{
     set_cursor(x);
     double ans(0);
     if(curs < order_ || curs > (nknots() - order_) ){
-      throw_exception<std::runtime_error>("a bad bad thing happened in NaturalSpline::predict");
+      report_error("a bad bad thing happened in NaturalSpline::predict");
     } else {
       memcpy(a.data(), beta.data() + curs - order_, order_);
       ans = eval_derivs(x, 0);
@@ -289,21 +290,21 @@ namespace BOOM{
 
   //____________________________________________________________
 
-//   Mat spline_basis_matrix(const Vec &x, uint nknots){
-//     Vec y(x);
+//   Matrix spline_basis_matrix(const Vector &x, uint nknots){
+//     Vector y(x);
 //     std::sort(y.begin(), y.end());
 //     uint n = y.size();
 //     double lo = y.front();
 //     double hi = y.back();
 
-//     Vec knots;
+//     Vector knots;
 //     for(uint i=0; i<nknots; ++i){
 //       ///////////
 //     }
 
 //     NaturalSpline s(knots, lo, hi);
 
-//     Mat ans(y.size(), nknots+1);
+//     Matrix ans(y.size(), nknots+1);
 //     for(uint i=0; i<n; ++i){
 //       ans.row(i) = s(y[i]);
 //     }

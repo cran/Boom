@@ -48,6 +48,7 @@
 #include <cmath>
 #include <distributions/rng.hpp>
 #include <vector>
+#include <boost/math/special_functions/gamma.hpp>
 #include <cpputil/report_error.hpp>
 
 /*-- Mathlib as part of R --  define this for standalone : */
@@ -387,17 +388,30 @@ namespace Rmath{
 
   /* Gamma and Related Functions */
   inline double gammafn(double x){return ::tgamma(x);}
-  inline double lgammafn(double x){return ::lgamma(x);}
-  inline double lgammafn2(double x, int &i){
-    int ix(lround(-x));
-    // boost::numeric_cast<int>(-x));
-    i = (x<=0 && (ix%2==0)) ? -1 : 1;
-    return ::lgamma(x);
-  }
 
   // lgammafn returns log(abs(Gamma(x))) the two argument version is
   // used when Gamma(x) might be negative.  The second argument
   // returns the sign of Gamma(x)
+  inline double lgammafn(double x){
+    // Note that std::lgamma is not guaranteed to be thread safe, but
+    // on many compilers it is implemented in terms of lgamma_r, which
+    // is thread safe.  http://linux.die.net/man/3/lgamma_r offers a
+    // test for whether lgamma_r is present on a given system.
+#if defined(_BSD_SOURCE) || defined(_SVID_SOURCE)
+    int signgam = 1;
+    return lgamma_r(x, &signgam);
+#else
+    return std::lgamma(x);
+#endif
+  }
+
+  inline double lgammafn2(double x, int &i){
+    int tmp;
+    int ix(lround(-x));
+    // boost::numeric_cast<int>(-x));
+    i = (x<=0 && (ix%2==0)) ? -1 : 1;
+    return boost::math::lgamma(x, &tmp);
+  }
 
   double        digamma(double);
   double        trigamma(double);

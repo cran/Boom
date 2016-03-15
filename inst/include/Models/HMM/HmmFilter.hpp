@@ -41,7 +41,7 @@ class HmmFilter
       d->down_count(); if(d->ref_count()==0) delete d;}
 
   HmmFilter(std::vector<Ptr<MixtureComponent> >, Ptr<MarkovModel> );
-  virtual ~HmmFilter(){}
+  ~HmmFilter() override{}
   uint state_space_size()const;
 
   double initialize(const Data *);
@@ -51,12 +51,12 @@ class HmmFilter
   void bkwd_sampling_mt(const std::vector<Ptr<Data> > &,
                         RNG & eng);
   virtual void allocate(Ptr<Data>, uint);
-  virtual Vec state_probs(Ptr<Data>)const;
+  virtual Vector state_probs(Ptr<Data>)const;
  protected:
   std::vector<Ptr<MixtureComponent> > models_;
   std::vector<Mat> P;
-  Vec pi, logp, logpi, one;
-  Mat logQ;
+  Vector pi, logp, logpi, one;
+  Matrix logQ;
   Ptr<MarkovModel> markov_;
 
 };
@@ -66,11 +66,11 @@ class HmmSavePiFilter
  public:
   HmmSavePiFilter(std::vector<Ptr<MixtureComponent> >,
                   Ptr<MarkovModel>,
-                  std::map<Ptr<Data>, Vec> &pi_hist);
-  virtual void allocate(Ptr<Data> dp, uint h);
-  virtual Vec state_probs(Ptr<Data>)const;
+                  std::map<Ptr<Data>, Vector> &pi_hist);
+  void allocate(Ptr<Data> dp, uint h) override;
+  Vector state_probs(Ptr<Data>)const override;
  private:
-  std::map<Ptr<Data>, Vec> &pi_hist_;
+  std::map<Ptr<Data>, Vector> &pi_hist_;
 };
 //----------------------------------------------------------------------
 class HmmEmFilter

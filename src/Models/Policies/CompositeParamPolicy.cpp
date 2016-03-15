@@ -37,15 +37,16 @@ namespace BOOM{
   void CPP::add_model(Ptr<Model> m){
     if(have_model(m)) return;
     models_.push_back(m);
-    ParamVec tmp(m->t());
+    ParamVector tmp(m->t());
     std::copy(tmp.begin(), tmp.end(), back_inserter(t_));
   }
   void CPP::drop_model(Ptr<Model> m){
     if(!have_model(m)) return;
-    std::remove(models_.begin(), models_.end(), m);  //???
-    ParamVec tmp(m->t());
+    models_.erase(std::remove(models_.begin(), models_.end(), m),
+                  models_.end());
+    ParamVector tmp(m->t());
     for(uint i = 0; i<tmp.size(); ++i){
-      std::remove(t_.begin(), t_.end(), tmp[i]);
+      t_.erase(std::remove(t_.begin(), t_.end(), tmp[i]), t_.end());
     }
   }
   void CPP::clear(){
@@ -53,8 +54,8 @@ namespace BOOM{
     t_.clear();
   }
 
-  ParamVec CPP::t(){return t_;}
-  const ParamVec CPP::t()const{return t_;}
+  ParamVector CPP::t(){return t_;}
+  const ParamVector CPP::t()const{return t_;}
 
   bool CPP::have_model(Ptr<Model> m)const{
     return std::find(models_.begin(),models_.end(), m)

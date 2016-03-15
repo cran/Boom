@@ -32,7 +32,8 @@ namespace BOOM{
 
     ScalarSliceSampler(const Fun &F,
                        bool Unimodal=false,
-                       double suggested_dx = 1.0);
+                       double suggested_dx = 1.0,
+                       RNG *rng = 0);
     void set_limits(double lo, double hi);
     void set_lower_limit(double lo);
     void set_upper_limit(double hi);
@@ -40,7 +41,7 @@ namespace BOOM{
     void set_suggested_dx(double dx);
     void estimate_dx(bool should_dx_be_estimated);
     void set_min_dx(double dx);
-    virtual double draw(double x);
+    double draw(double x) override;
     virtual double logp(double x)const;
   private:
     //    const ScalarTargetFun &logf_;
@@ -62,9 +63,9 @@ namespace BOOM{
     bool estimate_dx_;
 
     void find_limits(double x);
-    void find_lower_limit(double x);
-    void find_upper_limit(double x);
-    void find_limits_unbounded(double x);
+    bool find_lower_limit(double x);
+    bool find_upper_limit(double x);
+    bool find_limits_unbounded(double x);
     void find_limits_unbounded_unimodal(double x);
 
     void contract(double x, double xstar, double logp);
@@ -85,7 +86,7 @@ namespace BOOM{
     bool lower_bounded()const;
     bool upper_bounded()const;
     bool unbounded()const;  // on either side
-    void throw_exception(const std::string & msg, double x)const;
+    void handle_error(const std::string & msg, double x)const;
     std::string error_message(double lo, double hi, double x,
                               double logplo, double logphi,
                               double logp_slice)const;

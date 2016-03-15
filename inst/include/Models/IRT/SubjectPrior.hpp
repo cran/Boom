@@ -32,12 +32,12 @@ namespace BOOM{
       : virtual public Model
     {
     public:
-      virtual SubjectPrior * clone()const=0;
+      SubjectPrior * clone()const override =0;
       virtual double pdf(Ptr<Data>, bool logsc)const=0;
       virtual double pdf(Ptr<Subject>, bool logsc)const=0;
-      virtual Vec mean(Ptr<Subject>)const=0;
-      virtual Spd siginv()const=0;
-      virtual void add_data(Ptr<Data>)=0;
+      virtual Vector mean(Ptr<Subject>)const=0;
+      virtual SpdMatrix siginv()const=0;
+      void add_data(Ptr<Data>)override =0;
       virtual void add_data(Ptr<Subject>)=0;
     };
     //------------------------------------------------------------
@@ -50,16 +50,16 @@ namespace BOOM{
     public:
       explicit MvnSubjectPrior(Ptr<MvnModel> Mvn);
       MvnSubjectPrior(const MvnSubjectPrior &rhs);
-      virtual MvnSubjectPrior * clone()const;
+      MvnSubjectPrior * clone() const override;
 
-      virtual double pdf(Ptr<Data>, bool logsc)const;
-      virtual double pdf(Ptr<Subject>, bool logsc)const;
+      double pdf(Ptr<Data>, bool logsc)const override;
+      double pdf(Ptr<Subject>, bool logsc)const override;
       virtual void initialize_params();
-      virtual void clear_data();
-      virtual void add_data(Ptr<Data>);
-      virtual void add_data(Ptr<Subject>);
-      virtual Vec mean(Ptr<Subject>)const;
-      virtual Spd siginv()const;
+      void clear_data() override;
+      void add_data(Ptr<Data>) override;
+      void add_data(Ptr<Subject>) override;
+      Vector mean(Ptr<Subject>)const override;
+      SpdMatrix siginv()const override;
    private:
       Ptr<MvnModel> mvn;
     };
@@ -69,15 +69,15 @@ namespace BOOM{
     public:
       explicit MvRegSubjectPrior(Ptr<MvRegModel> mvr);
       MvRegSubjectPrior(const MvRegSubjectPrior &rhs);
-      virtual MvRegSubjectPrior * clone()const;
+      MvRegSubjectPrior * clone() const override;
 
-      virtual double pdf(Ptr<Data>, bool logsc)const;
-      virtual double pdf(Ptr<Subject>, bool logsc)const;
+      double pdf(Ptr<Data>, bool logsc)const override;
+      double pdf(Ptr<Subject>, bool logsc)const override;
       virtual void initialize_params();
-      virtual void add_data(Ptr<Data>);
-      virtual void add_data(Ptr<Subject>);
-      virtual Vec mean(Ptr<Subject>)const;
-      virtual Spd siginv()const;
+      void add_data(Ptr<Data>) override;
+      void add_data(Ptr<Subject>) override;
+      Vector mean(Ptr<Subject>)const override;
+      SpdMatrix siginv()const override;
     private:
       Ptr<MvRegModel> mvreg_;
     };

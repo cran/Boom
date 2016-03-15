@@ -23,16 +23,16 @@
 #include <LinAlg/Vector.hpp>
 
 namespace BOOM{
-    using std::ostream;
-    using std::istream;
+  using std::ostream;
+  using std::istream;
 
-    class Vector;
-    class VectorView;
-    class SpdMatrix;
-    class DiagonalMatrix;
-    class SubMatrix;
-    class ConstSubMatrix;
-    class Matrix
+  class Vector;
+  class VectorView;
+  class SpdMatrix;
+  class DiagonalMatrix;
+  class SubMatrix;
+  class ConstSubMatrix;
+  class Matrix
       : public boost::addable<Matrix,
                boost::subtractable<Matrix,
                boost::dividable<Matrix,
@@ -40,255 +40,284 @@ namespace BOOM{
                boost::subtractable<Matrix,double,
                boost::multipliable<Matrix,double,
                boost::dividable<Matrix,double> > > > > > >
-    {
-    public:
-      typedef std::vector<double> dVector;
+  {
+   public:
+    typedef std::vector<double> dVector;
 
-      Matrix();
-      Matrix(uint nr, uint nc, double x=0.0);
-      Matrix(uint nr, uint nc, const double *m, bool byrow=false);
-      Matrix(uint nr, uint nc, const std::vector<double> &v, bool byrow=false);
-      Matrix(const std::string &s, std::string row_delim = "|");
+    Matrix();
+    Matrix(uint nr, uint nc, double x=0.0);
+    Matrix(uint nr, uint nc, const double *m, bool byrow=false);
+    Matrix(uint nr, uint nc, const std::vector<double> &v, bool byrow=false);
+    Matrix(const std::string &s, std::string row_delim = "|");
 
-      template <class FwdIt>
-      Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
+    template <class FwdIt>
+    Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
 
-      explicit Matrix(const SubMatrix &rhs);
-      explicit Matrix(const ConstSubMatrix &rhs);
+    explicit Matrix(const SubMatrix &rhs);
+    explicit Matrix(const ConstSubMatrix &rhs);
 
-      Matrix & operator=(const SubMatrix &);
-      Matrix & operator=(const ConstSubMatrix &);
-      Matrix & operator=(const double &);
+    Matrix & operator=(const SubMatrix &);
+    Matrix & operator=(const ConstSubMatrix &);
+    Matrix & operator=(const double &);
 
-      bool operator==(const Matrix &)const;
+    bool operator==(const Matrix &)const;
 
-      template <class FwdIt>
-      FwdIt assign(FwdIt begin, FwdIt end);
+    template <class FwdIt>
+    FwdIt assign(FwdIt begin, FwdIt end);
 
-      void swap(Matrix &rhs); // efficient.. swaps pointers and size info
-      virtual void randomize();  // fills entries with U(0,1) random variables.
-      virtual ~Matrix();
+    void swap(Matrix &rhs); // efficient.. swaps pointers and size info
+    virtual void randomize();  // fills entries with U(0,1) random variables.
+    virtual ~Matrix();
 
-      // ----------- size and shape info ------------------
-      uint size() const;  // number of elements in the Matrix
-      uint nrow()const ;
-      uint ncol()const ;
-      bool is_sym(double tol= 1.0e-9) const;
-      bool same_dim(const Matrix &A) const;
-      bool is_square() const;
-      bool is_pos_def() const;
+    // Returns true if empty, or if std::isfinite returns 'true' on
+    // all elements.  Returns false otherwise.
+    bool all_finite() const;
 
-      //---- change size and shape  -----
-      Matrix & resize(uint nr, uint nc); // invalidates elements if nr changes
-      Matrix & rbind(const Matrix &m);
-      Matrix & rbind(const Vector &v);
-      Matrix & cbind(const Matrix &m);
-      Matrix & cbind(const Vector &v);
+    // ----------- size and shape info ------------------
+    uint size() const;  // number of elements in the Matrix
+    uint nrow()const ;
+    uint ncol()const ;
+    bool is_sym(double tol= 1.0e-9) const;
+    bool same_dim(const Matrix &A) const;
+    bool is_square() const;
+    bool is_pos_def() const;
 
-      double *data();   // for sending data to LAPACK, etc
-      const double *data()const;
+    //---- change size and shape  -----
+    Matrix & resize(uint nr, uint nc); // invalidates elements if nr changes
+    Matrix & rbind(const Matrix &m);
+    Matrix & rbind(const Vector &v);
+    Matrix & cbind(const Matrix &m);
+    Matrix & cbind(const Vector &v);
 
-      //-------- subscripting, range checking can be turned off
-      //-------- by defining the macro NDEBUG
-      double & operator()(uint r, uint c);
-      const double & operator()(uint r, uint c) const;
-      double & unchecked(uint r, uint c);
-      const double & unchecked(uint r, uint c)const;
+    double *data();   // for sending data to LAPACK, etc
+    const double *data()const;
 
-      // -------- row and column operations ----------
-      VectorView row(uint i);
-      ConstVectorView row(uint i)const;
-      void set_row(uint i, const Vector &v);
-      void set_row(uint i, const double *v);
-      void set_row(uint i, double x);
+    //-------- subscripting, range checking can be turned off
+    //-------- by defining the macro NDEBUG
+    double & operator()(uint r, uint c);
+    const double & operator()(uint r, uint c) const;
+    double & unchecked(uint r, uint c);
+    const double & unchecked(uint r, uint c)const;
 
-      VectorView col(uint j);
-      const VectorView col(uint j)const;
-      void set_col(uint j, const Vector &v);
-      void set_col(uint j, const double *v);
-      void set_col(uint j, double x);
+    // -------- row and column operations ----------
+    VectorView row(uint i);
+    ConstVectorView row(uint i)const;
+    void set_row(uint i, const Vector &v);
+    void set_row(uint i, const double *v);
+    void set_row(uint i, double x);
 
-      void set_rc(uint i,  double x);  // sets row and column i to x
+    VectorView col(uint j);
+    const VectorView col(uint j)const;
+    void set_col(uint j, const Vector &v);
+    void set_col(uint j, const double *v);
+    void set_col(uint j, double x);
 
-      VectorView diag();
-      ConstVectorView diag()const;
-      VectorView subdiag(int i);
-      ConstVectorView subdiag(int i)const;
-      VectorView superdiag(int i);
-      ConstVectorView superdiag(int i)const;
-      VectorView first_row();
-      ConstVectorView first_row()const;
-      VectorView last_row();
-      ConstVectorView last_row()const;
-      VectorView first_col();
-      ConstVectorView first_col()const;
-      VectorView last_col();
-      ConstVectorView last_col()const;
+    void set_rc(uint i,  double x);  // sets row and column i to x
 
-      Matrix & set_diag(double x, bool zero_offdiag=true);
-      Matrix & set_diag(const Vector &v, bool zero_offdiag=true);
+    VectorView diag();
+    ConstVectorView diag()const;
+    VectorView subdiag(int i);
+    ConstVectorView subdiag(int i)const;
+    VectorView superdiag(int i);
+    ConstVectorView superdiag(int i)const;
+    VectorView first_row();
+    ConstVectorView first_row()const;
+    VectorView last_row();
+    ConstVectorView last_row()const;
+    VectorView first_col();
+    ConstVectorView first_col()const;
+    VectorView last_col();
+    ConstVectorView last_col()const;
 
-      //------  STL iteration -------------
-      dVector::iterator begin();
-      dVector::iterator end();
-      dVector::const_iterator begin()const;
-      dVector::const_iterator end()const;
+    Matrix & set_diag(double x, bool zero_offdiag=true);
+    Matrix & set_diag(const Vector &v, bool zero_offdiag=true);
 
-      dVector::iterator col_begin(uint i);
-      dVector::iterator col_end(uint i);
-      dVector::const_iterator col_begin(uint i)const;
-      dVector::const_iterator col_end(uint i)const;
+    //------  STL iteration -------------
+    dVector::iterator begin();
+    dVector::iterator end();
+    dVector::const_iterator begin()const;
+    dVector::const_iterator end()const;
 
-      VectorViewIterator dbegin();
-      VectorViewIterator dend();
-      VectorViewConstIterator dbegin()const;
-      VectorViewConstIterator dend()const;
+    dVector::iterator col_begin(uint i);
+    dVector::iterator col_end(uint i);
+    dVector::const_iterator col_begin(uint i)const;
+    dVector::const_iterator col_end(uint i)const;
 
-      VectorViewIterator row_begin(uint i);
-      VectorViewIterator row_end(uint i);
-      VectorViewConstIterator row_begin(uint i)const;
-      VectorViewConstIterator row_end(uint i)const;
+    VectorViewIterator dbegin();
+    VectorViewIterator dend();
+    VectorViewConstIterator dbegin()const;
+    VectorViewConstIterator dend()const;
 
-      //------ linear algebra -----------------
+    VectorViewIterator row_begin(uint i);
+    VectorViewIterator row_end(uint i);
+    VectorViewConstIterator row_begin(uint i)const;
+    VectorViewConstIterator row_end(uint i)const;
 
-      bool can_mult(const Matrix &B, const Matrix &Ans)const;
-      bool can_Tmult(const Matrix &B, const Matrix &Ans)const;
-      bool can_multT(const Matrix &B, const Matrix &Ans)const;
+    //------ linear algebra -----------------
 
-      // scal * this * B
-      virtual Matrix & mult(const Matrix &B, Matrix &ans,
-                            double scal=1.0)const;
-      // scal *this^T * B
-      virtual Matrix & Tmult(const Matrix &B, Matrix &ans,
-                             double scal=1.0)const;
-      // scal * this * B^T
-      virtual Matrix & multT(const Matrix &B, Matrix &ans,
-                             double scal=1.0)const;
+    bool can_mult(const Matrix &B, const Matrix &Ans)const;
+    bool can_Tmult(const Matrix &B, const Matrix &Ans)const;
+    bool can_multT(const Matrix &B, const Matrix &Ans)const;
 
-      virtual Matrix & mult(const SpdMatrix &S, Matrix & ans,
-                            double scal=1.0)const;
-      virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
-                             double scal=1.0)const;
-      virtual Matrix & multT(const SpdMatrix &S, Matrix & ans,
-                             double scal=1.0)const;
-      // no BLAS support for this^T * S
-      // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans)const;
+    // scal * this * B
+    virtual Matrix & mult(const Matrix &B, Matrix &ans,
+                          double scal=1.0)const;
+    // scal *this^T * B
+    virtual Matrix & Tmult(const Matrix &B, Matrix &ans,
+                           double scal=1.0)const;
+    // scal * this * B^T
+    virtual Matrix & multT(const Matrix &B, Matrix &ans,
+                           double scal=1.0)const;
 
-      // this * B
-      virtual Matrix & mult(const DiagonalMatrix &B, Matrix &ans,
-                            double scal=1.0)const;
-      // this^T * B
-      virtual Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans,
-                             double scal=1.0)const;
-      // this * B^T
-      virtual Matrix & multT(const DiagonalMatrix &B, Matrix &ans,
-                             double scal=1.0)const;
+    virtual Matrix & mult(const SpdMatrix &S, Matrix & ans,
+                          double scal=1.0)const;
+    virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
+                           double scal=1.0)const;
+    virtual Matrix & multT(const SpdMatrix &S, Matrix & ans,
+                           double scal=1.0)const;
+    // no BLAS support for this^T * S
+    // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans)const;
 
-      // this * v
-      virtual Vector & mult(const Vector &v, Vector &ans,
-                            double scal=1.0)const;
-      // this^T * v
-      virtual Vector & Tmult(const Vector &v, Vector &ans,
-                             double scal=1.0)const;
+    // this * B
+    virtual Matrix & mult(const DiagonalMatrix &B, Matrix &ans,
+                          double scal=1.0)const;
+    // this^T * B
+    virtual Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans,
+                           double scal=1.0)const;
+    // this * B^T
+    virtual Matrix & multT(const DiagonalMatrix &B, Matrix &ans,
+                           double scal=1.0)const;
 
-      // the following functions are non-virtual, but behave virtually
-      // because they call the virtual functions listed above
-      Matrix mult(const Matrix &B)const;  // this * B
-      Matrix Tmult(const Matrix &B)const; // this^T * B
-      Matrix multT(const Matrix &B)const; // this * B^T
-      Vector mult(const Vector &v)const;
-      Vector Tmult(const Vector &v)const;
+    // this * v
+    virtual Vector & mult(const Vector &v, Vector &ans,
+                          double scal=1.0)const;
+    // this^T * v
+    virtual Vector & Tmult(const Vector &v, Vector &ans,
+                           double scal=1.0)const;
 
-      Matrix Id() const;
-      Matrix t() const;       // SpdMatrix and DiagonalMatrix
-      Matrix & transpose_inplace_square(); // asserts (is_square())
-      Matrix inv() const;
-      virtual SpdMatrix inner() const;   // X^T * X
-      SpdMatrix outer() const;           // X * X^T
+    // the following functions are non-virtual, but behave virtually
+    // because they call the virtual functions listed above
+    Matrix mult(const Matrix &B)const;  // this * B
+    Matrix Tmult(const Matrix &B)const; // this^T * B
+    Matrix multT(const Matrix &B)const; // this * B^T
+    Vector mult(const Vector &v)const;
+    Vector Tmult(const Vector &v)const;
 
-      virtual Matrix solve(const Matrix &mat) const;
-      virtual Vector solve(const Vector &v) const;
-      double trace() const;
-      virtual double det() const;
-      Vector singular_values()const; // sorted largest to smallest
-      uint rank(double prop=1e-12) const;
-      // 'rank' is the number of singular values at least 'prop' times
-      // the largest
-      virtual Vector real_evals()const;
+    Matrix Id() const;
+    Matrix t() const;       // SpdMatrix and DiagonalMatrix
+    Matrix & transpose_inplace_square(); // asserts (is_square())
+    Matrix inv() const;
+    virtual SpdMatrix inner() const;   // X^T * X
+    SpdMatrix outer() const;           // X * X^T
 
-      Matrix & add_outer(const Vector &x, const Vector &y, double w = 1.0);
-      Matrix & add_outer(const Vector &x, const VectorView &y, double w = 1.0);
-      Matrix & add_outer(const Vector &x, const ConstVectorView &y, double w = 1.0);
-      Matrix & add_outer(const VectorView &x, const Vector &y, double w = 1.0);
-      Matrix & add_outer(const VectorView &x, const VectorView &y, double w = 1.0);
-      Matrix & add_outer(const VectorView &x, const ConstVectorView &y, double w = 1.0);
-      Matrix & add_outer(const ConstVectorView &x, const Vector &y, double w = 1.0);
-      Matrix & add_outer(const ConstVectorView &x, const VectorView &y, double w = 1.0);
-      Matrix & add_outer(const ConstVectorView &x, const ConstVectorView &y, double w = 1.0);
-      // *this += w*x*y^T
+    virtual Matrix solve(const Matrix &mat) const;
+    virtual Vector solve(const Vector &v) const;
+    double trace() const;
+    virtual double det() const;
+    Vector singular_values()const; // sorted largest to smallest
+    uint rank(double prop=1e-12) const;
+    // 'rank' is the number of singular values at least 'prop' times
+    // the largest
+    virtual Vector real_evals()const;
 
-      //--------  Math
-      virtual Matrix & operator+=(double x);
-      virtual Matrix & operator*=(double x);
-      virtual Matrix & operator-=(double x);
-      virtual Matrix & operator/=(double x);
+    Matrix & add_outer(const Vector &x, const Vector &y, double w = 1.0);
+    Matrix & add_outer(const Vector &x, const VectorView &y, double w = 1.0);
+    Matrix & add_outer(const Vector &x, const ConstVectorView &y, double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const Vector &y, double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const VectorView &y, double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const ConstVectorView &y, double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const Vector &y, double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const VectorView &y, double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const ConstVectorView &y, double w = 1.0);
+    // *this += w*x*y^T
 
-      Matrix & operator+=(const Matrix &m);
-      Matrix & operator-=(const Matrix &m);
+    //--------  Math
+    virtual Matrix & operator+=(double x);
+    virtual Matrix & operator*=(double x);
+    virtual Matrix & operator-=(double x);
+    virtual Matrix & operator/=(double x);
 
-      Matrix & exp();  // in place exponentiation
-      Matrix & log();  // in place logarithm
+    Matrix & operator+=(const Matrix &m);
+    Matrix & operator-=(const Matrix &m);
 
-      virtual double sum()const;
-      virtual double abs_norm()const;
-      virtual double sumsq()const;
-      virtual double prod()const;
-      virtual double max()const;
-      virtual double min()const;
+    Matrix & exp();  // in place exponentiation
+    Matrix & log();  // in place logarithm
 
-      virtual ostream & display(ostream &out, int precision = 5)const;
-      ostream & write(ostream &, bool nl=true) const;
-      istream & read(istream &);
+    virtual double sum()const;
+    virtual double abs_norm()const;
+    virtual double sumsq()const;
+    virtual double prod()const;
+    virtual double max()const;
+    virtual double min()const;
+    // The value of the entry with the largest absolute value.
+    double max_abs()const;
 
-    protected:
-      Vector V;
-      uint nr_, nc_;
-      inline uint INDX(uint i, uint j)const;
-      inline bool inrange(uint i, uint j)const;
-    };
+    virtual ostream & display(ostream &out, int precision = 5)const;
+    ostream & write(ostream &, bool nl=true) const;
+    istream & read(istream &);
 
-    typedef Matrix Mat;
+   protected:
+    Vector V;
+    uint nr_, nc_;
+    inline uint INDX(uint i, uint j)const;
+    inline bool inrange(uint i, uint j)const;
+  };
 
-    class LabeledMatrix : public Matrix {
-     public:
-      // Args:
-      //   m:  The matrix to which row and/or column names should be attached.
-      //   row_names: Can be an empty vector if no row_names are
-      //     desired.  If non-empty, row_names.size() == m.nrow() must
-      //     be true.
-      //   col_names: Can be an empty vector if no col_names are
-      //     desired.  If non-empty, col_names.size() == m.ncol() must
-      //     be true.
-      LabeledMatrix(const Matrix &m,
-                    const std::vector<std::string> &row_names,
-                    const std::vector<std::string> &col_names);
-      const std::vector<std::string> &row_names() const {
-        return row_names_;}
-      const std::vector<std::string> &col_names() const {
-        return col_names_;}
+  typedef Matrix Mat;
+  //======================================================================
+  class LabeledMatrix : public Matrix {
+   public:
+    // Args:
+    //   m:  The matrix to which row and/or column names should be attached.
+    //   row_names: Can be an empty vector if no row_names are
+    //     desired.  If non-empty, row_names.size() == m.nrow() must
+    //     be true.
+    //   col_names: Can be an empty vector if no col_names are
+    //     desired.  If non-empty, col_names.size() == m.ncol() must
+    //     be true.
+    LabeledMatrix(const Matrix &m,
+                  const std::vector<std::string> &row_names,
+                  const std::vector<std::string> &col_names);
+    const std::vector<std::string> &row_names() const {
+      return row_names_;}
+    const std::vector<std::string> &col_names() const {
+      return col_names_;}
 
-      virtual ostream & display(ostream &out, int precision = 5) const;
-      Matrix drop_labels()const;
+    ostream & display(ostream &out, int precision = 5) const override;
+    Matrix drop_labels()const;
 
-     private:
-      std::vector<std::string> row_names_;
-      std::vector<std::string> col_names_;
-    };
+   private:
+    std::vector<std::string> row_names_;
+    std::vector<std::string> col_names_;
+  };
 
-    // Be kind to the British.
-    typedef LabeledMatrix LabelledMatrix;
+  // Be kind to the British.
+  typedef LabeledMatrix LabelledMatrix;
 
-    //______________________________________________________________________
+  //======================================================================
+
+  // A "Matrix" with rows and columns counted from numbers other than zero.
+  class ArbitraryOffsetMatrix {
+   public:
+    ArbitraryOffsetMatrix(int first_row, uint number_of_rows,
+                          int first_column, uint number_of_columns,
+                          double initial_value = 0.0);
+
+    double & operator()(int row, int column) {
+      return data_(row - row_offset_, column - column_offset_);
+    }
+
+    double operator()(int row, int column) const {
+      return data_(row - row_offset_, column - column_offset_);
+    }
+
+   private:
+    Matrix data_;
+    int row_offset_;
+    int column_offset_;
+  };
+
+  //______________________________________________________________________
 
     // ---- template constructor --
     template <class FwdIt>

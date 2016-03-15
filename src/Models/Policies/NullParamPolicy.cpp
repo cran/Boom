@@ -29,6 +29,6 @@ namespace BOOM{
     return *this;
   }
 
-  ParamVec NPP::t(){return ParamVec();}
-  const ParamVec NPP::t()const{return ParamVec();}
+  ParamVector NPP::t(){return ParamVector();}
+  const ParamVector NPP::t()const{return ParamVector();}
 }

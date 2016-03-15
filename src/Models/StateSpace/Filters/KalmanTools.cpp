@@ -21,17 +21,17 @@
 namespace BOOM{
 
   double scalar_kalman_update(double y,
-                              Vec &a,
-                              Spd &P,
-                              Vec &K,
+                              Vector &a,
+                              SpdMatrix &P,
+                              Vector &K,
                               double &F,
                               double &v,
                               bool missing,
-                              const Vec & Z,
+                              const Vector & Z,
                               double H,
-                              const Mat & T,
-                              Mat & L,
-                              const Spd & RQR){
+                              const Matrix & T,
+                              Matrix & L,
+                              const SpdMatrix & RQR){
     F = P.Mdist(Z) + H;
     double ans=0;
     if(!missing){
@@ -55,16 +55,26 @@ namespace BOOM{
     return ans;
   }
 
-  void scalar_kalman_smoother_update(Vec &a,
-                                     Spd &P,
-                                     const Vec &K,
+  void make_contemporaneous(Vector &a,
+                            SpdMatrix &P,
+                            double F,
+                            double v,
+                            const Vector &Z) {
+    Vector M = P * Z;
+    a += M * (v / F);
+    P.add_outer(M, -1.0 / F);
+  }
+
+  void scalar_kalman_smoother_update(Vector &a,
+                                     SpdMatrix &P,
+                                     const Vector &K,
                                      double F,
                                      double v,
-                                     const Vec & Z,
-                                     const Mat &T,
-                                     Vec & r,
-                                     Mat &N,
-                                     Mat & L){
+                                     const Vector & Z,
+                                     const Matrix &T,
+                                     Vector & r,
+                                     Matrix &N,
+                                     Matrix & L){
     L = T.t();
     L.add_outer(Z,K, -1);   // L is the transpose of Durbin and Koopman's L
     r = L * r + Z*(v/F);

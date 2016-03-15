@@ -19,6 +19,7 @@
 #include <cmath>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <sstream>
 
  /* functions for the triangular distribution over the interval (x0,
@@ -44,7 +45,7 @@ namespace BOOM{
            << "x1 = " << x1 << std::endl
            << "xm = " << xm << std::endl
            << "x0 must be less than x1";
-       throw_exception<std::runtime_error>(err.str());
+       report_error(err.str());
      }
      else if(x0 == x1) return x0;
 
@@ -60,7 +61,7 @@ namespace BOOM{
      double ans =0;
      if(u<a0) ans =  x0 + sqrt(2*u/m0);  /* area of left right triangle */
      else if(u>=a0) ans = x1-sqrt(-2.0*(1-u)/m1);  /* area of right right triangle */
-     else throw_exception<std::runtime_error>("an unknown error occurred in rtriangle_mt");
+     else report_error("an unknown error occurred in rtriangle_mt");
      return ans;
    }
    /*======================================================================*/
@@ -77,7 +78,7 @@ namespace BOOM{
            << "logscale = " << logscale << std::endl
            << "x0 must be less than x1";
 
-       throw_exception<std::runtime_error>(err.str());
+       report_error(err.str());
      }
      if(x0==x1) return x0;
 
@@ -103,7 +104,7 @@ namespace BOOM{
            << "x1 = " << x1 << std::endl
            << "xm = " << xm << std::endl
            << "x0 must be less than x1";
-       throw_exception<std::runtime_error>(err.str());
+       report_error(err.str());
      }
      else if(x0==x1) return x0;
 
@@ -123,7 +124,7 @@ namespace BOOM{
        double m1= y/(xm-x1);
        double b= 0.5*m1*(x-x1)*(x1-x);
        ans = lower_tail ? b : 1-b;
-     }else throw_exception<std::runtime_error>("an unknown error occurred in ptrigangle" );
+     }else report_error("an unknown error occurred in ptrigangle" );
 
      return ans;
    }
@@ -139,7 +140,7 @@ namespace BOOM{
            << "x1 = " << x1 << std::endl
            << "xm = " << xm << std::endl
            << "x0 must be less than x1";
-       throw_exception<std::runtime_error>(err.str());
+       report_error(err.str());
      }
      else if(x0==x1) return x0;
 
@@ -154,7 +155,7 @@ namespace BOOM{
      double ans=0;
      if(p<a0) ans =  x0 + sqrt(2*p/m0);  /* area of left right triangle */
      else if(p>=a0) ans = x1-sqrt(-2.0*(1-p)/m1);  /* area of right right triangle */
-     else throw_exception<std::runtime_error>("an unknown error occurred in qtriangle");
+     else report_error("an unknown error occurred in qtriangle");
 
      return ans;
 

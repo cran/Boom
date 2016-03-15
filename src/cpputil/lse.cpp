@@ -19,10 +19,11 @@
 #include <LinAlg/Types.hpp>
 #include <cmath>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
-  double lse_safe(const Vec &eta){
+  double lse_safe(const Vector &eta){
     double m = eta.max();
     if (m == negative_infinity()) return m;
     double tmp=0;
@@ -31,7 +32,7 @@ namespace BOOM{
     return m + log(tmp);
   }
 
-  double lse_fast(const Vec & eta){
+  double lse_fast(const Vector & eta){
     double ans = 0;
     uint n = eta.size();
     const double *d(eta.data());
@@ -44,7 +45,17 @@ namespace BOOM{
     return log(ans);
   }
 
-  double lse(const Vec &eta){
+  double lse(const Vector &eta){
     return lse_safe(eta);
+  }
+
+  double lde2(double x, double y) {
+    if (x <= y) {
+      if (x < y) {
+        report_error("x must be >= y in lde2");
+      }
+      return negative_infinity();
+    }
+    return x + log1p(- exp(y - x));
   }
 }

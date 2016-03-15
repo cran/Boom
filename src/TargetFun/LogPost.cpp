@@ -60,7 +60,7 @@ namespace BOOM{
 
   //--------------------------------------------------
 
-  double LogPostTF::operator()(const Vec &z)const{
+  double LogPostTF::operator()(const Vector &z)const{
     double ans = pri->logp(z);
     if(ans==BOOM::negative_infinity()) return ans;
     ans += loglike(z);
@@ -69,9 +69,9 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
 
-  double dLogPostTF::operator()(const Vec &x, Vec &g)const{
+  double dLogPostTF::operator()(const Vector &x, Vector &g)const{
     g=0.0;
-    Vec g1 = g;
+    Vector g1 = g;
     double ans = dloglike(x,g);
     ans += dpri->dlogp(x, g1);
     g+=g1;
@@ -79,11 +79,11 @@ namespace BOOM{
   }
 
   //----------------------------------------------------------------------
-  double d2LogPostTF::operator()(const Vec &x, Vec &g, Mat &h)const{
+  double d2LogPostTF::operator()(const Vector &x, Vector &g, Matrix &h)const{
     g=0.0;
-    Vec g1 = g;
+    Vector g1 = g;
     h=0.0;
-    Mat h1 = h;
+    Matrix h1 = h;
     double ans = d2loglike(x, g, h);  // derivatives wrt x
     ans += d2pri->d2logp(x, g1, h1);       // derivatives wrt x
     g+=g1;

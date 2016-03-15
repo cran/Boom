@@ -31,9 +31,9 @@ namespace BOOM{
     WeightedData(Ptr<DAT> d, const weight_type & W);
     WeightedData(Ptr<DAT> d, Ptr<WGT> W);
     WeightedData(const WeightedData &rhs);
-    WeightedData * clone()const{return new WeightedData(*this);}
+    WeightedData * clone()const override{return new WeightedData(*this);}
 
-    virtual ostream & display(ostream &out)const;
+    ostream & display(ostream &out)const override;
 
     virtual void set_weight(const weight_type & w);
     const weight_type & weight()const;

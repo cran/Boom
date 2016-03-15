@@ -1,4 +1,4 @@
-/*
+ /*
   Copyright (C) 2007-2010 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ namespace BOOM{
       sym_(false)
   {}
 
-  MvnSuf::MvnSuf(double n, const Vec &ybar, const Spd & sumsq)
+  MvnSuf::MvnSuf(double n, const Vector &ybar, const SpdMatrix & sumsq)
       : ybar_(ybar),
         sumsq_(sumsq),
         n_(n),
@@ -50,48 +50,75 @@ namespace BOOM{
 
   MvnSuf *MvnSuf::clone() const{ return new MvnSuf(*this);}
 
-  void MvnSuf::clear(){
+  void MvnSuf::clear() {
     ybar_=0;
     sumsq_=0;
     n_=0;
     sym_ = false;
   }
 
-  void MvnSuf::resize(uint p){
+  void MvnSuf::resize(uint p) {
     ybar_.resize(p);
     sumsq_.resize(p);
     clear();
   }
 
-  void MvnSuf::check_dimension(const Vec &y){
-    if(ybar_.size() == 0){
+  void MvnSuf::check_dimension(const Vector &y) {
+    if (ybar_.size() == 0) {
       resize(y.size());
     }
-    if(y.size() != ybar_.size()){
+    if (y.size() != ybar_.size()) {
       ostringstream msg;
       msg << "attempting to update MvnSuf of dimension << " << ybar_.size()
           << " with data of dimension " << y.size() << "." << endl
           << "Value of data point is [" << y << "]";
-      throw_exception<std::runtime_error>(msg.str().c_str());
+      report_error(msg.str().c_str());
     }
   }
 
-  void MvnSuf::update_raw(const Vec & y){
+  void MvnSuf::update_raw(const Vector & y) {
     check_dimension(y);
     n_+=1.0;
-    wsp_ = (y - ybar_)/n_;  // old ybar, new n
-    ybar_ += wsp_;          // new ybar
+    wsp_ = (y - ybar_) / n_;  // old ybar, new n
+    ybar_ += wsp_;            // new ybar
     sumsq_.add_outer(wsp_, n_-1, false);
     sumsq_.add_outer(y - ybar_, 1, false);
     sym_ = false;
   }
 
-  void MvnSuf::Update(const VectorData &X){
-    const Vec &x(X.value());
+  void MvnSuf::update_expected_value(
+      double sample_size,
+      const Vector &expected_sum,
+      const SpdMatrix &expected_sum_of_squares) {
+    n_ += sample_size;
+    wsp_ = (expected_sum - ybar_) / n_;
+    ybar_ += wsp_;
+
+    sumsq_.add_outer(wsp_, n_ - sample_size, false);
+    sumsq_.add_outer(expected_sum - ybar_, sample_size, false);
+    sym_ = false;
+  }
+
+  void MvnSuf::remove_data(const Vector &y) {
+    if (n_ <= 0.0) {
+      report_error("Sufficient statistics already empty.");
+    }
+    ybar_ *= n_;
+    ybar_ -= y;
+    if (n_ > 1.0) {
+      ybar_ /= (n_ - 1);
+    }
+    sumsq_.add_outer(y - ybar_, -(n_ - 1) / n_, false);
+    n_ -= 1.0;
+    sym_ = false;
+  }
+
+  void MvnSuf::Update(const VectorData &X) {
+    const Vector &x(X.value());
     update_raw(x);
   }
 
-  void MvnSuf::add_mixture_data(const Vec &y, double prob){
+  void MvnSuf::add_mixture_data(const Vector &y, double prob) {
     check_dimension(y);
     n_ += prob;
     wsp_ = (y - ybar_)*(prob/n_);  // old ybar_, new n_
@@ -101,68 +128,68 @@ namespace BOOM{
     sym_ = false;
   }
 
-  Vec MvnSuf::sum()const{return ybar_ * n_;}
-  Spd MvnSuf::sumsq()const{
+  Vector MvnSuf::sum()const{return ybar_ * n_;}
+  SpdMatrix MvnSuf::sumsq()const{
     check_symmetry();
-    Spd ans(sumsq_);
+    SpdMatrix ans(sumsq_);
     ans.add_outer(ybar_, n_);
     return ans;
   }
   double MvnSuf::n()const{return n_;}
 
   void MvnSuf::check_symmetry()const{
-    if(!sym_){
+    if (!sym_) {
       sumsq_.reflect();
       sym_ = true;
     }
   }
 
-  const Vec & MvnSuf::ybar()const{ return ybar_;}
-  Spd MvnSuf::sample_var()const{
-    if(n()>1) return center_sumsq()/(n()-1);
+  const Vector & MvnSuf::ybar()const{ return ybar_;}
+  SpdMatrix MvnSuf::sample_var()const{
+    if (n()>1) return center_sumsq()/(n()-1);
     return sumsq_ * 0.0;
   }
 
-  Spd MvnSuf::var_hat()const{
-    if(n()>0) return center_sumsq()/n();
+  SpdMatrix MvnSuf::var_hat()const{
+    if (n()>0) return center_sumsq()/n();
     return sumsq_ * 0.0;
   }
 
-  Spd MvnSuf::center_sumsq(const Vec &mu)const{
-    Spd ans = center_sumsq();
+  SpdMatrix MvnSuf::center_sumsq(const Vector &mu)const{
+    SpdMatrix ans = center_sumsq();
     ans.add_outer(ybar_ - mu, n_);
     return ans;
   }
 
-  const Spd & MvnSuf::center_sumsq()const{
+  const SpdMatrix & MvnSuf::center_sumsq()const{
     check_symmetry();
     return sumsq_;
   }
 
-  void MvnSuf::combine(Ptr<MvnSuf> s){
+  void MvnSuf::combine(Ptr<MvnSuf> s) {
     this->combine(*s);
   }
 
   // TODO(stevescott): test this
-  void MvnSuf::combine(const MvnSuf & s){
-    Vec zbar = (sum() + s.sum())/(n() + s.n());
+  void MvnSuf::combine(const MvnSuf & s) {
+    Vector zbar = (sum() + s.sum())/(n() + s.n());
     sumsq_ = center_sumsq(zbar) + s.center_sumsq(zbar);
     ybar_ = zbar;
     n_ += s.n();
     sym_ = true;
   }
 
-  MvnSuf * MvnSuf::abstract_combine(Sufstat *s){
+  MvnSuf * MvnSuf::abstract_combine(Sufstat *s) {
       return abstract_combine_impl(this,s); }
 
-  Vec MvnSuf::vectorize(bool minimal)const{
-    Vec ans(ybar_);
+  Vector MvnSuf::vectorize(bool minimal)const{
+    Vector ans(ybar_);
     ans.concat(sumsq_.vectorize(minimal));
     ans.push_back(n_);
     return ans;
   }
 
-  Vec::const_iterator MvnSuf::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator MvnSuf::unvectorize(Vector::const_iterator &v, bool) {
     uint dim = ybar_.size();
     ybar_.assign(v, v+dim);
     v+=dim;
@@ -171,9 +198,9 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator MvnSuf::unvectorize(const Vec &v,
-                                          bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator MvnSuf::unvectorize(const Vector &v,
+                                          bool minimal) {
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -189,11 +216,11 @@ namespace BOOM{
   uint MB::dim()const{
     return mu().size();}
 
-  double MB::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
+  double MB::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
     double ans = dmvn(x,mu(), siginv(), ldsi(), true);
-    if(nd>0){
+    if (nd>0) {
       g = -(siginv() * (x-mu()));
-      if(nd>1) h = -siginv();}
+      if (nd>1) h = -siginv();}
     return ans;}
 
   double MB::logp_given_inclusion(const Vector &x_subset,
@@ -216,12 +243,12 @@ namespace BOOM{
   }
 
   double MB::log_likelihood(const Vector &mu,
-                            const Spd &siginv,
+                            const SpdMatrix &siginv,
                             const MvnSuf &suf) const {
     const double log2pi = 1.83787706641;
     double n = suf.n();
-    const Vec ybar = suf.ybar();
-    const Spd sumsq = suf.center_sumsq();
+    const Vector ybar = suf.ybar();
+    const SpdMatrix sumsq = suf.center_sumsq();
 
     double qform = n*(siginv.Mdist(ybar, mu)) + traceAB(siginv, sumsq);
     double nc = 0.5 * n * (-dim() * log2pi + siginv.logdet());
@@ -229,7 +256,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vec MB::sim()const{
+  Vector MB::sim()const{
     return rmvn(mu(), Sigma());
   }
 
@@ -237,11 +264,11 @@ namespace BOOM{
 
   MBP::MvnBaseWithParams(uint p, double mu, double sigsq)
     : ParamPolicy(new VectorParams(p,mu),
-		  new SpdParams(p,sigsq))
+                  new SpdParams(p,sigsq))
   {}
 
-    // N(mu,V)... if(ivar) then V is the inverse variance.
-  MBP::MvnBaseWithParams(const Vec &mean, const Spd &V, bool ivar)
+    // N(mu,V)... if (ivar) then V is the inverse variance.
+  MBP::MvnBaseWithParams(const Vector &mean, const SpdMatrix &V, bool ivar)
     : ParamPolicy(new VectorParams(mean), new SpdParams(V,ivar))
   {}
 
@@ -258,26 +285,27 @@ namespace BOOM{
       LocationScaleVectorModel(rhs)
   {}
 
-  Ptr<VectorParams> MBP::Mu_prm(){
+  Ptr<VectorParams> MBP::Mu_prm() {
     return ParamPolicy::prm1();}
   const Ptr<VectorParams> MBP::Mu_prm()const{
     return ParamPolicy::prm1();}
 
-  Ptr<SpdParams> MBP::Sigma_prm(){
+  Ptr<SpdParams> MBP::Sigma_prm() {
     return ParamPolicy::prm2();}
   const Ptr<SpdParams> MBP::Sigma_prm()const{
     return ParamPolicy::prm2();}
 
-  const Vec & MBP::mu()const{return Mu_prm()->value();}
-  const Spd & MBP::Sigma()const{return Sigma_prm()->var();}
-  const Spd & MBP::siginv()const{return Sigma_prm()->ivar();}
-  double MBP::ldsi()const{return Sigma_prm()->ldsi();}
+  const Vector & MBP::mu()const{return prm1_ref().value();}
+  const SpdMatrix & MBP::Sigma()const{return prm2_ref().var();}
+  const SpdMatrix & MBP::siginv()const{return prm2_ref().ivar();}
+  double MBP::ldsi()const{return prm2_ref().ldsi();}
+  const Matrix & MBP::Sigma_chol()const{return prm2_ref().var_chol();}
 
-  void MBP::set_mu(const Vec &v){Mu_prm()->set(v);}
-  void MBP::set_Sigma(const Spd &s){Sigma_prm()->set_var(s);}
-  void MBP::set_siginv(const Spd &ivar){Sigma_prm()->set_ivar(ivar);}
-  void MBP::set_S_Rchol(const Vec &sd, const Mat &L){
-      Sigma_prm()->set_S_Rchol(sd,L); }
+  void MBP::set_mu(const Vector &v) {prm1_ref().set(v);}
+  void MBP::set_Sigma(const SpdMatrix &s) {prm2_ref().set_var(s);}
+  void MBP::set_siginv(const SpdMatrix &ivar) {prm2_ref().set_ivar(ivar);}
+  void MBP::set_S_Rchol(const Vector &sd, const Matrix &L) {
+      prm2_ref().set_S_Rchol(sd,L); }
 
 
 }

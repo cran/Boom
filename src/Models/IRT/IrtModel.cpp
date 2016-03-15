@@ -46,9 +46,9 @@ namespace BOOM{
 
     typedef istringstream INS;
     typedef ostringstream OUTS;
-    typedef std::vector<string> StringVec;
+    typedef std::vector<string> StringVector;
 
-    inline void set_default_names(StringVec &s){
+    inline void set_default_names(StringVector &s){
       for(uint i=0; i<s.size(); ++i){
         OUTS out;
         out << "subscale[" << i << "]";
@@ -62,7 +62,7 @@ namespace BOOM{
         item_freq(1),
         R_freq(1),
         niter(0),
-        theta_supressed(false),
+        theta_suppressed(false),
         subject_subset(0),
         subject_search_helper(new Subject("", 1)),
         item_search_helper(new NullItem)
@@ -78,7 +78,7 @@ namespace BOOM{
         item_freq(1),
         R_freq(1),
         niter(0),
-        theta_supressed(false),
+        theta_suppressed(false),
         subject_subset(0),
         subject_search_helper(new Subject("", 1)),
         item_search_helper(new NullItem)
@@ -87,13 +87,13 @@ namespace BOOM{
     }
 
     //------------------------------------------------------------
-    IrtModel::IrtModel(const StringVec &SubscaleNames)
+    IrtModel::IrtModel(const StringVector &SubscaleNames)
       : subscale_names_(SubscaleNames),
         theta_freq(1),
         item_freq(1),
         R_freq(1),
         niter(0),
-        theta_supressed(false),
+        theta_suppressed(false),
         subject_subset(0),
         subject_search_helper(new Subject("", 1)),
         item_search_helper(new NullItem)
@@ -105,7 +105,7 @@ namespace BOOM{
         DataPolicy(rhs),
         PriorPolicy(rhs)
     {
-      throw_exception<std::runtime_error>("need to implement copy constructor for IrtModel");
+      report_error("need to implement copy constructor for IrtModel");
     }
 
     //------------------------------------------------------------
@@ -118,7 +118,7 @@ namespace BOOM{
         Ptr<Item> item = it->first;
         Response r = it->second;
       }
-      throw_exception<std::runtime_error>("need to implement 'pdf' for IrtModel");
+      report_error("need to implement 'pdf' for IrtModel");
       return logscale ? ans : exp(ans);
     }
     //------------------------------------------------------------
@@ -126,15 +126,15 @@ namespace BOOM{
     double IrtModel::pdf(Ptr<Data> dp, bool logscale)const{
       return pdf(DAT(dp), logscale); }
     //------------------------------------------------------------
-    void IrtModel::set_subscale_names(const StringVec &names){
+    void IrtModel::set_subscale_names(const StringVector &names){
       subscale_names_ = names;}
 
     //------------------------------------------------------------
-    const StringVec & IrtModel::subscale_names(){
+    const StringVector & IrtModel::subscale_names(){
       return subscale_names_;}
 
     //------------------------------------------------------------
-    inline uint find_max_length(const StringVec &v){
+    inline uint find_max_length(const StringVector &v){
       uint n = v.size();
       uint sz = 0;
       for(uint i=0; i<n; ++i) sz = std::max<uint>(sz, v[i].size());
@@ -186,7 +186,7 @@ namespace BOOM{
           ostringstream msg;
           msg << "item with id "<< id
               << " not found in IrtModel::find_item";
-          throw_exception<std::runtime_error>(msg.str());
+          report_error(msg.str());
         }
         return Ptr<Item> ();
       }
@@ -215,7 +215,7 @@ namespace BOOM{
           ostringstream msg;
           msg << "subject with id "<< id
               << " not found in IrtModel::find_subject";
-          throw_exception<std::runtime_error>(msg.str());
+          report_error(msg.str());
         }
         return Ptr<Subject>();
       }
@@ -251,7 +251,7 @@ namespace BOOM{
         string line;
         getline(in, line);
         if(!in || is_all_white(line)) break;
-        StringVec fields =
+        StringVector fields =
           (delim ==' ')? split_string(line): split_delimited(line, delim);
 
         uint nf = fields.size();
@@ -261,20 +261,20 @@ namespace BOOM{
           msg << "IrtModel::read_subject_info_file..." << endl
               << "subject identifiers must be unique" << endl
               << "offending id: " << id;
-          throw_exception<std::runtime_error>(msg.str().c_str());}
+          report_error(msg.str().c_str());}
 
         if(nf==1){
           NEW(Subject, s)(id, m->nscales());
           m->add_subject(s);
         }else if(nf>1){
-          Vec x(nf-1);
+          Vector x(nf-1);
           for(uint i=1; i<nf; ++i) INS(fields[i]) >> x[i-1];
           NEW(Subject,s)(id, m->nscales(), x);
           m->add_subject(s);
         }else{
           OUTS out;
           out << "0 fields in IrtModel::read_subject_info_file";
-          throw_exception<std::runtime_error>(out.str().c_str());
+          report_error(out.str().c_str());
         }
       }
     }
@@ -303,7 +303,7 @@ namespace BOOM{
           msg << "item " << item_id
               << " present in IrtModel::read_item_response_file,"<< endl
               << "but not in IrtModel::read_item_info_file."<< endl;
-          throw_exception<std::runtime_error>(msg.str().c_str());
+          report_error(msg.str().c_str());
         }
 
         Response r = item->make_response(response_str);

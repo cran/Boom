@@ -46,7 +46,7 @@ namespace BOOM{
     //     should not be included.
     //   beta_choice: A vector of coefficients describing the impact
     //     of the choice-level predictors.
-    MultinomialLogitModel(const Mat & beta_subject, const Vec &beta_choice);
+    MultinomialLogitModel(const Matrix & beta_subject, const Vector &beta_choice);
 
     // Args:
     //   Nchoices:  The number of possible choices in the response variable.
@@ -72,11 +72,11 @@ namespace BOOM{
     //     signify that there is no choice-level data available.
     MultinomialLogitModel(
         const std::vector<Ptr<CategoricalData> > & responses,
-        const Mat &Xsubject_info,
+        const Matrix &Xsubject_info,
         const std::vector<Mat> & Xchoice_info = std::vector<Mat>());
 
     MultinomialLogitModel(const MultinomialLogitModel &rhs);
-    MultinomialLogitModel * clone()const;
+    MultinomialLogitModel * clone()const override;
 
     // coefficient vector: elements corresponding to choice level 0
     // (which are constrained to 0 for identifiability) are omitted.
@@ -89,35 +89,35 @@ namespace BOOM{
     //   ...
     //   subject_characeristic_beta_for_choice_M-1
     //   choice_characteristic_beta ]
-    const Vec & beta()const;
+    const Vector & beta()const;
 
     // Returns the vector of logistic regression coefficients
     // described above (see beta()), but with a vector of 0's
     // prepended, corresponding to the subject parameters for choice
     // level 0.
-    const Vec & beta_with_zeros()const;
+    const Vector & beta_with_zeros()const;
 
     // Returns the vector of subject specific coefficients for the
     // given choice level.  If 'choice' is 0 then a vector of all 0's
     // is returned.
-    Vec beta_subject(uint choice)const;
+    Vector beta_subject(uint choice)const;
 
     // Returns the vector of choice specific coefficients.
-    Vec beta_choice()const;
+    Vector beta_choice()const;
 
-    void set_beta(const Vec &b);
+    void set_beta(const Vector &b);
 
     // Args:
     //   b: The vector of coefficients to use for the specified choice
     //     level.  The dimension of b must match subject_nvars().
     //   choice_level: The choice level that b refers to.  Must be >=1
     //     and < Nchoices().
-    void set_beta_subject(const Vec &b, uint choice_level);
+    void set_beta_subject(const Vector &b, uint choice_level);
 
     // Args:
     //   b: The vector of choice-specific coefficients.  The size of b
     //     must match choice_nvars().
-    void set_beta_choice(const Vec &b);
+    void set_beta_choice(const Vector &b);
 
     virtual GlmCoefs & coef();
     virtual const GlmCoefs& coef()const;
@@ -136,8 +136,8 @@ namespace BOOM{
     void add_all_slopes();
 
     // 'beta' refers to the vector of nonzero "included" coefficients.
-    virtual double Loglike(
-        const Vector &beta, Vector &g, Matrix &H, uint nd)const;
+    double Loglike(
+        const Vector &beta, Vector &g, Matrix &H, uint nd)const override;
 
     // Args:
     //   beta: The vector of logistic regression coefficients, with
@@ -162,12 +162,14 @@ namespace BOOM{
 
     // Fill in the linear predictor.  The dimension of eta is
     // Nchoices(), so the baseline choice is filled in as well.
-    Vec &fill_eta(const ChoiceData &, Vec &ans, const Vector &full_beta)const;
-    Vec &fill_eta(const ChoiceData &, Vec &ans)const;
+    Vector &fill_eta(const ChoiceData &,
+                     Vector &ans,
+                     const Vector &full_beta)const;
+    Vector &fill_eta(const ChoiceData &, Vector &ans)const;
 
     //----------------------------------------------------------------------
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(const Data * dp, bool logscale)const override;
     virtual double logp(const ChoiceData & dp)const;
 
     // Returns the dimension of the non-sparse set of regression coefficients.
@@ -179,11 +181,11 @@ namespace BOOM{
 
     // simulate an outcome
     uint sim(Ptr<ChoiceData>)const;
-    uint sim(Ptr<ChoiceData>, Vec &eta)const;
+    uint sim(Ptr<ChoiceData>, Vector &eta)const;
 
     // compute all choice probabilities
-    Vec predict(Ptr<ChoiceData>)const;  // returns choice probabilities
-    Vec & predict(Ptr<ChoiceData>, Vec &ans)const;
+    Vector predict(Ptr<ChoiceData>)const;  // returns choice probabilities
+    Vector & predict(Ptr<ChoiceData>, Vector &ans)const;
 
     uint subject_nvars()const;
     uint choice_nvars()const;
@@ -193,11 +195,11 @@ namespace BOOM{
     //   probs: Gives the probability of keeping in the sample an
     //     observation with response level m.  For a prospective study
     //     all elements of probs would be 1.
-    void set_sampling_probs(const Vec &probs);
-    const Vec & log_sampling_probs()const;
+    void set_sampling_probs(const Vector &probs);
+    const Vector & log_sampling_probs()const;
 
   private:
-    mutable Vec beta_with_zeros_;
+    mutable Vector beta_with_zeros_;
     mutable bool beta_with_zeros_current_;
 
     void watch_beta();
@@ -206,43 +208,11 @@ namespace BOOM{
     void fill_extended_beta()const;
     void index_out_of_bounds(uint m)const;
 
-    mutable Vec wsp_;
+    mutable Vector wsp_;
     uint nch_;  // number of choices
     uint psub_; // number of subject X variables
     uint pch_;  // number of choice X variables
-    Vec log_sampling_probs_;
+    Vector log_sampling_probs_;
   };
-
-  //______________________________________________________________________
-
-  class MvnBase;
-  class MultinomialLogitEMC  // EMC = EmMixtureComponent
-    : public MultinomialLogitModel,
-      public EmMixtureComponent
-  {
-  public:
-    MultinomialLogitEMC(const Mat & beta_subject, const Vec &beta_choice);
-    MultinomialLogitEMC(uint Nchoices, uint subject_xdim, uint choice_xdim);
-    MultinomialLogitEMC * clone()const;
-
-    virtual double pdf(Ptr<Data> dp, bool logscale)const{
-      return MultinomialLogitModel::pdf(dp, logscale);}
-    virtual double pdf(const Data * dp, bool logscale)const{
-      return MultinomialLogitModel::pdf(dp, logscale);}
-
-    void add_mixture_data(Ptr<Data>, double prob);
-    void clear_data();
-
-    virtual void find_posterior_mode();
-    virtual void mle() {
-      MultinomialLogitModel::mle();
-    }
-    void set_prior(Ptr<MvnBase>);
-    // assumes a posterior sampler derived from MLVS_base
-  private:
-    Vec wsp_;
-    Vec probs_;
-    Ptr<MvnBase> pri_;
-  };
-}
+}  // namespace BOOM
 #endif// BOOM_MULTINOMIAL_LOGIT_MODEL_HPP

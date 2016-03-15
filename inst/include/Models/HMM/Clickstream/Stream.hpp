@@ -12,7 +12,7 @@ namespace BOOM {
     class Stream : public BOOM::Data{
      public:
       Stream(const std::vector<Ptr<Session> > &sessions);
-      Stream * clone()const;
+      Stream * clone()const override;
 
       int nsessions()const;
       std::vector<int> session_sizes()const;
@@ -23,7 +23,7 @@ namespace BOOM {
       int number_of_page_categories_including_eos()const;
 
      private:
-      ostream & display(ostream &out)const{return out;}
+      ostream & display(ostream &out)const override{return out;}
       int size(bool = true)const{return 0;}
       std::vector<Ptr<Session> > sessions_;
     };

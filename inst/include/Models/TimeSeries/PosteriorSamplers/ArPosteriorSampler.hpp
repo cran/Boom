@@ -32,14 +32,15 @@ namespace BOOM{
   class ArPosteriorSampler : public PosteriorSampler{
    public:
     ArPosteriorSampler(ArModel *model,
-                       Ptr<GammaModelBase> siginv_prior);
+                       Ptr<GammaModelBase> siginv_prior,
+                       RNG &seeding_rng = GlobalRng::rng);
 
     // The 'draw' method will make several attempts to simulate AR
     // coefficients directly from the posterior distribution of a
     // regression model conditional on sigma.  If the maximum number
     // of proposals is exceeded then a series of univariate draws will
     // be made starting from the current value of the AR coefficients.
-    virtual void draw();
+    void draw() override;
 
     void draw_sigma();
     void draw_phi();
@@ -50,7 +51,7 @@ namespace BOOM{
 
     // Returns -infinity if the coefficients are outside of the legal
     // range.  Returns logp(siginv) otherwise.
-    virtual double logpri()const;
+    double logpri() const override;
 
     void set_max_number_of_regression_proposals(int number_of_proposals);
 

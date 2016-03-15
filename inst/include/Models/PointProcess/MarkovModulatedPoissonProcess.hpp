@@ -249,7 +249,7 @@ namespace BOOM{
 
     MarkovModulatedPoissonProcess();
     MarkovModulatedPoissonProcess(const MarkovModulatedPoissonProcess &rhs);
-    virtual MarkovModulatedPoissonProcess * clone()const;
+    MarkovModulatedPoissonProcess * clone() const override;
 
     // Adds 'process' as a component process to the MMPP.  Every
     // component process must be registered with the MMPP using this
@@ -291,8 +291,8 @@ namespace BOOM{
     // matrices that keep track of the probability of activity and the
     // probability of responsibility get modified when a new process
     // is added.
-    virtual void add_data(Ptr<Data> dp);
-    virtual void add_data(Ptr<PointProcess> dp);
+    void add_data(Ptr<Data> dp) override;
+    void add_data(Ptr<PointProcess> dp) override;
 
     // If a subset (possibly all) of the data are from a training set
     // where the original source is knwon then add the data using
@@ -308,7 +308,7 @@ namespace BOOM{
     // Clears the data managed by this model.  The over-ride is
     // necessary because of internal state not managed by the
     // DataPolicy which must be cleared as well.
-    virtual void clear_data();
+    void clear_data() override;
 
     // Calls clear_data() on all component processes and mixture
     // components.  Does not clear the data managed by this class.
@@ -340,7 +340,7 @@ namespace BOOM{
     // of the model parameters.  logpri is implemented here so the
     // model does not have to expose the component models to the
     // posterior sampler.
-    virtual double logpri() const;
+    double logpri() const override;
 
     // Forward filter the supplied process.
     // Args:
@@ -554,11 +554,11 @@ namespace BOOM{
     // Storage needed for forward_backward filtering.  It is managed
     // during the call to initialize_filter, so it does not need
     // special attention in the constructor.
-    Vec pi0_;
-    Vec one_;
+    Vector pi0_;
+    Vector one_;
     std::vector<Matrix> filter_;
     double last_loglike_;
-    mutable Vec mutable_workspace_;
+    mutable Vector mutable_workspace_;
 
     // Each vector element corresponds to the PointProcess for a
     // single data series.  Space for a new data series is allocated

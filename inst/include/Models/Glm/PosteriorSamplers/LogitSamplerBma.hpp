@@ -28,11 +28,12 @@ namespace BOOM{
     : public LogitSampler{
   public:
     LogitSamplerBma(LogisticRegressionModel *mod,
-		    Ptr<MvnBase>,
-		    Ptr<VariableSelectionPrior>);
+            Ptr<MvnBase>,
+            Ptr<VariableSelectionPrior>,
+            RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     void limit_model_selection(uint n);
     double log_model_prob(const Selector &inc)const;
@@ -45,7 +46,7 @@ namespace BOOM{
     Ptr<VariableSelectionPrior> vs_;
     uint max_nflips_;
 
-    mutable Spd Ominv, iV_tilde_;
+    mutable SpdMatrix Ominv, iV_tilde_;
 
   };
 

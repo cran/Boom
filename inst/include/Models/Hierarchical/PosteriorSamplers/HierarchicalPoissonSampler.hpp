@@ -26,11 +26,32 @@ namespace BOOM {
 
   class HierarchicalPoissonSampler : public PosteriorSampler {
    public:
+    // The top level of the HierarchicalPoissonModel is a gamma
+    // distribution, which is assumed to model the Poisson rate
+    // parameters in each group of the heirarchy.  The traditional
+    // parameterization of the gamma distribution is gamma(a, b),
+    // where the mean is a/b and the variance is a/b^2.
+    //
+    // This sampler expects a prior on the mean a/b and an independent
+    // prior on a.  If we write mu = a/b then the variance of the
+    // gamma distribution is is mu^2 / a, so 'a' acts kind of like a
+    // prior "sample size" that determines the amount of shrinkage of
+    // the group level means around the prior mean mu.
+    //
+    // Args:
+    //   model: The model whose parameters are to be to be sampled
+    //     from their posterior distribution.
+    //   gamma_mean_prior: Prior distribution on the mean of the gamma
+    //     distribution: a/b.
+    //   gamma_sample_size_prior: Prior distribution on the shape
+    //     parameter of the gamma distribution: a.
     HierarchicalPoissonSampler(HierarchicalPoissonModel *model,
                                Ptr<DoubleModel> gamma_mean_prior,
-                               Ptr<DoubleModel> gamma_sample_size_prior);
-    virtual double logpri()const;
-    virtual void draw();
+                               Ptr<DoubleModel> gamma_sample_size_prior,
+                               RNG &seeding_rng = GlobalRng::rng);
+    double logpri() const override;
+    void draw() override;
+
    private:
     HierarchicalPoissonModel *model_;
     Ptr<DoubleModel> gamma_mean_prior_;

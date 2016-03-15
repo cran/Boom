@@ -18,7 +18,7 @@
 
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/LU.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 
 extern "C"{
   void dgetrf_(int *, int *, double *, int *, int *, int *);
@@ -63,8 +63,9 @@ namespace BOOM{
     return pivots;}
 
   double LU::det()const{
-    if(dcmp.nrow()!=dcmp.ncol())
-      throw_exception<std::logic_error>("LU:: determinant of non-square Matrix attempted.");
+    if(dcmp.nrow()!=dcmp.ncol()) {
+      report_error("LU:: determinant of non-square Matrix attempted.");
+    }
     double ans = 1.0;  // not right!  might be -1... how to tell from pivots?
     int sign = 1;
     for(uint i=0; i<dcmp.nrow(); ++i){
@@ -82,7 +83,9 @@ namespace BOOM{
     int ncol_b = ans.ncol();
     int info=0;
     dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
-    if(info!=0) throw_exception<std::logic_error>("LU::solve illegal argument to dgetrs_");
+    if(info!=0) {
+      report_error("LU::solve illegal argument to dgetrs_");
+    }
     return ans;
   }
 
@@ -93,7 +96,9 @@ namespace BOOM{
     int ncol_b = ans.ncol();
     int info=0;
     dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
-    if(info!=0) throw_exception<std::logic_error>("LU::solveT illegal argument to dgetrs_");
+    if(info!=0) {
+      report_error("LU::solveT illegal argument to dgetrs_");
+    }
     return ans;
   }
 
@@ -104,7 +109,9 @@ namespace BOOM{
     int ncol_b = 1;
     int info=0;
     dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
-    if(info!=0) throw_exception<std::logic_error>("LU::solve illegal argument to dgetrs_");
+    if(info!=0) {
+      report_error("LU::solve illegal argument to dgetrs_");
+    }
     return ans;
   }
 
@@ -115,7 +122,9 @@ namespace BOOM{
     int ncol_b = 1;
     int info=0;
     dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
-    if(info!=0) throw_exception<std::logic_error>("LU::solveT illegal argument to dgetrs_");
+    if(info!=0) {
+      report_error("LU::solveT illegal argument to dgetrs_");
+    }
     return ans;
   }
 

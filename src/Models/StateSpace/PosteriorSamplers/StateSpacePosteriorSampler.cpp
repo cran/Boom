@@ -22,8 +22,10 @@ namespace BOOM{
   typedef StateSpacePosteriorSampler SSPS;
   typedef StateSpaceModelBase SSMB;
 
-  SSPS::StateSpacePosteriorSampler(StateSpaceModelBase *model)
-      : m_(model),
+  SSPS::StateSpacePosteriorSampler(StateSpaceModelBase *model,
+                                   RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model),
         latent_data_initialized_(false)
   {}
 
@@ -32,6 +34,7 @@ namespace BOOM{
       m_->impute_state();
       latent_data_initialized_ = true;
     }
+    impute_nonstate_latent_data();
     m_->observation_model()->sample_posterior();
     for(int s = 0; s < m_->nstate(); ++s) {
       m_->state_model(s)->sample_posterior();
@@ -49,4 +52,4 @@ namespace BOOM{
     return ans;
   }
 
-}
+}  // namespace BOOM

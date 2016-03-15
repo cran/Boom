@@ -121,11 +121,6 @@ namespace BOOM{
   }
 
   template<class D, class S>
-  SufstatDataPolicy<D,S> * SufstatDataPolicy<D,S>::clone()const{
-    return new SufstatDataPolicy<D,S>(*this);
-  }
-
-  template<class D, class S>
   SufstatDataPolicy<D,S> &
   SufstatDataPolicy<D,S>::operator=(const SufstatDataPolicy &rhs){
     if(&rhs!=this){

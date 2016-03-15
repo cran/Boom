@@ -33,19 +33,19 @@ namespace BOOM{
     typedef std::vector<Ptr<MvRegData> > dataset_type;
     typedef Ptr<dataset_type, false> dsetPtr;
 
-    MvRegSuf * clone()const=0;
+    MvRegSuf * clone()const override =0;
 
     uint xdim()const;
     uint ydim()const;
-    virtual const Spd & yty()const=0;
-    virtual const Mat & xty()const=0;
-    virtual const Spd & xtx()const=0;
+    virtual const SpdMatrix & yty()const=0;
+    virtual const Matrix & xty()const=0;
+    virtual const SpdMatrix & xtx()const=0;
     virtual double n()const=0;
     virtual double sumw()const=0;
 
-    virtual Spd SSE(const Mat &B)const=0;
+    virtual SpdMatrix SSE(const Matrix &B)const=0;
 
-    virtual Mat beta_hat()const=0;
+    virtual Matrix beta_hat()const=0;
     virtual void combine(Ptr<MvRegSuf>)=0;
   };
   //------------------------------------------------------------
@@ -55,46 +55,46 @@ namespace BOOM{
       public SufstatDetails<MvRegData>
   {
   public:
-    QrMvRegSuf(const Mat &X, const Mat &Y, MvReg *);
-    QrMvRegSuf(const Mat &X, const Mat &Y, const Vec &w, MvReg *);
-    QrMvRegSuf * clone()const;
+    QrMvRegSuf(const Matrix &X, const Matrix &Y, MvReg *);
+    QrMvRegSuf(const Matrix &X, const Matrix &Y, const Vector &w, MvReg *);
+    QrMvRegSuf * clone()const override;
 
-    virtual void Update(const MvRegData &);
-    virtual Mat beta_hat()const;
-    virtual Spd SSE(const Mat &B)const;
-    virtual void clear();
+    void Update(const MvRegData &) override;
+    Matrix beta_hat()const override;
+    SpdMatrix SSE(const Matrix &B)const override;
+    void clear() override;
 
-    virtual const Spd & yty()const;
-    virtual const Mat & xty()const;
-    virtual const Spd & xtx()const;
-    virtual double n()const;
-    virtual double sumw()const;
+    const SpdMatrix & yty()const override;
+    const Matrix & xty()const override;
+    const SpdMatrix & xtx()const override;
+    double n()const override;
+    double sumw()const override;
 
     void refresh(const std::vector<Ptr<MvRegData> > &)const;
-    void refresh(const Mat &X, const Mat &Y)const;
-    void refresh(const Mat &X, const Mat &Y, const Vec &w)const;
+    void refresh(const Matrix &X, const Matrix &Y)const;
+    void refresh(const Matrix &X, const Matrix &Y, const Vector &w)const;
     void refresh()const;
-    virtual void combine(Ptr<MvRegSuf>);
+    void combine(Ptr<MvRegSuf>) override;
     virtual void combine(const MvRegSuf &);
-    QrMvRegSuf * abstract_combine(Sufstat *s);
+    QrMvRegSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream &print(ostream &out)const override;
   private:
     mutable QR qr;
-    mutable Mat y_;
-    mutable Vec w_;
+    mutable Matrix y_;
+    mutable Vector w_;
 
     MvReg * owner;
 
     mutable bool current;
-    mutable Spd yty_;
-    mutable Spd xtx_;
-    mutable Mat xty_;
+    mutable SpdMatrix yty_;
+    mutable SpdMatrix xtx_;
+    mutable Matrix xty_;
     mutable double n_;
     mutable double sumw_;
   };
@@ -115,19 +115,19 @@ namespace BOOM{
     // Args:
     //   X:  The design matrix.
     //   Y:  The matrix of responses.
-    NeMvRegSuf(const Mat &X, const Mat &Y);
+    NeMvRegSuf(const Matrix &X, const Matrix &Y);
 
     // Build an NeMvRegSuf from a sequence of smart or raw pointers to
     // MvRegData.
     template <class Fwd> NeMvRegSuf(Fwd b, Fwd e);
 
     NeMvRegSuf(const NeMvRegSuf &rhs);
-    NeMvRegSuf * clone()const;
+    NeMvRegSuf * clone()const override;
 
-    virtual void clear();
+    void clear() override;
 
     // Add data to the sufficient statistics managed by this object.
-    virtual void Update(const MvRegData & data);
+    void Update(const MvRegData & data) override;
 
     // Add the individual data components to the sufficient statistics
     // managed by this object.
@@ -135,37 +135,37 @@ namespace BOOM{
     //   Y:  The response for a single data point.
     //   X:  The predictor for a single data point.
     //   w:  A weight to apply to the data point.
-    virtual void update_raw_data(const Vec &Y, const Vec &X, double w=1.0);
+    virtual void update_raw_data(const Vector &Y, const Vector &X, double w=1.0);
 
     // Returns the least squares estimate of beta given the current
     // sufficient statistics.
-    virtual Mat beta_hat()const;
+    Matrix beta_hat()const override;
 
     // Returns the sum of squared errors assuming beta = B.
-    virtual Spd SSE(const Mat &B)const;
+    SpdMatrix SSE(const Matrix &B)const override;
 
 
-    virtual const Spd & yty()const;      // sum_i y_i * y_i.transpose()
-    virtual const Mat & xty()const;      // sum_i y_i * x_i.transpose()
-    virtual const Spd & xtx()const;      // sum_i x_i * x_i.transpose();
-    virtual double n()const;             // number of observations
-    virtual double sumw()const;          // sum of weights
+    const SpdMatrix & yty()const override;      // sum_i y_i * y_i.transpose()
+    const Matrix & xty()const override;      // sum_i y_i * x_i.transpose()
+    const SpdMatrix & xtx()const override;      // sum_i x_i * x_i.transpose();
+    double n()const override;             // number of observations
+    double sumw()const override;          // sum of weights
 
     // Add the sufficient statistics managed by the argument to *this.
-    virtual void combine(Ptr<MvRegSuf>);
+    void combine(Ptr<MvRegSuf>) override;
     virtual void combine(const MvRegSuf &);
-    NeMvRegSuf * abstract_combine(Sufstat *s);
+    NeMvRegSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
+    ostream &print(ostream &out)const override;
   private:
-    Spd yty_;
-    Spd xtx_;
-    Mat xty_;
+    SpdMatrix yty_;
+    SpdMatrix xtx_;
+    Matrix xty_;
     double sumw_;
     double n_;
   };
@@ -174,14 +174,14 @@ namespace BOOM{
   NeMvRegSuf::NeMvRegSuf(Fwd b, Fwd e)
   {
     Ptr<MvRegData> dp =*b;
-    const Vec &x(dp->x());
-    const Vec &y(dp->y());
+    const Vector &x(dp->x());
+    const Vector &y(dp->y());
 
     uint xdim= x.size();
     uint ydim= y.size();
-    xtx_ = Spd(xdim, 0.0);
-    yty_ = Spd(ydim, 0.0);
-    xty_ = Mat(xdim, ydim, 0.0);
+    xtx_ = SpdMatrix(xdim, 0.0);
+    yty_ = SpdMatrix(ydim, 0.0);
+    xty_ = Matrix(xdim, ydim, 0.0);
     n_ = 0;
 
     while(b!=e){ this->update(*b); ++b; }
@@ -205,7 +205,7 @@ namespace BOOM{
     // Args:
     //   X:  The design matrix.
     //   Y:  The matrix of responses.  The number of rows must match X.
-    MvReg(const Mat &X, const Mat &Y);
+    MvReg(const Matrix &X, const Matrix &Y);
 
     // Args:
     //   B: The matrix of regression coefficients.  The number of rows
@@ -213,10 +213,10 @@ namespace BOOM{
     //     columns defines the dimension of the response.
     //   Sigma: The residual variance matrix.  Its dimension must
     //     match ncol(B).
-    MvReg(const Mat &B, const Spd &Sigma);
+    MvReg(const Matrix &B, const SpdMatrix &Sigma);
 
     MvReg(const MvReg & rhs);
-    MvReg * clone()const;
+    MvReg * clone()const override;
 
     // Dimension of the predictor (including the intercept, if any).
     uint xdim()const;
@@ -226,16 +226,16 @@ namespace BOOM{
 
     // Matrix of regression coefficients, with xdim() rows, ydim()
     // columns.
-    const Mat & Beta()const;
-    void set_Beta(const Mat &B);
+    const Matrix & Beta()const;
+    void set_Beta(const Matrix &B);
 
     // Residual variance matrix.
-    const Spd & Sigma()const;
-    void set_Sigma(const Spd &V);
+    const SpdMatrix & Sigma()const;
+    void set_Sigma(const SpdMatrix &V);
 
     // Matrix inverse of the residual variance matrix;
-    const Spd & Siginv()const;
-    void set_Siginv(const Spd &iV);
+    const SpdMatrix & Siginv()const;
+    void set_Siginv(const SpdMatrix &iV);
 
     // log determinant of Siginv().
     double ldsi()const;
@@ -247,21 +247,21 @@ namespace BOOM{
     const Ptr<SpdParams> Sigma_prm()const;
 
     //--- estimation and probability calculations
-    virtual void mle();
+    void mle() override;
     // The argument to loglike is a vector created by stacking the
     // columns of Beta, and the upper triangle of Sigma
-    virtual double loglike(const Vector &beta_sigma)const;
+    double loglike(const Vector &beta_sigma)const override;
     virtual double pdf(dPtr, bool)const;
 
     // Returns x * Beta();
-    virtual Vec predict(const Vec &x)const;
+    virtual Vector predict(const Vector &x)const;
 
     //---- simulate MV regression data ---
     virtual MvRegData * simdat()const;
-    virtual MvRegData * simdat(const Vec &X)const;
+    virtual MvRegData * simdat(const Vector &X)const;
 
     // no intercept
-    Vec simulate_fake_x()const;
+    Vector simulate_fake_x()const;
   };
 }
 #endif // BOOM_MVREG_HPP

@@ -33,14 +33,14 @@ namespace BOOM{
       friend class Subject;
       friend class IrtModel;
 
-      typedef std::vector<string> StringVec;
+      typedef std::vector<string> StringVector;
       Item(const string &Id, uint Maxscore, uint one_subscale,
-	   uint nscales, const string &Name="");
+           uint nscales, const string &Name="");
       Item(const string &Id, uint Maxscore, std::vector<bool> subscales,
-	   const string &Name="");
+           const string &Name="");
       Item(const Item &rhs);
 
-      virtual Item * clone()const=0;
+      Item * clone() const override = 0;
 
       uint nscales_this()const;    // number of subscales assessed by this item
       uint Nscales()const;    // total number of subscales
@@ -52,9 +52,9 @@ namespace BOOM{
       //--- data managment over-rides for Model base class ---
       virtual void add_subject(Ptr<Subject> s);
       virtual void remove_subject(Ptr<Subject> s);
-      virtual void add_data(Ptr<Data>);
-      virtual void add_data(Ptr<Subject>);
-      virtual void clear_data();
+      void add_data(Ptr<Data>) override;
+      void add_data(Ptr<Subject>) override;
+      void clear_data() override;
 
       const SubjectSet &subjects()const;
       uint Nsubjects()const;
@@ -68,27 +68,27 @@ namespace BOOM{
       Response response(Ptr<Subject>);
       const Response response(Ptr<Subject>)const;
 
-      void set_response_names(const StringVec &levels);
-      const StringVec &possible_responses()const;
+      void set_response_names(const StringVector &levels);
+      const StringVector &possible_responses()const;
 
       void report(ostream &, uint namewidth=0)const;
-      Vec response_histogram()const;
+      Vector response_histogram()const;
 
       ostream & display(ostream &)const;
       virtual ostream & display_item_params(ostream &,
-					    bool decorate=true)const=0;
+                                            bool decorate=true)const=0;
 
-      Response simulate_response(const Vec &Theta)const;
+      Response simulate_response(const Vector &Theta)const;
 
-      virtual const Vec & beta()const=0;
+      virtual const Vector & beta()const=0;
 
       virtual double pdf(Ptr<Data>, bool logsc)const;
       virtual double pdf(Ptr<Subject>, bool logsc)const;
 
-      virtual double response_prob(Response r, const Vec &Theta,
-				   bool logscale)const=0;
-      virtual double response_prob(uint r, const Vec &Theta,
-				   bool logscale)const=0;
+      virtual double response_prob(Response r, const Vector &Theta,
+                                   bool logscale)const=0;
+      virtual double response_prob(uint r, const Vector &Theta,
+                                   bool logscale)const=0;
 
       double loglike()const;
     private:
@@ -96,39 +96,45 @@ namespace BOOM{
       string id_;                 // internal id, like "17"
       string name_;               // external id, like "Toy Story"
       Ptr<CatKey> possible_responses_;  // "0", "1"... "Poor","Fair","Good"...
-      void increment_hist(Ptr<Subject>, Vec &)const;
+      void increment_hist(Ptr<Subject>, Vector &)const;
       void increment_loglike(Ptr<Subject>)const;
       mutable double loglike_ans;
     };
 
     //======================================================================
-    //A "NullItem" is used by Subjects and IrtModels to help them
-    //navigate their ItemSets
+    // A "NullItem" is used by Subjects and IrtModels to help them
+    // navigate their ItemSets
 
     class NullItem : public Item{
     public:
       NullItem() : Item("Null", 1, 0, 1, "Null"){}
-      NullItem * clone()const{return new NullItem(*this);}
-      ostream & display_item_params(ostream &out, bool=true)const{
-	return out;}
-      const Vec & beta()const{ return b;}
-      double response_prob(Response, const Vec &, bool)const{return 0.0;}
-      double response_prob(uint, const Vec &, bool)const{return 0.0;}
-      double pdf(Ptr<Data>, bool)const{return 0.0;}
-      double pdf(Ptr<Subject>, bool)const{return 0.0;}
-      ParamVec t(){return ParamVec() ;}
-      const ParamVec t()const{return ParamVec() ;}
+      NullItem * clone()const override{return new NullItem(*this);}
+      ostream & display_item_params(ostream &out, bool=true)const override{
+        return out;}
+      const Vector & beta()const override{ return b;}
+      double response_prob(Response, const Vector &, bool)const override{return 0.0;}
+      double response_prob(uint, const Vector &, bool)const override{return 0.0;}
+      double pdf(Ptr<Data>, bool)const override{return 0.0;}
+      double pdf(Ptr<Subject>, bool)const override{return 0.0;}
+      ParamVector t() override{return ParamVector() ;}
+      const ParamVector t()const override{return ParamVector() ;}
       void initialize_params(){}
-      void add_data(Ptr<Data>){}
-      void add_data(Ptr<Subject>){}
-      void clear_data(){}
-      void sample_posterior(){}
-      double logpri() const{return 0.0;}
-      void set_method(Ptr<PosteriorSampler>){}
+      void add_data(Ptr<Data>) override{}
+      void add_data(Ptr<Subject>) override{}
+      void clear_data() override{}
+      void sample_posterior() override{}
+      double logpri() const override{return 0.0;}
+      void set_method(Ptr<PosteriorSampler>) override{}
+      int number_of_sampling_methods() const override {return 0;}
+     protected:
+      PosteriorSampler * sampler(int i) override {return nullptr;}
+      PosteriorSampler const * const sampler(int i) const override {
+        return nullptr;
+      }
     private:
-      Vec b;
+      Vector b;
     };
 
-  }
-}
+  }  // namespace IRT
+}  // namespace BOOM
 #endif// IRT_ITEM_HPP

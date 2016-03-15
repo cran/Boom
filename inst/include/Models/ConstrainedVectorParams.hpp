@@ -26,36 +26,36 @@ namespace BOOM{
     friend void intrusive_ptr_release(VectorConstraint *d){
       d->down_count(); if(d->ref_count()==0) delete d;}
 
-    virtual ~VectorConstraint(){}
+    ~VectorConstraint() override{}
 
-    virtual bool check(const Vec &v)const=0;
+    virtual bool check(const Vector &v)const=0;
     // returns true if constraint satisfied
 
-    virtual void impose(Vec &v)const=0;
+    virtual void impose(Vector &v)const=0;
     // forces constraint to hold
 
-    virtual Vec expand(const Vec &small)const=0;
+    virtual Vector expand(const Vector &small)const=0;
     // returns constrained vector from minimal information vector
 
-    virtual Vec reduce(const Vec &large)const=0;
+    virtual Vector reduce(const Vector &large)const=0;
     // returns minimal information vector from constrained vector
   };
   //------------------------------------------------------------
   class NoConstraint : public VectorConstraint{
   public:
-    bool check(const Vec &)const{return true;}
-    void impose(Vec &)const{}
-    Vec expand(const Vec &v)const{return v;}
-    Vec reduce(const Vec &v)const{return v;}
+    bool check(const Vector &)const override{return true;}
+    void impose(Vector &)const override{}
+    Vector expand(const Vector &v)const override{return v;}
+    Vector reduce(const Vector &v)const override{return v;}
   };
   //------------------------------------------------------------
   class ElementConstraint : public VectorConstraint{
   public:
     ElementConstraint(uint element=0, double x=0.0);
-    virtual bool check(const Vec &v)const;
-    virtual void impose(Vec &v)const;
-    virtual Vec expand(const Vec &v)const;
-    virtual Vec reduce(const Vec &v)const;
+    bool check(const Vector &v)const override;
+    void impose(Vector &v)const override;
+    Vector expand(const Vector &v)const override;
+    Vector reduce(const Vector &v)const override;
   private:
     uint element_;
     double value_;
@@ -64,10 +64,10 @@ namespace BOOM{
   class SumConstraint : public VectorConstraint{
   public:
     SumConstraint(double sum);
-    virtual bool check(const Vec &v)const;
-    virtual void impose(Vec &v)const;
-    virtual Vec expand(const Vec &v)const;  // adds final element to
-    virtual Vec reduce(const Vec &v)const;  // eliminates last element
+    bool check(const Vector &v)const override;
+    void impose(Vector &v)const override;
+    Vector expand(const Vector &v)const override;  // adds final element to
+    Vector reduce(const Vector &v)const override;  // eliminates last element
   private:
     double sum_;
   };
@@ -79,16 +79,16 @@ namespace BOOM{
   public:
     explicit ConstrainedVectorParams(uint p, double x=0.0,
                                      Ptr<VectorConstraint> vc=0);
-    ConstrainedVectorParams(const Vec &v,
+    ConstrainedVectorParams(const Vector &v,
                             Ptr<VectorConstraint> vc=0);  // copies v's data
     ConstrainedVectorParams(const ConstrainedVectorParams &rhs); // copies data
-    ConstrainedVectorParams * clone()const;
+    ConstrainedVectorParams * clone()const override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
 
     bool check_constraint()const;
   private:

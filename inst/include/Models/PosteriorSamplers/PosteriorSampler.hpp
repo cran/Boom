@@ -27,25 +27,42 @@
 
 namespace BOOM{
 
-  class Params;
-
+  // The job of a PosteriorSampler is primarily to simulate a set of
+  // model parameters from their posterior distribution.  Concrete
+  // instances of a PosteriorSampler should contain a "dumb" pointer
+  // to a specific concrete Model to be managed (because the model
+  // owns the Sampler, not the other way around), as well as a Ptr to
+  // one or more other model objects constituting the prior.
+  //
+  // Some PosteriorSamplers also allow you to find the posterior mode
+  // of the model that they manage.  If so, they should override the
+  // can_find_posterior_mode method to return true.
   class PosteriorSampler
-    : private RefCounted{
+    : private RefCounted {
   public:
-    PosteriorSampler();
+    PosteriorSampler(RNG &seeding_rng);
     PosteriorSampler(const PosteriorSampler &);
-    virtual void draw()=0;
-    virtual double logpri()const=0;
-    virtual ~PosteriorSampler(){}
-    friend void intrusive_ptr_add_ref(PosteriorSampler *m);
-    friend void intrusive_ptr_release(PosteriorSampler *m);
+    virtual void draw() = 0;
+    virtual double logpri() const = 0;
+    ~PosteriorSampler() override{}
     RNG & rng()const{return rng_;}
     void set_seed(unsigned long);
+
+    // Returns true if the child class implements
+    // find_posterior_mode().  Returns false otherwise.
+    virtual bool can_find_posterior_mode() const {
+      return false;
+    }
+
+    // The default implementation of this function throws an exception
+    // through report_error().
+    virtual void find_posterior_mode(double epsilon = 1e-5);
+
+    friend void intrusive_ptr_add_ref(PosteriorSampler *m);
+    friend void intrusive_ptr_release(PosteriorSampler *m);
    private:
     mutable RNG rng_;
   };
 
-  void intrusive_ptr_add_ref(PosteriorSampler *m);
-  void intrusive_ptr_release(PosteriorSampler *m);
-}
+}  // namespace BOOM
 #endif// BOOM_SAMPLING_METHOD_HPP

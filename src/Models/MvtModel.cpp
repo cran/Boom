@@ -42,7 +42,7 @@ namespace BOOM{
     ParamPolicy::add_model(wgt);
   }
 
-  MVT::MvtModel(const Vec &mean, const Spd &Var, double Nu)
+  MVT::MvtModel(const Vector &mean, const SpdMatrix &Var, double Nu)
     : ParamPolicy(),
       DataPolicy(),
       PriorPolicy(),
@@ -87,28 +87,29 @@ namespace BOOM{
     return wgt->Nu_prm();}
 
   int MVT::dim()const{return mu().size();}
-  const Vec & MVT::mu()const{ return Mu_prm()->value();}
-  const Spd & MVT::Sigma()const{return Sigma_prm()->var();}
-  const Spd & MVT::siginv()const{return Sigma_prm()->ivar();}
+  const Vector & MVT::mu()const{ return Mu_prm()->value();}
+  const SpdMatrix & MVT::Sigma()const{return Sigma_prm()->var();}
+  const Matrix & MVT::Sigma_chol()const{return Sigma_prm()->var_chol();}
+  const SpdMatrix & MVT::siginv()const{return Sigma_prm()->ivar();}
   double MVT::ldsi()const{ return Sigma_prm()->ldsi();}
   double MVT::nu()const{return Nu_prm()->value();}
 
-  void MVT::set_mu(const Vec &mu){Mu_prm()->set(mu);}
-  void MVT::set_Sigma(const Spd &Sig){Sigma_prm()->set_var(Sig);}
-  void MVT::set_siginv(const Spd &ivar){Sigma_prm()->set_ivar(ivar);}
-  void MVT::set_S_Rchol(const Vec &S, const Mat & L){
+  void MVT::set_mu(const Vector &mu){Mu_prm()->set(mu);}
+  void MVT::set_Sigma(const SpdMatrix &Sig){Sigma_prm()->set_var(Sig);}
+  void MVT::set_siginv(const SpdMatrix &ivar){Sigma_prm()->set_ivar(ivar);}
+  void MVT::set_S_Rchol(const Vector &S, const Matrix & L){
     Sigma_prm()->set_S_Rchol(S,L); }
   void MVT::set_nu(double nu){Nu_prm()->set(nu);}
 
   double MVT::pdf(Ptr<VectorData> dp, bool logscale)const{
     return pdf(dp->value(),logscale);}
   double MVT::pdf(Ptr<Data> dp, bool logscale) const {
-    const Vec &v(DAT(dp)->value());
+    const Vector &v(DAT(dp)->value());
     return pdf(v, logscale);}
-  double MVT::pdf(const Vec &x, bool logscale) const{
+  double MVT::pdf(const Vector &x, bool logscale) const{
     return dmvt(x, mu(), siginv(), nu(), ldsi(), logscale); }
 
-  double MVT::logp(const Vec &x)const{return pdf(x, true);}
+  double MVT::logp(const Vector &x)const{return pdf(x, true);}
 
   void MVT::add_data(Ptr<VectorData> dp){
     DataPolicy::add_data(dp);
@@ -160,7 +161,7 @@ namespace BOOM{
 
     for(uint i=0; i<V.size(); ++i){
       Ptr<WVD> d = V[i];
-      const Vec &y(d->value());
+      const Vector &y(d->value());
       double delta = siginv().Mdist(y, mu());
       double a = (nu() + y.length())/2.0;
       double b = (nu() + delta)/2.0;
@@ -179,25 +180,25 @@ namespace BOOM{
   public:
     MvtNuTF(MvtModel *Mod) : mod(Mod){}
     MvtNuTF * clone()const{return new MvtNuTF(*this);}
-    double operator()(const Vec &Nu)const;
-    double operator()(const Vec &Nu, Vec &g)const;
+    double operator()(const Vector &Nu)const;
+    double operator()(const Vector &Nu, Vector &g)const;
   private:
-    double Loglike(const Vec &Nu, Vec &g, uint nd)const;
+    double Loglike(const Vector &Nu, Vector &g, uint nd)const;
     MvtModel *mod;
   };
 
-  double MvtNuTF::operator()(const Vec &Nu)const{
-    Vec g;
+  double MvtNuTF::operator()(const Vector &Nu)const{
+    Vector g;
     return Loglike(Nu, g, 0);}
 
-  double MvtNuTF::operator()(const Vec &Nu, Vec &g)const{
+  double MvtNuTF::operator()(const Vector &Nu, Vector &g)const{
     return Loglike(Nu,g,1);}
 
-  double MvtNuTF::Loglike(const Vec &Nu, Vec &g, uint nd)const{
+  double MvtNuTF::Loglike(const Vector &Nu, Vector &g, uint nd)const{
     const std::vector<Ptr<VectorData> > & dat(mod->dat());
     double ldsi = mod->ldsi();
-    const Spd & Siginv(mod->siginv());
-    const Vec &mu(mod->mu());
+    const SpdMatrix & Siginv(mod->siginv());
+    const Vector &mu(mod->mu());
     const double logpi= 1.1447298858494;
     double nu = Nu[0];
     double lognu = log(nu);
@@ -232,7 +233,7 @@ namespace BOOM{
     double dloglike= eps+1;
     double loglike = this->loglike(vectorize_params());
     double old = loglike;
-    Vec Nu(1, nu());
+    Vector Nu(1, nu());
     while(dloglike > eps){
       Estep();
       mvn->mle();
@@ -253,8 +254,12 @@ namespace BOOM{
     return ans;
   }
 
-  Vec MVT::sim()const{
-    Vec ans = rmvn(mu().zero(), Sigma());
+  Vector MVT::sim()const{
+    return sim(GlobalRng::rng);
+  }
+
+  Vector MVT::sim(RNG &rng)const{
+    Vector ans = rmvn_L_mt(rng, mu().zero(), Sigma_chol());
     double nu = this->nu();
     double w = rgamma(nu/2.0, nu/2.0);
     return mu() + ans/sqrt(w);

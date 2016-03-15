@@ -19,12 +19,15 @@
 #include <r_interface/boom_r_tools.hpp>
 #include <r_interface/prior_specification.hpp>
 #include <Models/BetaModel.hpp>
+#include <Models/DiscreteUniformModel.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/GaussianModel.hpp>
 #include <Models/MarkovModel.hpp>
+#include <Models/PoissonModel.hpp>
 #include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
 #include <Models/UniformModel.hpp>
 #include <cpputil/math_utils.hpp>
+#include <distributions.hpp>
 
 namespace BOOM{
   namespace RInterface{
@@ -77,7 +80,7 @@ namespace BOOM{
     {
       SEXP rinitial_value;
       PROTECT(rinitial_value = getListElement(prior, "initial.value"));
-      if(rinitial_value == R_NilValue){
+      if (rinitial_value == R_NilValue) {
         initial_value_ = Rf_asReal(rinitial_value);
       }else{
         initial_value_ = a_ / b_;
@@ -93,7 +96,7 @@ namespace BOOM{
 
     MvnPrior::MvnPrior(SEXP prior)
         : mu_(ToBoomVector(getListElement(prior, "mean"))),
-          Sigma_(ToBoomSpd(getListElement(prior, "variance")))
+          Sigma_(ToBoomSpdMatrix(getListElement(prior, "variance")))
     {}
 
     std::ostream & MvnPrior::print(std::ostream &out)const{
@@ -137,7 +140,8 @@ namespace BOOM{
 
     std::ostream & NormalInverseGammaPrior::print(std::ostream &out)const{
       out << "prior_mean_guess        = " << prior_mean_guess_ << std::endl
-          << "prior_mean_sample_size: = " << prior_mean_sample_size_ << std::endl
+          << "prior_mean_sample_size: = " << prior_mean_sample_size_
+          << std::endl
           << "prior for sigma: " << std::endl
           << sd_prior_;
       return out;
@@ -148,7 +152,7 @@ namespace BOOM{
             getListElement(prior, "prior.counts")))
     {}
 
-    const Vec & DirichletPrior::prior_counts()const{
+    const Vector & DirichletPrior::prior_counts()const{
       return prior_counts_;
     }
 
@@ -181,16 +185,20 @@ namespace BOOM{
 
     NormalInverseWishartPrior::NormalInverseWishartPrior(SEXP prior)
         : mu_guess_(ToBoomVector(getListElement(prior, "mean.guess"))),
-          mu_guess_weight_(Rf_asReal(getListElement(prior, "mean.guess.weight"))),
-          sigma_guess_(ToBoomSpd(getListElement(prior, "variance.guess"))),
-          sigma_guess_weight_(Rf_asReal(getListElement(prior, "variance.guess.weight")))
+          mu_guess_weight_(Rf_asReal(getListElement(
+              prior, "mean.guess.weight"))),
+          sigma_guess_(ToBoomSpdMatrix(getListElement(
+              prior, "variance.guess"))),
+          sigma_guess_weight_(Rf_asReal(getListElement(
+              prior, "variance.guess.weight")))
     {}
 
     std::ostream & NormalInverseWishartPrior::print(std::ostream &out)const{
       out << "the prior mean for mu:" << std::endl
           << mu_guess_ << std::endl
           << "prior sample size for mu0: " << mu_guess_weight_ << std::endl
-          << "prior sample size for Sigma_guess: " << sigma_guess_weight_ << std::endl
+          << "prior sample size for Sigma_guess: " << sigma_guess_weight_
+          << std::endl
           << "prior guess at Sigma: " << std::endl
           << sigma_guess_ << std::endl;
       return out;
@@ -213,23 +221,103 @@ namespace BOOM{
           sd_(ToBoomVector(getListElement(prior, "sd")))
     {}
 
-    Ptr<DoubleModel> create_double_model(SEXP r_spec){
-      if(Rf_inherits(r_spec, "GammaPrior")){
+    DiscreteUniformPrior::DiscreteUniformPrior(SEXP prior)
+        :lo_(Rf_asInteger(getListElement(prior, "lower.limit"))),
+         hi_(Rf_asInteger(getListElement(prior, "upper.limit")))
+    {
+      if (hi_ < lo_) {
+        report_error("hi < lo in DiscreteUniformPrior.");
+      }
+      log_normalizing_constant_ = -log(hi_ - lo_ + 1);
+    }
+
+    double DiscreteUniformPrior::logp(int value) const {
+      if (value < lo_ || value > hi_) {
+        return negative_infinity();
+      }
+      return log_normalizing_constant_;
+    }
+
+    PoissonPrior::PoissonPrior(SEXP prior)
+        : lambda_(Rf_asReal(getListElement(prior, "mean"))),
+          lo_(Rf_asReal(getListElement(prior, "lower.limit"))),
+          hi_(Rf_asReal(getListElement(prior, "upper.limit")))
+    {
+      if (lambda_ <= 0) {
+        report_error("lambda must be positive in PoissonPrior");
+      }
+      if (hi_ < lo_) {
+        report_error("upper.limit < lower.limit in PoissonPrior.");
+      }
+      log_normalizing_constant_ = log(ppois(hi_, lambda_)
+                                      - ppois(lo_ - 1, lambda_));
+
+    }
+
+    double PoissonPrior::logp(int value) const {
+      return dpois(value, lambda_, true) - log_normalizing_constant_;
+    }
+
+    PointMassPrior::PointMassPrior(SEXP prior)
+        : location_(Rf_asInteger(getListElement(prior, "location")))
+    {}
+
+    double PointMassPrior::logp(int value) const {
+      return value == location_ ? 0 : negative_infinity();
+    }
+
+    Ptr<DoubleModel> create_double_model(SEXP r_spec) {
+      if (Rf_inherits(r_spec, "GammaPrior")) {
         GammaPrior spec(r_spec);
         return new GammaModel(spec.a(), spec.b());
-      }else if(Rf_inherits(r_spec, "BetaPrior")){
+      }else if (Rf_inherits(r_spec, "BetaPrior")) {
         BetaPrior spec(r_spec);
         return new BetaModel(spec.a(), spec.b());
-      }else if(Rf_inherits(r_spec, "NormalPrior")){
+      }else if (Rf_inherits(r_spec, "NormalPrior")) {
         NormalPrior spec(r_spec);
         return new GaussianModel(spec.mu(), spec.sigma() * spec.sigma());
-      }else if(Rf_inherits(r_spec, "UniformPrior")){
+      }else if (Rf_inherits(r_spec, "UniformPrior")) {
         double lo = Rf_asReal(getListElement(r_spec, "lo"));
         double hi = Rf_asReal(getListElement(r_spec, "hi"));
         return new UniformModel(lo, hi);
       }
       report_error("Could not convert specification into a DoubleModel");
-      return 0;
+      return nullptr;
+    }
+
+    Ptr<DiffDoubleModel> create_diff_double_model(SEXP r_spec) {
+      if (Rf_inherits(r_spec, "GammaPrior")) {
+        GammaPrior spec(r_spec);
+        return new GammaModel(spec.a(), spec.b());
+      }else if (Rf_inherits(r_spec, "BetaPrior")) {
+        BetaPrior spec(r_spec);
+        return new BetaModel(spec.a(), spec.b());
+      }else if (Rf_inherits(r_spec, "NormalPrior")) {
+        NormalPrior spec(r_spec);
+        return new GaussianModel(spec.mu(), spec.sigma() * spec.sigma());
+      }else if (Rf_inherits(r_spec, "UniformPrior")) {
+        double lo = Rf_asReal(getListElement(r_spec, "lo"));
+        double hi = Rf_asReal(getListElement(r_spec, "hi"));
+        return new UniformModel(lo, hi);
+      }
+      report_error("Could not convert specification into a DiffDoubleModel");
+      return nullptr;
+    }
+
+    Ptr<IntModel> create_int_model(SEXP r_spec) {
+      if (Rf_inherits(r_spec, "DiscreteUniformPrior")) {
+        DiscreteUniformPrior spec(r_spec);
+        return new DiscreteUniformModel(spec.lo(), spec.hi());
+      } else if (Rf_inherits(r_spec, "PoissonPrior")) {
+        PoissonPrior spec(r_spec);
+        return new PoissonModel(spec.lambda());
+      } else if (Rf_inherits(r_spec, "PointMassPrior")) {
+        PointMassPrior spec(r_spec);
+        return new DiscreteUniformModel(spec.location(), spec.location());
+      } else {
+        report_error("Could not convert specification into an IntModel.");
+        return nullptr;
+      }
     }
 
   } // namespace RInterface

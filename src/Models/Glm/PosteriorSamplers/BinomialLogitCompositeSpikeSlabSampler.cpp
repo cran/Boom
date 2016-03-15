@@ -24,22 +24,22 @@
 #include <ctime>
 
 namespace BOOM{
-  double BinomialLogitLogPostChunk::operator()(const Vec &beta_chunk)const{
-    Vec g;
-    Mat h;
+  double BinomialLogitLogPostChunk::operator()(const Vector &beta_chunk)const{
+    Vector g;
+    Matrix h;
     return (*this)(beta_chunk, g, h, 0);
   }
   //----------------------------------------------------------------------
   double BinomialLogitLogPostChunk::operator()(
-      const Vec &beta_chunk, Vec &grad, Mat &hess, int nd)const{
-    Vec nonzero_beta = m_->included_coefficients();
+      const Vector &beta_chunk, Vector &grad, Matrix &hess, int nd)const{
+    Vector nonzero_beta = m_->included_coefficients();
     VectorView nonzero_beta_chunk(nonzero_beta, start_, chunk_size_);
     nonzero_beta_chunk = beta_chunk;
 
     const std::vector<Ptr<BinomialRegressionData> > &data(m_->dat());
     const Selector &inc(m_->coef().inc());
-    const Spd siginv(inc.select(pri_->siginv()));
-    const Vec mu(inc.select(pri_->mu()));
+    const SpdMatrix siginv(inc.select(pri_->siginv()));
+    const Vector mu(inc.select(pri_->mu()));
 
     double ans = dmvn(nonzero_beta, mu, siginv, 0.0, true);
     if(nd > 0){
@@ -54,9 +54,9 @@ namespace BOOM{
 
     int nobs = data.size();
     for(int i = 0; i < nobs; ++i){
-      int yi = data[i]->y();
-      int ni = data[i]->n();
-      Vec x = inc.select(data[i]->x());
+      double yi = data[i]->y();
+      double ni = data[i]->n();
+      Vector x = inc.select(data[i]->x());
       double eta = nonzero_beta.dot(x);
       double prob = plogis(eta);
       ans += dbinom(yi, ni, prob, true);
@@ -80,50 +80,48 @@ namespace BOOM{
       double tdf,
       int max_tim_chunk_size,
       int max_rwm_chunk_size,
-      double rwm_variance_scale_factor)
-      : BinomialLogitSpikeSlabSampler(model, prior, vpri, clt_threshold),
+      double rwm_variance_scale_factor,
+      RNG &seeding_rng)
+      : BinomialLogitSpikeSlabSampler(model, prior, vpri, clt_threshold,
+                                      seeding_rng),
         m_(model),
         pri_(prior),
         tdf_(tdf),
         max_tim_chunk_size_(max_tim_chunk_size),
         max_rwm_chunk_size_(max_rwm_chunk_size),
-        rwm_variance_scale_factor_(rwm_variance_scale_factor),
-        auxmix_tries_(0),
-        auxmix_times_(0.0),
-        rwm_tries_(0),
-        rwm_times_(0.0),
-        tim_tries_(0),
-        tim_times_(0.0),
-        rwm_chunk_attempts_(0),
-        rwm_chunk_successes_(0),
-        tim_chunk_attempts_(0),
-        tim_chunk_mode_failures_(0),
-        tim_chunk_successes_(0),
-        rwm_chunk_times_(0.0),
-        tim_mode_finding_times_(0.0),
-        tim_trial_times_(0.0),
-        tim_mode_finding_wasted_time_(0.0)
-  {}
+        rwm_variance_scale_factor_(rwm_variance_scale_factor)
+  {
+    set_sampler_weights(1.0, 1.0, 1.0);
+  }
   //----------------------------------------------------------------------
   void BLCSSS::draw(){
-    double u  = runif_mt(rng());
-    clock_t start = clock();
-    if(u < .333){
-      ++auxmix_tries_;
-      BinomialLogitSpikeSlabSampler::draw();
-      clock_t end = clock();
-      auxmix_times_ += double(end - start) / CLOCKS_PER_SEC;
-    }else if(u < .6667){
-      ++rwm_tries_;
-      rwm_draw();
-      clock_t end = clock();
-      rwm_times_ += double(end - start) / CLOCKS_PER_SEC;
-    }else{
-      ++tim_tries_;
-      tim_draw();
-      clock_t end = clock();
-      tim_times_ += double (end - start) / CLOCKS_PER_SEC;
-    }
+    enum SamplingMethod {
+      DATA_AUGMENTATION = 0,
+      RWM = 1,
+      TIM = 2
+    };
+    SamplingMethod method =
+        SamplingMethod(rmulti_mt(rng(), sampler_weights_));
+    switch (method) {
+      case DATA_AUGMENTATION: {
+          MoveTimer timer = move_accounting_.start_time("auxmix");
+          BinomialLogitSpikeSlabSampler::draw();
+          move_accounting_.record_acceptance("auxmix");
+          break;
+      }
+      case RWM: {
+          MoveTimer timer = move_accounting_.start_time("rwm (total time)");
+          rwm_draw();
+          break;
+      }
+      case TIM: {
+          MoveTimer timer = move_accounting_.start_time("TIM (total time)");
+          tim_draw();
+          break;
+      }
+      default:
+        report_error("Unknown method in BinomialLogitSpikeSlabSampler::draw.");
+    }  // switch
   }
   //----------------------------------------------------------------------
   void BLCSSS::rwm_draw(){
@@ -135,14 +133,13 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void BLCSSS::rwm_draw_chunk(int chunk){
-    clock_t start = clock();
     const Selector &inc(m_->coef().inc());
     int nvars = inc.nvars();
-    Vec full_nonzero_beta = m_->included_coefficients();
+    Vector full_nonzero_beta = m_->included_coefficients();
     // Compute information matrix for proposal distribution.  For
     // efficiency, also compute the log-posterior of the current beta.
-    Vec mu(inc.select(pri_->mu()));
-    Spd siginv(inc.select(pri_->siginv()));
+    Vector mu(inc.select(pri_->mu()));
+    SpdMatrix siginv(inc.select(pri_->siginv()));
     double original_logpost = dmvn(full_nonzero_beta, mu, siginv, 0, true);
 
     const std::vector<Ptr<BinomialRegressionData> > &data(m_->dat());
@@ -157,19 +154,17 @@ namespace BOOM{
       chunk_selector.add(i);
     }
 
-    Spd proposal_ivar = chunk_selector.select(siginv);
+    SpdMatrix proposal_ivar = chunk_selector.select(siginv);
 
     for(int i = 0; i < nobs; ++i){
-      Vec x = inc.select(data[i]->x());
+      Vector x = inc.select(data[i]->x());
       double eta = x.dot(full_nonzero_beta);
       double prob = plogis(eta);
       double weight = prob * (1-prob);
       VectorView x_chunk(x, chunk_start, this_chunk_size);
       // Only upper triangle is accessed.  Need to reflect at end of loop.
       proposal_ivar.add_outer(x_chunk, weight, false);
-      int yi = data[i]->y();
-      int ni = data[i]->n();
-      original_logpost += dbinom(yi, ni, prob, true);
+      original_logpost += dbinom(data[i]->y(), data[i]->n(), prob, true);
     }
     proposal_ivar.reflect();
     VectorView beta_chunk(full_nonzero_beta, chunk_start, this_chunk_size);
@@ -182,19 +177,19 @@ namespace BOOM{
     }
 
     double logpost = dmvn(full_nonzero_beta, mu, siginv, 0, true);
-    Vec full_beta(inc.expand(full_nonzero_beta));
+    Vector full_beta(inc.expand(full_nonzero_beta));
     logpost += m_->log_likelihood(full_beta, 0, 0, false);
     double log_alpha = logpost - original_logpost;
     double logu = log(runif_mt(rng()));
-    ++rwm_chunk_attempts_;
-    if(logu < log_alpha){
+    if (logu < log_alpha) {
       m_->set_included_coefficients(full_nonzero_beta);
-      ++rwm_chunk_successes_;
+      move_accounting_.record_acceptance("rwm_chunk");
+    } else {
+      move_accounting_.record_rejection("rwm_chunk");
     }
-    clock_t end = clock();
-    rwm_chunk_times_ += double(end - start) / CLOCKS_PER_SEC;
   }
   //----------------------------------------------------------------------
+// TODO(stevescott):  This code currently discards the tim_sampler
   void BLCSSS::tim_draw(){
     int nvars = m_->coef().nvars();
     if(nvars == 0) return;
@@ -203,31 +198,30 @@ namespace BOOM{
     assert(number_of_chunks * chunk_size >= nvars);
 
     for(int chunk = 0; chunk < number_of_chunks; ++chunk) {
-      ++tim_chunk_attempts_;
       clock_t mode_start = clock();
-      TIM tim_sampler(log_posterior(chunk, max_tim_chunk_size_), tdf_);
-      Vec beta = m_->included_coefficients();
+      TIM tim_sampler(log_posterior(chunk, max_tim_chunk_size_), tdf_, &rng());
+      Vector beta = m_->included_coefficients();
       int start = chunk_size * chunk;
       int elements_remaining = nvars - start;
       VectorView beta_chunk(beta,
                             start,
                             std::min(elements_remaining, chunk_size));
       bool ok = tim_sampler.locate_mode(beta_chunk);
-      clock_t mode_end = clock();
-      double mode_time = double(mode_end - mode_start) / CLOCKS_PER_SEC;
-      tim_mode_finding_times_ += mode_time;
-      if(ok){
+      move_accounting_.stop_time("tim mode finding", mode_start);
+      if (ok) {
+        move_accounting_.record_acceptance("tim mode finding");
         tim_sampler.fix_mode(true);
-        clock_t trial_start = clock();
+        MoveTimer timer = move_accounting_.start_time("TIM chunk");
         beta_chunk = tim_sampler.draw(beta_chunk);
         m_->set_included_coefficients(beta);
-        tim_chunk_successes_ += tim_sampler.last_draw_was_accepted();
-        clock_t trial_end = clock();
-        tim_trial_times_ += double(trial_end - trial_start) / CLOCKS_PER_SEC;
-      }else{
+        if (tim_sampler.last_draw_was_accepted()) {
+          move_accounting_.record_acceptance("TIM chunk");
+        } else {
+          move_accounting_.record_rejection("TIM chunk");
+        }
+      } else {
+        move_accounting_.record_rejection("tim mode finding");
         rwm_draw_chunk(chunk);
-        tim_mode_finding_wasted_time_ += mode_time;
-        ++tim_chunk_mode_failures_;
       }
     }
   }
@@ -236,6 +230,25 @@ namespace BOOM{
       int chunk, int max_chunk_size)const{
     return BinomialLogitLogPostChunk(
         m_, pri_.get(), compute_chunk_size(max_chunk_size), chunk);
+  }
+  //----------------------------------------------------------------------
+  void BLCSSS::set_sampler_weights(
+      double da_weight,
+      double rwm_weight,
+      double tim_weight) {
+    if (da_weight < 0
+        || rwm_weight < 0
+        || tim_weight < 0) {
+      report_error("All three weights must be non-negative.");
+    }
+    if (da_weight <= 0 && rwm_weight <= 0 && tim_weight <= 0) {
+      report_error("At least one weight must be positive.");
+    }
+    sampler_weights_.resize(3);
+    sampler_weights_[0] = da_weight;
+    sampler_weights_[1] = rwm_weight;
+    sampler_weights_[2] = tim_weight;
+    sampler_weights_ /= sum(sampler_weights_);
   }
   //----------------------------------------------------------------------
   int BLCSSS::compute_chunk_size(int max_chunk_size)const{
@@ -257,27 +270,7 @@ namespace BOOM{
   }
 
   ostream & BLCSSS::time_report(ostream &out)const{
-    out << "auxmix:  " << auxmix_tries_ << " iterations in "
-        << auxmix_times_ << " seconds, for "
-        << auxmix_tries_ / auxmix_times_ << " iterations / sec." << endl
-        << "rwm:     " << rwm_tries_ << " iterations int "
-        << rwm_times_ << " secconds, for "
-        << rwm_tries_ / rwm_times_ << " iterations / sec." << endl
-        << "tim:     " << tim_tries_ << " iterations int "
-        << tim_times_ << " secconds, for "
-        << tim_tries_ / tim_times_ << " iterations / sec." << endl
-        << "TIM failed to locate the mode " << tim_chunk_mode_failures_
-        << " times out of " << tim_chunk_attempts_ << " for a failure rate of "
-        << double(tim_chunk_mode_failures_) / tim_chunk_attempts_ << "." << endl
-        << "TIM spent " << tim_mode_finding_times_
-        << " seconds finding the posterior mode, of which "
-        << tim_mode_finding_wasted_time_ << " seconds were wasted.  That means "
-        << tim_mode_finding_wasted_time_ / tim_mode_finding_times_
-        << " of the total mode finding time was wasted." << endl
-        << "The proportion of proposals from TIM chunks that were accepted is "
-        << double(tim_chunk_successes_) / tim_chunk_attempts_ << "." << endl
-        << "The proportion of proposals from RWM chunks that were accepted is "
-        << double(rwm_chunk_successes_) / rwm_chunk_attempts_ << "." << endl;
+    out << move_accounting_.to_matrix();
     return out;
   }
 };

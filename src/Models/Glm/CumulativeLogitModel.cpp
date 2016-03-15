@@ -24,11 +24,11 @@ namespace BOOM{
   typedef CumulativeLogitModel CLM;
   typedef OrdinalCutpointModel OCM;
 
-  CLM::CumulativeLogitModel(const Vec &beta, const Vec & delta)
+  CLM::CumulativeLogitModel(const Vector &beta, const Vector & delta)
       : OCM(beta, delta)
   {}
 
-  CLM::CumulativeLogitModel(const Mat &X, const Vec &y)
+  CLM::CumulativeLogitModel(const Matrix &X, const Vector &y)
       : OCM(X,y)
   {}
 

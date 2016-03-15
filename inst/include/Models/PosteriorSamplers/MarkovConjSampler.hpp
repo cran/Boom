@@ -28,35 +28,39 @@ namespace BOOM{
   class MarkovConjSampler
     : public PosteriorSampler
   {
-  public:
+   public:
     MarkovConjSampler(MarkovModel * Mod,
-		      Ptr<ProductDirichletModel> Q,
-		      Ptr<DirichletModel> pi0);
+                      Ptr<ProductDirichletModel> Q,
+                      Ptr<DirichletModel> pi0,
+                      RNG &seeding_rng = GlobalRng::rng);
     MarkovConjSampler(MarkovModel * Mod,
-		      Ptr<ProductDirichletModel> Q);
-
+                      Ptr<ProductDirichletModel> Q,
+                      RNG &seeding_rng = GlobalRng::rng);
     MarkovConjSampler(MarkovModel * Mod,
-                      const Mat & Nu);
+                      const Matrix & Nu,
+                      RNG &seeding_rng = GlobalRng::rng);
     MarkovConjSampler(MarkovModel * Mod,
-                      const Mat & Nu,
-                      const Vec & nu);
+                      const Matrix & Nu,
+                      const Vector & nu,
+                      RNG &seeding_rng = GlobalRng::rng);
 
-    virtual MarkovConjSampler * clone()const;
+    double logpri()const override;
+    void draw() override;
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
 
-    double logpri()const;
-    void draw();
-    void find_posterior_mode();
-
-    const Mat & Nu()const;
-    const Vec & nu()const;  // throws if pi0_ is not set
-  private:
+    const Matrix & Nu()const;
+    const Vector & nu()const;  // throws if pi0_ is not set
+   private:
     MarkovModel * mod_;
     Ptr<ProductDirichletModel> Q_;
     Ptr<DirichletModel> pi0_;
    protected:
     void check_pi0()const;
     void check_nu()const;
-    mutable Vec wsp;
+    mutable Vector wsp;
   };
-}
+}  // namespace BOOM
 #endif// BOOM_MARKOV_CONJUGATE_SAMPLER_HPP

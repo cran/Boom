@@ -43,6 +43,7 @@ namespace BOOM{
   SVRP::operator double() const{
     return value_;
   }
+
   //======================================================================
   SparseVector::SparseVector(int n)
     : size_(n) {
@@ -52,7 +53,14 @@ namespace BOOM{
     size_ = n;
   }
 
-  int SparseVector::size()const{return size_;}
+  SparseVector::SparseVector(const Vector &dense)
+      : size_(dense.size()) {
+    for (int i = 0; i < size_; ++i) {
+      elements_[i] = dense[i];
+    }
+  }
+
+  int SparseVector::size() const {return size_;}
 
   SparseVector & SparseVector::concatenate(const SparseVector &rhs){
     for(Cit it = rhs.elements_.begin(); it!=rhs.elements_.end(); ++it){
@@ -63,7 +71,7 @@ namespace BOOM{
     return *this;
   }
 
-  double SparseVector::operator[](int n)const{
+  double SparseVector::operator[](int n) const {
     check_index(n);
     Cit it = elements_.find(n);
     if(it == elements_.end()) return 0;
@@ -79,7 +87,7 @@ namespace BOOM{
     return SparseVectorReturnProxy(n, it->second, this);
   }
 
-  void SparseVector::check_index(int n)const{
+  void SparseVector::check_index(int n) const {
     if(n < 0){
       report_error("SparseVector indexed with a negative value");
     }else if(n > size_){
@@ -96,7 +104,7 @@ namespace BOOM{
     return (*this) *= 1.0/x;
   }
 
-  double SparseVector::sum()const{
+  double SparseVector::sum() const {
     double ans = 0;
     for(Cit it = elements_.begin(); it!=elements_.end(); ++it)
       ans += it->second;
@@ -113,23 +121,23 @@ namespace BOOM{
       ans += it->second * v[it->first];
     return ans;
   }
-  double SparseVector::dot(const Vec &v)const{
+  double SparseVector::dot(const Vector &v) const {
     return do_dot(v, elements_, size_); }
-  double SparseVector::dot(const VectorView &v)const{
+  double SparseVector::dot(const VectorView &v) const {
     return do_dot(v, elements_, size_); }
-  double SparseVector::dot(const ConstVectorView &v)const{
+  double SparseVector::dot(const ConstVectorView &v) const {
     return do_dot(v, elements_, size_); }
 
-  double SparseVector::sandwich(const Spd &P)const{
+  double SparseVector::sandwich(const SpdMatrix &P) const {
     double ans = 0;
-    for(Cit row = elements_.begin(); row != elements_.end(); ++row){
-      int i = row->first;
-      double xi = row->second;
-      for(Cit col = elements_.begin(); col != elements_.end(); ++col){
-        int j = col->first;
-        double xj = col->second;
-        double increment = xi * xj * P(static_cast<uint>(i), static_cast<uint>(j));
-        if(j == i){
+    for (const auto &row : elements_) {
+      int i = row.first;
+      double xi = row.second;
+      for (const auto &col : elements_) {
+        int j = col.first;
+        double xj = col.second;
+        double increment = xi * xj * P(i, j);
+        if (j == i) {
           ans += increment;
           break;
         }
@@ -139,57 +147,80 @@ namespace BOOM{
     return ans;
   }
 
-  Vec SparseVector::dense()const{
-    Vec ans(size(), 0.0);
+  Matrix SparseVector::outer_product_transpose(
+      const Vector &x, double scale) const {
+    Matrix ans(x.size(), this->size(), 0.0);
+    for (const auto &el : elements_) {
+      int i = el.first;
+      double y = el.second;
+      ans.col(i) = x * y * scale;
+    }
+    return ans;
+  }
+
+  Vector SparseVector::dense() const {
+    Vector ans(size(), 0.0);
     for(Cit it = elements_.begin(); it != elements_.end(); ++it){
       ans[it->first] = it->second;
     }
     return ans;
   }
 
-  void SparseVector::add_this_to(Vec &x, double weight)const{
+  void SparseVector::add_this_to(Vector &x, double weight) const {
     if(x.size() != size_){
       ostringstream err;
       err << "SparseVector::add_this_to called with incompatible x:" << endl
           << "this->size() = " << size_ << endl
           << "x.size()     = " << x.size() << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     for(Cit it = elements_.begin(); it != elements_.end(); ++it){
       x[it->first] += weight * it->second;
     }
   }
 
-  void SparseVector::add_this_to(VectorView x, double weight)const{
+  void SparseVector::add_this_to(VectorView x, double weight) const {
     if(x.size() != size_){
       ostringstream err;
       err << "SparseVector::add_this_to called with incompatible x:" << endl
           << "this->size() = " << size_ << endl
           << "x.size()     = " << x.size() << endl;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
     for(Cit it = elements_.begin(); it != elements_.end(); ++it){
       x[it->first] += weight * it->second;
     }
   }
+
+  void SparseVector::add_outer_product(SpdMatrix &m, double scale) const {
+    for (const auto &i : elements_) {
+      for (const auto &j : elements_) {
+        m(i.first, j.first) += i.second * j.second * scale;
+      }
+    }
+  }
+
   //======================================================================
-  Vec operator*(const Spd &P, const SparseVector &z){
+
+  Vector operator*(const SpdMatrix &P, const SparseVector &z){
     int n = nrow(P);
-    Vec ans(n);
+    Vector ans(n);
     for(int i = 0; i < n; ++i){
       //      ans[i] = z.dot(P.col(i));
       ans[i] = z.dot(P.row(i));
     }
     return ans;
   }
-  Vec operator*(SubMatrix P, const SparseVector &z){
+
+  Vector operator*(SubMatrix P, const SparseVector &z){
     int n = P.nrow();
-    Vec ans(n);
+    Vector ans(n);
     for(int i = 0; i < n; ++i){
       ans[i] = z.dot(P.row(i));
     }
     return ans;
   }
+
   ostream & operator<<(ostream &out, const SparseVector &z){
     int n = z.size();
     if(n == 0) return out;
@@ -197,4 +228,5 @@ namespace BOOM{
     for(int i = 1; i < n; ++i) out << " " << z[i];
     return out;
   }
-}
+
+}  // namespace BOOM

@@ -18,14 +18,16 @@
 #include <Models/Glm/PosteriorSamplers/BinomialLogitSamplerTim.hpp>
 #include <boost/bind.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   typedef BinomialLogitSamplerTim BLST;
-BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
-                              Ptr<MvnBase> pri,
-                              bool mode_is_stable,
-                              double nu)
-      : m_(m),
+  BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
+                                Ptr<MvnBase> pri,
+                                bool mode_is_stable,
+                                double nu,
+                                RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(m),
         pri_(pri),
         sam_(boost::bind(&BLST::logp, this, _1),
              boost::bind(&BLST::dlogp, this, _1, _2),
@@ -36,7 +38,7 @@ BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
     if(mode_is_stable) sam_.fix_mode();
   }
 
-  void BLST::draw(){
+  void BLST::draw() {
     if (save_modes_) {
       const Selector &inc(m_->inc());
       const Mode &mode(locate_mode(inc));
@@ -46,11 +48,11 @@ BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
     m_->set_included_coefficients(beta);
   }
 
-  double BLST::logpri()const{
+  double BLST::logpri() const {
     return pri_->logp(m_->included_coefficients());
   }
 
-  double BLST::Logp(const Vector &beta, Vector &g, Matrix &h, int nd)const{
+  double BLST::Logp(const Vector &beta, Vector &g, Matrix &h, int nd) const {
     double ans = pri_->Logp(beta, g, h, nd);
     Vector *gp = nd >0 ? &g : 0;
     Matrix *hp = nd >1 ? &h : 0;
@@ -58,18 +60,18 @@ BLST::BinomialLogitSamplerTim(BinomialLogitModel *m,
     return ans;
   }
 
-  double BLST::logp(const Vector &beta)const{
+  double BLST::logp(const Vector &beta) const {
     Vector g;
     Matrix h;
     return Logp(beta,g,h,0);
   }
 
-  double BLST::dlogp(const Vector &beta, Vector &g)const{
+  double BLST::dlogp(const Vector &beta, Vector &g) const {
     Matrix h;
     return Logp(beta, g, h, 1);
   }
 
-  double BLST::d2logp(const Vector &beta, Vector &g, Matrix &h)const{
+  double BLST::d2logp(const Vector &beta, Vector &g, Matrix &h) const {
     return Logp(beta, g, h, 2);
   }
 

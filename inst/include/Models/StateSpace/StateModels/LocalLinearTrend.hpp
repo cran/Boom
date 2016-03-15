@@ -33,34 +33,34 @@ namespace BOOM{
    public:
     LocalLinearTrendStateModel();
     LocalLinearTrendStateModel(const LocalLinearTrendStateModel &rhs);
-    virtual LocalLinearTrendStateModel * clone()const;
+    LocalLinearTrendStateModel * clone() const override;
 
-    virtual void observe_state(const ConstVectorView then,
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
-    virtual uint state_dimension()const{return 2;}
+                               int time_now) override;
+    uint state_dimension()const override{return 2;}
 
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual Vec initial_state_mean()const;
-    void set_initial_state_mean(const Vec &v);
-    virtual Spd initial_state_variance()const;
-    void set_initial_state_variance(const Spd &V);
+    Vector initial_state_mean()const override;
+    void set_initial_state_mean(const Vector &v);
+    SpdMatrix initial_state_variance()const override;
+    void set_initial_state_variance(const SpdMatrix &V);
 
-    virtual void set_Sigma(const Spd &sigma);
+    void set_Sigma(const SpdMatrix &sigma) override;
    private:
     void check_dim(const ConstVectorView &)const;
 
     SparseVector observation_matrix_;
     Ptr<LocalLinearTrendMatrix> state_transition_matrix_;
     Ptr<DenseSpd> state_variance_matrix_;
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
+    Vector initial_state_mean_;
+    SpdMatrix initial_state_variance_;
   };
 
 

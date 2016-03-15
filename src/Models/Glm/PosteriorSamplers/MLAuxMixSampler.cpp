@@ -25,13 +25,15 @@ namespace BOOM{
   typedef MLAuxMixSampler AUX;
   typedef MultinomialLogitModel MLM;
 
-  AUX::MLAuxMixSampler(MLM *Mod, Ptr<MvnBase> Pri, uint nthreads)
-    : mod_(Mod),
+  AUX::MLAuxMixSampler(MLM *Mod, Ptr<MvnBase> Pri, uint nthreads,
+                       RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       pri(Pri)
   {
     Ptr<VariableSelectionPrior> vp(0);
     sam = new MLVS(mod_, pri, vp, nthreads, false);
-    sam->supress_model_selection();
+    sam->suppress_model_selection();
   }
   void AUX::draw(){ sam->draw();}
   double AUX::logpri()const{ return pri->logp(mod_->beta());}

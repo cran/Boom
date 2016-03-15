@@ -33,30 +33,30 @@ namespace BOOM{
 		  new UnivParams(default_df))
   {}
 
-  MVTR::MvtRegModel(const Mat &X,const Mat &Y, bool add_intercept)
+  MVTR::MvtRegModel(const Matrix &X,const Matrix &Y, bool add_intercept)
     : ParamPolicy(new MatrixParams(X.ncol() + add_intercept,Y.ncol()),
 		  new SpdParams(Y.ncol()),
 		  new UnivParams(default_df))
   {
-    Mat XX(add_intercept? cbind(1.0,X) : X);
+    Matrix XX(add_intercept? cbind(1.0,X) : X);
     QR qr(XX);
-    Mat Beta(qr.solve(qr.QtY(Y)));
-    Mat resid = Y - XX* Beta;
+    Matrix Beta(qr.solve(qr.QtY(Y)));
+    Matrix resid = Y - XX* Beta;
     uint n = XX.nrow();
-    Spd Sig = resid.t() * resid/n;
+    SpdMatrix Sig = resid.t() * resid/n;
 
     set_Beta(Beta);
     set_Sigma(Sig);
 
     for(uint i=0; i<n; ++i){
-      Vec y = Y.row(i);
-      Vec x = XX.row(i);
+      Vector y = Y.row(i);
+      Vector x = XX.row(i);
       NEW(MvRegData, dp)(y,x);
       DataPolicy::add_data(dp);
     }
   }
 
-  MVTR::MvtRegModel(const Mat &B, const Spd &Sigma, double nu)
+  MVTR::MvtRegModel(const Matrix &B, const SpdMatrix &Sigma, double nu)
     : ParamPolicy(new MatrixParams(B),
 		  new SpdParams(Sigma),
 		  new UnivParams(nu))
@@ -75,9 +75,9 @@ namespace BOOM{
   uint MVTR::xdim()const{ return Beta().nrow();}
   uint MVTR::ydim()const{ return Beta().ncol();}
 
-  const Mat & MVTR::Beta()const{ return Beta_prm()->value();}
-  const Spd & MVTR::Sigma()const{return Sigma_prm()->var();}
-  const Spd & MVTR::Siginv()const{return Sigma_prm()->ivar();}
+  const Matrix & MVTR::Beta()const{ return Beta_prm()->value();}
+  const SpdMatrix & MVTR::Sigma()const{return Sigma_prm()->var();}
+  const SpdMatrix & MVTR::Siginv()const{return Sigma_prm()->ivar();}
   double MVTR::ldsi()const{return Sigma_prm()->ldsi();}
   double MVTR::nu()const{return Nu_prm()->value();}
 
@@ -88,9 +88,9 @@ namespace BOOM{
   const Ptr<SpdParams> MVTR::Sigma_prm()const{ return ParamPolicy::prm2();}
   const Ptr<UnivParams> MVTR::Nu_prm()const{ return ParamPolicy::prm3();}
 
-  void MVTR::set_Beta(const Mat & B){ Beta_prm()->set(B); }
-  void MVTR::set_Sigma(const Spd &V){Sigma_prm()->set_var(V);}
-  void MVTR::set_Siginv(const Spd &iV){Sigma_prm()->set_ivar(iV);}
+  void MVTR::set_Beta(const Matrix & B){ Beta_prm()->set(B); }
+  void MVTR::set_Sigma(const SpdMatrix &V){Sigma_prm()->set_var(V);}
+  void MVTR::set_Siginv(const SpdMatrix &iV){Sigma_prm()->set_ivar(iV);}
   void MVTR::set_nu(double new_nu){Nu_prm()->set(new_nu);}
 
   void MVTR::mle(){  // ECME
@@ -120,27 +120,27 @@ namespace BOOM{
 
   double MVTR::pdf(dPtr dp, bool logscale)const{
     Ptr<DataType> d = DAT(dp);
-    const Vec &y(d->y());
-    const Vec &X(d->x());
+    const Vector &y(d->y());
+    const Vector &X(d->x());
     double ans = dmvt(y, X*Beta(), Siginv(), nu(), ldsi(), true);
     return logscale ? ans : exp(ans);
   }
 
-  Vec MVTR::predict(const Vec &x)const{ return x*Beta(); }
+  Vector MVTR::predict(const Vector &x)const{ return x*Beta(); }
 
   MvRegData * MVTR::simdat()const{
-    Vec x = simulate_fake_x();
+    Vector x = simulate_fake_x();
     return this->simdat(x);
   }
 
-  MvRegData * MVTR::simdat(const Vec &x)const{
-    Vec Y = rmvt(predict(x), Sigma(), nu());
+  MvRegData * MVTR::simdat(const Vector &x)const{
+    Vector Y = rmvt(predict(x), Sigma(), nu());
     return new MvRegData(Y,x);
   }
 
-  Vec MVTR::simulate_fake_x()const{
+  Vector MVTR::simulate_fake_x()const{
     uint p = xdim();
-    Vec x(p);
+    Vector x(p);
     x[0] = 1.0;
     for(uint i=0; i<p; ++i) x[i] = rnorm();
     return x;

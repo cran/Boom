@@ -44,28 +44,28 @@ namespace BOOM{
     SeasonalStateModel(int nseasons,
                        int season_duration = 1);
     SeasonalStateModel(const SeasonalStateModel &rhs);
-    virtual SeasonalStateModel * clone()const;
+    SeasonalStateModel * clone() const override;
 
-    virtual void observe_state(const ConstVectorView then,
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int t);
-    virtual uint state_dimension()const;
-    virtual void simulate_state_error(VectorView eta, int t)const;
+                               int t) override;
+    uint state_dimension()const override;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
-    virtual SparseVector observation_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual void set_sigsq(double sigsq); // also resets model matrices
+    void set_sigsq(double sigsq) override; // also resets model matrices
 
     // If the time series does not start at t0 then you establish the
     // time of the first observation with this function.
     void set_time_of_first_observation(int t0);
 
-    virtual Vec initial_state_mean()const;
-    void set_initial_state_mean(const Vec &mu);
-    virtual Spd initial_state_variance()const;
-    void set_initial_state_variance(const Spd &Sigma);
+    Vector initial_state_mean()const override;
+    void set_initial_state_mean(const Vector &mu);
+    SpdMatrix initial_state_variance()const override;
+    void set_initial_state_variance(const SpdMatrix &Sigma);
     // Sets all diagonal elements of Sigma to sigsq and all
     // off-diagaonal elements to zero.
     void set_initial_state_variance(double sigsq);
@@ -89,8 +89,8 @@ namespace BOOM{
     Ptr<IdentityMatrix> T1_;    //
     Ptr<ZeroMatrix> RQR1_;      // dimension = state dimension
 
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
+    Vector initial_state_mean_;
+    SpdMatrix initial_state_variance_;
     // state is (s[t], s[t-1], ... s[t-nseasons_])  ...
     // contribution to y[t] is s[t] (i.e. Z = (1,0,0,0,...)  )
   };

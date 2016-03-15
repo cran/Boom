@@ -21,8 +21,9 @@ namespace BOOM{
   typedef CompositeModel CM;
   typedef CompositeModelSampler CMS;
 
-  CMS::CompositeModelSampler(CM *model)
-      : m_(model)
+  CMS::CompositeModelSampler(CM *model, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model)
   {}
 
   double CMS::logpri()const{

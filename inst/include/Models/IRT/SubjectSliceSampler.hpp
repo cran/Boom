@@ -35,28 +35,29 @@ namespace BOOM{
     public:
       SubjectTF(Ptr<Subject>, Ptr<SubjectPrior>);
       //      SubjectTF * clone()const{return new SubjectTF(*this);}
-      virtual double operator()(const Vec &v)const;
+      double operator()(const Vector &v)const override;
     private:
       Ptr<Subject> sub;
       Ptr<SubjectPrior> pri;
       mutable Ptr<VectorParams> prms;
-      mutable Vec wsp;
+      mutable Vector wsp;
     };
 
 
     class SubjectSliceSampler
       : public PosteriorSampler{
     public:
-      SubjectSliceSampler(Ptr<Subject>, Ptr<SubjectPrior>);
+      SubjectSliceSampler(Ptr<Subject>, Ptr<SubjectPrior>,
+                          RNG &seeding_rng = GlobalRng::rng);
       SubjectSliceSampler * clone()const;
-      virtual void draw();
-      virtual double logpri()const;
+      void draw() override;
+      double logpri() const override;
     private:
       Ptr<Subject> sub;
       Ptr<SubjectPrior> pri;
       SubjectTF target;
       Ptr<SliceSampler> sam;
-      Vec Theta;
+      Vector Theta;
     };
 
 

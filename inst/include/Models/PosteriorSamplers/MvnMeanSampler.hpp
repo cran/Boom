@@ -31,16 +31,19 @@ namespace BOOM{
     // assumes y~N(mu, Sig) with mu~N(mu0, Sig/kappa)
     // draws mu given y, Sigma, mu0, kappa
   public:
-    MvnConjMeanSampler(MvnModel *Mod);  // improper: mu0 = 0 kappa = 0;
+    MvnConjMeanSampler(MvnModel *Mod,   // improper: mu0 = 0 kappa = 0;
+                       RNG &seeding_rng = GlobalRng::rng);
     MvnConjMeanSampler(MvnModel *Mod,
                        Ptr<VectorParams> Mu0,
-                       Ptr<UnivParams> Kappa);
+                       Ptr<UnivParams> Kappa,
+                       RNG &seeding_rng = GlobalRng::rng);
     MvnConjMeanSampler(MvnModel *Mod,
-                       const Vec &Mu0,
-                       double Kappa);
+                       const Vector &Mu0,
+                       double Kappa,
+                       RNG &seeding_rng = GlobalRng::rng);
 
-    virtual double logpri()const;  // p(mu|Sig)
-    virtual void draw();
+    double logpri() const override;  // p(mu|Sig)
+    void draw() override;
   private:
     MvnModel *mvn;
     Ptr<VectorParams> mu0;
@@ -53,17 +56,20 @@ namespace BOOM{
   public:
 
     MvnMeanSampler(MvnModel *Mod,
-		   Ptr<VectorParams> Mu0,
-		   Ptr<SpdParams> Omega);
+           Ptr<VectorParams> Mu0,
+           Ptr<SpdParams> Omega,
+       RNG &seeding_rng = GlobalRng::rng);
 
     MvnMeanSampler(MvnModel *Mod,
-		   Ptr<MvnBase> Pri);
+           Ptr<MvnBase> Pri,
+       RNG &seeding_rng = GlobalRng::rng);
 
     MvnMeanSampler(MvnModel *Mod,
-		   const Vec & Mu0,
-		   const Spd & Omega);
-    double logpri()const;
-    void draw();
+           const Vector & Mu0,
+           const SpdMatrix & Omega,
+       RNG &seeding_rng = GlobalRng::rng);
+    double logpri()const override;
+    void draw() override;
   private:
     MvnModel *mvn;
     Ptr<MvnBase> mu_prior_;

@@ -30,33 +30,24 @@ namespace BOOM{
   typedef GaussianConjSampler GCS;
   typedef GaussianModel GM;
 
-  GaussianModel::GaussianModel()
-    : Model(),
-      ParamPolicy(new UnivParams(0.0), new UnivParams(1)),
-      ConjPriorPolicy()
-  { }
-
   GaussianModel::GaussianModel(double mean, double sd)
     : Model(),
-      ParamPolicy(new UnivParams(mean), new UnivParams(sd*sd)),
-      ConjPriorPolicy()
+      ParamPolicy(new UnivParams(mean), new UnivParams(sd*sd))
   { }
 
+  GaussianModel::GaussianModel(const std::vector<double> &v)
+      : GaussianModelBase(v),
+        ParamPolicy(new UnivParams(0), new UnivParams(1))
+  {
+    mle();
+  }
 
   GaussianModel::GaussianModel(const GaussianModel &rhs)
     : Model(rhs),
       GaussianModelBase(rhs),
       ParamPolicy(rhs),
-      ConjPriorPolicy(rhs)
+      PriorPolicy(rhs)
   {}
-
-  GaussianModel::GaussianModel(const std::vector<double> &v)
-      : GaussianModelBase(v),
-        ParamPolicy(new UnivParams(0), new UnivParams(1)),
-        ConjPriorPolicy()
-  {
-    mle();
-  }
 
   GM * GM::clone()const{return new GM(*this);}
 
@@ -92,30 +83,10 @@ namespace BOOM{
     set_params(m,v);
   }
 
-//   double GaussianModel::pdf(dPtr dp, bool logscale) const {
-//     return dnorm(DAT(dp)->value(), mu(), sigma(), logscale); }
-//   double GaussianModel::pdf(double x, bool logscale) const {
-//     return dnorm(x, mu(), sigma(), logscale); }
-
-//   double GaussianModel::Logp(double x, double &g, double &h, uint nd)const{
-//     double m = mu();
-//     double ans = dnorm(x, m, sigma(), 1);
-//     if(nd>0) g = -(x-m)/sigsq();
-//     if(nd>1) h = -1.0/sigsq();
-//     return ans;
-//   }
-
-//   double GaussianModel::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
-//     double X=x[0];
-//     double G(0),H(0);
-//     double ans = Logp(X,G,H,nd);
-//     if(nd>0) g[0]=G;
-//     if(nd>1) h(0,0)=H;
-//     return ans;
-//   }
-
-
-  double GaussianModel::Loglike(const Vector &mu_sigsq, Vec &g, Mat &h, uint nd) const {
+  double GaussianModel::Loglike(const Vector &mu_sigsq,
+                                Vector &g,
+                                Matrix &h,
+                                uint nd) const {
     double sigsq = mu_sigsq[1];
     if(sigsq<0) return BOOM::negative_infinity();
 
@@ -132,32 +103,19 @@ namespace BOOM{
       g[0] = (sum-n*mu)/sigsq;
       g[1] = -0.5*n/sigsq + 0.5*SS/sigsq_sq;
       if(nd>1){
-	h(0,0) = n/sigsq;
-	h(1,0) = h(0,1) = -(sum-n*mu)/sigsq_sq;
-	h(1,1) = (n/2 - SS/sigsq)/sigsq_sq;}}
+        h(0,0) = n/sigsq;
+        h(1,0) = h(0,1) = -(sum-n*mu)/sigsq_sq;
+        h(1,1) = (n/2 - SS/sigsq)/sigsq_sq;}}
     return ans;
   }
 
   void GM::set_conjugate_prior(double mu0, double kappa,
-			       double df, double sigma_guess){
-    double ss = pow(sigma_guess, 2) * df;
-    NEW(GammaModel, iv)(df/2, ss/2);
-    NEW(GaussianModelGivenSigma, m)(Sigsq_prm(), mu0, kappa);
-    set_conjugate_prior(m, iv);
+                               double df, double sigma_guess){
+    double sum_of_squares = pow(sigma_guess, 2) * df;
+    NEW(GammaModel, siginv_prior)(df / 2, sum_of_squares / 2);
+    NEW(GaussianModelGivenSigma, mu_prior)(Sigsq_prm(), mu0, kappa);
+    NEW(GaussianConjSampler, sampler)(this, mu_prior, siginv_prior);
+    set_method(sampler);
   }
 
-  void GM::set_conjugate_prior(Ptr<GaussianModelGivenSigma> mu0,
-			       Ptr<GammaModel> iv){
-    NEW(GCS, sam)(this, mu0, iv);
-    ConjPriorPolicy::set_method(sam);
-  }
-
-  void GM::set_conjugate_prior(Ptr<GCS> s){
-    ConjPriorPolicy::set_conjugate_prior(s);
-  }
-
-  void GM::find_posterior_mode(){
-    ConjPriorPolicy::find_posterior_mode();
-  }
-
-}
+}  // namespace BOOM

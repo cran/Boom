@@ -37,10 +37,11 @@ class GaussianLinearBartPosteriorSampler : public PosteriorSampler {
   GaussianLinearBartPosteriorSampler(
       GaussianLinearBartModel *model,
       const ZellnerPriorParameters &regression_prior,
-      const BartPriorParameters &bart_prior);
+      const BartPriorParameters &bart_prior,
+      RNG &seeding_rng = GlobalRng::rng);
 
-  virtual void draw();
-  virtual double logpri()const;
+  void draw() override;
+  double logpri() const override;
 
   void sample_regression_posterior();
   void sample_bart_posterior();

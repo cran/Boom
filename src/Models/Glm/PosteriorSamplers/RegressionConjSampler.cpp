@@ -24,23 +24,25 @@ namespace BOOM{
   typedef RegressionConjSampler RCS;
   RCS::RegressionConjSampler(RegressionModel *M,
                              Ptr<MvnGivenXandSigma> Mu,
-                             Ptr<GammaModelBase> Siginv)
-    : m_(M),
+                             Ptr<GammaModelBase> Siginv,
+                             RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      m_(M),
       mu_(Mu),
       siginv_(Siginv),
       sigsq_sampler_(siginv_)
   {}
 
-  const Vec & RCS::b0()const{return mu_->mu();}
+  const Vector & RCS::b0()const{return mu_->mu();}
   double RCS::kappa()const{return mu_->prior_sample_size();}
   double RCS::prior_df()const{return 2.0 * siginv_->alpha();}
   double RCS::prior_ss()const{return 2.0 * siginv_->beta();}
 
   void RCS::set_posterior_suf(){
-    const Vec & b0(this->b0());
+    const Vector & b0(this->b0());
     double sigsq = m_->sigsq();
 
-    Spd Ominv = mu_->siginv();  // mu_->siginv() is Ominv/sigsq
+    SpdMatrix Ominv = mu_->siginv();  // mu_->siginv() is Ominv/sigsq
     Ominv*=sigsq;
 
     beta_tilde = m_->xty() + Ominv * b0;
@@ -64,7 +66,7 @@ namespace BOOM{
     m_->set_sigsq(sigsq);
   }
 
-  void RCS::find_posterior_mode(){
+  void RCS::find_posterior_mode(double){
     set_posterior_suf();
     m_->set_Beta(beta_tilde);
     if(DF<=2) m_->set_sigsq(0.0);   // mode = (alpha-1)/beta
@@ -77,4 +79,4 @@ namespace BOOM{
     return ans;
   }
 
-}
+}  // namespace BOOM

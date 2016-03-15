@@ -60,40 +60,40 @@ namespace BOOM{
                                      double nu_slope = 1000);
     StudentLocalLinearTrendStateModel(
         const StudentLocalLinearTrendStateModel &rhs);
-    virtual StudentLocalLinearTrendStateModel * clone()const;
+    StudentLocalLinearTrendStateModel * clone() const override;
 
-    virtual void observe_time_dimension(int max_time);
+    void observe_time_dimension(int max_time) override;
 
-    virtual void observe_state(const ConstVectorView then,
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
-    virtual uint state_dimension()const{return 2;}
+                               int time_now) override;
+    uint state_dimension()const override{return 2;}
 
     // The state error simulation is conditional on the value of the
     // latent variance weights.  It needs to be that way so that
     // latent data imputation can work properly.
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    void simulate_state_error(VectorView eta, int t)const override;
     void simulate_marginal_state_error(VectorView eta, int t)const;
     void simulate_conditional_state_error(VectorView eta, int t)const;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
     Ptr<SparseMatrixBlock> conditional_state_variance_matrix(int t)const;
     Ptr<SparseMatrixBlock> marginal_state_variance_matrix(int t)const;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual Vec initial_state_mean()const;
-    void set_initial_state_mean(const Vec &v);
-    virtual Spd initial_state_variance()const;
-    void set_initial_state_variance(const Spd &V);
+    Vector initial_state_mean()const override;
+    void set_initial_state_mean(const Vector &v);
+    SpdMatrix initial_state_variance()const override;
+    void set_initial_state_variance(const SpdMatrix &V);
 
     // With "marginal" behavior set the model acts like a T
     // distribution when simulating state and exposing parameters.
     // With "mixture" behavior set it acts like a conditionally
     // normal model with unequal variances determined by latent
     // chi-square variables.
-    virtual void set_behavior(StateModel::Behavior behavior);
+    void set_behavior(StateModel::Behavior behavior) override;
 
     Ptr<UnivParams> SigsqLevel_prm();
     Ptr<UnivParams> NuLevel_prm();
@@ -118,7 +118,7 @@ namespace BOOM{
     void set_sigsq_slope(double sigsq);
     void set_nu_slope(double nu);
 
-    virtual void clear_data();
+    void clear_data() override;
     const WeightedGaussianSuf & sigma_level_complete_data_suf()const;
     const WeightedGaussianSuf & sigma_slope_complete_data_suf()const;
     const GammaSuf & nu_level_complete_data_suf()const;
@@ -127,8 +127,8 @@ namespace BOOM{
     // Posterior draws for the weights in the normal mixture
     // representation of the T distribution.  For Gaussian models the
     // weights will be around 1.  A large outlier has a small weight.
-    const Vec & latent_level_weights()const;
-    const Vec & latent_slope_weights()const;
+    const Vector & latent_level_weights()const;
+    const Vector & latent_slope_weights()const;
    private:
     void check_dim(const ConstVectorView &)const;
 
@@ -136,8 +136,8 @@ namespace BOOM{
     Ptr<LocalLinearTrendMatrix> state_transition_matrix_;
     Ptr<DiagonalMatrixBlock> state_variance_matrix_;
 
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
+    Vector initial_state_mean_;
+    SpdMatrix initial_state_variance_;
 
     Vector latent_level_scale_factors_;
     Vector latent_slope_scale_factors_;

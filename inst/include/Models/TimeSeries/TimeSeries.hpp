@@ -55,7 +55,7 @@ namespace BOOM{
     TimeSeries(const std::vector<Ptr<D> > &v, bool reset_links=true);
 
     TimeSeries(const TimeSeries &);   // value semantics
-    TimeSeries<D> * clone()const;      // value semantics
+    TimeSeries<D> * clone()const override;      // value semantics
     TimeSeries<D> & operator=(const TimeSeries &rhs);    // copies pointers
 
     TimeSeries<D> & unique_copy(const TimeSeries & rhs); // clones pointers
@@ -68,7 +68,7 @@ namespace BOOM{
     // reset their links so they point in sequence.
     void set_links();
 
-    ostream & display(ostream &)const;
+    ostream & display(ostream &)const override;
     uint element_size(bool minimal=true)const;   // size of one data point
     uint length()const;                          // length of the series
     virtual uint size(bool minimal=true)const;
@@ -93,7 +93,7 @@ namespace BOOM{
   };
 
   typedef TimeSeries<DoubleData> ScalarTimeSeries;
-  inline Ptr<ScalarTimeSeries> make_ts(const Vec &y){
+  inline Ptr<ScalarTimeSeries> make_ts(const Vector &y){
     uint n = y.size();
     std::vector<Ptr<DoubleData> > ts;
     ts.reserve(n);

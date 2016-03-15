@@ -45,8 +45,10 @@ namespace BOOM{
                      double prior_nobs,
                      double expected_rsq,
                      double expected_model_size,
-                     bool first_term_is_intercept)
-    : m_(mod),
+                     bool first_term_is_intercept,
+                     RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      m_(mod),
       spri_(create_siginv_prior(mod, prior_nobs, expected_rsq)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
@@ -60,18 +62,18 @@ namespace BOOM{
       sigsq_sampler_(spri_)
   {
     uint p = m_->nvars_possible();
-    Vec b = Vec(p, 0.0);
+    Vector b = Vector(p, 0.0);
     if (first_term_is_intercept) {
       b[0] = m_->suf()->ybar();
     }
-    Spd ominv(m_->suf()->xtx());
+    SpdMatrix ominv(m_->suf()->xtx());
     double n = m_->suf()->n();
     ominv *= prior_nobs / n;
     bpri_ = new MvnGivenScalarSigma(ominv, mod->Sigsq_prm());
 
     double prob = expected_model_size/p;
     if (prob>1) prob = 1.0;
-    Vec pi(p, prob);
+    Vector pi(p, prob);
     if (first_term_is_intercept) {
       pi[0] = 1.0;
     }
@@ -86,8 +88,10 @@ namespace BOOM{
                      double prior_beta_nobs,
                      double diagonal_shrinkage,
                      double prior_inclusion_probability,
-                     bool force_intercept)
-    : m_(mod),
+                     bool force_intercept,
+                     RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      m_(mod),
       spri_(new ChisqModel(prior_sigma_nobs, prior_sigma_guess)),
       indx(seq<uint>(0, m_->nvars_possible()-1)),
       max_nflips_(indx.size()),
@@ -96,10 +100,10 @@ namespace BOOM{
       sigsq_sampler_(spri_)
   {
     uint p = m_->nvars_possible();
-    Vec b = Vec(p, 0.0);
+    Vector b = Vector(p, 0.0);
     double ybar = mod->suf()->ybar();
     b[0] = ybar;
-    Spd ominv(m_->suf()->xtx());
+    SpdMatrix ominv(m_->suf()->xtx());
     double n = m_->suf()->n();
 
     if (prior_sigma_guess <= 0) {
@@ -132,7 +136,7 @@ namespace BOOM{
 
     bpri_ = new MvnGivenScalarSigma(b, ominv, m_->Sigsq_prm());
 
-    Vec pi(p, prior_inclusion_probability);
+    Vector pi(p, prior_inclusion_probability);
     if (force_intercept) pi[0] = 1.0;
 
     vpri_ = new VariableSelectionPrior(pi);
@@ -140,12 +144,14 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel *mod,
-                     const Vec & b,
-                     const Spd & Omega_inverse,
+                     const Vector & b,
+                     const SpdMatrix & Omega_inverse,
                      double sigma_guess,
                      double df,
-                     const Vec &prior_inclusion_probs)
-    : m_(mod),
+                     const Vector &prior_inclusion_probs,
+                     RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      m_(mod),
       bpri_(new MvnGivenScalarSigma(b, Omega_inverse, m_->Sigsq_prm())),
       spri_(new ChisqModel(df, sigma_guess)),
       vpri_(new VariableSelectionPrior(prior_inclusion_probs)),
@@ -159,8 +165,10 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel *model,
-                     const ZellnerPriorParameters &prior)
-      : m_(model),
+                     const ZellnerPriorParameters &prior,
+                     RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        m_(model),
         bpri_(new MvnGivenScalarSigma(
             prior.prior_beta_guess,
             prior.prior_beta_information,
@@ -180,8 +188,10 @@ namespace BOOM{
   BVS::BregVsSampler(RegressionModel * mod,
                      Ptr<MvnGivenScalarSigmaBase> bpri,
                      Ptr<GammaModelBase> spri,
-                     Ptr<VariableSelectionPrior> vpri)
-    : m_(mod),
+                     Ptr<VariableSelectionPrior> vpri,
+                     RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      m_(mod),
       bpri_(bpri),
       spri_(spri),
       vpri_(vpri),
@@ -195,11 +205,15 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void BVS::limit_model_selection(uint n) { max_nflips_ =n;}
-  void BVS::allow_model_selection() { max_nflips_ = indx.size();}
-  void BVS::supress_model_selection() {max_nflips_ =0;}
-  void BVS::supress_beta_draw() {draw_beta_ = false;}
+  void BVS::allow_model_selection(bool allow) {
+    if (allow) {
+      max_nflips_ = indx.size();
+    } else suppress_model_selection();
+  }
+  void BVS::suppress_model_selection() {max_nflips_ =0;}
+  void BVS::suppress_beta_draw() {draw_beta_ = false;}
   void BVS::allow_beta_draw() {draw_beta_ = false;}
-  void BVS::supress_sigma_draw() {draw_sigma_ = false;}
+  void BVS::suppress_sigma_draw() {draw_sigma_ = false;}
   void BVS::allow_sigma_draw() {draw_sigma_ = false;}
 
   //  since alpha = df/2 df is 2 * alpha, likewise for beta
@@ -258,6 +272,13 @@ namespace BOOM{
   void BVS::set_sigma_upper_limit(double sigma_upper_limit) {
     sigsq_sampler_.set_sigma_max(sigma_upper_limit);
   }
+
+  void BVS::find_posterior_mode(double) {
+    set_reg_post_params(m_->coef().inc(), true);
+    m_->set_included_coefficients(beta_tilde_);
+    m_->set_sigsq(SS_ / DF_);
+  }
+
   //----------------------------------------------------------------------
   void BVS::draw_sigma() {
     double df, ss;
@@ -319,17 +340,17 @@ namespace BOOM{
     if (g.nvars()==0) {
       return 0;
     }
-    Vec b = g.select(bpri_->mu());
+    Vector b = g.select(bpri_->mu());
     // Sigma = sigsq * Omega, so
     // siginv = ominv / sigsq, so
     // ominv = siginv * sigsq.
-    Spd Ominv = g.select(bpri_->siginv()) * m_->sigsq();
+    SpdMatrix Ominv = g.select(bpri_->siginv()) * m_->sigsq();
     double ldoi = do_ldoi ? Ominv.logdet() : 0.0;
 
     Ptr<RegSuf> s = m_->suf();
 
-    Spd xtx = s->xtx(g);
-    Vec xty = s->xty(g);
+    SpdMatrix xtx = s->xtx(g);
+    Vector xty = s->xty(g);
 
     // iV_tilde_ / sigsq is the inverse of the posterior precision
     // matrix, given g.
@@ -370,4 +391,4 @@ namespace BOOM{
       report_error(err.str());
     }
   }
-}
+}  // namespace BOOM

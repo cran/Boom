@@ -23,14 +23,16 @@ namespace BOOM{
 
 typedef ExchangeableDirichletSampler EDS;
 
-EDS::ExchangeableDirichletSampler(DirichletModel *m, Ptr<DoubleModel> pri)
-    : mod_(m),
+EDS::ExchangeableDirichletSampler(DirichletModel *m, Ptr<DoubleModel> pri,
+                                  RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(m),
       pri_(pri)
 {}
 
 
 double EDS::logpri()const{
-  const Vec & nu(mod_->nu());
+  const Vector & nu(mod_->nu());
   double ans=0;
   for(uint i=0; i<nu.size(); ++i) ans += pri_->logp(nu[i]);
   return ans;
@@ -39,15 +41,15 @@ double EDS::logpri()const{
 struct target
     : public ScalarTargetFun
 {
-  const Vec & sumlog_;
+  const Vector & sumlog_;
   double nobs_;
-  Vec & nu_;
+  Vector & nu_;
   uint which_;
   Ptr<DoubleModel> pri_;
 
-  target(const Vec & sumlog,
+  target(const Vector & sumlog,
          double nobs,
-         Vec & nu_,
+         Vector & nu_,
          uint i,
          Ptr<DoubleModel> &pri)
       : sumlog_(sumlog),
@@ -68,9 +70,9 @@ struct target
 
 void EDS::draw(){
 
-  Vec nu(mod_->nu());
+  Vector nu(mod_->nu());
   uint d = nu.size();
-  const Vec & sumlog(mod_->suf()->sumlog());
+  const Vector & sumlog(mod_->suf()->sumlog());
   double nobs = mod_->suf()->n();
 
   for(uint i=0; i<d; ++i){

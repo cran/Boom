@@ -24,8 +24,10 @@ namespace BOOM {
   GaussianLinearBartPosteriorSampler::GaussianLinearBartPosteriorSampler(
       GaussianLinearBartModel *model,
       const ZellnerPriorParameters &regression_prior,
-      const BartPriorParameters &bart_prior)
-      : model_(model),
+      const BartPriorParameters &bart_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         first_time_for_regression_(true),
         bart_sampler_(new GaussianBartPosteriorSampler(
             model->bart(),
@@ -34,7 +36,8 @@ namespace BOOM {
             bart_prior.total_prediction_sd,
             bart_prior.prior_tree_depth_alpha,
             bart_prior.prior_tree_depth_beta,
-            PointMassPrior(model->bart()->number_of_trees()))),
+            PointMassPrior(model->bart()->number_of_trees()),
+            seeding_rng)),
         first_time_for_bart_(true)
   {
     RegressionModel *regression = model_->regression();

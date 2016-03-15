@@ -31,10 +31,12 @@ namespace BOOM{
     // mu ~ N(mu_bar, tausq), independent of sigma^2
     GaussianMeanSampler(GaussianModel *Mod,
                         double expected_mu,
-                        double prior_sd_mu);
-    GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri);
-    double logpri()const;
-    virtual void draw();
+                        double prior_sd_mu,
+                        RNG &seeding_rng = GlobalRng::rng);
+    GaussianMeanSampler(GaussianModel *Mod, Ptr<GaussianModel> Pri,
+                        RNG &seeding_rng = GlobalRng::rng);
+    double logpri()const override;
+    void draw() override;
    private:
     GaussianModel *mod_;
     Ptr<GaussianModel> pri;

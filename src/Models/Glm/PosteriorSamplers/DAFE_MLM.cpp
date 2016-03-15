@@ -38,10 +38,12 @@ namespace BOOM{
   //------------------------------------------------------------
 
   DafeMlmBase::DafeMlmBase(MultinomialLogitModel *mod,
-			   Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
-			   Ptr<MvnModel> ChoicePri,
-			   bool draw_b0)
-    : mlm_(mod),
+               Ptr<MvnModel> SubjectPri,  // each subject beta has this prior
+               Ptr<MvnModel> ChoicePri,
+               bool draw_b0,
+         RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mlm_(mod),
       subject_pri_(SubjectPri),
       choice_pri_(ChoicePri),
       mlo_(draw_b0 ? 0 : 1)
@@ -73,15 +75,15 @@ namespace BOOM{
 
     for(uint i=0; i<d.size(); ++i){
       Ptr<ChoiceData> dp = d[i];
-      const Vec & xsub(dp->Xsubject());
+      const Vector & xsub(dp->Xsubject());
       xtx_subject_.add_outer(xsub);
       if(pch>0){
-	for(uint m = 0; m< mlm_->Nchoices(); ++m){
-	  const Vec & xch(dp->Xchoice(m));
-	  xtx_choice_.add_outer(xch); }}}}
+    for(uint m = 0; m< mlm_->Nchoices(); ++m){
+      const Vector & xch(dp->Xchoice(m));
+      xtx_choice_.add_outer(xch); }}}}
 
-  const Spd & DafeMlmBase::xtx_subject()const{return xtx_subject_;}
-  const Spd & DafeMlmBase::xtx_choice()const{return xtx_choice_;}
+  const SpdMatrix & DafeMlmBase::xtx_subject()const{return xtx_subject_;}
+  const SpdMatrix & DafeMlmBase::xtx_choice()const{return xtx_choice_;}
   Ptr<MvnModel> DafeMlmBase::subject_pri()const{return subject_pri_;}
   Ptr<MvnModel> DafeMlmBase::choice_pri()const{return choice_pri_;}
 
@@ -89,19 +91,19 @@ namespace BOOM{
   // Target function for use with Metropolis Hastings samplers
   class LesSubjectTarget : public TargetFun{
   public:
-    LesSubjectTarget(uint Which, Mat & bigU, MLM *mod)
+    LesSubjectTarget(uint Which, Matrix & bigU, MLM *mod)
       : which(Which),
-	U(bigU),
-	mlm_(mod)
+    U(bigU),
+    mlm_(mod)
     {}
     LesSubjectTarget * clone()const{return new LesSubjectTarget(*this);}
-    double operator()(const Vec &b)const;
+    double operator()(const Vector &b)const;
   private:
     uint which;
-    Mat &U;
+    Matrix &U;
     MLM *mlm_;
   };
-  double LesSubjectTarget::operator()(const Vec &b)const{
+  double LesSubjectTarget::operator()(const Vector &b)const{
     const VectorView Uvec(U.col(which));
     uint n = Uvec.size();
     const std::vector<Ptr<ChoiceData> > & dat(mlm_->dat());
@@ -118,16 +120,16 @@ namespace BOOM{
   // ======================================================================
   class LesChoiceTarget : public TargetFun{
   public:
-    LesChoiceTarget(Mat &bigU, MLM *mod)
+    LesChoiceTarget(Matrix &bigU, MLM *mod)
       : U(bigU),
         mlm_(mod){}
     LesChoiceTarget * clone()const{return new LesChoiceTarget(*this);}
-    double operator()(const Vec &b)const;
+    double operator()(const Vector &b)const;
   private:
-    Mat &U;
+    Matrix &U;
     MLM *mlm_;
   };
-  double LesChoiceTarget::operator()(const Vec &b)const{
+  double LesChoiceTarget::operator()(const Vector &b)const{
     const std::vector<Ptr<ChoiceData> > & dat(mlm_->dat());
     double n = dat.size();
     uint M = mlm_->Nchoices();
@@ -135,18 +137,18 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       Ptr<ChoiceData> d(dat[i]);
       for(uint m=0; m<M; ++m){
-	double eta = mlm_->predict_subject(*d,m);
-	eta += b.affdot(d->Xchoice(m));
-	double u = U(i,m);
-	ans+= dexv(u, eta, 1, true);}}
+    double eta = mlm_->predict_subject(*d,m);
+    eta += b.affdot(d->Xchoice(m));
+    double u = U(i,m);
+    ans+= dexv(u, eta, 1, true);}}
     return ans;
   }
   // ======================================================================
   DafeMlm::DafeMlm(MultinomialLogitModel *mod,
-		   Ptr<MvnModel> SubjectPri,
-		   Ptr<MvnModel> ChoicePri,
-		   double Tdf,
-		   bool draw_b0)
+           Ptr<MvnModel> SubjectPri,
+           Ptr<MvnModel> ChoicePri,
+           double Tdf,
+           bool draw_b0)
     : DafeMlmBase(mod, SubjectPri, ChoicePri, draw_b0),
       mlm_(mod),
       mu(-0.577215664902),
@@ -155,7 +157,7 @@ namespace BOOM{
   {
     uint M = mod->Nchoices();
     uint psub = mod->subject_nvars();
-    const Spd & Ominv(subject_pri()->siginv());
+    const SpdMatrix & Ominv(subject_pri()->siginv());
     Ominv_mu_subject = Ominv * subject_pri()->mu();
     for(uint m=0; m<M; ++m){
       // just need to get the dimensions right, for now
@@ -166,7 +168,7 @@ namespace BOOM{
       NEW(MH, sam)(target, prop);
       subject_samplers_.push_back(sam);
 
-      Vec tmp(psub);
+      Vector tmp(psub);
       xtu_subject.push_back(tmp);
     }
 
@@ -178,7 +180,7 @@ namespace BOOM{
                                               Tdf);
       choice_sampler_ = new MH(target, choice_proposal_);
       Ominv_mu_choice = choice_pri()->siginv() * choice_pri()->mu();
-      xtu_choice = Vec(pch);
+      xtu_choice = Vector(pch);
     }
   }
 
@@ -198,9 +200,9 @@ namespace BOOM{
     uint M = dat[0]->nchoices();
 
     U.resize(n,M);
-    Vec eta(M);
-    Vec u(M);
-    Vec logz2(2);
+    Vector eta(M);
+    Vector u(M);
+    Vector logz2(2);
     for(uint m=0; m<M; ++m) xtu_subject[m] =0;
     uint pch = mlm_->choice_nvars();
     if(pch>0) xtu_choice = 0;
@@ -213,16 +215,16 @@ namespace BOOM{
       double logzmin = rlexp(loglam);
       logz2[0] = logzmin;
       u[y] = mu- logzmin;
-      const Vec & xsub(dp->Xsubject());
+      const Vector & xsub(dp->Xsubject());
       for(uint m=0; m<M; ++m){
-	if(m!=y){
-	  logz2[1] =rlexp(eta[m]);
-	  double logz = lse(logz2);
-	  u[m] = mu-logz;}
-	xtu_subject[m].axpy(xsub, u[m]);
-	if(pch>0){
-	  const Vec &xch(dp->Xchoice(m));
-	  xtu_choice.axpy(xch, u[m]);}
+    if(m!=y){
+      logz2[1] =rlexp(eta[m]);
+      double logz = lse(logz2);
+      u[m] = mu-logz;}
+    xtu_subject[m].axpy(xsub, u[m]);
+    if(pch>0){
+      const Vector &xch(dp->Xchoice(m));
+      xtu_choice.axpy(xch, u[m]);}
       } // m
       U.row(i) = u;
     }//i
@@ -231,21 +233,21 @@ namespace BOOM{
   // ======================================================================
 
 
-  inline void Breg(Vec &b, Spd &ivar, double sigsq,
-		   const Vec &xty, const Spd &xtx,
-		   const Vec &Ominv_b, const Spd &Ominv){
+  inline void Breg(Vector &b, SpdMatrix &ivar, double sigsq,
+           const Vector &xty, const SpdMatrix &xtx,
+           const Vector &Ominv_b, const SpdMatrix &Ominv){
     ivar = xtx/sigsq+Ominv;
     b = xty/sigsq + Ominv_b;
     b = ivar.solve(b);
   }
   // ======================================================================
   void DafeMlm::draw_subject(uint i){
-    Vec b;
-    Spd Ivar;
-    const Spd & Ominv(subject_pri()->siginv());
+    Vector b;
+    SpdMatrix Ivar;
+    const SpdMatrix & Ominv(subject_pri()->siginv());
 
     Breg(b, Ivar, sigsq, xtu_subject[i], xtx_subject(),
-	 Ominv_mu_subject, Ominv);
+     Ominv_mu_subject, Ominv);
 
     Ptr<MvtIndepProposal> prop = subject_proposals_[i];
     prop->set_ivar(Ivar);
@@ -257,11 +259,11 @@ namespace BOOM{
   }
   // ======================================================================
   void DafeMlm::draw_choice(){
-    Vec b;
-    Spd Ivar;
-    const Spd &Ominv(choice_pri()->siginv());
+    Vector b;
+    SpdMatrix Ivar;
+    const SpdMatrix &Ominv(choice_pri()->siginv());
     Breg(b,Ivar, sigsq, xtu_choice, xtx_choice(),
-	 Ominv_mu_choice, Ominv);
+     Ominv_mu_choice, Ominv);
     choice_proposal_->set_mu(b);
     choice_proposal_->set_ivar(Ivar);
 
@@ -276,11 +278,11 @@ namespace BOOM{
   class DafeLoglike{
   public:
     DafeLoglike(MLM *, uint m, bool choice=false);
-    double operator()(const Vec &Beta)const;
-    //    virtual DafeLoglike * clone()const;
+    double operator()(const Vector &Beta)const;
+    //    DafeLoglike * clone() const override;
   private:
     mutable MLM *mlm_;
-    mutable Vec x;
+    mutable Vector x;
     uint m;
     bool choice;
   };
@@ -291,7 +293,7 @@ namespace BOOM{
       choice(is_choice)
   {}
 
-  double DafeLoglike::operator()(const Vec &beta)const{
+  double DafeLoglike::operator()(const Vector &beta)const{
     Vector full_beta = mlm_->beta();
     int begin = 0;
     int length = choice ? mlm_->choice_nvars() : mlm_->subject_nvars();
@@ -308,7 +310,7 @@ namespace BOOM{
   struct Logp{
     Logp(boost::shared_ptr<DafeLoglike> L, Ptr<MvnModel> P)
       : loglike(L), pri(P){}
-    double operator()(const Vec &x)const{
+    double operator()(const Vector &x)const{
       return (*loglike)(x) + pri->logp(x);}
     boost::shared_ptr<DafeLoglike> loglike;
     Ptr<MvnModel> pri;
@@ -317,9 +319,9 @@ namespace BOOM{
   //______________________________________________________________________
 
   DafeRMlm::DafeRMlm(MultinomialLogitModel *mod,
-			 Ptr<MvnModel> SubjectPri,
-			 Ptr<MvnModel> ChoicePri,
-			 double Tdf)
+             Ptr<MvnModel> SubjectPri,
+             Ptr<MvnModel> ChoicePri,
+             double Tdf)
       : DafeMlmBase(mod, SubjectPri, ChoicePri),
         mlm_(mod)
   {
@@ -348,14 +350,14 @@ namespace BOOM{
 
   // ======================================================================
   void DafeRMlm::draw_subject(uint i){
-    Vec b = mlm_->beta_subject(i);
+    Vector b = mlm_->beta_subject(i);
     b = subject_samplers_[i]->draw(b);
     mlm_->set_beta_subject(b,i);
   }
 
   void DafeRMlm::draw_choice(){
     if(mlm_->choice_nvars()==0) return;
-    Vec b = mlm_->beta_choice();
+    Vector b = mlm_->beta_choice();
     b = choice_sampler_->draw(b);
     mlm_->set_beta_choice(b);
   }
@@ -366,13 +368,13 @@ namespace BOOM{
 //     uint M = mlm_->Nchoices();
 
 //     for(uint m=0; m<M; ++m){
-//       Spd Ivar = xtx_subject/sigsq + subject_pri->siginv();
+//       SpdMatrix Ivar = xtx_subject/sigsq + subject_pri->siginv();
 //       subject_proposals[m]->set_ivar(Ivar);
 //     }
 
 //     uint pch = mlm_->choice_nvars();
 //     if(pch>0){
-//       Spd Ivar = xtx_choice/sigsq + choice_pri->siginv();
+//       SpdMatrix Ivar = xtx_choice/sigsq + choice_pri->siginv();
 //       choice_proposal->set_ivar(Ivar);
 //     }
 //   }

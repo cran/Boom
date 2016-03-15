@@ -28,8 +28,10 @@ typedef HierarchicalZeroInflatedPoissonSampler HZIPS;
       Ptr<DoubleModel> lambda_mean_prior,
       Ptr<DoubleModel> lambda_sample_size_prior,
       Ptr<DoubleModel> zero_probability_mean_prior,
-      Ptr<DoubleModel> zero_probability_sample_size_prior)
-      : model_(model),
+      Ptr<DoubleModel> zero_probability_sample_size_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         lambda_mean_prior_(lambda_mean_prior),
         lambda_sample_size_prior_(lambda_sample_size_prior),
         zero_probability_mean_prior_(zero_probability_mean_prior),
@@ -37,11 +39,13 @@ typedef HierarchicalZeroInflatedPoissonSampler HZIPS;
         lambda_prior_sampler_(
             model_->prior_for_poisson_mean(),
             lambda_mean_prior_,
-            lambda_sample_size_prior_),
+            lambda_sample_size_prior_,
+            seeding_rng),
         zero_probability_prior_sampler_(
             model_->prior_for_zero_probability(),
             zero_probability_mean_prior_,
-            zero_probability_sample_size_prior_)
+            zero_probability_sample_size_prior_,
+            seeding_rng)
   {
     Ptr<GammaModel> lambda_prior = model_->prior_for_poisson_mean();
     Ptr<BetaModel> beta_prior = model_->prior_for_zero_probability();
@@ -61,11 +65,23 @@ typedef HierarchicalZeroInflatedPoissonSampler HZIPS;
         NEW(ZeroInflatedPoissonSampler, sampler)(
             data_level_model,
             lambda_prior,
-            zero_probability_prior);
+            zero_probability_prior,
+            rng());
         data_level_model->set_method(sampler);
       }
       data_level_model->sample_posterior();
-      lambda_prior->suf()->update_raw(data_level_model->lambda());
+      double lambda = data_level_model->lambda();
+      if (lambda <= 0.0) {
+        report_error("Data level model had zero value for lambda.");
+      }
+      lambda_prior->suf()->update_raw(lambda);
+
+      double zero_probability = data_level_model->zero_probability();
+      if (zero_probability <= 0.0) {
+        report_error("data level model had a zero_probability of zero.");
+      } else if (zero_probability >= 1.0) {
+        report_error("data_level_model had a zero_probability of 1.0");
+      }
       zero_probability_prior->suf()->update_raw(
           data_level_model->zero_probability());
     }

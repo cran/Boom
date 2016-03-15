@@ -62,7 +62,7 @@ void HDI::setup(HiddenMarkovModel *hmm){
     dat_.push_back(ts);
   }
 
-  Vec theta = hmm->mark()->vectorize_params();
+  Vector theta = hmm->mark()->vectorize_params();
   mark_->unvectorize_params(theta);
 
   uint S = hmm->state_space_size();

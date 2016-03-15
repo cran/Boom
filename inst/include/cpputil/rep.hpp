@@ -22,7 +22,7 @@
 #include <LinAlg/Types.hpp>
 
 namespace BOOM{
-  Vec rep(const Vec & x, uint n);
-  inline Vec rep(double x, uint n){ return Vec(n,x);}
+  Vector rep(const Vector & x, uint n);
+  inline Vector rep(double x, uint n){ return Vector(n,x);}
 }
 #endif// BOOM_REP_HPP

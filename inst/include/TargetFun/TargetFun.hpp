@@ -23,36 +23,52 @@
 #include <LinAlg/Vector.hpp>
 #include <boost/function.hpp>
 #include <cpputil/RefCounted.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/Ptr.hpp>
 
 namespace BOOM{
-  // A suite function object which can be passed to optimization
+  // A suite of function object which can be passed to optimization
   // routines.
   class TargetFun : private RefCounted{
   public:
-    virtual double operator()(const Vec &x)const=0;
-    virtual ~TargetFun(){}
+    virtual double operator()(const Vector &x)const=0;
+    ~TargetFun() override{}
     friend void intrusive_ptr_add_ref(TargetFun *);
     friend void intrusive_ptr_release(TargetFun *);
   };
+
   void intrusive_ptr_add_ref(TargetFun *);
   void intrusive_ptr_release(TargetFun *);
+
   //----------------------------------------------------------------------
   class dTargetFun : virtual public TargetFun{
-    double eps_scale;
   public:
-    dTargetFun();
-    virtual double operator()(const Vec &x)const=0;
-    virtual double operator()(const Vec &x, Vec &g)const=0;
-    void set_eps(double eps){eps_scale=eps;}
-    //    Mat h_approx(const Vec &x)const;
+    double operator()(const Vector &x)const override =0;
+    virtual double operator()(const Vector &x, Vector &g)const=0;
   };
+
   //----------------------------------------------------------------------
+  //  A dTargetFun that can take a scalar partial derivative with
+  //  respect to a just one coordinate.
+  class dScalarEnabledTargetFun : public dTargetFun {
+   public:
+    // Return the function value at x, while computing the partial
+    // derivative with respect to x[position].
+    virtual double scalar_derivative(const Vector &x,
+                                     double &derivative,
+                                     int position) const = 0;
+  };
+
+  //----------------------------------------------------------------------
+  // A dTargetFun that can also take second derivatives.
   class d2TargetFun : virtual public dTargetFun{
   public:
-    virtual double operator()(const Vec &x)const=0;
-    virtual double operator()(const Vec &x, Vec &g)const=0;
-    virtual double operator()(const Vec &x, Vec &g, Mat &h)const=0;
+    virtual double operator()(const Vector &x,
+                              Vector &g,
+                              Matrix &h,
+                              uint nderiv) const = 0;
+    double operator()(const Vector &x) const override;
+    double operator()(const Vector &x, Vector &g) const override;
+    virtual double operator()(const Vector &x, Vector &g, Matrix &h) const;
   };
 
   //----------------------------------------------------------------------
@@ -64,7 +80,7 @@ namespace BOOM{
   // This object evaluates to the sum of one or more functions with
   // the signature specified by TargetType.  The function arguments
   // are as follows.
-  //   beta: The function argument.
+  //   x: The function argument.
   //   gradient: If non-NULL the gradient is computed and output
   //     here.  If NULL then no derivative computations are made.
   //   Hessian: If Hessian and gradient are both non-NULL the
@@ -87,12 +103,12 @@ namespace BOOM{
     d2TargetFunPointerAdapter(const TargetType &prior,
                               const TargetType &likelihood);
     void add_function(const TargetType &target);
+    double operator()(const Vector &x,
+                      Vector &gradient,
+                      Matrix &Hessian,
+                      uint nderiv) const override;
+    using d2TargetFun::operator();
 
-    virtual double operator()(const Vector &x) const;
-    virtual double operator()(const Vector &x, Vector &gradient) const;
-    virtual double operator()(const Vector &x,
-                              Vector &gradient,
-                              Matrix &Hessian) const;
     // If targets_ is empty then an error is reported (e.g. by
     // throwing an exception).
     void check_not_empty() const;
@@ -101,11 +117,11 @@ namespace BOOM{
   };
 
   //======================================================================
-
+  //
   class ScalarTargetFun : private RefCounted{
   public:
     virtual double operator()(double x)const=0;
-    virtual ~ScalarTargetFun(){}
+    ~ScalarTargetFun() override{}
     friend void intrusive_ptr_add_ref(ScalarTargetFun *);
     friend void intrusive_ptr_release(ScalarTargetFun *);
   };
@@ -113,34 +129,59 @@ namespace BOOM{
   void intrusive_ptr_release(ScalarTargetFun *);
   //----------------------------------------------------------------------
   class dScalarTargetFun : virtual public ScalarTargetFun{
-    double eps_scale;
   public:
-    dScalarTargetFun();
-    virtual double operator()(double x)const=0;
+    double operator()(double x)const override =0;
     virtual double operator()(double x, double &d)const=0;
-    void eps(double e);
-    double eps()const;
-    //    double h_approx(const double &x)const;
   };
   //----------------------------------------------------------------------
   class d2ScalarTargetFun : virtual public dScalarTargetFun{
   public:
-    virtual double operator()(double x)const=0;
-    virtual double operator()(double x, double &d)const=0;
-    virtual double operator()(double x, double &g, double &h)const=0;
+    virtual double operator()(double x,
+                              double &d1,
+                              double &d2,
+                              uint nderiv) const = 0;
+    double operator()(double x) const override {
+      double d1, d2;
+      return (*this)(x, d1, d2, 0);
+    }
+    double operator()(double x, double &d) const override {
+      double d2;
+      return (*this)(x, d, d2, 1);
+    }
+    virtual double operator()(double x, double &g, double &h) const {
+      return (*this)(x, g, h, 2);
+    }
   };
 
   //======================================================================
-
-  class ScalarTargetView : public ScalarTargetFun{
+  // Turn a TargetFun into a ScalarTargetFun.  (I.e. turns a function
+  // that takes a vector argument into one that takes a scalar
+  // argument).
+  class ScalarTargetFunAdapter : public ScalarTargetFun{
   public:
-    ScalarTargetView(TargetFun &F, const Vec &X, uint which_dim);
-    virtual double operator()(double x)const;
-    void set_x(const Vec &X);
+    ScalarTargetFunAdapter(boost::function<double(const Vector &)> F,
+                           Vector *X, uint position);
+    double operator()(double x)const override;
   private:
-    TargetFun &f;
-    mutable Vec wsp;
-    uint which;
+    boost::function<double(const Vector &)> f_;
+    Vector *wsp_;
+    uint which_;
+  };
+
+  // Turns a dScalarEnabledTargetFun into a dScalarTargetFun.
+  // (I.e. turns a function that takes a vector argument into one that
+  // takes a scalar argument).
+  class dScalarTargetFunAdapter : public dScalarTargetFun {
+   public:
+    dScalarTargetFunAdapter(Ptr<dScalarEnabledTargetFun> f,
+                            Vector *x,
+                            uint position);
+    double operator()(double x) const override;
+    double operator()(double x, double &derivative) const override;
+   private:
+    Ptr<dScalarEnabledTargetFun> f_;
+    Vector *x_;
+    uint position_;
   };
 
 }

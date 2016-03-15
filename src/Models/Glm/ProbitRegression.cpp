@@ -30,7 +30,6 @@ namespace BOOM{
       : ParamPolicy(new GlmCoefs(beta))
   {}
 
-
   PRM::ProbitRegressionModel(const Matrix &X, const Vector &y)
     : ParamPolicy(new GlmCoefs(ncol(X)))
   {
@@ -48,8 +47,7 @@ namespace BOOM{
       ParamPolicy(rhs),
       DataPolicy(rhs),
       PriorPolicy(rhs)
-  {
-  }
+  {}
 
   PRM * PRM::clone()const{return new PRM(*this);}
 
@@ -135,9 +133,14 @@ namespace BOOM{
     return ans;
   }
 
-  ProbitRegressionTarget PRM::log_likelihood_tf()const{
-    ProbitRegressionTarget ans(this);
-    return ans;
+  d2TargetFunPointerAdapter PRM::log_likelihood_tf()const{
+    return d2TargetFunPointerAdapter(
+        [this](const Vector &beta,
+               Vector *gradient,
+               Matrix *hessian,
+               bool reset) {
+          return this->log_likelihood(beta, gradient, hessian, reset);
+        });
   }
 
   bool PRM::sim(const Vector &x)const{
@@ -152,25 +155,4 @@ namespace BOOM{
     return ans;
   }
 
-  ProbitRegressionTarget::ProbitRegressionTarget(const PRM * m)
-      : m_(m)
-  {}
-
-  double ProbitRegressionTarget::operator()(const Vector &beta)const{
-    Vector *g = 0;
-    Matrix *h = 0;
-    return m_->log_likelihood(beta, g, h);
-  }
-
-  double ProbitRegressionTarget::operator()(const Vector &beta, Vector &g)const{
-    Matrix *h = 0;
-    return m_->log_likelihood(beta, &g, h);
-  }
-
-  double ProbitRegressionTarget::operator()(
-      const Vector &beta, Vector &g, Matrix & h)const{
-    return m_->log_likelihood(beta, &g, &h);
-  }
-
-
-}
+}  // namespace BOOM

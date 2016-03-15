@@ -42,7 +42,7 @@ namespace BOOM{
     uint k = R.dim();
     double ldR = R.logdet();
     double nu = k+1;
-    Spd Rinv = R.inv();
+    SpdMatrix Rinv = R.inv();
     double ans = -.5 * (nu + k + 1) * ldR - .5 * sum(log(Rinv.diag()));
     return ans;
   }
@@ -51,8 +51,8 @@ namespace BOOM{
 
   Corr MUCM::sim()const{
     uint d = dim();
-    Spd I(d, 1.0);
-    Spd Sigma = rWish(d+1, I, true); // inverse wishart
+    SpdMatrix I(d, 1.0);
+    SpdMatrix Sigma = rWish(d+1, I, true); // inverse wishart
     return var2cor(Sigma);
   }
 

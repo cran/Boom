@@ -19,31 +19,32 @@
 #include <Models/PosteriorSamplers/ZeroMeanGaussianConjSampler.hpp>
 #include <Models/ZeroMeanGaussianModel.hpp>
 #include <Models/GammaModel.hpp>
+#include <Models/ChisqModel.hpp>
 
 namespace BOOM{
 
   typedef ZeroMeanGaussianConjSampler ZGS;
 
   ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                   Ptr<GammaModelBase> ivar)
-      : GaussianVarSampler(mod, ivar),
+                                   Ptr<GammaModelBase> ivar,
+                                   RNG &seeding_rng)
+      : GaussianVarSampler(mod, ivar, seeding_rng),
         mod(mod)
   {}
 
   ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                   double df, double sigma_guess)
-      : GaussianVarSampler(mod, new GammaModel(df/2, df* pow(sigma_guess, 2))),
+                                   double df, double sigma_guess,
+                                   RNG &seeding_rng)
+      : GaussianVarSampler(mod, new ChisqModel(df, sigma_guess)),
         mod(mod)
   {}
 
   ZGS * ZGS::clone()const{ return new ZGS(*this);}
 
-  void ZGS::find_posterior_mode(){
-    //
+  void ZGS::find_posterior_mode(double){
     double a = ivar()->alpha() + .5 * mod->suf()->n();
     double b = ivar()->beta() + .5 * mod->suf()->sumsq();
     mod->set_sigsq(b/(1+a));   // with respect to sigsq
   }
 
-
-}
+}  // namespace BOOM

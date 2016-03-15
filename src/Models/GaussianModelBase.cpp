@@ -52,6 +52,15 @@ namespace BOOM{
     sumsq_ += y*y;
   }
 
+  void GS::update_expected_value(
+      double expected_sample_size,
+      double expected_sum,
+      double expected_sum_of_squares) {
+    n_ += expected_sample_size;
+    sum_ += expected_sum;
+    sumsq_ += expected_sum_of_squares;
+  }
+
   void GS::remove(double y) {
     n_ -= 1;
     sum_ -= y;
@@ -68,6 +77,9 @@ namespace BOOM{
 
   double GS::sum()const{return sum_;}
   double GS::sumsq()const{return sumsq_;}
+  double GS::centered_sumsq(double mu) const {
+    return sumsq_ - (2.0 * sum_ * mu) + n_ * mu * mu;
+  }
   double GS::n()const{return n_;}
   double GS::ybar()const{
     if(n_>0) return sum()/n();
@@ -96,23 +108,23 @@ namespace BOOM{
   GaussianSuf * GS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this, s);}
 
-  Vec GS::vectorize(bool)const{
-    Vec ans(3);
+  Vector GS::vectorize(bool)const{
+    Vector ans(3);
     ans[0] = n_;
     ans[1] = sum_;
     ans[2] = sumsq_;
     return ans;
   }
 
-  Vec::const_iterator GS::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator GS::unvectorize(Vector::const_iterator &v, bool){
     n_ = *v;     ++v;
     sum_ = *v;   ++v;
     sumsq_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator GS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator GS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it,minimal);
   }
 
@@ -153,7 +165,7 @@ namespace BOOM{
     return ans;
   }
 
-  double GaussianModelBase::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
+  double GaussianModelBase::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
     double X=x[0];
     double G(0),H(0);
     double ans = Logp(X,G,H,nd);
@@ -178,6 +190,4 @@ namespace BOOM{
     this->add_data(dp);
   }
 
-
-
-}
+}  // namespace BOOM

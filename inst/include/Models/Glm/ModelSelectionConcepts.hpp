@@ -31,7 +31,7 @@ namespace BOOM{
       Variable(uint pos, double prob, const string &Name="");
       Variable(const Variable &rhs);
       virtual Variable * clone()const=0;
-      virtual ~Variable();
+      ~Variable() override;
 
       virtual ostream & print(ostream &)const;
       virtual double logp(const Selector &g)const;
@@ -60,23 +60,23 @@ namespace BOOM{
     class MainEffect : public Variable{
     public:
       MainEffect(uint pos, double prob, const string &name="");
-      MainEffect * clone()const;
+      MainEffect * clone()const override;
       virtual bool observed()const;
-      virtual bool parents_are_present(const Selector &g)const;
-      virtual void add_to(VariableSelectionPrior &)const;
-      virtual void make_valid(Selector &g)const;
+      bool parents_are_present(const Selector &g)const override;
+      void add_to(VariableSelectionPrior &)const override;
+      void make_valid(Selector &g)const override;
     };
     //______________________________________________________________________
     class MissingMainEffect : public MainEffect {
     public:
       MissingMainEffect(uint pos, double prob, uint obs_ind_pos, const string &Name);
       MissingMainEffect(const MissingMainEffect &rhs);
-      MissingMainEffect * clone()const;
-      virtual double logp(const Selector &inc)const;
-      virtual void make_valid(Selector &g)const;
-      virtual bool observed()const;
-      virtual bool parents_are_present(const Selector &g)const;
-      virtual void add_to(VariableSelectionPrior &)const;
+      MissingMainEffect * clone()const override;
+      double logp(const Selector &inc)const override;
+      void make_valid(Selector &g)const override;
+      bool observed()const override;
+      bool parents_are_present(const Selector &g)const override;
+      void add_to(VariableSelectionPrior &)const override;
     private:
       uint obs_ind_pos_;
     };
@@ -85,12 +85,12 @@ namespace BOOM{
     public:
       Interaction(uint pos, double prob, const std::vector<uint> &parents, const string &name="");
       Interaction(const Interaction & rhs);
-      Interaction * clone()const;
-      virtual double logp(const Selector &inc)const;
-      virtual void make_valid(Selector &g)const;
+      Interaction * clone()const override;
+      double logp(const Selector &inc)const override;
+      void make_valid(Selector &g)const override;
       uint nparents()const;
-      virtual bool parents_are_present(const Selector &g)const;
-      virtual void add_to(VariableSelectionPrior &)const;
+      bool parents_are_present(const Selector &g)const override;
+      void add_to(VariableSelectionPrior &)const override;
     private:
       std::vector<uint> parent_pos_;
     };

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007 Steven L. Scott
+  Copyright (C) 2005-2015 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -15,15 +15,19 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
-#include <Models/EmMixtureComponent.hpp>
-#include <cpputil/report_error.hpp>
+#ifndef BOOM_STREAM_HPP_
+#define BOOM_STREAM_HPP_
 
-namespace BOOM{
-  typedef EmMixtureComponent EM;
+#include <ostream>
+#include <iomanip>
 
-  void EM::find_posterior_mode(){
-    report_error("You've used a model with no 'find_posterior_mode' "
-                 "method defined.");
-  }
+namespace BOOM {
 
+// Sets out to be appropriate for numeric formatting.
+inline ostream & numeric(ostream &out) {
+  return out << std::dec << std::setfill(' ');
 }
+
+} // namespace BOOM
+
+#endif // BOOM_STREAM_HPP_

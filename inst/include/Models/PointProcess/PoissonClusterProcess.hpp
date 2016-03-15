@@ -64,9 +64,9 @@ namespace BOOM{
                           Ptr<MixtureComponent> secondary_mark_model);
 
     PoissonClusterProcess(const PoissonClusterProcess &rhs);
-    PoissonClusterProcess * clone()const;
+    PoissonClusterProcess * clone()const override;
 
-    virtual ~PoissonClusterProcess(){}
+    ~PoissonClusterProcess() override{}
 
     void set_mark_models(Ptr<MixtureComponent> primary,
                          Ptr<MixtureComponent> secondary);
@@ -77,7 +77,7 @@ namespace BOOM{
     // Sample the posterior distributions of the client models.  To be
     // called after impute_latent_data().
     virtual void sample_client_posterior();
-    virtual double logpri()const;
+    double logpri() const override;
 
     // The log-event rate at time t for the process (or superposition
     // of processes) responsible for a transition from hmm state r to
@@ -168,8 +168,8 @@ namespace BOOM{
     void backward_sampling(RNG &rng,
                            const PointProcess &data,
                            const std::vector<int> &source,
-                           Mat &probability_of_activity,
-                           Mat &probability_of_responsibility);
+                           Matrix &probability_of_activity,
+                           Matrix &probability_of_responsibility);
 
     int draw_previous_state(RNG &rng, int time, int current_state);
 
@@ -190,8 +190,8 @@ namespace BOOM{
     //     that each process was responsible at time t.
     void backward_smoothing(const PointProcess &data,
                             const std::vector<int> &source,
-                            Mat &probability_of_activity,
-                            Mat &probability_of_responsibility);
+                            Matrix &probability_of_activity,
+                            Matrix &probability_of_responsibility);
 
     // On input, 'transition_density' is the joint distribution of
     // (h[t-1], h[t]) given data up to time t, and 'marginal' is the
@@ -243,9 +243,9 @@ namespace BOOM{
 
     double loglike()const{return last_loglike_;}
 
-    virtual void clear_data();
-    virtual void add_data(Ptr<Data> dp);  // *dp is a PointProcess
-    virtual void add_data(Ptr<PointProcess> dp);
+    void clear_data() override;
+    void add_data(Ptr<Data> dp) override;  // *dp is a PointProcess
+    void add_data(Ptr<PointProcess> dp) override;
 
     // Adds a point process to the model, along with "ground truth"
     // information about which processes generated each event.  The
@@ -388,9 +388,9 @@ namespace BOOM{
     ResponsibleProcessMap responsible_process_map_;
 
     std::vector<Mat> filter_;
-    Vec pi0_;
-    mutable Vec wsp_;
-    Vec one_;
+    Vector pi0_;
+    mutable Vector wsp_;
+    Vector one_;
     double last_loglike_;
 
     // Each vector element corresponds to the PointProcess for a

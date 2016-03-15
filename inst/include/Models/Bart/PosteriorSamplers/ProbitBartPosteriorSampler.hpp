@@ -40,10 +40,10 @@ namespace BOOM {
      public:
       ProbitResidualData(Ptr<BinomialRegressionData> data_point,
                          double original_prediction);
-      int y() const {return original_data_->y();}
-      int n() const {return original_data_->n();}
-      virtual void add_to_residual(double value);
-      virtual void add_to_probit_suf(ProbitSufficientStatistics &suf)const;
+      double y() const {return original_data_->y();}
+      double n() const {return original_data_->n();}
+      void add_to_residual(double value) override;
+      void add_to_probit_suf(ProbitSufficientStatistics &suf)const override;
       double sum_of_residuals() const;
       void set_sum_of_residuals(double sum_of_residuals);
 
@@ -67,9 +67,9 @@ namespace BOOM {
     //======================================================================
     class ProbitSufficientStatistics : public SufficientStatisticsBase {
      public:
-      virtual ProbitSufficientStatistics * clone() const;
-      virtual void clear();
-      virtual void update(const ResidualRegressionData &abstract_data);
+      ProbitSufficientStatistics * clone() const override;
+      void clear() override;
+      void update(const ResidualRegressionData &abstract_data) override;
       virtual void update(const ProbitResidualData &data);
       int sample_size()const;
       double sum()const;
@@ -90,28 +90,29 @@ namespace BOOM {
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees);
+        boost::function<double(int)> log_prior_on_number_of_trees,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double draw_mean(Bart::TreeNode *leaf);
+    void draw() override;
+    double draw_mean(Bart::TreeNode *leaf) override;
 
     // Omits a factor of (2*pi)^{N/2} \exp{-.5 * (N - 1) * s^2 } from
     // the integrated likelihood.
-    virtual double log_integrated_likelihood(
-        const Bart::SufficientStatisticsBase &suf)const;
+    double log_integrated_likelihood(
+        const Bart::SufficientStatisticsBase &suf)const override;
     double log_integrated_probit_likelihood(
         const Bart::ProbitSufficientStatistics &suf)const;
 
-    virtual double complete_data_log_likelihood(
-        const Bart::SufficientStatisticsBase &suf)const;
+    double complete_data_log_likelihood(
+        const Bart::SufficientStatisticsBase &suf)const override;
     double complete_data_probit_log_likelihood(
         const Bart::ProbitSufficientStatistics &suf)const;
 
-    virtual void clear_residuals();
-    virtual int residual_size()const;
-    virtual Bart::ProbitResidualData * create_and_store_residual(int i);
-    virtual Bart::ProbitResidualData * residual(int i);
-    virtual Bart::ProbitSufficientStatistics * create_suf()const;
+    void clear_residuals() override;
+    int residual_size()const override;
+    Bart::ProbitResidualData * create_and_store_residual(int i) override;
+    Bart::ProbitResidualData * residual(int i) override;
+    Bart::ProbitSufficientStatistics * create_suf()const override;
 
     void impute_latent_data();
     void impute_latent_data_point(DataType *data);

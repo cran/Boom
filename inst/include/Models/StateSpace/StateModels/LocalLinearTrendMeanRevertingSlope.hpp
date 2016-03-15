@@ -43,14 +43,14 @@ namespace BOOM{
     // class can change the value of the pointer.
     LocalLinearTrendMeanRevertingSlopeMatrix(
         const LocalLinearTrendMeanRevertingSlopeMatrix &rhs);
-    virtual LocalLinearTrendMeanRevertingSlopeMatrix * clone()const;
-    virtual int nrow()const{return 3;}
-    virtual int ncol()const{return 3;}
-    virtual void multiply(VectorView lhs, const ConstVectorView &rhs)const;
-    virtual void Tmult(VectorView lhs, const ConstVectorView &rhs)const;
-    virtual void multiply_inplace(VectorView x)const;
-    virtual void add_to(SubMatrix block)const;
-    virtual Mat dense()const;
+    LocalLinearTrendMeanRevertingSlopeMatrix * clone() const override;
+    int nrow()const override{return 3;}
+    int ncol()const override{return 3;}
+    void multiply(VectorView lhs, const ConstVectorView &rhs)const override;
+    void Tmult(VectorView lhs, const ConstVectorView &rhs)const override;
+    void multiply_inplace(VectorView x)const override;
+    void add_to(SubMatrix block)const override;
+    Matrix dense()const override;
    private:
     Ptr<UnivParams> phi_;
   };
@@ -74,31 +74,31 @@ namespace BOOM{
         Ptr<NonzeroMeanAr1Model> slope);
     LocalLinearTrendMeanRevertingSlopeStateModel(
         const LocalLinearTrendMeanRevertingSlopeStateModel &rhs);
-    virtual LocalLinearTrendMeanRevertingSlopeStateModel * clone()const;
+    LocalLinearTrendMeanRevertingSlopeStateModel * clone() const override;
 
-    virtual void clear_data();
+    void clear_data() override;
 
-    virtual void observe_state(const ConstVectorView then,
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
-    virtual void observe_initial_state(const ConstVectorView &state);
-    virtual uint state_dimension()const{return 3;}
+                               int time_now) override;
+    void observe_initial_state(const ConstVectorView &state) override;
+    uint state_dimension()const override{return 3;}
 
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
+    Vector initial_state_mean()const override;
+    SpdMatrix initial_state_variance()const override;
     void set_initial_level_mean(double level_mean);
     void set_initial_level_sd(double level_sd);
     void set_initial_slope_mean(double slope_mean);
     void set_initial_slope_sd(double slope_sd);
 
-    void simulate_initial_state(VectorView state)const;
+    void simulate_initial_state(VectorView state)const override;
 
    private:
     void check_dim(const ConstVectorView &)const;
@@ -111,7 +111,7 @@ namespace BOOM{
     Ptr<UpperLeftDiagonalMatrix> state_variance_matrix_;
     double initial_level_mean_;
     double initial_slope_mean_;
-    Spd initial_state_variance_;
+    SpdMatrix initial_state_variance_;
   };
 
 

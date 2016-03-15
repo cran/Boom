@@ -26,17 +26,22 @@ typedef ProductDirichletPosteriorSampler PDPS;
 
 void PDPS::draw(){
 
-  const Mat & sumlog(m_->suf()->sumlog());
+  const Matrix & sumlog(m_->suf()->sumlog());
   double nobs(m_->suf()->n());
-  Mat Nu(m_->Nu());
+  Matrix Nu(m_->Nu());
   uint d= nrow(Nu);
   for(uint i=0; i<d; ++i){
-    Vec sumlog_i(sumlog.row(i));
-    Vec nu(Nu.row(i));
+    Vector sumlog_i(sumlog.row(i));
+    Vector nu(Nu.row(i));
     for(uint j=0; j<d; ++j){
-      DirichletLogp logp(j, nu, sumlog_i, nobs,
-                         phi_row_prior_[i], alpha_row_prior_[i],
-                         min_nu_);
+      DirichletSampler::DirichletLogp logp(
+          j,
+          nu,
+          sumlog_i,
+          nobs,
+          phi_row_prior_[i].get(),
+          alpha_row_prior_[i].get(),
+          min_nu_);
       ScalarSliceSampler sam(logp, true);
       sam.set_lower_limit(min_nu_);
       nu[j]= sam.draw(nu[j]);
@@ -48,9 +53,9 @@ void PDPS::draw(){
 }
 
 double PDPS::logpri()const{
-  const Mat & Nu(m_->Nu());
+  const Matrix & Nu(m_->Nu());
   uint d = nrow(Nu);
-  Vec phi(d);
+  Vector phi(d);
   double ans=0;
   for(uint i=0; i<d; ++i){
     double a = sum(Nu.row(i));

@@ -26,21 +26,25 @@ namespace BOOM{
   typedef CompositeSamplerAdder CSA;
   typedef PosteriorSampler PS;
 
-  CS::CompositeSampler()
+  CS::CompositeSampler(RNG &seeding_rng) : PosteriorSampler(seeding_rng)
   { }
 
-  CS::CompositeSampler(Ptr<PS> p, double pr)
-    : samplers_(1,p),
+  CS::CompositeSampler(Ptr<PS> p, double pr, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      samplers_(1,p),
       probs_(1,pr)
   {}
 
-  CS::CompositeSampler(const std::vector<Ptr<PS> > &pv)
-    : samplers_(pv),
+  CS::CompositeSampler(const std::vector<Ptr<PS> > &pv, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      samplers_(pv),
       probs_(pv.size(), 1.0)
   {}
 
-  CS::CompositeSampler(const std::vector<Ptr<PS> > &pv, const Vec & pr)
-    : samplers_(pv),
+  CS::CompositeSampler(const std::vector<Ptr<PS> > &pv, const Vector & pr,
+                       RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      samplers_(pv),
       probs_(pr)
   {}
 

@@ -32,8 +32,10 @@ namespace BOOM {
   HPRS::HierarchicalPoissonRegressionPosteriorSampler(
       HierarchicalPoissonRegressionModel *model,
       Ptr<MvnBase> mu_prior,
-      int nthreads)
-      : model_(model),
+      int nthreads,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         mu_prior_(mu_prior),
         zero_mean_random_effect_model_(new ZeroMeanMvnModel(model->xdim())),
         nthreads_(nthreads)
@@ -87,7 +89,7 @@ namespace BOOM {
         data_model_samplers_[i]->draw();
       } else {
         //        cerr << "drawing latent data, but not changing beta" << endl;
-        const Vec beta = model_->data_model(i)->Beta();
+        const Vector beta = model_->data_model(i)->Beta();
         data_model_samplers_[i]->draw();
         model_->data_model(i)->set_Beta(beta);
       }
@@ -173,7 +175,7 @@ namespace BOOM {
       HierarchicalPoissonRegressionModel *model,
       Ptr<MvnBase> mu_prior,
       const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-      const Vec & upper_sigma_truncation_point,
+      const Vector & upper_sigma_truncation_point,
       int nthreads)
       : HierarchicalPoissonRegressionPosteriorSampler(
             model, mu_prior, nthreads),
@@ -204,7 +206,7 @@ namespace BOOM {
   }
 
   double HPRIPS::logpri()const{
-    const Spd & siginv(data_parent_model()->siginv());
+    const SpdMatrix & siginv(data_parent_model()->siginv());
     double ans = 0;
     for (int i = 0; i < nrow(siginv); ++i) {
       ans += siginv_priors_[i]->logp(siginv(i, i));

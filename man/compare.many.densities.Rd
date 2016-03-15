@@ -18,7 +18,7 @@ CompareManyDensities(list.of.arrays,
                      color = NULL,
                      gap = 0,
                      burn = 0,
-                     supress.labels = FALSE,
+                     suppress.labels = FALSE,
                      x.same.scale = TRUE,
                      y.same.scale = FALSE,
                      xlim = NULL,
@@ -47,7 +47,7 @@ CompareManyDensities(list.of.arrays,
   \item{gap}{The gap (in lines) between plots.}
   \item{burn}{The number of MCMC iterations to be discarded as burn-in.}
 
-  \item{supress.labels}{Logical.  If \code{FALSE} then the dimnames (if
+  \item{suppress.labels}{Logical.  If \code{FALSE} then the dimnames (if
     any) of the first element in \code{list.of.arrays} will be used
     to annotate the plot.  If \code{TRUE} then no labels will be
     used. }

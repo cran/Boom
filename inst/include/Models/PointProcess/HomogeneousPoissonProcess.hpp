@@ -33,29 +33,29 @@ namespace BOOM{
   class PoissonProcessSuf : public SufstatDetails<PointProcess> {
    public:
     PoissonProcessSuf(int count = 0, double exposure = 0);
-    virtual PoissonProcessSuf * clone()const;
+    PoissonProcessSuf * clone() const override;
 
     int count()const;
     double exposure()const;
 
-    void Update(const PointProcess &process);
-    virtual void clear();
+    void Update(const PointProcess &process) override;
+    void clear() override;
     void update_raw(int number_of_events, double duration);
     void update_raw(const PointProcess &data);
 
     PoissonProcessSuf * combine(Ptr<PoissonProcessSuf> rhs);
     PoissonProcessSuf * combine(const PoissonProcessSuf &rhs);
-    virtual PoissonProcessSuf * abstract_combine(Sufstat *rhs);
+    PoissonProcessSuf * abstract_combine(Sufstat *rhs) override;
 
     // Vectorized sufficient stats have two entries: count and
     // exposure.
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
 
-    virtual ostream & print(ostream &out)const;
+    ostream & print(ostream &out)const override;
    private:
     int number_of_events_;
     double exposure_time_;
@@ -73,30 +73,30 @@ namespace BOOM{
     HomogeneousPoissonProcess(double lambda = 1.0);
     HomogeneousPoissonProcess(const std::vector<DateTime> &timestamps);
 
-    virtual HomogeneousPoissonProcess * clone()const;
+    HomogeneousPoissonProcess * clone() const override;
     double lambda()const;
     void set_lambda(double lambda);
     Ptr<UnivParams> Lambda_prm(){return ParamPolicy::prm();}
     const Ptr<UnivParams> Lambda_prm()const{return ParamPolicy::prm();}
 
-    virtual double event_rate(const DateTime &t)const;
-    virtual double expected_number_of_events(const DateTime &t0,
-                                             const DateTime &t1)const;
+    double event_rate(const DateTime &t)const override;
+    double expected_number_of_events(const DateTime &t0,
+                                             const DateTime &t1)const override;
 
     // Updates sufficient statistics, but does not allocate a new
     // Ptr<PointProcess> data element.
     void add_data_raw(int incremental_events, double incremental_duration);
     void add_data_raw(const PointProcess &);
-    virtual void add_exposure_window(const DateTime &t0,
-                                   const DateTime &t1);
-    virtual void add_event(const DateTime &t);
+    void add_exposure_window(const DateTime &t0,
+                                   const DateTime &t1) override;
+    void add_event(const DateTime &t) override;
 
-    virtual double loglike(const Vector &scalar_lambda_vector)const;
-    virtual void mle();
-    virtual PointProcess simulate(
+    double loglike(const Vector &scalar_lambda_vector)const override;
+    void mle() override;
+    PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator())const;
+        boost::function<Data*()> mark_generator = NullDataGenerator())const override;
   };
 
 }

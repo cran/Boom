@@ -38,26 +38,26 @@ namespace BOOM{
     public:
       SubjectObsTF(Ptr<Subject>, Ptr<SubjectPrior>);
       SubjectObsTF * clone()const;
-      double operator()(const Vec &theta)const;
+      double operator()(const Vector &theta)const;
     private:
       Ptr<Subject> sub;
       Ptr<SubjectPrior> pri;
       Ptr<VectorParams> Theta;
-      mutable Vec wsp;
+      mutable Vector wsp;
     };
     typedef SubjectObsTF TF;
     //------------------------------------------------------------
 
     TF::SubjectObsTF(Ptr<Subject> s, Ptr<SubjectPrior> p)
       : sub(s),
-	pri(p),
-	Theta(s->Theta_prm()),
-	wsp(Theta->value())
+    pri(p),
+    Theta(s->Theta_prm()),
+    wsp(Theta->value())
     {}
 
     TF * TF::clone()const{return new TF(*this);}
 
-    double TF::operator()(const Vec &v)const{
+    double TF::operator()(const Vector &v)const{
       ParamHolder ph(v, Theta, wsp);
       double ans = pri->pdf(sub, true);
       if(ans== BOOM::negative_infinity()) return ans;
@@ -69,16 +69,18 @@ namespace BOOM{
     typedef DafePcrRwmSubjectSampler SS;
 
 
-    SS::DafePcrRwmSubjectSampler(Ptr<Subject> s, Ptr<SubjectPrior> p, double Tdf)
-      : sub(s),
-	prior(p),
-	sigsq(1.644934066848226),
-	ivar(s->Nscales()),
-	Theta(s->Nscales())
+    SS::DafePcrRwmSubjectSampler(Ptr<Subject> s, Ptr<SubjectPrior> p,
+                                 double Tdf, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+  sub(s),
+    prior(p),
+    sigsq(1.644934066848226),
+    ivar(s->Nscales()),
+    Theta(s->Nscales())
     {
       uint Ndim = s->Nscales();
       TF target(sub, prior);
-      Spd Siginv(Ndim);
+      SpdMatrix Siginv(Ndim);
       Siginv.set_diag(1.0);
       prop = new MvtRwmProposal(Siginv, Tdf);
       sampler = new MetropolisHastings(target, prop);
@@ -100,7 +102,7 @@ namespace BOOM{
       ivar = prior->siginv();
       const ItemResponseMap & r(sub->item_responses());
       for_each(r.begin(), r.end(),
-	       boost::bind(&SS::accumulate_moments, this, _1));
+           boost::bind(&SS::accumulate_moments, this, _1));
     }
 
     void SS::accumulate_moments(std::pair<Ptr<Item>, Response> ir){
@@ -111,9 +113,9 @@ namespace BOOM{
       uint M = it->maxscore();
       uint which = pcr->which_subscale();
       for(uint m=1; m<=M; ++m){
-	double ma = m*a;
-	double w = ma*ma;
-	ivar(which,which) += w/sigsq;}}
+    double ma = m*a;
+    double w = ma*ma;
+    ivar(which,which) += w/sigsq;}}
 
 
   }

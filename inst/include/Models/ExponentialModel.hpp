@@ -26,7 +26,7 @@
 #include <Models/Sufstat.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 
 
 //======================================================================
@@ -36,22 +36,22 @@ namespace BOOM{
   public:
     ExpSuf();
     ExpSuf(const ExpSuf &);
-    ExpSuf *clone() const;
+    ExpSuf *clone() const override;
 
-    void clear();
-    void Update(const DoubleData &dat);
+    void clear() override;
+    void Update(const DoubleData &dat) override;
     void add_mixture_data(double y, double prob);
     double sum()const;
     double n()const;
     void combine(Ptr<ExpSuf>);
     void combine(const ExpSuf &);
-    ExpSuf * abstract_combine(Sufstat *s);
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    ExpSuf * abstract_combine(Sufstat *s) override;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+					    bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+					    bool minimal=true) override;
+    ostream &print(ostream &out)const override;
   };
   //======================================================================
   class GammaModel;
@@ -60,7 +60,7 @@ namespace BOOM{
   class ExponentialModel:
     public ParamPolicy_1<UnivParams>,
     public SufstatDataPolicy<DoubleData,ExpSuf>,
-    public ConjugatePriorPolicy<ExponentialGammaSampler>,
+    public PriorPolicy,
     public DiffDoubleModel,
     public NumOptModel,
     public EmMixtureComponent
@@ -69,7 +69,7 @@ namespace BOOM{
     ExponentialModel();
     ExponentialModel(double lam);
     ExponentialModel(const ExponentialModel &m);
-    ExponentialModel *clone() const;
+    ExponentialModel *clone() const override;
 
     Ptr<UnivParams> Lam_prm();
     const Ptr<UnivParams> Lam_prm()const;
@@ -81,15 +81,15 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<ExponentialGammaSampler>);
 
     // probability calculations
-    virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    virtual double pdf(const Data * dp, bool logscale)const;
+    double pdf(Ptr<Data> dp, bool logscale)const override;
+    double pdf(const Data * dp, bool logscale)const override;
     double Loglike(const Vector &lambda_as_vector,
-                   Vec &g, Mat &h, uint nd) const ;
-    double Logp(double x, double &g, double &h, const uint lev) const ;
-    virtual void mle();
+                   Vector &g, Matrix &h, uint nd) const override ;
+    double Logp(double x, double &g, double &h, const uint lev) const override ;
+    void mle() override;
 
-    double sim() const;
-    void add_mixture_data(Ptr<Data>, double prob);
+    double sim() const override;
+    void add_mixture_data(Ptr<Data>, double prob) override;
   };
 
 

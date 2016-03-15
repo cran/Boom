@@ -134,8 +134,10 @@ namespace BOOM {
       double rwm_variance_scale_factor,
       uint nthreads,
       int max_chunk_size,
-      bool check_initial_condition)
-      : MLVS(model, prior, inclusion_prior, check_initial_condition),
+      bool check_initial_condition,
+      RNG &seeding_rng)
+      : MLVS(model, prior, inclusion_prior, nthreads, check_initial_condition,
+             seeding_rng),
         model_(model),
         prior_(prior),
         inclusion_prior_(inclusion_prior),

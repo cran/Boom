@@ -24,6 +24,11 @@ namespace BOOM{
         owns_rng_(false)
   {}
 
+  SamplerBase::SamplerBase(RNG *rng)
+      : rng_(rng),
+        owns_rng_(false)
+  {}
+
   SamplerBase::~SamplerBase(){
     if(owns_rng_) delete rng_;
   }
@@ -39,8 +44,9 @@ namespace BOOM{
   }
 
   SamplerBase::SamplerBase(const SamplerBase & rhs)
-      : RefCounted(rhs)
-  {}
+      : RefCounted(rhs),
+        owns_rng_(false)
+  { if (!rhs.owns_rng_) { rng_ = rhs.rng_; } }
 
   void SamplerBase::set_seed(unsigned long s){
     if(rng_) {

@@ -35,7 +35,6 @@ namespace BOOM{
     typedef ManyParamPolicy ParamPolicy;
     ManyParamPolicy();
     ManyParamPolicy(const ManyParamPolicy &rhs);  // components not copied
-    ManyParamPolicy * clone()const=0;
     ManyParamPolicy & operator=(const ManyParamPolicy &);
 
 
@@ -51,13 +50,13 @@ namespace BOOM{
     void add_params(Ptr<Params> p);
     void clear();
 
-    ParamVec t();
-    const ParamVec t()const;
+    ParamVector t() override;
+    const ParamVector t()const override;
 
   protected:
     virtual void setup_params()=0;  // to be called during construction
   private:
-    ParamVec t_;
+    ParamVector t_;
   };
 
 

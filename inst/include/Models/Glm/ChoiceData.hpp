@@ -45,10 +45,10 @@ namespace BOOM{
 
     ChoiceData(const ChoiceData &rhs);
 
-    virtual ChoiceData * clone()const;
+    ChoiceData * clone() const override;
 
     //--------- virtual function over-rides ----
-    virtual ostream & display(ostream &)const;
+    ostream & display(ostream &)const override;
 
     //--------- choice information ----
     uint nchoices()const;     // number of possible choices
@@ -58,17 +58,17 @@ namespace BOOM{
     uint subject_nvars()const;
     uint choice_nvars()const;
 
-    const uint & value()const;
+    const uint & value()const override;
     void set_y(uint y);
     const std::string & lab()const;
     const std::vector<std::string> & labels()const;
     void set_y(const std::string &lab);
 
     // The Vector of subject-level predictor variables.
-    const Vec & Xsubject()const;
+    const Vector & Xsubject()const;
 
     // The Vector of choice-level predictor variables for choice i.
-    const Vec & Xchoice(uint i)const;
+    const Vector & Xchoice(uint i)const;
 
     // Fills the matrix given in the first argument with the "design
     // matrix" corresponding to this observation.  Let Sx denote the
@@ -87,7 +87,7 @@ namespace BOOM{
     //
     // The return value is the final value of the first argument,
     // after it is modified.
-    const Mat & write_x(Mat &X, bool include_zero)const;
+    const Matrix & write_x(Matrix &X, bool include_zero)const;
 
     // Returns the matrix written by write_x().  If this function is
     // never called then the space for X is never allocated.  The
@@ -96,17 +96,17 @@ namespace BOOM{
     // function many times than to call write_x many times.  If memory
     // becomes an issue, then it may be prefereable to call write_x
     // instead.
-    const Mat & X(bool include_zero = true)const;
+    const Matrix & X(bool include_zero = true)const;
 
-    void set_Xsubject(const Vec &x);
-    void set_Xchoice(const Vec &x, uint i);
+    void set_Xsubject(const Vector &x);
+    void set_Xchoice(const Vector &x, uint i);
 
   private:
     Ptr<VectorData> xsubject_;                // age of car buyer
     std::vector<Ptr<VectorData> > xchoice_;   // price of car
 
     Selector avail_;                          // which choices are available
-    Vec null_;           // zero length.  return for null reference.
+    Vector null_;           // zero length.  return for null reference.
 
     // All subject and choice predictors stretched out into a single
     // predictor vector

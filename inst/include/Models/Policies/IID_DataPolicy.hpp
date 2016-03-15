@@ -21,6 +21,7 @@
 #include <Models/Policies/DataInfoPolicy.hpp>
 #include <fstream>
 #include <list>
+#include <functional>
 
 namespace BOOM{
   template <class D>
@@ -37,8 +38,12 @@ namespace BOOM{
     IID_DataPolicy(FwdIt Begin, FwdIt End);
 
     IID_DataPolicy(const IID_DataPolicy &);
-    IID_DataPolicy * clone()const=0;
     IID_DataPolicy & operator=(const IID_DataPolicy &);
+
+    // Each observer will be called whenever data is added or cleared.
+    void add_observer(std::function<void(void)> observer) {
+      observers_.push_back(observer);
+    }
 
     virtual void clear_data();
     virtual void set_data(const DatasetType &d);
@@ -64,8 +69,14 @@ namespace BOOM{
 
     virtual void combine_data(const Model &mod, bool just_suf=true);
 
+    void signal() {
+      for (int i = 0; i < observers_.size(); ++i) {
+        observers_[i]();
+      }
+    }
    private:
     DatasetType dat_;
+    std::vector<std::function<void(void)> > observers_;
   };
   //======================================================================
   // take care to call virtual function add_data instead of adding
@@ -110,6 +121,7 @@ namespace BOOM{
   template<class D>
   void IID_DataPolicy<D>::clear_data(){
     dat_.clear();
+    signal();
   }
 
   //------------------------------------------------------------
@@ -162,6 +174,7 @@ namespace BOOM{
   template<class D>
   void IID_DataPolicy<D>::add_data(Ptr<DataType> d){
     dat_.push_back(d);
+    signal();
   }
 
   template<class D>

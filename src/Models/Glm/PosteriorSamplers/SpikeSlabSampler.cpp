@@ -21,7 +21,10 @@ namespace BOOM {
 
   // Performs one MCMC sweep along the inclusion indicators for the
   // managed GlmModel.
-  void SSS::draw_model_indicators(RNG &rng, const WeightedRegSuf &suf) {
+  void SSS::draw_model_indicators(RNG &rng,
+                                  const WeightedRegSuf &suf,
+                                  double sigsq) {
+    if (!allow_model_selection_) return;
     Selector inclusion_indicators = model_->coef().inc();
     std::vector<int> indx = seq<int>(
         0,
@@ -35,11 +38,11 @@ namespace BOOM {
       }
     }
 
-    double logp = log_model_prob(inclusion_indicators, suf);
+    double logp = log_model_prob(inclusion_indicators, suf, sigsq);
 
     if(!std::isfinite(logp)){
       spike_prior_->make_valid(inclusion_indicators);
-      logp = log_model_prob(inclusion_indicators, suf);
+      logp = log_model_prob(inclusion_indicators, suf, sigsq);
     }
     if(!std::isfinite(logp)){
       ostringstream err;
@@ -53,12 +56,13 @@ namespace BOOM {
     uint n = inclusion_indicators.nvars_possible();
     if(max_flips_ > 0) n = std::min<int>(n, max_flips_);
     for(int i = 0; i < n; ++i){
-      logp = mcmc_one_flip(rng, inclusion_indicators, indx[i], logp, suf);
+      logp = mcmc_one_flip(
+          rng, inclusion_indicators, indx[i], logp, suf, sigsq);
     }
     model_->coef().set_inc(inclusion_indicators);
   }
 
-  void SSS::draw_beta(RNG &rng, const WeightedRegSuf &suf) {
+  void SSS::draw_beta(RNG &rng, const WeightedRegSuf &suf, double sigsq) {
     Selector inclusion_indicators = model_->coef().inc();
     if(inclusion_indicators.nvars() == 0){
       model_->drop_all();
@@ -68,8 +72,8 @@ namespace BOOM {
         slab_prior_->siginv());
     Vector precision_mu = precision *
         inclusion_indicators.select(slab_prior_->mu());
-    precision += inclusion_indicators.select(suf.xtx());
-    precision_mu += inclusion_indicators.select(suf.xty());
+    precision += inclusion_indicators.select(suf.xtx()) / sigsq;
+    precision_mu += inclusion_indicators.select(suf.xty()) / sigsq;
     Vector coefficients = precision.solve(precision_mu);
     coefficients = rmvn_ivar_mt(rng, coefficients, precision);
 
@@ -101,7 +105,8 @@ namespace BOOM {
   }
 
   double SSS::log_model_prob(const Selector &inclusion_indicators,
-                             const WeightedRegSuf &suf) const {
+                             const WeightedRegSuf &suf,
+                             double sigsq) const {
     double numerator = spike_prior_->logp(inclusion_indicators);
     if(numerator==BOOM::negative_infinity() ||
        inclusion_indicators.nvars() == 0){
@@ -123,11 +128,11 @@ namespace BOOM {
     numerator -= .5*mu.dot(precision_mu);
 
     bool ok = true;
-    precision += inclusion_indicators.select(suf.xtx());
-    Mat L = precision.chol(ok);
+    precision += inclusion_indicators.select(suf.xtx()) / sigsq;
+    Matrix L = precision.chol(ok);
     if(!ok)  return BOOM::negative_infinity();
     double denominator = sum(log(L.diag()));  // = .5 log |precision|
-    Vec S = inclusion_indicators.select(suf.xty()) + precision_mu;
+    Vector S = inclusion_indicators.select(suf.xty()) / sigsq + precision_mu;
     Lsolve_inplace(L,S);
     denominator -= .5 * S.normsq();
     // S.normsq =  beta_tilde ^T V_tilde beta_tilde
@@ -139,9 +144,10 @@ namespace BOOM {
       Selector &mod,
       int which_var,
       double logp_old,
-      const WeightedRegSuf &suf) {
+      const WeightedRegSuf &suf,
+      double sigsq) {
     mod.flip(which_var);
-    double logp_new = log_model_prob(mod, suf);
+    double logp_new = log_model_prob(mod, suf, sigsq);
     double u = runif_mt(rng, 0,1);
     if(log(u) > logp_new - logp_old){
       mod.flip(which_var);  // reject draw

@@ -27,10 +27,10 @@ namespace BOOM{
     class ItemSliceSampler
       : public PosteriorSampler{
     public:
-      ItemSliceSampler(Ptr<Item>);
+      ItemSliceSampler(Ptr<Item>, RNG &seeding_rng = GlobalRng::rng);
       ItemSliceSampler * clone()const;
-      virtual void draw();
-      virtual double logpri()const;
+      void draw() override;
+      double logpri() const override;
     private:
       Ptr<Item> it;
       Ptr<SliceSampler> sam;

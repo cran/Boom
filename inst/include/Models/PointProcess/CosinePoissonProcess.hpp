@@ -37,23 +37,23 @@ namespace BOOM {
   {
    public:
     CosinePoissonProcess(double lambda = 1.0, double frequency = 1.0);
-    virtual CosinePoissonProcess * clone()const;
+    CosinePoissonProcess * clone() const override;
 
-    virtual double event_rate(const DateTime &t)const;
-    virtual double expected_number_of_events(
-        const DateTime &t0, const DateTime &t1)const;
+    double event_rate(const DateTime &t)const override;
+    double expected_number_of_events(
+        const DateTime &t0, const DateTime &t1)const override;
 
     // Adding data is a no-op since this
-    virtual void add_exposure_window(const DateTime &t0, const DateTime &t1){}
-    virtual void add_event(const DateTime &t){}
+    void add_exposure_window(const DateTime &t0, const DateTime &t1) override{}
+    void add_event(const DateTime &t) override{}
 
     double lambda() const;
     double frequency() const;
 
-    virtual PointProcess simulate(
+    PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator()) const;
+        boost::function<Data*()> mark_generator = NullDataGenerator()) const override;
 
    private:
     DateTime origin_;

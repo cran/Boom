@@ -35,8 +35,9 @@ namespace BOOM{
   class SamplerBase : private RefCounted{
   public:
     SamplerBase();
+    SamplerBase(RNG *rng);
     SamplerBase(const SamplerBase &rhs);
-    virtual ~SamplerBase();
+    ~SamplerBase() override;
     void set_seed(unsigned long s);
     RNG & rng()const;
     friend void intrusive_ptr_add_ref(SamplerBase *s){s->up_count();}
@@ -50,17 +51,17 @@ namespace BOOM{
 
   class Sampler : public SamplerBase{
   public:
-    virtual Vec draw(const Vec &old)=0;
-    virtual double logp(const Vec &x)const=0;
-    // logp evaluates the log pdf of the density being sampled
+    Sampler() { }
+    Sampler(RNG *rng) : SamplerBase(rng) { }
+    virtual Vector draw(const Vector &old)=0;
   };
   //======================================================================
 
   class ScalarSampler : public SamplerBase{
   public:
+    ScalarSampler() { }
+    ScalarSampler(RNG *rng) : SamplerBase(rng) { }
     virtual double draw(double)=0;
-    virtual double logp(double)const=0;
-    // logp evaluates the log pdf of the density being sampled
   };
 
 }

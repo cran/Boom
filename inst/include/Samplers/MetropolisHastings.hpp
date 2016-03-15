@@ -25,10 +25,11 @@ namespace BOOM{
 
   class MetropolisHastings : public Sampler{
    public:
-    typedef boost::function<double(const Vec &)> Target;
-    MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop);
-    virtual Vec draw(const Vec & old);
-    virtual double logp(const Vec &x)const;
+    typedef boost::function<double(const Vector &)> Target;
+    MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop,
+                       RNG *rng = 0);
+    Vector draw(const Vector & old) override;
+    virtual double logp(const Vector &x)const;
     bool last_draw_was_accepted()const;
    protected:
     void set_proposal(Ptr<MH_Proposal>);
@@ -36,7 +37,7 @@ namespace BOOM{
    private:
     Target f_;
     Ptr<MH_Proposal> prop_;
-    Vec cand_;
+    Vector cand_;
     bool accepted_;
   };
 
@@ -44,8 +45,9 @@ namespace BOOM{
    public:
     typedef boost::function<double(double)> ScalarTarget;
     ScalarMetropolisHastings(const ScalarTarget &f,
-                             Ptr<MH_ScalarProposal> prop);
-    virtual double draw(double old);
+                             Ptr<MH_ScalarProposal> prop,
+                             RNG *rng = 0);
+    double draw(double old) override;
     virtual double logp(double x)const;
     bool last_draw_was_accepted()const;
    private:

@@ -28,17 +28,21 @@ namespace BOOM{
 
   MBS::MnpBetaGivenSigmaSampler(MNP *Mod,
                                 Ptr<VectorParams> B,
-                                Ptr<UnivParams> K)
-    : mnp(Mod),
+                                Ptr<UnivParams> K,
+                                RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mnp(Mod),
       b(B),
       kappa(K),
       b0_fixed(true)
   {}
 
   MBS::MnpBetaGivenSigmaSampler(MNP *Mod,
-                                const Vec &B,
-                                double K)
-    : mnp(Mod),
+                                const Vector &B,
+                                double K,
+                                RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mnp(Mod),
       b(new VectorParams(B)),
       kappa(new UnivParams(K)),
       b0_fixed(true)
@@ -47,27 +51,27 @@ namespace BOOM{
   void MBS::draw(){
     double n = mnp->n();
     double k = kappa->value();
-    const Spd & xtx(mnp->xtx());
-    Spd ivar = (xtx)*(1+k/n);
-    const Vec &B(b->value());
-    Vec mean = mnp->xty() + (xtx*B)*(k/n);
+    const SpdMatrix & xtx(mnp->xtx());
+    SpdMatrix ivar = (xtx)*(1+k/n);
+    const Vector &B(b->value());
+    Vector mean = mnp->xty() + (xtx*B)*(k/n);
     mean = ivar.solve(mean);
-    Vec beta = rmvn_ivar(mean, ivar);
+    Vector beta = rmvn_ivar(mean, ivar);
     if(b0_fixed){
       uint start = 0;
       uint p = mnp->subject_nvars();
-      Vec b0(beta.begin(), beta.begin()+p);
+      Vector b0(beta.begin(), beta.begin()+p);
       for(uint i=0; i<mnp->Nchoices(); ++i){
         VectorView(beta, start, p) -= b0;
-	start+=p;}}
+    start+=p;}}
     mnp->set_beta(beta);
   }
 
   double MBS::logpri()const{
     double n = mnp->n();
     double k = kappa->value();
-    Spd ivar = mnp->xtx()*k/n;
-    const Vec &B(b->value());
+    SpdMatrix ivar = mnp->xtx()*k/n;
+    const Vector &B(b->value());
     return dmvn(mnp->beta(), B, ivar, ivar.logdet(), true);
   }
   void MBS::fix_beta0(bool yn){b0_fixed=yn;}

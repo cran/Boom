@@ -27,9 +27,10 @@ namespace BOOM{
   class HomogeneousPoissonProcessPosteriorSampler : public PosteriorSampler {
    public:
     HomogeneousPoissonProcessPosteriorSampler(HomogeneousPoissonProcess *model,
-                                              Ptr<GammaModelBase> prior);
-    virtual void draw();
-    virtual double logpri()const;
+                                              Ptr<GammaModelBase> prior,
+                                              RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
    private:
     HomogeneousPoissonProcess * model_;
     Ptr<GammaModelBase> prior_;

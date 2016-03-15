@@ -23,8 +23,10 @@ namespace BOOM {
 
   DynamicRegressionPosteriorSampler::DynamicRegressionPosteriorSampler(
       DynamicRegressionStateModel *model,
-      Ptr<GammaModel> siginv_prior)
-      : model_(model),
+      Ptr<GammaModel> siginv_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         siginv_prior_(siginv_prior),
         sigsq_sampler_(siginv_prior_),
         handle_siginv_prior_separately_(false)

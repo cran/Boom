@@ -1,2 +1,9 @@
 exportPattern("^[^\\.]")
 importFrom(MASS, kde2d)
+importFrom("grDevices", "gray")
+importFrom("graphics", "abline", "axis", "axis.Date", "axis.POSIXct",
+           "barplot", "box", "boxplot", "contour", "hist", "layout",
+           "lcm", "legend", "lines", "mtext", "par", "plot", "polygon",
+           "segments", "strheight", "strwidth", "text", "title")
+importFrom("stats", "acf", "density", "quantile", "sd")
+importFrom("utils", "tail")

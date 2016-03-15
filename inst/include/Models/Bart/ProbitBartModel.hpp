@@ -44,10 +44,10 @@ namespace BOOM {
                     const std::vector<bool> &responses,
                     const Matrix &predictors);
     ProbitBartModel(const ProbitBartModel &rhs);
-    virtual ProbitBartModel * clone()const;
-    virtual int sample_size()const;
-    virtual void add_data(Ptr<Data>);
-    virtual void add_data(Ptr<BinomialRegressionData>);
+    ProbitBartModel * clone() const override;
+    int sample_size()const override;
+    void add_data(Ptr<Data>) override;
+    void add_data(Ptr<BinomialRegressionData>) override;
    private:
     void check_predictor_dimension(int number_of_observations,
                                    const Matrix &predictors)const ;

@@ -17,10 +17,13 @@
 */
 
 #include <numopt/ScalarNewtonMax.hpp>
-#include <stdexcept>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
-  double scalar_newton_max(const d2ScalarTargetFun &f, double &x, double &g, double &h){
+  double scalar_newton_max(const d2ScalarTargetFun &f,
+                           double &x,
+                           double &g,
+                           double &h) {
     double y = f(x,g,h);
     double oldy = y;
     double eps = 1e-5;  // TODO(stevescott):  remove magic numbers
@@ -36,7 +39,7 @@ namespace BOOM{
         step/=2.0;
         x = oldx - step;
         if(fabs(step) < eps){
-          throw_exception<std::runtime_error>("too small a step size in scalar_newton_max");
+          report_error("too small a step size in scalar_newton_max");
         }
         y = f(x,g,h);
         dy = y - oldy;

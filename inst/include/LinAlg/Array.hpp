@@ -63,7 +63,7 @@ namespace BOOM{
     bool operator==(const Vector &rhs)const;
     bool operator==(const VectorView &rhs)const;
     bool operator==(const ConstVectorView &rhs)const;
-    // Matrix & allows for Spd comparisons as well
+    // Matrix & allows for SpdMatrix comparisons as well
     bool operator==(const Matrix &rhs)const;
     bool operator==(const ConstArrayBase &rhs)const;
 
@@ -87,7 +87,8 @@ namespace BOOM{
     static std::vector<int> index3(int x1, int x2, int x3);
     static std::vector<int> index4(int x1, int x2, int x3, int x4);
     static std::vector<int> index5(int x1, int x2, int x3, int x4, int x5);
-    static std::vector<int> index6(int x1, int x2, int x3, int x4, int x5, int x6);
+    static std::vector<int> index6(
+        int x1, int x2, int x3, int x4, int x5, int x6);
 
    private:
     std::vector<int> dims_;
@@ -146,7 +147,7 @@ namespace BOOM{
                    const std::vector<int> &strides);
     ConstArrayView(const ConstArrayBase &rhs);
 
-    virtual const double *data()const{return data_;}
+    const double *data()const override{return data_;}
 
     void reset(const double *data,
                const std::vector<int> &dims);
@@ -198,8 +199,8 @@ namespace BOOM{
               const std::vector<int> &dims,
               const std::vector<int> &strides);
 
-    virtual       double *data(){return data_;}
-    virtual const double *data()const{return data_;}
+          double *data() override{return data_;}
+    const double *data()const override{return data_;}
 
     void reset(double *data, const std::vector<int> &dims);
     void reset(double *data,
@@ -237,6 +238,27 @@ namespace BOOM{
     ArrayView slice(int x1, int x2, int x3, int x4, int x5);
     ArrayView slice(int x1, int x2, int x3, int x4, int x5, int x6);
 
+    // vector_slice() works in exactly the same way as slice(), but it
+    // returns a VectorView instead of an ArrayView.  Exactly one
+    // index must be negative.
+    VectorView vector_slice(const std::vector<int> &index);
+    VectorView vector_slice(int x1);
+    VectorView vector_slice(int x1, int x2);
+    VectorView vector_slice(int x1, int x2, int x3);
+    VectorView vector_slice(int x1, int x2, int x3, int x4);
+    VectorView vector_slice(int x1, int x2, int x3, int x4, int x5);
+    VectorView vector_slice(
+        int x1, int x2, int x3, int x4, int x5, int x6);
+
+    ConstVectorView vector_slice(const std::vector<int> &index)const;
+    ConstVectorView vector_slice(int x1)const;
+    ConstVectorView vector_slice(int x1, int x2)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3, int x4)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3, int x4, int x5)const;
+    ConstVectorView vector_slice(
+        int x1, int x2, int x3, int x4, int x5, int x6)const;
+
     ConstArrayIterator begin()const;
     ConstArrayIterator end()const;
     ArrayIterator begin();
@@ -270,8 +292,8 @@ namespace BOOM{
       return *this;
     }
 
-    virtual double * data(){return data_.data();}
-    virtual const double * data()const{return data_.data();}
+    double * data() override{return data_.data();}
+    const double * data()const override{return data_.data();}
 
     using ConstArrayBase::operator==;
     bool operator==(const Array &rhs)const;
@@ -303,6 +325,21 @@ namespace BOOM{
     // returns a ConstVectorView instead of a ConstArrayView.  Exactly
     // one index must be negative.
     ConstVectorView vector_slice(const std::vector<int> &index)const;
+    ConstVectorView vector_slice(int x1)const;
+    ConstVectorView vector_slice(int x1, int x2)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3, int x4)const;
+    ConstVectorView vector_slice(int x1, int x2, int x3, int x4, int x5)const;
+    ConstVectorView vector_slice(
+        int x1, int x2, int x3, int x4, int x5, int x6)const;
+
+    VectorView vector_slice(const std::vector<int> &index);
+    VectorView vector_slice(int x1);
+    VectorView vector_slice(int x1, int x2);
+    VectorView vector_slice(int x1, int x2, int x3);
+    VectorView vector_slice(int x1, int x2, int x3, int x4);
+    VectorView vector_slice(int x1, int x2, int x3, int x4, int x5);
+    VectorView vector_slice(int x1, int x2, int x3, int x4, int x5, int x6);
 
     iterator begin(){return data_.begin();}
     iterator end(){return data_.end();}

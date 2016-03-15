@@ -27,47 +27,47 @@ namespace BOOM{
   class VectorModel
     : virtual public Model{
   public:
-    virtual double logp(const Vec &x)const =0;
-    VectorModel *clone()const=0;
-    virtual Vec sim()const=0;
+    virtual double logp(const Vector &x)const =0;
+    VectorModel *clone()const override =0;
+    virtual Vector sim()const=0;
   };
 
   class LocationScaleVectorModel
     : virtual public VectorModel{
   public:
-    virtual void set_mu(const Vec &)=0;
-    virtual void set_Sigma(const Spd &)=0;
-    virtual void set_siginv(const Spd &)=0;
-    virtual void set_S_Rchol(const Vec &sd, const Mat &L)=0;
+    virtual void set_mu(const Vector &)=0;
+    virtual void set_Sigma(const SpdMatrix &)=0;
+    virtual void set_siginv(const SpdMatrix &)=0;
+    virtual void set_S_Rchol(const Vector &sd, const Matrix &L)=0;
 
-    virtual const Vec & mu() const=0;
-    virtual const Spd & Sigma()const=0;
-    virtual const Spd & siginv() const=0;
+    virtual const Vector & mu() const=0;
+    virtual const SpdMatrix & Sigma()const=0;
+    virtual const SpdMatrix & siginv() const=0;
     virtual double ldsi()const=0;
   };
 
   class dVectorModel
     : virtual public VectorModel{
   public:
-    virtual double dlogp(const Vec &x, Vec &g)const =0;
-    dVectorModel *clone()const=0;
+    virtual double dlogp(const Vector &x, Vector &g)const =0;
+    dVectorModel *clone()const override =0;
   };
 
   class d2VectorModel
     : public dVectorModel{
   public:
-    virtual double d2logp(const Vec &x, Vec &g, Mat &h)const =0;
-    d2VectorModel *clone()const=0;
+    virtual double d2logp(const Vector &x, Vector &g, Matrix &h)const =0;
+    d2VectorModel *clone()const override =0;
   };
 
   class DiffVectorModel
     : public d2VectorModel{
   public:
-    virtual double logp(const Vec &x)const;
-    virtual double dlogp(const Vec &x, Vec &g)const;
-    virtual double d2logp(const Vec &x, Vec &g, Mat &h)const;
-    virtual double Logp(const Vec &x, Vec &g, Mat &h, uint nd)const=0;
-    DiffVectorModel *clone()const=0;
+    double logp(const Vector &x)const override;
+    double dlogp(const Vector &x, Vector &g)const override;
+    double d2logp(const Vector &x, Vector &g, Matrix &h)const override;
+    virtual double Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const=0;
+    DiffVectorModel *clone()const override =0;
   };
 
 

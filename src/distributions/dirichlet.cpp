@@ -33,7 +33,7 @@ namespace BOOM{
   using std::ostringstream;
   using std::endl;
 
-  inline void illegal_parameter_value(const Vec &n, const string &fname,
+  inline void illegal_parameter_value(const Vector &n, const string &fname,
 				      const string & prm_name){
     ostringstream msg;
     msg << "illegal_parameter_value in " << fname << endl
@@ -53,9 +53,9 @@ namespace BOOM{
     }
 
     template <class V>
-        Vec rdirichlet_impl(RNG & rng, const V & nu){
+        Vector rdirichlet_impl(RNG & rng, const V & nu){
       uint N = nu.size();
-      Vec x(N);
+      Vector x(N);
       if(N==0) return x;
       if(N==1){
         x=1.0;
@@ -111,37 +111,37 @@ namespace BOOM{
 
   }  // namespace
 
-  Vec rdirichlet_mt(RNG & rng, const Vec & nu){
+  Vector rdirichlet_mt(RNG & rng, const Vector & nu){
     return rdirichlet_impl(rng, nu);}
   //======================================================================
-  Vec rdirichlet(const Vec & nu){
+  Vector rdirichlet(const Vector & nu){
     return rdirichlet_impl(GlobalRng::rng, nu); }
   //======================================================================
-  Vec rdirichlet_mt(RNG & rng, const VectorView & nu){
+  Vector rdirichlet_mt(RNG & rng, const VectorView & nu){
     return rdirichlet_impl(rng, nu);}
   //======================================================================
-  Vec rdirichlet(const VectorView & nu){
+  Vector rdirichlet(const VectorView & nu){
     return rdirichlet_impl(GlobalRng::rng, nu); }
   //======================================================================
-  Vec rdirichlet_mt(RNG & rng, const ConstVectorView & nu){
+  Vector rdirichlet_mt(RNG & rng, const ConstVectorView & nu){
     return rdirichlet_impl(rng, nu);}
   //======================================================================
-  Vec rdirichlet(const ConstVectorView & nu){
+  Vector rdirichlet(const ConstVectorView & nu){
     return rdirichlet_impl(GlobalRng::rng, nu); }
   //======================================================================
 
-  double ddirichlet(const Vec & x, const Vec & nu, bool logscale){
+  double ddirichlet(const Vector & x, const Vector & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
-  double ddirichlet(const VectorView & x, const Vec & nu, bool logscale){
+  double ddirichlet(const VectorView & x, const Vector & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
-  double ddirichlet(const Vec & x, const VectorView & nu, bool logscale){
+  double ddirichlet(const Vector & x, const VectorView & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
   double ddirichlet(const VectorView & x, const VectorView & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
 
-  double ddirichlet(const ConstVectorView & x, const Vec & nu, bool logscale){
+  double ddirichlet(const ConstVectorView & x, const Vector & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
-  double ddirichlet(const Vec & x, const ConstVectorView & nu, bool logscale){
+  double ddirichlet(const Vector & x, const ConstVectorView & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
   double ddirichlet(const ConstVectorView & x, const ConstVectorView & nu, bool logscale){
     return ddirichlet_impl(x,nu,logscale);}
@@ -151,13 +151,13 @@ namespace BOOM{
     return ddirichlet_impl(x,nu,logscale);}
 
   //======================================================================
-  Vec mdirichlet( const Vec &nu){
+  Vector mdirichlet( const Vector &nu){
     /* returns x(lo..hi): mode of the dirichlet distribution with
        parameter nu(lo..hi) each nu(i)>0.  */
 
     double nc=0;
     uint n = nu.size();
-    Vec x(nu-1.0);
+    Vector x(nu-1.0);
     for(uint i=0; i<n; ++i){
       if(x[i]<0) x[i]=0;
       nc+=x[i];
@@ -166,8 +166,8 @@ namespace BOOM{
     return x;
   }
 
-  double dirichlet_loglike(const Vec &nu, Vec *g, Mat *h,
-			   const Vec & sumlogpi, double nobs){
+  double dirichlet_loglike(const Vector &nu, Vector *g, Matrix *h,
+			   const Vector & sumlogpi, double nobs){
     uint n = nu.size();
     double sum=0;
     bool flag=false;

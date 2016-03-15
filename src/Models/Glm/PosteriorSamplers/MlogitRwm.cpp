@@ -25,16 +25,19 @@ namespace BOOM{
   typedef MultinomialLogitModel MLM;
   typedef MlogitRwm MLR;
 
-  MLR::MlogitRwm(MLM *mlm, Ptr<MvnBase> pri)
-    : mlm_(mlm),
+  MLR::MlogitRwm(MLM *mlm, Ptr<MvnBase> pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mlm_(mlm),
       pri_(pri)
   {}
 
 
   MLR::MlogitRwm(MLM *mlm,
-		 const Vec &mu,
-		 const Spd & Ominv)
-    : mlm_(mlm),
+         const Vector &mu,
+         const SpdMatrix & Ominv,
+     RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mlm_(mlm),
       pri_(new MvnModel(mu, Ominv, true))
   {}
 
@@ -56,7 +59,7 @@ namespace BOOM{
     H*= -1;
     H += ivar;  // now H is inverse posterior variance
     bstar = rmvt_ivar(nonzero_beta, H, 3);
-    Spd Sigma = H.inv();
+    SpdMatrix Sigma = H.inv();
 
     double logp_new = mlm_->loglike(bstar)
         + dmvn(bstar, mu, ivar, 0, true);

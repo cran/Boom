@@ -23,104 +23,161 @@
 #include <LinAlg/Matrix.hpp>
 
 namespace BOOM{
-    using std::ostream;
-    using std::istream;
+  using std::ostream;
+  using std::istream;
 
-    class Vector;
-    class VectorView;
-    class SpdMatrix;
-    class DiagonalMatrix : public Matrix{
-      Matrix & rbind(const Matrix &){return *this;}
-      Matrix & rbind(const Vector &){return *this;}
-      Matrix & cbind(const Matrix &){return *this;}
-      Matrix & cbind(const Vector &){return *this;}
-      void set_row(uint , const Vector &){}
-      void set_row(uint , const double *){}
-      void set_row(uint , double ){}
-      void set_col(uint , const Vector &){}
-      void set_col(uint , const double *){}
-      void set_col(uint , double ){}
-      void set_rc(uint ,  double ){}  // sets row and column i to x
-      Matrix & add_outer(const Vector &, const Vector &, double){return *this;}
+  class Vector;
+  class VectorView;
+  class SpdMatrix;
+  // A DiagonalMatrix is logically a Matrix, but it has a different
+  // implementation.  The diagonal elements are stored in a Vector,
+  // and you cannot set off-diagonal elements.  The only way to set
+  // diagonal elements is to call the diag() function to access
+  // them, and then set them as a vector.
+  class DiagonalMatrix {
+   public:
+    DiagonalMatrix();
+    DiagonalMatrix(uint dimension, double diagonal_elements = 0.0);
+    explicit DiagonalMatrix(const Vector &diagonal_elements);
+    explicit DiagonalMatrix(const VectorView &diagonal_elements);
+    explicit DiagonalMatrix(const ConstVectorView &diagonal_elements);
+    explicit DiagonalMatrix(const std::vector<double> &diagonal_elements);
 
-      Matrix & operator+=(const Matrix &){return *this;}
-      Matrix & operator-=(const Matrix &){return *this;}
+    DiagonalMatrix & operator=(const double value);
 
-    public:
-      DiagonalMatrix();
-      DiagonalMatrix(uint n, double x=0.0);
-      template <class VEC>
-      explicit DiagonalMatrix(const VEC &v);
-      DiagonalMatrix(const DiagonalMatrix &);       // reference semantics
-      DiagonalMatrix(const Matrix &);                // value semantics
+    bool operator==(const DiagonalMatrix &)const;
 
-      DiagonalMatrix & operator=(const DiagonalMatrix &); // value semantics
-      DiagonalMatrix & operator=(const Matrix &);                   // value semantics
-      DiagonalMatrix & operator=(const double &);                   // value semantics
+    void swap(DiagonalMatrix &rhs);
 
-      bool operator==(const DiagonalMatrix &)const;
+    // fills entries with U(0,1) random variables.
+    void randomize();
 
-      void swap(DiagonalMatrix &rhs); // efficient.. swaps pointers and size info
-      virtual void randomize();  // fills entries with U(0,1) random variables.
+    // size queries
+    uint nrow() const {return diagonal_elements_.size();}
+    uint ncol() const {return diagonal_elements_.size();}
 
-      //---- change size and shape  -----
-      DiagonalMatrix & resize(uint n);
+    //---- change size and shape  -----
+    DiagonalMatrix & resize(uint n);
 
-      //-------- subscripting, range checking can be turned off
-      //-------- by defining the macro NDEBUG
-      double & operator[](uint n);               // returns diagonal element n
-      const double & operator[](uint n)const;
+    // Diagonal elements.  Returns a VectorView instead of a Vector &
+    // to prevent resizing.
+    VectorView diag();
+    const Vector & diag() const;
 
-      //------ linear algebra...
+    //====== Linear algebra.  Lots of special cases here. ==================
 
-      virtual Matrix & mult(const Matrix &B, Matrix &ans, double scal=1.0)const;  // this * B
-      virtual Matrix & Tmult(const Matrix &B, Matrix &ans, double scal=1.0)const; // this^T * B
-      virtual Matrix & multT(const Matrix &B, Matrix &ans, double scal=1.0)const; // this * B^T
+    //------- Matrix
+    // Fill 'ans' with scalar * this * B.
+    // Return ans.
+    Matrix & mult(const Matrix &B, Matrix &ans, double scalar = 1.0) const;
 
-      virtual Matrix & mult(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
-      virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
-      virtual Matrix & multT(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
-      // no BLAS support for this^T * S
-      // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans, double scal=1.0)const;
+    // Fill 'ans' with scalar * this^T * B.
+    // Return ans.
+    Matrix & Tmult(const Matrix &B, Matrix &ans, double scalar = 1.0)const;
 
-      virtual DiagonalMatrix & mult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
-      virtual DiagonalMatrix & Tmult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
-      virtual DiagonalMatrix & multT(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const;
+    // Fill 'ans' with scalar * this * B^T
+    // Return ans.
+    Matrix & multT(const Matrix &B, Matrix &ans, double scalar = 1.0)const;
 
-      virtual Vector & mult(const Vector &v, Vector &ans, double scal=1.0)const;   // this * v
-      virtual Vector & Tmult(const Vector &v, Vector &ans, double scal=1.0)const;  // this^T * v
+    //------- SpdMatrix
 
-      //      Matrix Id() const;
-      DiagonalMatrix t() const;
-      DiagonalMatrix  inv() const;
-      SpdMatrix inner() const;   // returns X^tX
+    Matrix & mult(const SpdMatrix &S, Matrix & ans, double scalar = 1.0)const;
 
-      Matrix solve(const Matrix &mat) const;
-      Vector solve(const Vector &v) const;
-      double det() const;
-      Vector singular_values()const; // sorted largest to smallest
-      uint rank(double prop=1e-12) const;
-      // 'rank' is the number of singular values at least 'prop' times
-      // the largest
-      Vector real_evals()const;
+    Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
+                   double scalar = 1.0)const;
 
-      //--------  Math -------------
-      DiagonalMatrix & operator+=(double x);
-      DiagonalMatrix & operator*=(double x);
-      DiagonalMatrix & operator-=(double x);
-      DiagonalMatrix & operator/=(double x);
+    Matrix & multT(const SpdMatrix &S, Matrix & ans,
+                   double scalar = 1.0)const;
 
-      double sum()const;
-      double prod()const;
+    // this * m * this
+    SpdMatrix sandwich(const SpdMatrix &m) const;
+    void sandwich_inplace(SpdMatrix &m) const;
 
-    };
+    // no BLAS support for this^T * S
+    // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
+    //     double scalar = 1.0)const;
 
-    template <class VEC>
-    DiagonalMatrix::DiagonalMatrix(const VEC &v)
-      : Matrix(v.size(), v.size())
-    {
-      std::copy(v.begin(), v.end(), dbegin());
-    }
+    //------- DiagonalMatrix
+    DiagonalMatrix & mult(const DiagonalMatrix &B,
+                          DiagonalMatrix &ans,
+                          double scalar = 1.0)const;
+    DiagonalMatrix & Tmult(const DiagonalMatrix &B,
+                           DiagonalMatrix &ans,
+                           double scalar = 1.0)const;
+    DiagonalMatrix & multT(const DiagonalMatrix &B,
+                           DiagonalMatrix &ans,
+                           double scalar = 1.0)const;
 
-}
+    //------- Vector
+    Vector & mult(const Vector &v, Vector &ans, double scalar = 1.0) const;
+    Vector & Tmult(const Vector &v, Vector &ans, double scalar = 1.0)const;
+
+    DiagonalMatrix t() const;
+    DiagonalMatrix inv() const;
+    DiagonalMatrix inner() const;   // returns X^tX
+
+    Matrix solve(const Matrix &mat) const;
+    Vector solve(const Vector &v) const;
+    double det() const;
+    Vector singular_values()const; // sorted largest to smallest
+    uint rank(double prop=1e-12) const;
+    // 'rank' is the number of singular values at least 'prop' times
+    // the largest
+    Vector real_evals()const;
+
+    //--------  Math -------------
+    DiagonalMatrix & operator+=(double x);
+    DiagonalMatrix & operator+=(const DiagonalMatrix &m);
+
+    DiagonalMatrix & operator-=(double x);
+    DiagonalMatrix & operator-=(const DiagonalMatrix &m);
+
+    DiagonalMatrix & operator*=(double x);
+    DiagonalMatrix & operator*=(const DiagonalMatrix &m);
+
+    DiagonalMatrix & operator/=(double x);
+    DiagonalMatrix & operator/=(const DiagonalMatrix &m);
+
+    double sum()const;
+    double prod()const;
+
+    ostream & print(ostream &out) const;
+
+   private:
+    BOOM::Vector diagonal_elements_;
+  };
+
+  inline ostream & operator<<(ostream &out, const DiagonalMatrix &m) {
+    return m.print(out);
+  }
+
+  //--------------- Math operators --------------------
+  DiagonalMatrix operator-(const DiagonalMatrix &d);
+
+  DiagonalMatrix operator+(const DiagonalMatrix &m1, const DiagonalMatrix &m2);
+  DiagonalMatrix operator+(const DiagonalMatrix &d, double x);
+  DiagonalMatrix operator+(double x, const DiagonalMatrix &d);
+  Matrix operator+(const DiagonalMatrix &m1, const Matrix &m2);
+  Matrix operator+(const Matrix &m1, const DiagonalMatrix &m2);
+
+  DiagonalMatrix operator-(const DiagonalMatrix &m1, const DiagonalMatrix &m2);
+  DiagonalMatrix operator-(double x, const DiagonalMatrix &d);
+  DiagonalMatrix operator-(const DiagonalMatrix &d, double x);
+  Matrix operator-(const DiagonalMatrix &m1, const Matrix &m2);
+  Matrix operator-(const Matrix &m1, const DiagonalMatrix &m2);
+
+  DiagonalMatrix operator*(const DiagonalMatrix &m1, const DiagonalMatrix &m2);
+  DiagonalMatrix operator*(const DiagonalMatrix &d, double x);
+  DiagonalMatrix operator*(double x, const DiagonalMatrix &d);
+  Matrix operator*(const DiagonalMatrix &m1, const Matrix &m2);
+  Matrix operator*(const Matrix &m1, const DiagonalMatrix &m2);
+  Matrix operator*(const DiagonalMatrix &m1, const SpdMatrix &m2);
+  Matrix operator*(const SpdMatrix &m1, const DiagonalMatrix &m2);
+
+  DiagonalMatrix operator/(const DiagonalMatrix &m1, const DiagonalMatrix &m2);
+  DiagonalMatrix operator/(const DiagonalMatrix &d, double x);
+  DiagonalMatrix operator/(double x, const DiagonalMatrix &d);
+
+}  // namespace BOOM
+
 #endif // BOOM_NEWLA_MATRIX_HPP

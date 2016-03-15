@@ -28,10 +28,10 @@ namespace BOOM{
   namespace IRT{
 
 
-    typedef std::vector<string> StringVec;
+    typedef std::vector<string> StringVector;
 
     inline Ptr<CatKey> make_resp(uint Mscore){
-      StringVec ans(Mscore+1);
+      StringVector ans(Mscore+1);
       for(uint i=0; i<=Mscore; ++i){
 	ostringstream s;
 	s << i;
@@ -83,14 +83,14 @@ namespace BOOM{
       out << endl;
     }
 
-    void Item::increment_hist(Ptr<Subject> s, Vec &ans)const{
+    void Item::increment_hist(Ptr<Subject> s, Vector &ans)const{
       Response r = s->response(const_cast<Item*>(this));
       ++ans[r->value()];
     }
 
-    Vec Item::response_histogram()const{
+    Vector Item::response_histogram()const{
       // 0.. maxscore are valid indices
-      Vec ans(maxscore()+1, 0.0);
+      Vector ans(maxscore()+1, 0.0);
       typedef SubjectSet::const_iterator It;
 
       for(It it = subjects().begin();
@@ -157,16 +157,16 @@ namespace BOOM{
       const Ptr<Item> that(const_cast<Item *>(this));
       return s->response(that);}
 
-    void Item::set_response_names(const StringVec &levels){
+    void Item::set_response_names(const StringVector &levels){
       possible_responses_->relabel(levels);}
 
-    const StringVec & Item::possible_responses()const{
+    const StringVector & Item::possible_responses()const{
       return possible_responses_->labels(); }
 
 
-    Response Item::simulate_response(const Vec &Theta)const{
+    Response Item::simulate_response(const Vector &Theta)const{
       uint M = maxscore();
-      Vec probs(M+1);  // 0.. max score
+      Vector probs(M+1);  // 0.. max score
       for(uint m=0; m<=M; ++m) probs[m] = response_prob(m, Theta, false);
       uint m = rmulti(probs);
       return make_response(m);
@@ -176,7 +176,7 @@ namespace BOOM{
       return pdf(DAT(dp), logsc); }
 
     double Item::pdf(Ptr<Subject> s, bool logsc)const{
-      const Vec &Theta(s->Theta());
+      const Vector &Theta(s->Theta());
       Ptr<Item> it(const_cast<Item *>(this));
       Response r = s->response(it);
       return response_prob(r->value(), Theta, logsc);   }

@@ -31,18 +31,18 @@ namespace BOOM{
     public:
       // constrains the first and next_to_last elements of b so that (M+1)*b[0] = b[M]
       // This class is used when PartialCreditModel is kept identified.
-      virtual bool check(const Vec &b)const;
-      virtual void impose(Vec &b)const;
-      virtual Vec expand(const Vec &b_min)const;   // adds in b0
-      virtual Vec reduce(const Vec &b_full)const;  // omits b0
+      bool check(const Vector &b)const override;
+      void impose(Vector &b)const override;
+      Vector expand(const Vector &b_min)const override;   // adds in b0
+      Vector reduce(const Vector &b_full)const override;  // omits b0
     };
 
     class PcrDConstraint : public VectorConstraint{
     public:
-      virtual bool check(const Vec &d)const;
-      virtual void impose(Vec &d)const;
-      virtual Vec expand(const Vec &d_min)const;
-      virtual Vec reduce(const Vec &d_full)const;
+      bool check(const Vector &d)const override;
+      void impose(Vector &d)const override;
+      Vector expand(const Vector &d_min)const override;
+      Vector reduce(const Vector &d_full)const override;
     };
 
     class PartialCreditModel
@@ -75,10 +75,10 @@ namespace BOOM{
       PartialCreditModel(const string & Id, uint Mscore, uint which_sub,
 			 uint Nscales, const string &Name="", bool id_d0=true);
       PartialCreditModel(const string & Id, uint Mscore, uint which_sub,
-			 uint Nscales, double a, double b, const Vec &d,
+			 uint Nscales, double a, double b, const Vector &d,
 			 const string &Name="", bool id_d0=true);
       PartialCreditModel(const PartialCreditModel &rhs);
-      PartialCreditModel * clone()const;
+      PartialCreditModel * clone()const override;
 
       uint which_subscale()const;
 
@@ -90,16 +90,16 @@ namespace BOOM{
       const Ptr<UnivParams> B_prm(bool check=true)const;
       const Ptr<ConstrainedVectorParams> D_prm(bool check=true)const;
       const Ptr<ConstrainedVectorParams> Beta_prm(bool check=true)const;
-      virtual ParamVec t();
-      virtual const ParamVec t()const;
+      ParamVector t() override;
+      const ParamVector t()const override;
 
       double a()const;
       double b()const;
       double d(uint m)const;
-      const Vec & d()const;
+      const Vector & d()const;
       void set_a(double a);
       void set_b(double b);
-      void set_d(const Vec &d);
+      void set_d(const Vector &d);
 
       void fix_d0();
       void free_d0();
@@ -108,29 +108,29 @@ namespace BOOM{
       void initialize_params();
       void sync_params()const;
 
-      virtual const Vec & beta()const;  // see note above for dimension
-      void set_beta(const Vec &b);
+      const Vector & beta()const override;  // see note above for dimension
+      void set_beta(const Vector &b);
 
-      const Vec & fill_eta(const Vec &Theta)const;  // 0.. maxscore()
-      const Mat & X(const Vec &Theta)const;
-      const Mat & X(double theta)const;
+      const Vector & fill_eta(const Vector &Theta)const;  // 0.. maxscore()
+      const Matrix & X(const Vector &Theta)const;
+      const Matrix & X(double theta)const;
 
-      virtual double
-      response_prob(Response r, const Vec &Theta, bool logsc)const;
-      virtual double
-      response_prob(uint r, const Vec &Theta, bool logsc)const;
+      double
+      response_prob(Response r, const Vector &Theta, bool logsc)const override;
+      double
+      response_prob(uint r, const Vector &Theta, bool logsc)const override;
 
       std::pair<double,double> theta_moments()const;
       // mean and variance of theta's for subjects that were assigned
       // this item
 
-      virtual ostream &
-      display_item_params(ostream &, bool decorate=true)const;
+      ostream &
+      display_item_params(ostream &, bool decorate=true)const override;
 
     private:
       // workspace for probability calculations
-      mutable Vec b_, eta_;
-      mutable Mat X_;
+      mutable Vector b_, eta_;
+      mutable Matrix X_;
       bool d0_is_fixed;
 
       // pointers and flags for keeping track of alternate parameterizations

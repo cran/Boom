@@ -26,15 +26,19 @@ namespace BOOM{
 
   class PoissonGammaSampler : public PosteriorSampler{
   public:
-    PoissonGammaSampler(PoissonModel *p, Ptr<GammaModel> g);
-    virtual void draw();
-    virtual double logpri()const;
+    PoissonGammaSampler(PoissonModel *p, Ptr<GammaModel> g,
+                        RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
     double alpha()const;
     double beta()const;
-    void find_posterior_mode();
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
   private:
     PoissonModel *pois;
     Ptr<GammaModel> gam;
   };
-}
+}  // namespace BOOM
 #endif // BOOM_POISSON_GAMMA_METHOD_HPP

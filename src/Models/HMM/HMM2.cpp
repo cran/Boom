@@ -80,7 +80,7 @@ namespace BOOM{
   void HMM::randomly_assign_data(){
     clear_client_data();
     uint S = state_space_size();
-    Vec prob(S, 1.0/S);
+    Vector prob(S, 1.0/S);
     for(uint s=0; s<nseries(); ++s){
       const DataSeriesType & ts(dat(s));
       uint n = ts.size();
@@ -92,19 +92,19 @@ namespace BOOM{
   void HMM::initialize_params(){
     randomly_assign_data();
     uint S = state_space_size();
-    Mat Q(S,S, 1.0/S);
+    Matrix Q(S,S, 1.0/S);
     set_Q(Q);
     for(uint s=0; s<S; ++s) mix_[s]->sample_posterior();
   }
 
-  const Vec & HMM::pi0()const{return mark_->pi0();}
-  const Mat & HMM::Q()const{return mark_->Q();}
+  const Vector & HMM::pi0()const{return mark_->pi0();}
+  const Matrix & HMM::Q()const{return mark_->Q();}
 
-  void HMM::set_pi0(const Vec &pi0){ mark_->set_pi0(pi0);}
-  void HMM::set_Q(const Mat &Q){mark_->set_Q(Q);}
+  void HMM::set_pi0(const Vector &pi0){ mark_->set_pi0(pi0);}
+  void HMM::set_Q(const Matrix &Q){mark_->set_Q(Q);}
   void HMM::set_filter(Ptr<HmmFilter> f){filter_ = f;}
 
-  void HMM::fix_pi0(const Vec &Pi0){ mark_->fix_pi0(Pi0); }
+  void HMM::fix_pi0(const Vector &Pi0){ mark_->fix_pi0(Pi0); }
   void HMM::fix_pi0_stationary(){mark_->fix_pi0_stationary();}
   void HMM::fix_pi0_uniform(){mark_->fix_pi0_uniform();}
   void HMM::free_pi0(){mark_->free_pi0();}
@@ -128,7 +128,7 @@ namespace BOOM{
   }
 
   void HMM::clear_prob_hist(){
-    for(std::map<Ptr<Data>, Vec >::iterator it = prob_hist_.begin();
+    for(std::map<Ptr<Data>, Vector >::iterator it = prob_hist_.begin();
         it!=prob_hist_.end(); ++it){
       it->second = 0.0;}}
 
@@ -156,10 +156,10 @@ namespace BOOM{
     set_filter(filter);
   }
 
-  Mat HMM::report_state_probs(const DataSeriesType &ts)const{
+  Matrix HMM::report_state_probs(const DataSeriesType &ts)const{
     int n = ts.size();
     int S = state_space_size();
-    Mat ans(n, S);
+    Matrix ans(n, S);
     Ptr<HmmSavePiFilter> filter(filter_.dcast<HmmSavePiFilter>());
     if(!filter){
       report_error("filter could not be cast to SavePiFilter in "
@@ -232,7 +232,7 @@ namespace BOOM{
     randomly_assign_data();
     uint S = state_space_size();
     for(uint h=0; h<S; ++h) mix_[h]->mle();
-    Mat Q(S,S,1.0/S);
+    Matrix Q(S,S,1.0/S);
     set_Q(Q);
   }
 

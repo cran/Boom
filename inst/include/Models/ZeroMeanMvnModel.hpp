@@ -21,8 +21,7 @@
 #include <Models/MvnBase.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
-#include <Models/PosteriorSamplers/ZeroMeanMvnConjSampler.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 
 namespace BOOM{
 
@@ -33,26 +32,26 @@ namespace BOOM{
         public LoglikeModel,
         public ParamPolicy_1<SpdParams>,
         public SufstatDataPolicy<VectorData, MvnSuf>,
-        public ConjugatePriorPolicy<ZeroMeanMvnConjSampler>
+        public PriorPolicy
   {
    public:
     ZeroMeanMvnModel(int dim);
-    virtual ZeroMeanMvnModel * clone()const;
-    virtual const Vec & mu() const;
-    virtual const Spd & Sigma()const;
-    virtual void set_Sigma(const Spd &);
-    virtual const Spd & siginv() const;
-    virtual void set_siginv(const Spd &);
-    virtual double ldsi()const;
+    ZeroMeanMvnModel * clone() const override;
+    const Vector & mu() const override;
+    const SpdMatrix & Sigma()const override;
+    virtual void set_Sigma(const SpdMatrix &);
+    const SpdMatrix & siginv() const override;
+    virtual void set_siginv(const SpdMatrix &);
+    double ldsi()const override;
 
-    virtual void mle();
-    virtual double loglike(const Vector &siginv_triangle)const;
+    void mle() override;
+    double loglike(const Vector &siginv_triangle)const override;
     virtual double pdf(Ptr<Data>, bool logscale)const;
 
     Ptr<SpdParams> Sigma_prm();
     const Ptr<SpdParams> Sigma_prm()const;
    private:
-    Vec mu_;
+    Vector mu_;
   };
-}
+}  // namespace BOOM
 #endif// BOOM_ZERO_MEAN_MVN_MODEL_HPP_

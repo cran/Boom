@@ -32,10 +32,11 @@ namespace BOOM{
 
   public:
     SharedSigsqSampler(const std::vector<GaussianModelBase*> &models,
-		       Ptr<UnivParams> Sigsq,
-                       Ptr<GammaModelBase> pri);
-    void draw();
-    double logpri()const;
+           Ptr<UnivParams> Sigsq,
+           Ptr<GammaModelBase> pri,
+           RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
   private:
     std::vector<GaussianModelBase*> models_;
     Ptr<UnivParams> sigsq_;

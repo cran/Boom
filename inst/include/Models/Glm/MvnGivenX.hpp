@@ -68,29 +68,29 @@ namespace BOOM{
       public PriorPolicy
   {
   public:
-    MvnGivenX(const Vec &Mu, double kappa, double diag_wgt=0);
+    MvnGivenX(const Vector &Mu, double kappa, double diag_wgt=0);
 
     MvnGivenX(Ptr<VectorParams> Mu,
 	      Ptr<UnivParams> kappa,
 	      double diag_wgt=0);
     MvnGivenX(Ptr<VectorParams> Mu,
 	      Ptr<UnivParams> kappa,
-	      const Vec & Lambda,
+	      const Vector & Lambda,
 	      double diag_wgt=0);
     MvnGivenX(const MvnGivenX &rhs);
 
-    virtual MvnGivenX * clone()const;
+    MvnGivenX * clone() const override;
     virtual void initialize_params();
-    virtual void add_x(const Vec &x, double w=1.0);
+    virtual void add_x(const Vector &x, double w=1.0);
     virtual void clear_xtwx();
-    virtual const Spd & xtwx()const;
+    virtual const SpdMatrix & xtwx()const;
 
-    uint dim()const;
-    virtual const Vec & mu()const;
+    uint dim()const override;
+    const Vector & mu()const override;
     double kappa()const;
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv()const;
-    virtual double ldsi()const;
+    const SpdMatrix & Sigma()const override;
+    const SpdMatrix & siginv()const override;
+    double ldsi()const override;
 
     const Ptr<VectorParams> Mu_prm()const;
     const Ptr<UnivParams> Kappa_prm()const;
@@ -98,15 +98,15 @@ namespace BOOM{
     Ptr<UnivParams> Kappa_prm();
 
     double diagonal_weight()const;
-    virtual Vec sim()const;
+    Vector sim()const override;
   private:
     virtual void set_ivar()const;  // logical constness
 
     double diagonal_weight_;
-    Vec Lambda_;                // prior if no X's.  may be unallocated
+    Vector Lambda_;                // prior if no X's.  may be unallocated
 
     mutable Ptr<SpdParams> ivar_;
-    Spd xtwx_;
+    SpdMatrix xtwx_;
     double sumw_;
     mutable bool current_;
   };
@@ -143,14 +143,14 @@ namespace BOOM{
         public PriorPolicy
   {
   public:
-    MvnGivenXMultinomialLogit(const Vec & beta_prior_mean,
+    MvnGivenXMultinomialLogit(const Vector & beta_prior_mean,
                               double prior_sample_size,
                               double diagonal_weight=0);
     MvnGivenXMultinomialLogit(Ptr<VectorParams> beta_prior_mean,
                               Ptr<UnivParams> prior_sample_size,
                               double diagonal_weight=0);
     MvnGivenXMultinomialLogit(const MvnGivenXMultinomialLogit &rhs);
-    virtual MvnGivenXMultinomialLogit * clone()const;
+    MvnGivenXMultinomialLogit * clone() const override;
 
     // Args:
     //   subject_characeristics: An n x p array with rows
@@ -161,31 +161,31 @@ namespace BOOM{
     //   number_of_choices: The number of choices available for the
     //     response.  If choice_characteristics is provided, this
     //     argument must match.
-    void set_x(const Mat & subject_characeristics,
+    void set_x(const Matrix & subject_characeristics,
                const std::vector<Mat> & choice_characteristics,
                int number_of_choices);
 
     Ptr<VectorParams> Mu_prm();
     const Ptr<VectorParams> Mu_prm()const;
-    void set_mu(const Vec &mu);
+    void set_mu(const Vector &mu);
 
     Ptr<UnivParams> Kappa_prm();
     const Ptr<UnivParams> Kappa_prm()const;
     double kappa()const;
     void set_kappa(double kappa);
 
-    virtual const Vector & mu()const;
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv()const;
-    virtual double ldsi()const;
+    const Vector & mu()const override;
+    const SpdMatrix & Sigma()const override;
+    const SpdMatrix & siginv()const override;
+    double ldsi()const override;
 
   private:
     double diagonal_weight_;
 
-    Spd scaled_subject_xtx_;
-    Spd scaled_choice_xtx_;
+    SpdMatrix scaled_subject_xtx_;
+    SpdMatrix scaled_choice_xtx_;
 
-    mutable Spd overall_xtx_;
+    mutable SpdMatrix overall_xtx_;
     mutable bool current_;
     mutable Ptr<SpdData> Sigma_storage_;
 

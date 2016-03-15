@@ -38,7 +38,7 @@ namespace BOOM{
     //   sigma_est: An estimate of the standard deviation being
     //     modeled.  Note that the argument is sigma, not sigma^2.
     ChisqModel(double df = 1.0, double sigma_est = 1.0);
-    ChisqModel * clone()const;
+    ChisqModel * clone()const override;
 
     // Df_prm holds "sample size".
     Ptr<UnivParams> Df_prm();
@@ -46,15 +46,21 @@ namespace BOOM{
     Ptr<UnivParams> Sigsq_prm();
 
     double df()const;
+    void set_df(double df);
+
     double sigma()const;
+    void set_sigma_estimate(double sigma_estimate);
+
     double sigsq()const;
+    void set_sigsq_estimate(double sigsq_estimate);
+
     double sum_of_squares()const;
 
-    virtual double alpha()const;
-    virtual double beta()const;
-    virtual double Loglike(const Vector &nu_sigsq,
-                           Vector &g, Matrix &h, uint nd)const;
-    virtual void mle();
+    double alpha()const override;
+    double beta()const override;
+    double Loglike(const Vector &nu_sigsq,
+                           Vector &g, Matrix &h, uint nd)const override;
+    void mle() override;
   };
 }
 #endif// BOOM_CHI_SQUARE_MODEL_HPP

@@ -37,14 +37,14 @@ namespace BOOM{
       n_(0)
   {}
 
-  NS::NeMvRegSuf(const Mat &X, const Mat &Y)
+  NS::NeMvRegSuf(const Matrix &X, const Matrix &Y)
     : yty_(Y.ncol()),
       xtx_(X.ncol()),
       xty_(X.ncol(), Y.ncol()),
       n_(0)
   {
     QR qr(X);
-    Mat R = qr.getR();
+    Matrix R = qr.getR();
     xtx_.add_inner(R);
 
     QR qry(Y);
@@ -68,14 +68,14 @@ namespace BOOM{
   NS * NS::clone()const{return new NS(*this);}
 
   void NS::Update(const MvRegData &d){
-    const Vec &y(d.y());
-    const Vec &x(d.x());
+    const Vector &y(d.y());
+    const Vector &x(d.x());
     double w = d.weight();
     update_raw_data(y,x,w);
   }
 
 
-  void NS::update_raw_data(const Vec &y, const Vec &x, double w){
+  void NS::update_raw_data(const Vector &y, const Vector &x, double w){
     ++n_;
     sumw_+=w;
     xtx_.add_outer(x,w);
@@ -83,11 +83,11 @@ namespace BOOM{
     yty_.add_outer(y,w);
   }
 
-  Mat NS::beta_hat()const{ return xtx_.solve(xty_);}
+  Matrix NS::beta_hat()const{ return xtx_.solve(xty_);}
 
 
-  Spd NS::SSE(const Mat &B)const{
-    Spd ans = yty();
+  SpdMatrix NS::SSE(const Matrix &B)const{
+    SpdMatrix ans = yty();
     ans.add_inner2(B, xty(), -1);
     ans+= sandwich(B.t(), xtx());
     return ans;
@@ -100,9 +100,9 @@ namespace BOOM{
     n_=0;
   }
 
-  const Spd & NS::yty()const{return yty_;}
-  const Spd & NS::xtx()const{return xtx_;}
-  const Mat & NS::xty()const{return xty_;}
+  const SpdMatrix & NS::yty()const{return yty_;}
+  const SpdMatrix & NS::xtx()const{return xtx_;}
+  const Matrix & NS::xty()const{return xty_;}
   double NS::n()const{return n_;}
   double NS::sumw()const{return sumw_;}
 
@@ -124,10 +124,10 @@ namespace BOOM{
     n_ +=   s.n_;
   }
 
-  Vec NS::vectorize(bool minimal)const{
-    Vec ans = yty_.vectorize(minimal);
+  Vector NS::vectorize(bool minimal)const{
+    Vector ans = yty_.vectorize(minimal);
     ans.concat(xtx_.vectorize(minimal));
-    Vec tmp(xty_.begin(), xty_.end());
+    Vector tmp(xty_.begin(), xty_.end());
     ans.concat(tmp);
     ans.push_back(sumw_);
     ans.push_back(n_);
@@ -137,21 +137,21 @@ namespace BOOM{
   NeMvRegSuf * NS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec::const_iterator NS::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator NS::unvectorize(Vector::const_iterator &v,
                                       bool minimal){
     yty_.unvectorize(v,minimal);
     xtx_.unvectorize(v,minimal);
     uint xdim = xtx_.nrow();
     uint ydim = yty_.nrow();
-    Mat tmp(v, v+xdim*ydim, xdim, ydim);
+    Matrix tmp(v, v+xdim*ydim, xdim, ydim);
     v+=xdim*ydim;
     sumw_ = *v; ++v;
     n_    = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator NS::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator NS::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -165,7 +165,7 @@ namespace BOOM{
   //======================================================================
 
   typedef QrMvRegSuf QS;
-  QS::QrMvRegSuf(const Mat &X, const Mat &Y, MvReg *Owner)
+  QS::QrMvRegSuf(const Matrix &X, const Matrix &Y, MvReg *Owner)
     : qr(X),
       owner(Owner),
       current(false),
@@ -178,7 +178,7 @@ namespace BOOM{
     current=true;
   }
 
-  QS::QrMvRegSuf(const Mat &X, const Mat &Y, const Vec &W, MvReg *Owner)
+  QS::QrMvRegSuf(const Matrix &X, const Matrix &Y, const Vector &W, MvReg *Owner)
     : qr(X),
       owner(Owner),
       current(false),
@@ -192,31 +192,31 @@ namespace BOOM{
   }
 
   void QS::combine(Ptr<MvRegSuf>){
-    throw_exception<std::runtime_error>("cannot combine QrMvRegSuf");
+    report_error("cannot combine QrMvRegSuf");
   }
 
   void QS::combine(const MvRegSuf &){
-    throw_exception<std::runtime_error>("cannot combine QrMvRegSuf");
+    report_error("cannot combine QrMvRegSuf");
   }
 
   QrMvRegSuf * QS::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
 
-  Vec QS::vectorize(bool)const{
-    throw_exception<std::runtime_error>("cannot vectorize QrMvRegSuf");
-    return Vec(1,0.0);
+  Vector QS::vectorize(bool)const{
+    report_error("cannot vectorize QrMvRegSuf");
+    return Vector(1,0.0);
   }
 
-  Vec::const_iterator QS::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator QS::unvectorize(Vector::const_iterator &v,
                                       bool){
-    throw_exception<std::runtime_error>("cannot unvectorize QrMvRegSuf");
+    report_error("cannot unvectorize QrMvRegSuf");
     return v;
   }
 
-  Vec::const_iterator QS::unvectorize(const Vec &v, bool minimal){
-    throw_exception<std::runtime_error>("cannot unvectorize QrMvRegSuf");
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator QS::unvectorize(const Vector &v, bool minimal){
+    report_error("cannot unvectorize QrMvRegSuf");
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -229,15 +229,15 @@ namespace BOOM{
 
   QS * QS::clone()const{return new QS(*this);}
 
-  const Spd & QS::xtx()const{
+  const SpdMatrix & QS::xtx()const{
     if(!current) refresh();
     return xtx_;
   }
-  const Spd & QS::yty()const{
+  const SpdMatrix & QS::yty()const{
     if(!current) refresh();
     return yty_;
   }
-  const Mat & QS::xty()const{
+  const Matrix & QS::xty()const{
     if(!current) refresh();
     return xty_;
   }
@@ -249,10 +249,10 @@ namespace BOOM{
     return sumw_;}
 
 
-  void QS::refresh(const Mat &X, const Mat &Y)const{
+  void QS::refresh(const Matrix &X, const Matrix &Y)const{
     y_ = Y;
     qr.decompose(X);
-    Mat R(qr.getR());
+    Matrix R(qr.getR());
     xtx_ = 0;
     xtx_.add_inner(R);
 
@@ -267,9 +267,9 @@ namespace BOOM{
     current = true;
   }
 
-  void QS::refresh(const Mat &X, const Mat &Y, const Vec &w )const{
+  void QS::refresh(const Matrix &X, const Matrix &Y, const Vector &w )const{
     y_ = Y;
-    Mat x_(X);
+    Matrix x_(X);
     uint nr = X.nrow();
     sumw_=0;
     for(uint i=0; i<nr; ++i){
@@ -279,7 +279,7 @@ namespace BOOM{
       x_.row(i) *= rootw;
     }
     qr.decompose(x_);
-    Mat R(qr.getR());
+    Matrix R(qr.getR());
     xtx_ = 0;
     xtx_.add_inner(R);
 
@@ -297,14 +297,14 @@ namespace BOOM{
   void QS::refresh(const std::vector<Ptr<MvRegData> > &dv)const{
     Ptr<MvRegData> dp = dv[0];
     uint n = dv.size();
-    const Vec &x0(dp->x());
-    const Vec &y0(dp->y());
+    const Vector &x0(dp->x());
+    const Vector &y0(dp->y());
 
     uint nx = x0.size();
     uint ny = y0.size();
     sumw_ = 0;
-    Mat X(n, nx);
-    Mat Y(n, ny);
+    Matrix X(n, nx);
+    Matrix Y(n, ny);
     for(uint i=0; i<n; ++i){
       dp = dv[i];
       double w = dp->weight();
@@ -339,19 +339,19 @@ namespace BOOM{
   }
 
 
-  Mat QS::beta_hat()const{
-    Mat ans = qr.getQ().Tmult(y_);
+  Matrix QS::beta_hat()const{
+    Matrix ans = qr.getQ().Tmult(y_);
     ans = qr.Rsolve(ans);
     return ans;
   }
 
-  Spd QS::SSE(const Mat &B)const{
-    Mat RB = qr.getR() * B;
-    Spd ans = yty();
+  SpdMatrix QS::SSE(const Matrix &B)const{
+    Matrix RB = qr.getR() * B;
+    SpdMatrix ans = yty();
     ans.add_inner(RB);
 
-    Mat Qty = qr.getQ().Tmult(y_);
-    Mat tmp = RB.Tmult(Qty);
+    Matrix Qty = qr.getQ().Tmult(y_);
+    Matrix tmp = RB.Tmult(Qty);
     ans.add_inner2(RB, Qty, -1.0);
 
     return ans;
@@ -366,7 +366,7 @@ namespace BOOM{
   {
   }
 
-  MvReg::MvReg(const Mat &X, const Mat &Y)
+  MvReg::MvReg(const Matrix &X, const Matrix &Y)
     : ParamPolicy(),
       DataPolicy(new QrMvRegSuf(X, Y, this)),
       PriorPolicy(),
@@ -378,7 +378,7 @@ namespace BOOM{
     mle();
   }
 
-  MvReg::MvReg(const Mat &B, const Spd & V)
+  MvReg::MvReg(const Matrix &B, const SpdMatrix & V)
     : ParamPolicy(new MatrixParams(B), new SpdParams(V)),
       DataPolicy(new NeMvRegSuf(B.nrow(), B.ncol())),
       PriorPolicy(),
@@ -400,9 +400,9 @@ namespace BOOM{
   uint MvReg::xdim()const{return Beta().nrow();}
   uint MvReg::ydim()const{return Beta().ncol();}
 
-  const Mat & MvReg::Beta()const{ return Beta_prm()->value(); }
-  const Spd & MvReg::Sigma()const{ return Sigma_prm()->var();}
-  const Spd & MvReg::Siginv()const{return Sigma_prm()->ivar();}
+  const Matrix & MvReg::Beta()const{ return Beta_prm()->value(); }
+  const SpdMatrix & MvReg::Sigma()const{ return Sigma_prm()->var();}
+  const SpdMatrix & MvReg::Siginv()const{return Sigma_prm()->ivar();}
   double MvReg::ldsi()const{return Sigma_prm()->ldsi();}
 
   Ptr<MatrixParams> MvReg::Beta_prm(){return prm1();}
@@ -410,14 +410,14 @@ namespace BOOM{
   Ptr<SpdParams> MvReg::Sigma_prm(){return prm2();}
   const Ptr<SpdParams> MvReg::Sigma_prm()const{return prm2();}
 
-  void MvReg::set_Beta(const Mat &B){
+  void MvReg::set_Beta(const Matrix &B){
     Beta_prm()->set(B);
   }
 
-  void MvReg::set_Sigma(const Spd &V){
+  void MvReg::set_Sigma(const SpdMatrix &V){
     Sigma_prm()->set_var(V); }
 
-  void MvReg::set_Siginv(const Spd &iV){
+  void MvReg::set_Siginv(const SpdMatrix &iV){
     Sigma_prm()->set_ivar(iV); }
 
   void MvReg::mle(){
@@ -435,9 +435,9 @@ namespace BOOM{
     SpdMatrix siginv(ydim());
     siginv.unvectorize(it, true);
 
-    const Spd & yty(suf()->yty());
-    const Mat & xty(suf()->xty());
-    const Spd & xtx(suf()->xtx());
+    const SpdMatrix & yty(suf()->yty());
+    const Matrix & xty(suf()->xty());
+    const SpdMatrix & xtx(suf()->xtx());
 
     double qform = traceAB(siginv, yty) - 2* traceAB(xty.multT(Beta), siginv)
       + traceAB(sandwich(Beta, siginv), xtx);
@@ -450,26 +450,26 @@ namespace BOOM{
 
   double MvReg::pdf(dPtr dptr, bool logscale)const{
     Ptr<MvRegData> dp = DAT(dptr);
-    Vec mu = predict(dp->x());
+    Vector mu = predict(dp->x());
     return dmvn(dp->y(), mu, Siginv(), ldsi(), logscale);
   }
 
-  Vec MvReg::predict(const Vec &x)const{ return x* Beta(); }
+  Vector MvReg::predict(const Vector &x)const{ return x* Beta(); }
 
   MvRegData * MvReg::simdat()const{
-    Vec x = simulate_fake_x();
+    Vector x = simulate_fake_x();
     return simdat(x);
   }
 
-  MvRegData * MvReg::simdat(const Vec &x)const{
-    Vec mu = predict(x);
-    Vec y = rmvn(mu, Sigma());
+  MvRegData * MvReg::simdat(const Vector &x)const{
+    Vector mu = predict(x);
+    Vector y = rmvn(mu, Sigma());
     return new MvRegData(y,x);
   }
 
-  Vec MvReg::simulate_fake_x()const{
+  Vector MvReg::simulate_fake_x()const{
     uint p = xdim();
-    Vec x(p, 1.0);
+    Vector x(p, 1.0);
     for(uint i=1; i<p; ++i) x[i]=rnorm();
     return x;
   }

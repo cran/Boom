@@ -24,9 +24,10 @@ namespace BOOM{
   typedef ExponentialGammaSampler EGS;
 
   EGS::ExponentialGammaSampler(ExponentialModel *Mod,
-			    Ptr<GammaModel> Pri)
-      : mod(Mod),
-	pri(Pri)
+                Ptr<GammaModel> Pri, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+  mod(Mod),
+    pri(Pri)
     {}
 
 
@@ -36,7 +37,7 @@ namespace BOOM{
     mod->set_lam(rgamma_mt(rng(), a,b));
   }
 
-  void EGS::find_posterior_mode(){
+  void EGS::find_posterior_mode(double) {
     double a = mod->suf()->n() + pri->alpha();
     double b = mod->suf()->sum() + pri->beta();
     double mode = (a-1)/b;

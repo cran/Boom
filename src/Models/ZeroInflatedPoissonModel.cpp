@@ -78,25 +78,25 @@ namespace BOOM {
   void ZeroInflatedPoissonSuf::combine(Ptr<ZeroInflatedPoissonSuf> rhs){
     combine(*rhs); }
 
-  Vec ZeroInflatedPoissonSuf::vectorize(bool)const{
-    Vec ans(3);
+  Vector ZeroInflatedPoissonSuf::vectorize(bool)const{
+    Vector ans(3);
     ans[0] = number_of_zeros_;
     ans[1] = number_of_positives_;
     ans[2] = sum_of_positives_;
     return ans;
   }
 
-  Vec::const_iterator ZeroInflatedPoissonSuf::unvectorize(
-      Vec::const_iterator &v, bool){
+  Vector::const_iterator ZeroInflatedPoissonSuf::unvectorize(
+      Vector::const_iterator &v, bool){
     number_of_zeros_ = *v;     ++v;
     number_of_positives_ = *v; ++v;
     sum_of_positives_ = *v;    ++v;
     return v;
   }
 
-  Vec::const_iterator ZeroInflatedPoissonSuf::unvectorize(const Vec &v,
+  Vector::const_iterator ZeroInflatedPoissonSuf::unvectorize(const Vector &v,
                                                           bool minimal){
-    Vec::const_iterator it = v.begin();
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 

@@ -47,7 +47,7 @@ namespace BOOM{
         return ans;
       }
      private:
-      Mat R_;
+      Matrix R_;
       int i, j;
     };
 

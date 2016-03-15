@@ -66,12 +66,15 @@ namespace BOOM {
 
   BLAMS::BinomialLogitAuxmixSampler(BinomialLogitModel *model,
                                     Ptr<MvnBase> prior,
-                                    int clt_threshold)
-      : model_(model),
+                                    int clt_threshold,
+                                    RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         prior_(prior),
         suf_(model->xdim()),
         clt_threshold_(clt_threshold),
-        parallel_data_imputer_(suf_, model_)
+        parallel_data_imputer_(suf_, model_),
+        latent_data_fixed_(false)
   {
     set_number_of_workers(1);
   }
@@ -86,7 +89,9 @@ namespace BOOM {
   }
 
   void BLAMS::impute_latent_data() {
-    suf_ = parallel_data_imputer_.impute();
+    if (!latent_data_fixed_) {
+      suf_ = parallel_data_imputer_.impute();
+    }
   }
 
   void BLAMS::set_number_of_workers(int n) {
@@ -98,16 +103,32 @@ namespace BOOM {
       parallel_data_imputer_.add_worker(
           new BinomialLogisticRegressionDataImputer(
               clt_threshold_,
-              model_->coef_prm().get()));
+              model_->coef_prm().get()),
+          rng());
     }
     parallel_data_imputer_.assign_data();
   }
 
   void BLAMS::draw_params() {
-    Spd ivar = prior_->siginv() + suf_.xtx();
+    SpdMatrix ivar = prior_->siginv() + suf_.xtx();
     Vector ivar_mu = suf_.xty() + prior_->siginv() * prior_->mu();
     Vector draw = rmvn_suf_mt(rng(), ivar, ivar_mu);
     model_->set_Beta(draw);
+  }
+
+  void BLAMS::fix_latent_data(bool fixed) {
+    latent_data_fixed_ = fixed;
+  }
+
+  void BLAMS::clear_complete_data_sufficient_statistics() {
+    suf_.clear();
+  }
+
+  void BLAMS::update_complete_data_sufficient_statistics(
+      double precision_weighted_sum,
+      double total_precision,
+      const Vector &x) {
+    suf_.update(x, precision_weighted_sum, total_precision);
   }
 
   //======================================================================

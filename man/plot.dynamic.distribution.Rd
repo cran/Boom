@@ -12,11 +12,11 @@
 
 \usage{
 PlotDynamicDistribution(curves,
-                        x = 1:ncol(curves),
+                        timestamps = NULL,
                         quantile.step=.01,
-                        xlim = range(x),
-                        xlab = "X",
-                        ylim = range(curves),
+                        xlim = NULL,
+                        xlab = "Time",
+                        ylim = range(curves, na.rm = TRUE),
                         ylab = "distribution",
                         add=FALSE,
                         ...)
@@ -28,9 +28,13 @@ PlotDynamicDistribution(curves,
     columns represent different points in the index set.  For example, a
     long time series would be a wide matrix.  }
 
-  \item{x}{ An optional vector of ordinates 'curves' will be plotted
-     against.  Good choices for \code{x} are numeric, Date (see
-     \code{\link{as.Date}}).  }
+  \item{timestamps}{ An optional vector of "time stamps" that
+    \code{curves} will be plotted against.  The length of
+    \code{timestamps} must match the number of columns in \code{curves}.
+    If \code{timestamps} is \code{NULL} then the function attempts to
+    extract time stamps from the \code{colnames(curves)}.  If no
+    appropriate time stamps can be found then the positive integers will
+    be used as time stamps.}
 
   \item{quantile.step}{Each color step in the plot corresponds to this
     difference in quantiles.  Smaller values make prettier plots, but

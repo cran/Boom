@@ -65,9 +65,10 @@ namespace BOOM {
         double rwm_variance_scale_factor = 1,
         uint nthreads = 1,
         int max_chunk_size = 10,
-        bool check_initial_condition = true);
+        bool check_initial_condition = true,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
+    void draw() override;
     void rwm_draw();
     void tim_draw();
     void rwm_draw_chunk(int chunk);

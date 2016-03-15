@@ -23,13 +23,15 @@ namespace BOOM {
   ZeroInflatedPoissonSampler::ZeroInflatedPoissonSampler(
       ZeroInflatedPoissonModel *model,
       Ptr<GammaModel> lambda_prior,
-      Ptr<BetaModel> zero_prob_prior)
-      : model_(model),
+      Ptr<BetaModel> zero_prob_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         lambda_prior_(lambda_prior),
         zero_probability_prior_(zero_prob_prior)
       {}
 
-  void ZeroInflatedPoissonSampler::draw(){
+  void ZeroInflatedPoissonSampler::draw() {
     double p = model_->zero_probability();
     double pbinomial = p;
     double ppoisson = (1-p) * dpois(0, model_->lambda());
@@ -41,16 +43,28 @@ namespace BOOM {
     double nzero_binomial = rbinom_mt(rng(), nzero, pbinomial);
     double nzero_poission = nzero - nzero_binomial;
 
-    p = rbeta_mt(rng(),
-                 zero_probability_prior_->a() + nzero_binomial,
-                 zero_probability_prior_->b() + nzero - nzero_binomial +
-                 model_->suf()->number_of_positives());
+    int counter = 0;
+    do {
+      if (++counter > 1000) {
+        report_error("rbeta produced the value 0 over 1000 times.");
+      }
+      p = rbeta_mt(rng(),
+                   zero_probability_prior_->a() + nzero_binomial,
+                   zero_probability_prior_->b() + nzero - nzero_binomial +
+                   model_->suf()->number_of_positives());
+    } while (p <= 0.0 || p >= 1.0);
     model_->set_zero_probability(p);
 
     double a = lambda_prior_->alpha() + model_->suf()->sum_of_positives();
     double b = lambda_prior_->beta() + model_->suf()->number_of_positives();
     b += nzero_poission;
-    double lambda = rgamma_mt(rng(), a, b);
+    double lambda = -1;  // need to declare lambda before the do loop.
+    do {
+      if (++counter > 1000) {
+        report_error("rgamma produced the value 0 over 1000 times.");
+      }
+      lambda = rgamma_mt(rng(), a, b);
+    } while (lambda <= 0.0);
     model_->set_lambda(lambda);
   }
 

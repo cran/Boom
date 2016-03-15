@@ -222,29 +222,29 @@ namespace BOOM{
   }
 
   void VsSuf::combine(Ptr<VsSuf>){
-    throw_exception<std::runtime_error>("cannot combine VsSuf");
+    report_error("cannot combine VsSuf");
   }
 
   void VsSuf::combine(const VsSuf &){
-    throw_exception<std::runtime_error>("cannot combine VsSuf");
+    report_error("cannot combine VsSuf");
   }
 
   VsSuf * VsSuf::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec VsSuf::vectorize(bool )const{
-    throw_exception<std::runtime_error>("cannot vectorize VsSuf");
-    return Vec(1, 0.0);
+  Vector VsSuf::vectorize(bool )const{
+    report_error("cannot vectorize VsSuf");
+    return Vector(1, 0.0);
   }
 
-  Vec::const_iterator VsSuf::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator VsSuf::unvectorize(Vector::const_iterator &v,
                                          bool){
-    throw_exception<std::runtime_error>("cannot unvectorize VsSuf");
+    report_error("cannot unvectorize VsSuf");
     return v;
   }
 
-  Vec::const_iterator VsSuf::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator VsSuf::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -270,7 +270,7 @@ namespace BOOM{
     }
   }
 
-  VSP::VariableSelectionPrior(const Vec &pi)
+  VSP::VariableSelectionPrior(const Vector &pi)
     : DataPolicy(new VsSuf),
       pi_(new VectorParams(0))
   {
@@ -310,7 +310,7 @@ namespace BOOM{
 	<< "you passed a vector of size " << n
 	<< " but there are " << vars_.size()
 	<< " variables." <<endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error(err.str());
   }
 
   void VSP::check_size_gt(uint n, const string &fun)const{
@@ -320,17 +320,25 @@ namespace BOOM{
 	<< "you tried to access a variable at position " << n
 	<< ", but there are only " << vars_.size()
 	<< " variables." << endl;
-    throw_exception<std::runtime_error>(err.str());
+    report_error(err.str());
   }
   void VSP::set_prob(double p, uint i){
     check_size_gt(i, "set_prob");
     vars_[i]->set_prob(p);
   }
 
-  void VSP::set_probs(const Vec & pi){
+  void VSP::set_probs(const Vector & pi){
     uint n = pi.size();
     check_size_eq(n, "set_probs");
     for(uint i=0; i<n; ++i) vars_[i]->set_prob(pi[i]);
+  }
+
+  Vector VSP::prior_inclusion_probabilities() const {
+    Vector ans(potential_nvars());
+    for (int i = 0; i < ans.size(); ++i) {
+      ans[i] = prob(i);
+    }
+    return ans;
   }
 
   double VSP::prob(uint i)const{
@@ -340,20 +348,20 @@ namespace BOOM{
 
   void VSP::fill_pi()const{
     uint n = vars_.size();
-    Vec tmp(n);
+    Vector tmp(n);
     for(uint i=0; i<n; ++i) tmp[i] = vars_[i]->prob();
     pi_->set(tmp);
   }
 
-  ParamVec VSP::t(){
+  ParamVector VSP::t(){
     fill_pi();
-    return ParamVec(1,pi_); }
+    return ParamVector(1,pi_); }
 
-  const ParamVec VSP::t()const{
+  const ParamVector VSP::t()const{
     fill_pi();
-    return ParamVec(1,pi_);}
+    return ParamVector(1,pi_);}
 
-  void VSP::unvectorize_params(const Vec &v, bool){
+  void VSP::unvectorize_params(const Vector &v, bool){
     uint n =v.size();
     check_size_eq(n, "unvectorize_params");
     for(uint i=0; i<n; ++i){
@@ -415,7 +423,9 @@ namespace BOOM{
     double ans=0;
     for(uint i=0; i<n; ++i){
       ans += vars_[i]->logp(inc);
-      if(ans<=neg_inf) return ans;
+      if(ans<=neg_inf) {
+        return ans;
+      }
     }
     return ans;
   }

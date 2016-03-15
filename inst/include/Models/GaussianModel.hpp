@@ -20,10 +20,8 @@
 
 #include <Models/GaussianModelBase.hpp>
 #include <Models/ParamTypes.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>
-#include <Models/EmMixtureComponent.hpp>
-#include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
 
 namespace BOOM{
   class GaussianModelGivenSigma;
@@ -34,41 +32,37 @@ namespace BOOM{
   class GaussianModel
       : public GaussianModelBase,
         public ParamPolicy_2<UnivParams, UnivParams>,
-        public ConjugatePriorPolicy<GaussianConjSampler>
+        public PriorPolicy
   {
   public:
-    GaussianModel();  // N(0,1)
-    GaussianModel(double mean, double sd);
+    GaussianModel(double mean = 0.0, double sd = 1.0);
     GaussianModel(const std::vector<double> &v);
     GaussianModel(const GaussianModel &rhs);
-    GaussianModel * clone()const;
+    GaussianModel * clone()const override;
 
     void set_params(double Mean, double Var);
     void set_mu(double m);
-    void set_sigsq(double s);
+    void set_sigsq(double s) override;
 
-    virtual double mu()const;
-    virtual double sigsq()const;
-    virtual double sigma()const;
+    double mu()const override;
+    double sigsq()const override;
+    double sigma()const override;
 
     Ptr<UnivParams> Mu_prm();
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Mu_prm()const;
     const Ptr<UnivParams> Sigsq_prm()const;
 
-    virtual void mle();
+    void mle() override;
 
     void set_conjugate_prior(double mu0, double kappa,
-			     double df, double sigma_guess);
-    void set_conjugate_prior(Ptr<GaussianModelGivenSigma>,
-			     Ptr<GammaModel>);
-    void set_conjugate_prior(Ptr<GaussianConjSampler>);
+                             double df, double sigma_guess);
 
-    virtual double Loglike(const Vector &mu_sigsq,
-                           Vec &g, Mat &h, uint nd)const;
+    double Loglike(const Vector &mu_sigsq,
+                           Vector &g, Matrix &h, uint nd)const override;
 
-    virtual void find_posterior_mode();
   };
 
-}
+}  // namespace BOOM
+
 #endif// BOOM_GAUSSIAN_MODEL_H

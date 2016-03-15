@@ -24,9 +24,10 @@ namespace BOOM{
   class FixedProbBinomialSampler
     : public PosteriorSampler{
   public:
-    FixedProbBinomialSampler(BinomialModel *mod, double p = 1.0);
-    virtual void draw();
-    virtual double logpri()const;
+    FixedProbBinomialSampler(BinomialModel *mod, double p = 1.0,
+                             RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
   private:
     BinomialModel *m_;
     double p_;

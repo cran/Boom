@@ -34,25 +34,25 @@ namespace BOOM{
 
     // user supplies sufficient statistics
     PartRegSampler(uint Npart,
-		   const Spd & xtx,
-		   const Vec & xty,
+		   const SpdMatrix & xtx,
+		   const Vector & xty,
 		   double yty,
-		   const Vec & prior_mean,
-		   const Spd & prior_ivar_,
+		   const Vector & prior_mean,
+		   const SpdMatrix & prior_ivar_,
 		   double prior_df,
 		   double prior_sigma_guess,
 		   double inc_prob);
 
     // user supplies sufficient statistics
     PartRegSampler(uint Npart,
-		   const Spd & xtx,
-		   const Vec & xty,
+		   const SpdMatrix & xtx,
+		   const Vector & xty,
 		   double yty,
-		   const Vec & prior_mean,
-		   const Spd & prior_ivar_,
+		   const Vector & prior_mean,
+		   const SpdMatrix & prior_ivar_,
 		   double prior_df,
 		   double prior_sigma_guess,
-		   const Vec &inc_probs);
+		   const Vector &inc_probs);
 
     void draw_model_indicators(uint ntimes=1);
     void draw_params();  // to be called after "draw_models"
@@ -68,8 +68,8 @@ namespace BOOM{
 
     std::vector<Mlike> all_models()const;
     std::vector<Mlike> top_models(uint n=100)const;
-    Vec marginal_inclusion_probs()const;
-    FreqDist model_sizes()const;
+    Vector marginal_inclusion_probs()const;
+    FrequencyDistribution model_sizes()const;
 
     double log_model_prob(const Selector &)const;
     double logprior(const Selector &g)const;
@@ -78,21 +78,21 @@ namespace BOOM{
   private:
     const Ptr<NeRegSuf> suf_;
 
-    const Vec prior_mean_;         // This stuff defines the prior
-    Spd prior_ivar_;
+    const Vector prior_mean_;         // This stuff defines the prior
+    SpdMatrix prior_ivar_;
     const double prior_df_;
     const double prior_ss_;
-    const Vec inc_probs_;   // ind. prior: $prod_i Bern(\gamma_i | \pi_i)$
+    const Vector inc_probs_;   // ind. prior: $prod_i Bern(\gamma_i | \pi_i)$
 
     std::vector<uint> indices_;
     uint Nmcmc_;
 
-    mutable Vec beta_tilde_;      // this is work space for computing
-    mutable Spd iV_tilde_;        // posterior model probs
+    mutable Vector beta_tilde_;      // this is work space for computing
+    mutable SpdMatrix iV_tilde_;        // posterior model probs
     std::vector<Selector> models_; // this is the actual
-    std::vector<Vec> betas_;
-    Vec sigsq_;                   // one for each model
-    Vec weights_;
+    std::vector<Vector> betas_;
+    Vector sigsq_;                   // one for each model
+    Vector weights_;
     mutable LogpostTable logpost_;
     // logpost_ needs to be mutable because it might change when you
     // compute probabilities for a new model
@@ -104,7 +104,7 @@ namespace BOOM{
     void mcmc_all_vars(Selector &mod);
     void mcmc_one_flip(Selector &mod, uint which_var);
     void draw_initial_particles(uint N);
-    double set_reg_post_params(const Selector &g, const Spd & Ominv)const;
+    double set_reg_post_params(const Selector &g, const SpdMatrix & Ominv)const;
   };
 }
 #endif// BOOM_PARTICLE_REGRESSION_SAMPLER_HPP

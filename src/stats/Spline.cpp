@@ -24,7 +24,7 @@
 
 namespace BOOM{
 
-  Spline::Spline(const Vec &Knots, uint ord)
+  Spline::Spline(const Vector &Knots, uint ord)
     : order_(ord),
       ordm1_(ord-1),
       curs(0),
@@ -62,7 +62,7 @@ namespace BOOM{
   }
 
 
-  const Vec & Spline::basis(double x, Vec &ans)const{
+  const Vector & Spline::basis(double x, Vector &ans)const{
     set_cursor(x);
     int offsets = curs - order_;
     int j = offsets;
@@ -84,8 +84,8 @@ namespace BOOM{
     return ans;
   }
 
-  Vec Spline::basis(double x)const{
-    Vec ans(order_);
+  Vector Spline::basis(double x)const{
+    Vector ans(order_);
     basis(x,ans);
     return ans;
   }
@@ -100,7 +100,7 @@ namespace BOOM{
 
 
   /* fast evaluation of basis functions */
-  void Spline::basis_funcs(double x, Vec &b)const
+  void Spline::basis_funcs(double x, Vector &b)const
   {
     diff_table(x, ordm1_);
     b[0] = 1.;
@@ -115,7 +115,7 @@ namespace BOOM{
     }
   }
 
-  double Spline::eval(double x, const Vec &beta)const{
+  double Spline::eval(double x, const Vector &beta)const{
     set_cursor(x);
     double ans(0);
     if(curs < order_ || curs > (nknots() - order_) ){

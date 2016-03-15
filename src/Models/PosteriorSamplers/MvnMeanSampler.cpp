@@ -24,22 +24,25 @@ namespace BOOM{
 
   typedef MvnConjMeanSampler MCS;
 
-  MCS::MvnConjMeanSampler(MvnModel *Mod)
-    : mvn(Mod),
+  MCS::MvnConjMeanSampler(MvnModel *Mod, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(Mod),
       mu0(new VectorParams(Mod->mu().zero())),
       kappa(new UnivParams(0.0))
   {}
 
-  MCS::MvnConjMeanSampler
-  (MvnModel *Mod, Ptr<VectorParams> Mu0, Ptr<UnivParams> Kappa)
-    : mvn(Mod),
+  MCS::MvnConjMeanSampler(MvnModel *Mod, Ptr<VectorParams> Mu0,
+                          Ptr<UnivParams> Kappa, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(Mod),
       mu0(Mu0),
       kappa(Kappa)
   {}
 
-  MCS::MvnConjMeanSampler
-  (MvnModel *Mod, const Vec & Mu0, double Kappa)
-    : mvn(Mod),
+  MCS::MvnConjMeanSampler(MvnModel *Mod, const Vector & Mu0, double Kappa,
+                          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(Mod),
       mu0(new VectorParams(Mu0)),
       kappa(new UnivParams(Kappa))
   {}
@@ -48,10 +51,10 @@ namespace BOOM{
     Ptr<MvnSuf> s = mvn->suf();
     double n =s->n();
     double k = kappa->value();
-    const Spd & Siginv(mvn->siginv());
-    Spd ivar = (n+k)*Siginv;
+    const SpdMatrix & Siginv(mvn->siginv());
+    SpdMatrix ivar = (n+k)*Siginv;
     double w = n/(n+k);
-    Vec mu = w*s->ybar() + (1.0-w)*mu0->value();
+    Vector mu = w*s->ybar() + (1.0-w)*mu0->value();
     mu = rmvn_ivar_mt(rng(), mu, ivar);
     mvn->set_mu(mu);
   }
@@ -60,7 +63,7 @@ namespace BOOM{
     double k = kappa->value();
     if(k==0.0) return BOOM::negative_infinity();
     const Ptr<SpdParams> Sig = mvn->Sigma_prm();
-    const Vec &mu(mvn->mu());
+    const Vector &mu(mvn->mu());
     uint d = mvn->dim();
     double ldsi = d*log(k) + Sig->ldsi();
     return dmvn(mu, mu0->value(), k*Sig->ivar(), ldsi, true);
@@ -69,18 +72,23 @@ namespace BOOM{
   //----------------------------------------------------------------------
   typedef MvnMeanSampler MMS;
 
-  MMS::MvnMeanSampler(MvnModel *m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega)
-    : mvn(m),
+  MMS::MvnMeanSampler(MvnModel *m, Ptr<VectorParams> Mu0, Ptr<SpdParams> Omega,
+                      RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(m),
       mu_prior_(new MvnModel(Mu0, Omega))
   {}
 
-  MMS::MvnMeanSampler(MvnModel *m, Ptr<MvnBase> Pri)
-    : mvn(m),
+  MMS::MvnMeanSampler(MvnModel *m, Ptr<MvnBase> Pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(m),
       mu_prior_(Pri)
   {}
 
-  MMS::MvnMeanSampler(MvnModel *m, const Vec &Mu0, const Spd &Omega)
-    : mvn(m),
+  MMS::MvnMeanSampler(MvnModel *m, const Vector &Mu0, const SpdMatrix &Omega,
+                      RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mvn(m),
       mu_prior_(new MvnModel(Mu0, Omega))
   {}
 
@@ -91,10 +99,10 @@ namespace BOOM{
   void MMS::draw(){
     Ptr<MvnSuf> s = mvn->suf();
     double n = s->n();
-    const Spd &siginv(mvn->siginv());
-    const Spd &ominv(mu_prior_->siginv());
-    Spd Ivar = n*siginv + ominv;
-    Vec mu = Ivar.solve(n*(siginv*s->ybar()) + ominv*mu_prior_->mu());
+    const SpdMatrix &siginv(mvn->siginv());
+    const SpdMatrix &ominv(mu_prior_->siginv());
+    SpdMatrix Ivar = n*siginv + ominv;
+    Vector mu = Ivar.solve(n*(siginv*s->ybar()) + ominv*mu_prior_->mu());
     mu = rmvn_ivar(mu, Ivar);
     mvn->set_mu(mu);
   }

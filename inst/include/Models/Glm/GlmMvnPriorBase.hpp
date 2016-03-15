@@ -51,8 +51,8 @@ namespace BOOM{
     virtual double sigsq()const;       // default return is 1.0;
     virtual double kappa()const;       // default return is 1.0;
 
-    virtual Vec mu()const=0;      // not conditional on gamma
-    virtual Spd siginv()const=0;  // not conditional on gamma
+    virtual Vector mu()const=0;      // not conditional on gamma
+    virtual SpdMatrix siginv()const=0;  // not conditional on gamma
     // conceptually, siginv is the inverse of sigsq * XTX / kappa
 
   };
@@ -64,24 +64,24 @@ namespace BOOM{
   public:
     GlmMvnSuf(uint p=0);
     GlmMvnSuf(const std::vector<Ptr<GlmCoefs> > & d);
-    GlmMvnSuf * clone()const;
+    GlmMvnSuf * clone()const override;
 
-    virtual void clear();
-    void Update(const GlmCoefs &beta);
+    void clear() override;
+    void Update(const GlmCoefs &beta) override;
 
-    Spd center_sumsq(const Vec &b)const;
-    const Vec & vnobs()const;  // sum of gamma
-    const Spd & GTG()const;    // sum of gamma gamma^T
-    const Mat & BTG()const;    // sum of beta gamma^T
+    SpdMatrix center_sumsq(const Vector &b)const;
+    const Vector & vnobs()const;  // sum of gamma
+    const SpdMatrix & GTG()const;    // sum of gamma gamma^T
+    const Matrix & BTG()const;    // sum of beta gamma^T
     uint nobs()const;
   private:
-    mutable Spd bbt_;    // sum of beta beta.transpose()
-    mutable Spd ggt_;    // sum of gamma * gamma^T
-    Mat bgt_;    // sum of beta gamma.transpose()
-    Vec vnobs_;  // sum of gamma
+    mutable SpdMatrix bbt_;    // sum of beta beta.transpose()
+    mutable SpdMatrix ggt_;    // sum of gamma * gamma^T
+    Matrix bgt_;    // sum of beta gamma.transpose()
+    Vector vnobs_;  // sum of gamma
     uint nobs_;  // number of observations
 
-    Vec b, gam;
+    Vector b, gam;
     mutable bool sym_;
     void make_symmetric()const;
   };

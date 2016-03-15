@@ -33,8 +33,8 @@ namespace BOOM{
    public:
     PointProcessEvent(const DateTime &time);
     PointProcessEvent(const DateTime &time, Ptr<Data> mark);
-    virtual PointProcessEvent * clone()const;
-    virtual ostream & display(ostream &)const;
+    PointProcessEvent * clone() const override;
+    ostream & display(ostream &)const override;
 
     const DateTime &timestamp()const;
     const Data * mark()const;
@@ -75,8 +75,8 @@ namespace BOOM{
 
     PointProcess(const PointProcess &rhs);
 
-    virtual PointProcess * clone()const;
-    virtual ostream &display(ostream &out)const;
+    PointProcess * clone() const override;
+    ostream &display(ostream &out)const override;
 
     uint number_of_events()const;
     double window_duration()const;      // Time is measured in days.

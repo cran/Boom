@@ -24,19 +24,23 @@ namespace BOOM{
 
   typedef MvnConjSampler MCS;
 
-  MCS::MvnConjSampler(MvnModel *Mod, const Vec &mu0,
-		      double kappa, const Spd & SigmaHat,
-		      double prior_df)
-    : mod_(Mod),
+  MCS::MvnConjSampler(MvnModel *Mod, const Vector &mu0,
+              double kappa, const SpdMatrix & SigmaHat,
+              double prior_df,
+          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       mu_(new MvnGivenSigma(mu0, kappa, mod_->Sigma_prm() )),
       siginv_(new WishartModel(prior_df, SigmaHat))
   {
   }
 
   MCS::MvnConjSampler(MvnModel *Mod,
-		      Ptr<MvnGivenSigma> Mu,
-		      Ptr<WishartModel> Siginv)
-    : mod_(Mod),
+              Ptr<MvnGivenSigma> Mu,
+              Ptr<WishartModel> Siginv,
+          RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       mu_(Mu),
       siginv_(Siginv)
   {
@@ -49,18 +53,18 @@ namespace BOOM{
     return ans;
   }
 
-  const Vec & MCS::mu0()const{ return mu_->mu();}
+  const Vector & MCS::mu0()const{ return mu_->mu();}
   double MCS::kappa()const{ return mu_-> kappa();}
   double MCS::prior_df()const{ return siginv_->nu();}
-  const Spd & MCS::prior_SS()const{ return siginv_->sumsq();}
+  const SpdMatrix & MCS::prior_SS()const{ return siginv_->sumsq();}
 
   void MCS::set_posterior_sufficient_statistics(){
     Ptr<MvnSuf> s = mod_->suf();
     n = s->n();
     k = kappa();
-    const Vec & mu0(this->mu0());
+    const Vector & mu0(this->mu0());
 
-    Vec ybar = s->ybar();
+    Vector ybar = s->ybar();
     mu_hat = ybar;
     mu_hat *= (n/k);
     mu_hat += mu0;
@@ -82,7 +86,7 @@ namespace BOOM{
     mod_->set_mu(mu_hat);
   }
 
-  void MCS::find_posterior_mode(){
+  void MCS::find_posterior_mode(double){
     set_posterior_sufficient_statistics();
     mod_->set_mu(mu_hat);
     double scale_factor = (DF - SS.nrow()-1);
@@ -91,5 +95,4 @@ namespace BOOM{
     mod_->set_siginv(SS);
   }
 
-
-}
+}  // namespace BOOM

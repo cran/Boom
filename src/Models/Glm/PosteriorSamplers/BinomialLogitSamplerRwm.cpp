@@ -29,7 +29,7 @@ namespace BOOM{
           : m_(model),
             prior_(prior)
       {}
-      double operator()(const Vec &beta)const{
+      double operator()(const Vector &beta)const{
         return prior_->logp(beta) + m_->log_likelihood(beta, 0, 0);
       }
      private:
@@ -39,17 +39,19 @@ namespace BOOM{
   }
   BinomialLogitSamplerRwm::BinomialLogitSamplerRwm(BinomialLogitModel *model,
                                                    Ptr<MvnBase> prior,
-                                                   double nu)
-      :m_(model),
+                                                   double nu,
+                                                   RNG &seeding_rng)
+      :PosteriorSampler(seeding_rng),
+       m_(model),
        pri_(prior),
-       proposal_(new MvtRwmProposal(Spd(model->xdim(), 1.0), nu)),
+       proposal_(new MvtRwmProposal(SpdMatrix(model->xdim(), 1.0), nu)),
        sam_(BinomialLogitLogPosterior(m_, pri_), proposal_)
   {}
 
   void BinomialLogitSamplerRwm::draw(){
     const std::vector<Ptr<BinomialRegressionData> > &data(m_->dat());
-    Spd ivar(pri_->siginv());
-    Vec beta(m_->Beta());
+    SpdMatrix ivar(pri_->siginv());
+    Vector beta(m_->Beta());
     for(int i = 0; i < data.size(); ++i){
       Ptr<BinomialRegressionData> dp = data[i];
       double eta = beta.dot(dp->x());

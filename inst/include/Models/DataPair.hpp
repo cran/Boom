@@ -27,9 +27,9 @@ namespace BOOM{
     DataPair(Ptr<D1> d1, Ptr<D2> d2) : d1_(d1), d2_(d2) {}
     DataPair(const DataPair &rhs)
       : Data(rhs), d1_(rhs.d1_->clone()), d2_(rhs.d2_->clone()) {}
-    DataPair * clone()const{return new DataPair(*this);}
+    DataPair * clone()const override{return new DataPair(*this);}
 
-    virtual ostream & display(ostream &out)const{
+    ostream & display(ostream &out)const override{
       return d1_->display(out) << " " << d2_->display(out);}
     virtual istream & read(istream &in){
       d1_->read(in); d2_->read(in); return(in); }

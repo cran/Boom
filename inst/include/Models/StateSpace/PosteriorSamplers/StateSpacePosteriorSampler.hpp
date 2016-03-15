@@ -24,9 +24,18 @@
 namespace BOOM{
   class StateSpacePosteriorSampler : public PosteriorSampler {
    public:
-    StateSpacePosteriorSampler(StateSpaceModelBase *model);
-    virtual void draw();
-    virtual double logpri()const;
+    StateSpacePosteriorSampler(StateSpaceModelBase *model,
+                               RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
+
+   protected:
+    // Samplers for models with observation equations that are
+    // conditionally normal can override this function to impute the
+    // mixing distribution.  For Gaussian observation models it is a
+    // no-op.
+    virtual void impute_nonstate_latent_data() {}
+
    private:
     StateSpaceModelBase *m_;
     bool latent_data_initialized_;

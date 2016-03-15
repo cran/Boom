@@ -33,7 +33,7 @@ namespace BOOM{
     PointProcess ans(t0, t1);
     double duration = t1 - t0;
     int number_of_candidate_events = rpois(max_event_rate_ * duration);
-    Vec times(number_of_candidate_events);
+    Vector times(number_of_candidate_events);
     for(int i = 0; i < number_of_candidate_events; ++i){
       times[i] = runif(0, duration);
     }

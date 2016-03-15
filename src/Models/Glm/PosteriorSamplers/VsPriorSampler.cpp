@@ -26,8 +26,9 @@ namespace BOOM{
   typedef VsPriorSampler VSPS;
   typedef VariableSelectionPrior VSP;
 
-VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
-    : vsp(Vsp),
+VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      vsp(Vsp),
       forced_in_(Vsp->potential_nvars(), false),
       forced_out_(Vsp->potential_nvars(), false)
   {
@@ -42,8 +43,10 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
     }
   }
 
-  VSPS::VsPriorSampler(VSP *Vsp, const Vec & pi_guess, const Vec & a_plus_b)
-     : vsp(Vsp),
+  VSPS::VsPriorSampler(VSP *Vsp, const Vector & pi_guess, const Vector & a_plus_b,
+                       RNG &seeding_rng)
+     : PosteriorSampler(seeding_rng),
+       vsp(Vsp),
        forced_in_(Vsp->potential_nvars(), false),
        forced_out_(Vsp->potential_nvars(), false)
    {
@@ -55,25 +58,26 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
        assert(N>0);
        Ptr<BinomialModel> mod = vsp->variable(i)->model();
        if(std::isfinite(N)){
- 	double a = N*pi_guess[i];
- 	double b = N*(1-pi_guess[i]);
- 	NEW(BetaModel, bp)(a,b);
- 	sam = new BetaBinomialSampler(mod.get(),bp);
- 	mod->set_method(sam);
- 	sam_.push_back(sam);
+     double a = N*pi_guess[i];
+     double b = N*(1-pi_guess[i]);
+     NEW(BetaModel, bp)(a,b);
+     sam = new BetaBinomialSampler(mod.get(),bp);
+     mod->set_method(sam);
+     sam_.push_back(sam);
        }else{  // N is finite
- 	double p = pi_guess[i];
- 	vsp->variable(i)->set_prob(p);
- 	sam = new FixedProbBinomialSampler(mod.get(), p);
- 	mod->set_method(sam);
- 	sam_.push_back(sam);
+     double p = pi_guess[i];
+     vsp->variable(i)->set_prob(p);
+     sam = new FixedProbBinomialSampler(mod.get(), p);
+     mod->set_method(sam);
+     sam_.push_back(sam);
        }
      }
    }
 
    VSPS::VsPriorSampler(VSP *Vsp, std::vector<Ptr<BetaModel> > Beta,
- 		       const Selector & in, const Selector & out)
-     : vsp(Vsp),
+                const Selector & in, const Selector & out, RNG &seeding_rng)
+     : PosteriorSampler(seeding_rng),
+       vsp(Vsp),
        forced_in_(in),
        forced_out_(out)
    {
@@ -91,8 +95,10 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
      }
    }
 
-   VSPS::VsPriorSampler(VSP *Vsp, std::vector<Ptr<BetaModel> >Beta)
-     : vsp(Vsp),
+   VSPS::VsPriorSampler(VSP *Vsp, std::vector<Ptr<BetaModel> >Beta,
+                        RNG &seeding_rng)
+     : PosteriorSampler(seeding_rng),
+       vsp(Vsp),
        forced_in_(Vsp->potential_nvars(), false),
        forced_out_(Vsp->potential_nvars(), false)
    {
@@ -102,7 +108,7 @@ VSPS::VsPriorSampler(VSP *Vsp, Ptr<BetaModel> Beta)
        msg << "Vector of beta priors has the wrong size in VsPriorSampler "
            << "constructor.  There are " << n << " variables but "
            << Beta.size() << " beta distributions.";
-       throw_exception<std::runtime_error>(msg.str());
+       report_error(msg.str());
      }
      Ptr<BetaBinomialSampler> sam;
      for(uint i=0; i<n; ++i){

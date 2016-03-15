@@ -55,19 +55,19 @@ namespace BOOM{
   private:
     MultinomialLogitModel * model_;
 
-    const Vec mu_;                   // mean for EV approx
-    const Vec sigsq_inv_;            // inverse variance for EV approx
-    const Vec sd_;                   // standard deviations for EV approx
-    const Vec log_mixing_weights_;   // log of mixing weights for EV approx
-    const Vec & log_sampling_probs_;
+    const Vector mu_;                   // mean for EV approx
+    const Vector sigsq_inv_;            // inverse variance for EV approx
+    const Vector sd_;                   // standard deviations for EV approx
+    const Vector log_mixing_weights_;   // log of mixing weights for EV approx
+    const Vector & log_sampling_probs_;
     const bool downsampling_;
 
     // Workspace for impute_latent_data, to avoid reallocating space
     // each time.
-    mutable Vec post_prob_;
-    mutable Vec u;
-    mutable Vec eta;
-    mutable Vec wgts;
+    mutable Vector post_prob_;
+    mutable Vector u;
+    mutable Vector eta;
+    mutable Vector wgts;
   };
 
 }  // namespace BOOM

@@ -25,6 +25,7 @@
 
 #include <BOOM.hpp>
 #include <LinAlg/Matrix.hpp>
+#include <LinAlg/Selector.hpp>
 
 namespace BOOM{
   //======================================================================
@@ -317,6 +318,10 @@ namespace BOOM{
     //   is_context: If 'true' then 'factor' refers to contextual
     //     data.  Otherwise it refers to experimental data.
     ContextualEffect(const FactorDummy &factor,
+                     bool is_context);
+
+    // Create a ContextualEffect from a standard Effect.
+    ContextualEffect(const Effect &effect,
                      bool is_context);
 
     // Create an interaction between two contextual effects.
@@ -736,7 +741,9 @@ namespace BOOM{
   class ContextualRowBuilder {
    public:
     // An empty ContextualRowBuilder does nothing useful.  It has
-    // dimension zero and produces empty design matrix rows.
+    // dimension zero and produces empty design matrix rows.  It does
+    // not include an intercept term.  To add an intercept, add a
+    // null-constructed ContextualEffect.
     ContextualRowBuilder() {}
 
     // A ContextualRowBuilder formed by taking all
@@ -755,6 +762,11 @@ namespace BOOM{
     // this object will produce.
     void add_effect(const ContextualEffect &effect);
 
+    // Adds the effects in 'group' to the set of effects defining the
+    // design matrix.  This adds one or more columns corresponding to
+    // the EffectGroup to the design matrix modeled by the RowBuilder.
+    void add_effect_group(const ContextualEffectGroup &group);
+
     // The size of the row to be built;
     int dimension() const;
 
@@ -765,29 +777,43 @@ namespace BOOM{
     // corresponding to the given factor.
     // Args:
     //   which_factor:  The position in the input data of the desired factor.
+    //   contextual: If true then 'which_factor' refers to a
+    //     contextual factor.  Otherwise 'which_factor' refers to an
+    //     experimental factor.
     // Returns:
-    //   A vector of positions (in the output of build_row)
+    //   A vector of positions (in the output of 'build_row()')
     //   corresponding to the dummy variables modeling the main
     //   effects for 'which_factor'.  If 'which_factor' is not part of
     //   the model then an empty vector is returned.
-    std::vector<int> main_effect_positions(int which_factor) const;
+    std::vector<int> main_effect_positions(int which_factor,
+                                           bool contextual) const;
 
     // Returns a 'matrix' of positions in the design matrix
     // corresponding to the interaction effects between first_factor
     // and second_factor.
     // Args:
-    //   first_factor:  The position in the input data of the first factor.
-    //   second_factor:  The position in the input data of the second factor.
+    //   first_factor: The position in the input data of the first
+    //     factor in the interaction.
+    //   first_factor_is_contextual: If true then look for
+    //     'first_factor' in the set of contextual factors.  Otherwise
+    //     look in the set of experimental factors.
+    //   second_factor: The position in the input data of the second
+    //     factor in the interaction.
+    //   second_factor_is_contextual: If true then look for
+    //     'second_factor' in the set of contextual factors.
+    //     Otherwise look in the set of experimental factors.
+    //
     // Returns:
     //   A vector of vectors where element [i][j] gives the position
     //   in the design matrix of the interaction between level i-1 of
     //   first_factor and level j-1 of second_factor.  All the 'inner'
-    //   vectors are the same size.  If the two factors do not
-    //   interact then an empty vector is returned.  If two levels do
-    //   not interact then that position in the matrix is recorded as
-    //   -1.
+    //   vectors are the same size (i.e. the matrix has a fixed number
+    //   of columns).  If the two factors do not interact then an
+    //   empty vector is returned.  If two levels do not interact then
+    //   that position in the matrix is recorded as -1.
     std::vector<std::vector<int> > second_order_interaction_positions(
-        int first_factor, int second_factor) const;
+        int first_factor, bool first_factor_is_contextual,
+        int second_factor, bool second_factor_is_contextual) const;
 
     // Returns i'th effect managed by this object.
     const ContextualEffect & effect(int i) const;
@@ -804,8 +830,39 @@ namespace BOOM{
     // experimental and contextual effects.  Returns false otherwise.
     bool interaction_with_context() const;
 
+    // Returns a selector that identifies which elements of a Vector
+    // built by build_row() correspond purly to experimental factors.
+    Selector pure_experiment() const;
+
+    // Returns a selector that identifies which elements of a Vector
+    // built by build_row() correspond purly to contextual factors.
+    Selector pure_context() const;
+
+    // Returns a selector that identifies which elements of a Vector
+    // built by build_row() correspond interactions between
+    // experimental and contextual factors.
+    Selector experiment_context_interactions() const;
+
+    // Returns the minimal number of experimental factors necessary to
+    // use this row builder.
+    int number_of_experimental_factors() const;
+
+    // Returns the minimal number of contextual factors necessary to
+    // use this row builder.
+    int number_of_contextual_factors() const;
+
    private:
     std::vector<ContextualEffect> contextual_effects_;
+
+    // Find largest observed level for the given factor.
+    // Args:
+    //   factor:  The factor to search for.
+    //   contextual: If true then look for 'factor' in the set of
+    //     contextual factors.  Otherwise look in the experimental
+    //     factors.
+    // Returns:
+    //   The largest observed level for the specified factor.
+    int find_max_observed_level(int factor, bool contextual) const;
   };
 
   //======================================================================
@@ -820,6 +877,16 @@ namespace BOOM{
 
   LabeledMatrix generate_design_matrix(const ExperimentStructure &xp,
                                        const RowBuilder &builder);
+
+  // Generates a design matrix corresponding to all possible values of
+  // a given set of contexts.
+  LabeledMatrix generate_contextual_design_matrix(
+      const ExperimentStructure &context_structure,
+      const ContextualRowBuilder &row_builder);
+
+  LabeledMatrix generate_experimental_design_matrix(
+      const ExperimentStructure &xp,
+      const ContextualRowBuilder &row_builder);
 
 }  // namespace BOOM
 

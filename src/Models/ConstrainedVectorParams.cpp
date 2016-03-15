@@ -27,22 +27,22 @@ namespace BOOM{
       value_(val)
   {}
 
-  bool EC::check(const Vec &v)const{ return v[element_]==value_;}
-  void EC::impose(Vec &v)const{ v[element_] = value_;}
-  Vec EC::expand(const Vec &v)const{
-    Vec ans(v.size()+1);
-    Vec::const_iterator b(v.begin()), e(v.end());
-    Vec::const_iterator pos = b+element_;
+  bool EC::check(const Vector &v)const{ return v[element_]==value_;}
+  void EC::impose(Vector &v)const{ v[element_] = value_;}
+  Vector EC::expand(const Vector &v)const{
+    Vector ans(v.size()+1);
+    Vector::const_iterator b(v.begin()), e(v.end());
+    Vector::const_iterator pos = b+element_;
     std::copy(b,pos, ans.begin());
     std::copy(pos, e, ans.begin()+element_ + 1);
     impose(ans);
     return ans;
   }
 
-  Vec EC::reduce(const Vec &v)const{
-    if(v.size()==0) return Vec(0);
-    Vec ans(v.size()-1);
-    Vec::const_iterator b(v.begin()), e(v.end());
+  Vector EC::reduce(const Vector &v)const{
+    if(v.size()==0) return Vector(0);
+    Vector ans(v.size()-1);
+    Vector::const_iterator b(v.begin()), e(v.end());
     std::copy(b, b+element_, ans.begin());
     std::copy(b+element_+1, e, ans.begin()+element_);
     return ans;
@@ -53,22 +53,22 @@ namespace BOOM{
     : sum_(x)
   {}
 
-  bool SC::check(const Vec &v)const{ return v.sum()==sum_;}
+  bool SC::check(const Vector &v)const{ return v.sum()==sum_;}
 
-  void SC::impose(Vec &v)const{
+  void SC::impose(Vector &v)const{
     double tot = v.sum();
     v.back() = sum_-tot;
   }
 
-  Vec SC::expand(const Vec &v)const{
-    Vec ans(v.size()+1);
+  Vector SC::expand(const Vector &v)const{
+    Vector ans(v.size()+1);
     std::copy(v.begin(), v.end(), ans.begin());
     impose(ans);
     return ans;
   }
 
-  Vec SC::reduce(const Vec &v)const{
-    Vec ans(v.begin(), v.end()-1);
+  Vector SC::reduce(const Vector &v)const{
+    Vector ans(v.begin(), v.end()-1);
     return ans;
   }
 
@@ -83,7 +83,7 @@ namespace BOOM{
     if(!vc) c_ = new NoConstraint;
   }
 
-  CVP::ConstrainedVectorParams(const Vec &v, Ptr<VC> vc)
+  CVP::ConstrainedVectorParams(const Vector &v, Ptr<VC> vc)
     : VectorParams(v),
       c_(vc)
   {
@@ -100,22 +100,22 @@ namespace BOOM{
 
   CVP * CVP::clone()const{return new CVP(*this);}
 
-  Vec CVP::vectorize(bool minimal)const{
+  Vector CVP::vectorize(bool minimal)const{
     if(minimal) return c_->reduce(value());
     return value();
   }
 
-  Vec::const_iterator CVP::unvectorize(Vec::const_iterator &v, bool minimal){
-    Vec tmp(vectorize(minimal));
-    Vec::const_iterator e = v+tmp.size();
+  Vector::const_iterator CVP::unvectorize(Vector::const_iterator &v, bool minimal){
+    Vector tmp(vectorize(minimal));
+    Vector::const_iterator e = v+tmp.size();
     tmp.assign(v,e);
     if(minimal) set(c_->expand(tmp));
     else set(tmp);
     return e;
   }
 
-  Vec::const_iterator CVP::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator b(v.begin());
+  Vector::const_iterator CVP::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator b(v.begin());
     return unvectorize(b, minimal);
   }
 

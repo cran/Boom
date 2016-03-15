@@ -22,8 +22,10 @@
 
 namespace BOOM{
 
-  PoissonGammaSampler::PoissonGammaSampler(PoissonModel *p, Ptr<GammaModel> g)
-      : pois(p),
+  PoissonGammaSampler::PoissonGammaSampler(PoissonModel *p, Ptr<GammaModel> g,
+                                           RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        pois(p),
         gam(g)
   {}
 
@@ -43,11 +45,11 @@ namespace BOOM{
     double sum = pois->suf()->sum();
     double a = sum + gam->alpha();
     double b = n + gam->beta();
-    double ans = rgamma(a,b);
+    double ans = rgamma_mt(rng(), a,b);
     pois->set_lam(ans);
   }
 
-  void PoissonGammaSampler::find_posterior_mode(){
+  void PoissonGammaSampler::find_posterior_mode(double){
     double n = pois->suf()->n();
     double sum = pois->suf()->sum();
     double a = sum + gam->alpha();
@@ -56,4 +58,4 @@ namespace BOOM{
     if(mode<0) mode=0;
     pois->set_lam(mode);
   }
-}
+}  // namespace BOOM

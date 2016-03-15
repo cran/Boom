@@ -24,7 +24,7 @@
 #include <Models/Sufstat.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 #include <Models/EmMixtureComponent.hpp>
 #include <Models/MvnBase.hpp>
 #include <Models/MvnGivenSigma.hpp>
@@ -37,33 +37,52 @@ namespace BOOM{
     public MvnBaseWithParams,
     public LoglikeModel,
     public SufstatDataPolicy<VectorData, MvnSuf>,
-    public ConjugatePriorPolicy<MvnConjSampler>,
+    public PriorPolicy,
     public EmMixtureComponent
   {
   public:
     typedef MvnBaseWithParams Base;
+    // A p-dimensional MvnModel, with a constant value mu for a mean,
+    // and a diagonal variance matrix sig^2.  Note that the
+    // constructor expects the standard deviation instead of a
+    // variance.
     MvnModel(uint p, double mu=0.0, double sig=1.0);   // N(mu.1, diag(sig^2))
-    MvnModel(const Vec &mean, const Spd &V,      // N(mu,V)... if(ivar) then V
-	     bool ivar=false);                   // is the inverse variance.
+
+    // Use this constructor if you want to directly specify the mean
+    // and variance.  If the third argument 'ivar' is 'true' then you
+    // specify the mean and the precision ('ivar' is inverse
+    // variance).
+    MvnModel(const Vector &mean, const SpdMatrix &V,
+             bool ivar=false);
+
+    // Use this constructor if you already have pointers to model
+    // parameters.  This is useful if the model is supposed to share
+    // parameters with another model, e.g. a mixture of normals with a
+    // common variance parameter.
     MvnModel(Ptr<VectorParams> mu, Ptr<SpdParams> Sigma);
-    MvnModel(const std::vector<Vec> &v);       // N(mu.hat, V.hat)
+
+    // Use this constructor if you have a set of multivariate normal
+    // observations.  It sets the initial parameter values to the MLE.
+    MvnModel(const std::vector<Vector> &data);
+
     MvnModel(const MvnModel &m);
-    MvnModel *clone() const;
+    MvnModel *clone() const override;
 
-    virtual void mle();
-    virtual void initialize_params();
-    virtual void add_mixture_data(Ptr<Data>, double prob);
-    double loglike(const Vector &mu_siginv) const;
+    void mle() override;
+    void initialize_params() override;
+    void add_mixture_data(Ptr<Data>, double prob) override;
+    double loglike(const Vector &mu_siginv) const override;
 
-    void add_raw_data(const Vec &y);
+    void add_raw_data(const Vector &y);
     double pdf(Ptr<Data>, bool logscale)const;
-    double pdf(const Data *, bool logscale)const;
-    double pdf(const Vec &x, bool logscale)const;
+    double pdf(const Data *, bool logscale)const override;
+    double pdf(const Vector &x, bool logscale)const;
 
     void set_conjugate_prior(Ptr<MvnGivenSigma>, Ptr<WishartModel>);
     void set_conjugate_prior(Ptr<MvnConjSampler>);
 
-    Vec sim()const;
+    Vector sim()const override;
+    Vector sim(RNG &rng)const;
   };
   //------------------------------------------------------------
 }

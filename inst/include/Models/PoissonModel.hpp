@@ -39,52 +39,60 @@ namespace BOOM{
     PoissonSuf(double event_count, double exposure);
 
     PoissonSuf(const PoissonSuf &rhs);
-    PoissonSuf *clone() const;
+    PoissonSuf *clone() const override;
 
     // If this function is used to set the value of the sufficient
     // statistics, then the normalizing constant will be wrong, which
     // is probably fine for most applications.
     void set(double event_count, double exposure);
 
-    void clear();
+    // Adds increment_event_count to the event count (sum_), and
+    // incremental_exposure to exposure (n_).
+    void add_incremental_counts(double incremental_event_count,
+                                double incremental_exposure);
+
+    void clear() override;
     double sum()const;
     double n()const;
     double lognc()const;
 
-    void Update(const IntData & dat);
+    void Update(const IntData & dat) override;
     void add_mixture_data(double y, double prob);
     void combine(Ptr<PoissonSuf>);
     void combine(const PoissonSuf &);
-    PoissonSuf * abstract_combine(Sufstat *s);
+    PoissonSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream &print(ostream &out)const override;
 
   private:
-    double sum_, n_, lognc_;  // log nc is the log product of x-factorials
+    double sum_;    // event_count
+    double n_;      // exposure
+    double lognc_;  // log nc is the log product of x-factorials
   };
   //----------------------------------------------------------------------//
 
   class PoissonModel : public ParamPolicy_1<UnivParams>,
-		       public SufstatDataPolicy<IntData, PoissonSuf>,
-		       public PriorPolicy,
-		       public NumOptModel,
-		       virtual public MixtureComponent
+                       public SufstatDataPolicy<IntData, PoissonSuf>,
+                       public PriorPolicy,
+                       public NumOptModel,
+                       public IntModel,
+                       virtual public MixtureComponent
   {
   public:
 
     PoissonModel(double lam=1.0);
     PoissonModel(const std::vector<uint> &);
     PoissonModel(const PoissonModel &m);
-    PoissonModel *clone() const;
+    PoissonModel *clone() const override;
 
-    virtual void mle();
-    virtual double Loglike(const Vector &lambda,
-                           Vec &g, Mat &h, uint nd)const;
+    void mle() override;
+    double Loglike(const Vector &lambda,
+                           Vector &g, Matrix &h, uint nd)const override;
 
     Ptr<UnivParams> Lam();
     const Ptr<UnivParams> Lam()const;
@@ -93,8 +101,9 @@ namespace BOOM{
 
     // probability calculations
     virtual double pdf(Ptr<Data> x, bool logscale) const;
-    virtual double pdf(const Data * x, bool logscale) const;
+    double pdf(const Data * x, bool logscale) const override;
     double pdf(uint x, bool logscale) const;
+    double logp(int x) const override;
 
     // moments and summaries:
     double mean()const;
@@ -105,6 +114,5 @@ namespace BOOM{
     virtual void add_mixture_data(Ptr<Data>,  double prob);
   };
 
-
-}
-#endif
+}  // namespace BOOM
+#endif  // POISSON_MODEL_H

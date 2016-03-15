@@ -1,12 +1,8 @@
-% Copyright 2011 Google Inc. All Rights Reserved.
-% Author: stevescott@google.com (Steve Scott)
-
 \name{normal.prior}
 \title{Normal (scalar Gaussian) prior distribution}
 \alias{NormalPrior}
 
-\description{Specifies an inverse Gamma prior for a variance parameter,
-  but inputs are defined in terms of a standard deviation.}
+\description{Specifies a scalar Gaussian prior distribution.}
 
 \usage{
 NormalPrior(mu, sigma, initial.value = mu)

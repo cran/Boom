@@ -96,8 +96,8 @@ namespace BOOM {
       int y()const;            // observed_response
       double exposure()const;  // observed exposure
 
-      virtual void add_to_residual(double value);
-      virtual void add_to_poisson_suf(PoissonSufficientStatistics &suf)const;
+      void add_to_residual(double value) override;
+      void add_to_poisson_suf(PoissonSufficientStatistics &suf)const override;
 
       // The term 'internal' refers to the largest observation inside
       // the interval [0, exposure).
@@ -167,14 +167,14 @@ namespace BOOM {
     class PoissonSufficientStatistics
         : public SufficientStatisticsBase {
      public:
-      virtual PoissonSufficientStatistics * clone()const;
+      PoissonSufficientStatistics * clone() const override;
 
       // Sets all data elements to 0.
-      void clear();
+      void clear() override;
 
       // Remember that all observations with y > 0 will have two
       // contributions to the sufficient statistics.
-      virtual void update(const ResidualRegressionData &data);
+      void update(const ResidualRegressionData &data) override;
       virtual void update(const PoissonResidualRegressionData &data);
 
       double sum_of_weights() const {return sum_of_weights_;}
@@ -256,24 +256,25 @@ posterior mean.  Then the integrated likelihood is
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees);
+        boost::function<double(int)> log_prior_on_number_of_trees,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double draw_mean(Bart::TreeNode *leaf);
-    virtual double log_integrated_likelihood(
-        const Bart::SufficientStatisticsBase &suf)const;
-    virtual double complete_data_log_likelihood(
-        const Bart::SufficientStatisticsBase &suf)const;
+    void draw() override;
+    double draw_mean(Bart::TreeNode *leaf) override;
+    double log_integrated_likelihood(
+        const Bart::SufficientStatisticsBase &suf)const override;
+    double complete_data_log_likelihood(
+        const Bart::SufficientStatisticsBase &suf)const override;
     virtual double complete_data_poisson_log_likelihood(
         const Bart::PoissonSufficientStatistics &suf)const;
 
-    virtual void clear_residuals();
+    void clear_residuals() override;
 
     // The number of "residual data points" managed by the sampler.
-    virtual int residual_size()const;
-    virtual DataType * create_and_store_residual(int i);
-    virtual DataType * residual(int i);
-    virtual SufType * create_suf() const;
+    int residual_size()const override;
+    DataType * create_and_store_residual(int i) override;
+    DataType * residual(int i) override;
+    SufType * create_suf() const override;
 
     void impute_latent_data();
     void impute_latent_data_point(DataType *data);

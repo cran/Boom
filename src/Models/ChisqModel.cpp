@@ -41,7 +41,18 @@ namespace BOOM{
   // Use parameter references instead of smart pointer calls to avoid
   // tweaking reference counts.
   double CSM::df()const{return prm1_ref().value();}
+  void CSM::set_df(double df) {prm1_ref().set(df);}
+
+  double CSM::sigma()const{return sqrt(sigsq());}
+  void CSM::set_sigma_estimate(double sigma_estimate) {
+    set_sigsq_estimate(square(sigma_estimate));
+  }
+
   double CSM::sigsq()const{return prm2_ref().value();}
+  void CSM::set_sigsq_estimate(double sigsq_estimate) {
+    prm2_ref().set(sigsq_estimate);
+  }
+
   double CSM::sum_of_squares()const{return sigsq() * df();}
 
   double CSM::alpha()const{return df()/2.0;}

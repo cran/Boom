@@ -17,6 +17,13 @@ check.positive.scalar <- function(x) {
   return(TRUE)
 }
 
+check.scalar.integer <- function(x) {
+  okay <- is.numeric(x) && (length(x) == 1) && (abs(x - as.integer(x)) < 1e-10)
+  if (!okay) {
+    stop("")
+  }
+}
+
 check.nonnegative.scalar <- function(x) {
   okay <- is.numeric(x) && length(x) == 1 && x >= 0
   if (!okay) {

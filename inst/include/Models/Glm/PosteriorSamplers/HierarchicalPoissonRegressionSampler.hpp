@@ -72,9 +72,10 @@ namespace BOOM {
     HierarchicalPoissonRegressionPosteriorSampler(
         HierarchicalPoissonRegressionModel *model,
         Ptr<MvnBase> mu_prior,
-        int nthreads = 1);
+        int nthreads = 1,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
+    void draw() override;
 
     // impute_latent_data draws complete data sufficient statistics
     // and regression coefficients for each data_model.
@@ -122,9 +123,9 @@ namespace BOOM {
         Ptr<MvnBase> mu_prior,
         Ptr<WishartModel> siginv_prior,
         int nthreads = 1);
-    virtual double logpri()const;
-    virtual void draw_mu_and_sigma_given_beta();
-    virtual void draw_sigma_given_zero_mean_sufficient_statistics();
+    double logpri() const override;
+    void draw_mu_and_sigma_given_beta() override;
+    void draw_sigma_given_zero_mean_sufficient_statistics() override;
    private:
     Ptr<WishartModel> siginv_prior_;
 
@@ -153,15 +154,15 @@ namespace BOOM {
         HierarchicalPoissonRegressionModel *model,
         Ptr<MvnBase> mu_prior,
         const std::vector<Ptr<GammaModelBase> > & siginv_priors,
-        const Vec & upper_sigma_truncation_point,
+        const Vector & upper_sigma_truncation_point,
         int nthreads = 1);
 
-    virtual double logpri()const;
+    double logpri() const override;
 
-    virtual void draw_mu_and_sigma_given_beta();
-    virtual void draw_sigma_given_zero_mean_sufficient_statistics();
+    void draw_mu_and_sigma_given_beta() override;
+    void draw_sigma_given_zero_mean_sufficient_statistics() override;
 
-    void set_sigma_upper_limits(const Vec &sigma_upper_limits);
+    void set_sigma_upper_limits(const Vector &sigma_upper_limits);
    private:
     std::vector<Ptr<GammaModelBase> > siginv_priors_;
 

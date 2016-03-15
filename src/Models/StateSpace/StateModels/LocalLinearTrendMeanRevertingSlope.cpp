@@ -79,8 +79,8 @@ namespace BOOM{
     block(2,2) += 1;
   }
 
-  Mat LMAT::dense()const{
-    Mat ans(3,3, 0.0);
+  Matrix LMAT::dense()const{
+    Matrix ans(3,3, 0.0);
     ans(0, 0) = 1.0;
     ans(0, 1) = 1.0;
     double phi = phi_->value();
@@ -173,15 +173,15 @@ namespace BOOM{
   SparseVector LMSM::observation_matrix(int)const{
     return observation_matrix_;}
 
-  Vec LMSM::initial_state_mean()const{
-    Vec ans(3);
+  Vector LMSM::initial_state_mean()const{
+    Vector ans(3);
     ans[0] = initial_level_mean_;
     ans[1] = initial_slope_mean_;
     ans[2] = slope_->mu();
     return ans;
   }
 
-  Spd LMSM::initial_state_variance()const{
+  SpdMatrix LMSM::initial_state_variance()const{
     return initial_state_variance_;
   }
   void LMSM::set_initial_level_mean(double level_mean){

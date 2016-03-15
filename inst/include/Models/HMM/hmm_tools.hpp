@@ -21,9 +21,9 @@
 
 namespace BOOM{
 
-    double fwd_1(Vec &pi, Mat &P, const Mat &logQ, const Vec &logd,
-		 const Vec &one);
-    void bkwd_1(Vec &pi, Mat &P, Vec & wsp, const Vec &one);
+    double fwd_1(Vector &pi, Matrix &P, const Matrix &logQ, const Vector &logd,
+		 const Vector &one);
+    void bkwd_1(Vector &pi, Matrix &P, Vector & wsp, const Vector &one);
 
 }
 #endif// BOOM_HMM_TOOLS_HPP

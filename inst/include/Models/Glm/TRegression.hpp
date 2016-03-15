@@ -20,81 +20,81 @@
 #define BOOM_T_REGRESSION_HPP
 
 #include <Models/Glm/Glm.hpp>
+#include <Models/Policies/ParamPolicy_3.hpp>
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 
 namespace BOOM{
 
-  class ScaledChisqModel;
-  class WeightedRegressionModel;
+  class WeightedRegSuf;
+
   class TRegressionModel
     : public GlmModel,
-      public CompositeParamPolicy,
+      public ParamPolicy_3<GlmCoefs, UnivParams, UnivParams>,
       public IID_DataPolicy<RegressionData>,
       public PriorPolicy,
-      public NumOptModel,
-      public LatentVariableModel
+      public NumOptModel
   {
   public:
-
     TRegressionModel(uint p);   // dimension of beta
-    TRegressionModel(const Vec &b, double Sigma, double nu=30);
-    TRegressionModel(const TRegressionModel &rhs);
-    TRegressionModel(const DatasetType &d, bool inc_all=true);
-    TRegressionModel(const Mat &X, const Vec &y);
-    TRegressionModel * clone()const;
+    TRegressionModel(const Vector &b, double Sigma, double nu=30);
+    TRegressionModel(const Matrix &X, const Vector &y);
+    TRegressionModel * clone()const override;
 
-    virtual GlmCoefs & coef();
-    virtual const GlmCoefs & coef()const;
-    virtual Ptr<GlmCoefs> coef_prm();
-    virtual const Ptr<GlmCoefs> coef_prm()const;
+    GlmCoefs & coef() override;
+    const GlmCoefs & coef()const override;
+    Ptr<GlmCoefs> coef_prm() override;
+    const Ptr<GlmCoefs> coef_prm()const override;
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
     Ptr<UnivParams> Nu_prm();
     const Ptr<UnivParams> Nu_prm()const;
 
-    //    void set_beta(const Vec &b){wreg_->set_beta(b);}
-    void set_sigsq(double s2);
-    void set_nu(double Nu);
-
-    // beta() and Beta() inherited from GLM;
+    // beta() and Beta() inherited from GlmModel;
     const double & sigsq()const;
     double sigma()const;
+    void set_sigsq(double s2);
+
     const double & nu()const;
+    void set_nu(double Nu);
 
     // The argument to Loglike is a vector containing the included
     // regression coefficients, followed by the residual 'dispersion'
     // parameter sigsq, followed by the tail thickness parameter nu.
     double Loglike(const Vector &beta_sigsq_nu,
-                   Vec &g, Mat &h, uint nd)const;
-    void mle();
-    double complete_data_Loglike(Vec &g, Mat &h, uint nd)const;
-    virtual double complete_data_loglike()const;
+                   Vector &g, Matrix &h, uint nd)const override;
 
-    void impute_latent_data(RNG &rng);
-    void initialize_params();
-    void EStep();
+    // Args:
+    //   full_beta: The full set of regression coefficients, including
+    //     any that are set to zero.
+    //   sigma:  The "residual standard deviation" parameter.
+    //   nu:  The tail thickness parameter.
+    double log_likelihood(const Vector &full_beta,
+                          double sigma,
+                          double nu) const;
+
+    // The MLE is computed using an EM algorithm.
+    void mle() override;
 
     double pdf(dPtr, bool)const;
     double pdf(Ptr<DataType>, bool)const;
 
     Ptr<RegressionData>  simdat()const;
-    Ptr<RegressionData>  simdat(const Vec &X)const;
-
-    virtual void add_data(Ptr<RegressionData>);
-    virtual void add_data(Ptr<Data>);
+    Ptr<RegressionData>  simdat(const Vector &X)const;
 
   private:
-    void Impute(bool draw, RNG &rng); //
-    Ptr<WeightedRegressionModel> wreg_;
-    Ptr<ScaledChisqModel> wgt_;
-    void setup_params();
+    // Clear 'suf' and fill it with the expected complete data
+    // sufficient statistics.
+    void EStep(WeightedRegSuf &suf) const;
+
+    // Take the contents of suf and use it to set model parameters to
+    // their MLE's.  Estimate of nu is based on the observed data.
+    // Return the observed data log likelihood given the new
+    // parameters.
+    double MStep(const WeightedRegSuf &suf);
   };
-  //------------------------------------------------------------
 
-
-
-}
+}  // namespace BOOM
 
 #endif// BOOM_T_REGRESSION_HPP

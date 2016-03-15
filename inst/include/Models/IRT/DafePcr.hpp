@@ -36,26 +36,26 @@ namespace BOOM{
     class DafePcrDataImputer : public PosteriorSampler{
     public:
       typedef PartialCreditModel PCR;
-      DafePcrDataImputer();
+      DafePcrDataImputer(RNG &seeding_rng = GlobalRng::rng);
       void add_item(Ptr<PCR>);
-      void draw();
-      double logpri()const;
-      Vec get_u(Response r, bool nag=true)const;
+      void draw() override;
+      double logpri()const override;
+      Vector get_u(Response r, bool nag=true)const;
 
       // ---- for debugging purposes only -----
-      void set_u(Response r, const Vec &u);
+      void set_u(Response r, const Vector &u);
       //---------------------------------------
     private:
       // this object stores internal data from partial credit models
       std::set<Ptr<PCR> > items;
-      std::map<Response, Vec> latent_data;  // "u" from scott 2006
-      Vec Eta;                    // workspace
+      std::map<Response, Vector> latent_data;  // "u" from scott 2006
+      Vector Eta;                    // workspace
       const double mu;            // -1* Euler's constant
 
       //--- internal helper functions--
       void setup_latent_data(Ptr<PCR>);
       void setup_data_1(Ptr<PCR>, Ptr<Subject>);
-      void impute_u(Vec &u, const Vec & Eta, uint y);
+      void impute_u(Vector &u, const Vector & Eta, uint y);
       void draw_item_u(Ptr<PCR>);
       void draw_one(Ptr<PCR>, Ptr<Subject>);
     };
@@ -64,11 +64,12 @@ namespace BOOM{
     class DafePcrItemSampler : public PosteriorSampler{
     public:
       DafePcrItemSampler(Ptr<PartialCreditModel>,
-			 Ptr<DafePcrDataImputer>,
-			 Ptr<MvnModel> Prior,
-			 double Tdf);
-      void draw();
-      double logpri()const;
+             Ptr<DafePcrDataImputer>,
+             Ptr<MvnModel> Prior,
+             double Tdf,
+       RNG &seeding_rng = GlobalRng::rng);
+      void draw() override;
+      double logpri()const override;
     private:
       Ptr<PartialCreditModel> mod;
       Ptr<MvnModel> prior;
@@ -77,8 +78,8 @@ namespace BOOM{
       Ptr<MvtIndepProposal> prop;
 
       const double sigsq;  //  = pi^2/6 = 1.64493406684
-      Spd xtx, ivar;
-      Vec xtu, mean;
+      SpdMatrix xtx, ivar;
+      Vector xtu, mean;
 
       void get_moments();
       void accumulate_moments(Ptr<Subject>);
@@ -87,10 +88,11 @@ namespace BOOM{
     class DafePcrSubject : public PosteriorSampler{
     public:
       DafePcrSubject(Ptr<Subject> sub, Ptr<SubjectPrior> prior,
-		     Ptr<DafePcrDataImputer> imp, double Tdf= -1.0);
+             Ptr<DafePcrDataImputer> imp, double Tdf= -1.0,
+         RNG &seeding_rng = GlobalRng::rng);
 
-      double logpri()const;
-      void draw();
+      double logpri()const override;
+      void draw() override;
     private:
       Ptr<Subject> subject;
       Ptr<SubjectPrior> pri;
@@ -98,8 +100,8 @@ namespace BOOM{
       Ptr<MetropolisHastings> sampler;
       Ptr<MvtIndepProposal> prop;
       const double sigsq;
-      Vec mean;
-      Spd Ivar;
+      Vector mean;
+      SpdMatrix Ivar;
       void set_moments();
       void accumulate_moments(std::pair<Ptr<Item>, Response>);
     };

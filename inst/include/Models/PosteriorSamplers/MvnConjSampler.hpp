@@ -30,29 +30,34 @@ namespace BOOM{
     : public PosteriorSampler
   {
   public:
-    MvnConjSampler(MvnModel *mod, const Vec &mu0, double kappa,
-		   const Spd & SigmaHat, double prior_df);
+    MvnConjSampler(MvnModel *mod, const Vector &mu0, double kappa,
+           const SpdMatrix & SigmaHat, double prior_df,
+       RNG &seeding_rng = GlobalRng::rng);
 
-    MvnConjSampler(MvnModel *mod, Ptr<MvnGivenSigma>, Ptr<WishartModel>);
+    MvnConjSampler(MvnModel *mod, Ptr<MvnGivenSigma>, Ptr<WishartModel>,
+       RNG &seeding_rng = GlobalRng::rng);
 
-    void draw();
-    void find_posterior_mode();
-    double logpri()const;
+    void draw() override;
+    double logpri()const override;
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
     double kappa()const;
     double prior_df()const;
-    const Vec & mu0()const;
-    const Spd & prior_SS()const;
+    const Vector & mu0()const;
+    const SpdMatrix & prior_SS()const;
   private:
     MvnModel *mod_;
     Ptr<MvnGivenSigma> mu_;
     Ptr<WishartModel> siginv_;
 
-    mutable Spd SS;
-    mutable Vec mu_hat;
+    mutable SpdMatrix SS;
+    mutable Vector mu_hat;
     mutable double n,k,DF;
 
     void set_posterior_sufficient_statistics();
   };
 
-}
+}  // namespace BOOM
 #endif// BOOM_MVN_CONJ_SAMPLER_HPP

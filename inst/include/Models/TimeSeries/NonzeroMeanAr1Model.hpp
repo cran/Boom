@@ -30,19 +30,19 @@ namespace BOOM{
   class Ar1Suf : public SufstatDetails<DoubleData>{
    public:
     Ar1Suf();
-    Ar1Suf * clone()const;
-    void clear();
-    virtual void Update(const DoubleData &d);
+    Ar1Suf * clone()const override;
+    void clear() override;
+    void Update(const DoubleData &d) override;
     void update_raw(double y);
-    Ar1Suf * abstract_combine(Sufstat *s);
+    Ar1Suf * abstract_combine(Sufstat *s) override;
     void combine(Ptr<Ar1Suf>);
     void combine(const Ar1Suf &rhs);
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream &print(ostream &out)const override;
 
     double n()const;
 
@@ -80,11 +80,11 @@ namespace BOOM{
   {
    public:
     NonzeroMeanAr1Model(double mu = 0, double phi = 0, double sigma = 1);
-    NonzeroMeanAr1Model(const Vec &y);
+    NonzeroMeanAr1Model(const Vector &y);
     NonzeroMeanAr1Model(const NonzeroMeanAr1Model &rhs);
-    NonzeroMeanAr1Model * clone()const;
+    NonzeroMeanAr1Model * clone()const override;
 
-    virtual void mle();
+    void mle() override;
     virtual double pdf(Ptr<Data>, bool logscale)const;
 
     double sigma()const;

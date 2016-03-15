@@ -21,6 +21,7 @@
 #include <Models/Glm/Glm.hpp>
 #include <stdexcept>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   namespace IRT{
@@ -35,7 +36,7 @@ namespace BOOM{
     {
     }
 
-    Subject::Subject(const string &Id, const Vec & theta)
+    Subject::Subject(const string &Id, const Vector & theta)
       :
       id_(Id),
       responses_(),
@@ -46,7 +47,7 @@ namespace BOOM{
     {
     }
 
-    Subject::Subject(const string &Id, uint nsub, const Vec & bg)
+    Subject::Subject(const string &Id, uint nsub, const Vector & bg)
       : id_(Id),
 	responses_(),
 	search_helper(new NullItem),
@@ -114,7 +115,7 @@ namespace BOOM{
 	  ostringstream msg;
 	  msg << "item with id "<< item_id
 	    << " not found in Subject::find_item";
-	  throw_exception<std::runtime_error>(msg.str());
+	  report_error(msg.str());
 	}
 	return Ptr<Item>();
       }
@@ -138,10 +139,10 @@ namespace BOOM{
     const Ptr<VectorParams> Subject::Theta_prm()const{
       return Theta_;}
 
-    const Vec & Subject::Theta()const{
+    const Vector & Subject::Theta()const{
       return Theta_prm()->value();}
 
-    void Subject::set_Theta(const Vec &v){
+    void Subject::set_Theta(const Vector &v){
       Theta_prm()->set(v);}
 
     const ItemResponseMap & Subject::item_responses()const{
@@ -152,14 +153,14 @@ namespace BOOM{
       if(it==responses_.end()) return Response();
       else return it->second; }
 
-    Spd Subject::xtx()const{
-      Spd ans(Nscales(), 0.0);
+    SpdMatrix Subject::xtx()const{
+      SpdMatrix ans(Nscales(), 0.0);
       Selector inc(Nscales()+1, true);
       inc.drop(0);
 
       for(IrIterC it = responses_.begin(); it!=responses_.end(); ++it){
 	Ptr<Item> item(it->first);
-	Vec b = inc.select(item->beta());
+	Vector b = inc.select(item->beta());
 	ans.add_outer(b);
       }
       return ans;

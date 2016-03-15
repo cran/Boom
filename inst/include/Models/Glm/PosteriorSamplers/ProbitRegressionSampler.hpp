@@ -29,25 +29,26 @@ namespace BOOM{
   {
    public:
     ProbitRegressionSampler(ProbitRegressionModel *model,
-                            Ptr<MvnBase> prior);
-    void draw();
-    double logpri()const;
+                            Ptr<MvnBase> prior,
+                            RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri()const override;
 
     // call refresh_xtx when the model has gained or lost data.
     // Otherwise, it is assumed that xtx_ is fixed between iterations
     void refresh_xtx();
 
     void impute_latent_data();
-    const Vec & xtz()const;
-    const Spd & xtx()const;
+    const Vector & xtz()const;
+    const SpdMatrix & xtx()const;
    protected:
     virtual void draw_beta();
    private:
     ProbitRegressionModel *mod_;
     Ptr<MvnBase> pri_;
-    Spd xtx_;
-    Vec xtz_;
-    Vec beta_;
+    SpdMatrix xtx_;
+    Vector xtz_;
+    Vector beta_;
   };
 }
 

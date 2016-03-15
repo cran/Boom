@@ -56,8 +56,10 @@ namespace BOOM {
       Ptr<GammaModelBase> sigsq_level_prior,
       Ptr<DoubleModel> nu_level_prior,
       Ptr<GammaModelBase> sigsq_slope_prior,
-      Ptr<DoubleModel> nu_slope_prior)
-      : model_(model),
+      Ptr<DoubleModel> nu_slope_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         sigsq_level_prior_(sigsq_level_prior),
         nu_level_prior_(nu_level_prior),
         sigsq_slope_prior_(sigsq_slope_prior),

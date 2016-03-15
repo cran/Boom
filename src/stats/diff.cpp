@@ -20,10 +20,10 @@
 namespace BOOM{
 
 template <class V>
-Vec diff_impl(const V& v, bool leading_zero){
+Vector diff_impl(const V& v, bool leading_zero){
   int n = v.size();
   if(n==0) return v;
-  Vec ans(leading_zero ? n : n-1);
+  Vector ans(leading_zero ? n : n-1);
   int pos = 0;
   if(leading_zero) {
     ans[0] = 0;
@@ -35,13 +35,13 @@ Vec diff_impl(const V& v, bool leading_zero){
   return ans;
 }
 
-Vec diff(const Vec &v, bool leading_zero) {
+Vector diff(const Vector &v, bool leading_zero) {
   return diff_impl(v, leading_zero);
 }
-Vec diff(const VectorView &v, bool leading_zero) {
+Vector diff(const VectorView &v, bool leading_zero) {
   return diff_impl(v, leading_zero);
 }
-Vec diff(const ConstVectorView &v, bool leading_zero) {
+Vector diff(const ConstVectorView &v, bool leading_zero) {
   return diff_impl(v, leading_zero);
 }
 

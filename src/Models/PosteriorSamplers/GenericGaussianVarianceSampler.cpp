@@ -59,4 +59,15 @@ namespace BOOM {
     }
   }
 
+  double GenericGaussianVarianceSampler::posterior_mode(
+      double data_df, double data_ss) const {
+    double DF = data_df + 2 * prior_->alpha();
+    double SS = data_ss + 2 * prior_->beta();
+    double alpha = DF / 2;
+    double beta = SS / 2;
+    double mode = beta / (alpha + 1);
+    double sigsq_max = square(sigma_max_);
+    return mode > sigsq_max ? sigsq_max : mode;
+  }
+
 }  // namespace BOOM

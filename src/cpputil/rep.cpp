@@ -19,12 +19,12 @@
 
 namespace BOOM{
 
-  Vec rep(const Vec &x, uint n){
+  Vector rep(const Vector &x, uint n){
     uint m = x.size();
-    Vec ans(m*n);
-    Vec::const_iterator b = x.begin();
-    Vec::const_iterator e = x.end();
-    Vec::iterator out = ans.begin();
+    Vector ans(m*n);
+    Vector::const_iterator b = x.begin();
+    Vector::const_iterator e = x.end();
+    Vector::iterator out = ans.begin();
     for(uint i=0; i<n; ++i){
       std::copy(b,e,out);
       out+=m;

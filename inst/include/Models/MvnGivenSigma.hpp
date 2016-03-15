@@ -50,9 +50,9 @@ namespace BOOM{
     // See also MvnGivenX.  These priors are similar.  Use this one if
     // X is going to remain fixed, and MvnGivenX if X will change.
 
-    MvnGivenSigma(const Vec &mu, double Kappa);
-    MvnGivenSigma(const Vec &mu, double Kappa, const Spd & Siginv);
-    MvnGivenSigma(const Vec &mu, double Kappa, Ptr<SpdData> Sigma);
+    MvnGivenSigma(const Vector &mu, double Kappa);
+    MvnGivenSigma(const Vector &mu, double Kappa, const SpdMatrix & Siginv);
+    MvnGivenSigma(const Vector &mu, double Kappa, Ptr<SpdData> Sigma);
     MvnGivenSigma(Ptr<VectorParams> mu,
 		  Ptr<UnivParams> Kappa);
     MvnGivenSigma(Ptr<VectorParams> mu,
@@ -60,39 +60,39 @@ namespace BOOM{
 		  Ptr<SpdData> Sigma);
 
     MvnGivenSigma(const MvnGivenSigma & rhs);
-    MvnGivenSigma * clone()const;
+    MvnGivenSigma * clone()const override;
 
     void set_Sigma(Ptr<SpdData> Sigma);
-    void set_Sigma(const Spd &V, bool ivar=false);
+    void set_Sigma(const SpdMatrix &V, bool ivar=false);
 
     Ptr<VectorParams> Mu_prm();
     const Ptr<VectorParams> Mu_prm()const;
     Ptr<UnivParams> Kappa_prm();
     const Ptr<UnivParams> Kappa_prm()const;
 
-    uint dim()const;
-    const Vec & mu() const;
+    uint dim()const override;
+    const Vector & mu() const override;
     double kappa()const;
 
-    void set_mu(const Vec &);
+    void set_mu(const Vector &);
     void set_kappa(double k);
-    void mle();
+    void mle() override;
     // The argument is a vector with the mean vector first, and then
     // the proportionalyity facctor 'kappa' second.
-    double loglike(const Vector &mu_kappa)const;
+    double loglike(const Vector &mu_kappa)const override;
     double pdf(Ptr<Data>, bool)const;
     double pdf(Ptr<DataType>, bool)const;
 
-    virtual double Logp(const Vec &x, Vec &g, Mat &h, uint nd)const;
-    Vec sim()const;
+    double Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const override;
+    Vector sim()const override;
 
     // overloads required to conform with the MvnBase interface The
     // 'Sigma' here refers to the vaiance, not the Sigma paramter.
     // i.e. Sigma() returns  Sigma/kappa
 
-    virtual const Spd & Sigma()const;
-    virtual const Spd & siginv()const;
-    virtual double ldsi()const;
+    const SpdMatrix & Sigma()const override;
+    const SpdMatrix & siginv()const override;
+    double ldsi()const override;
     //--------------------------------------------------------
 
 
@@ -100,9 +100,9 @@ namespace BOOM{
     Ptr<SpdData> Sigma_;
     void check_Sigma()const;
 
-    mutable Spd S;
-//     virtual const Spd & Sigma()const;
-//     virtual const Spd & siginv()const;
+    mutable SpdMatrix S;
+//     virtual const SpdMatrix & Sigma()const;
+//     virtual const SpdMatrix & siginv()const;
 //     virtual double ldsi()const;
   };
 

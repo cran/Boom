@@ -40,9 +40,10 @@ namespace BOOM{
     // latent data.
   public:
     MLAuxMixSampler(MultinomialLogitModel *Mod,
-		    Ptr<MvnBase> Pri, uint nthreads=1);
-    virtual void draw();
-    virtual double logpri()const;
+            Ptr<MvnBase> Pri, uint nthreads=1,
+            RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
   private:
     MultinomialLogitModel *mod_;
     Ptr<MvnBase> pri;

@@ -27,7 +27,7 @@ namespace BOOM{
   class ScalarLogpostTF{
   public:
     ScalarLogpostTF(LoglikeModel * m, Ptr<DoubleModel> pri);
-    double operator()(const Vec &z)const;  // z is really a scalar
+    double operator()(const Vector &z)const;  // z is really a scalar
     double operator()(double z)const;
   protected:
   private:

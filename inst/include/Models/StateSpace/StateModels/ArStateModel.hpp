@@ -56,25 +56,25 @@ namespace BOOM{
    public:
     ArStateModel(int number_of_lags = 1);
     ArStateModel(const ArStateModel &rhs);
-    virtual ArStateModel * clone()const;
+    ArStateModel * clone() const override;
 
-    virtual void observe_state(const ConstVectorView previous_state,
+    void observe_state(const ConstVectorView previous_state,
                                const ConstVectorView current_state,
-                               int t);
+                               int t) override;
 
-    virtual uint state_dimension()const;
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    uint state_dimension()const override;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
+    Vector initial_state_mean()const override;
+    SpdMatrix initial_state_variance()const override;
 
-    void set_initial_state_mean(const Vec &mu);
-    void set_initial_state_variance(const Spd &Sigma);
+    void set_initial_state_mean(const Vector &mu);
+    void set_initial_state_variance(const SpdMatrix &Sigma);
     void use_stationary_distribution_as_initial_distribution();
 
    private:
@@ -83,8 +83,8 @@ namespace BOOM{
     bool state_variance_is_current_;
     SparseVector observation_matrix_;
 
-    Vec initial_state_mean_;
-    Spd initial_state_variance_;
+    Vector initial_state_mean_;
+    SpdMatrix initial_state_variance_;
     bool stationary_initial_distribution_;
 
     void observe_residual_variance() {

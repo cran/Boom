@@ -66,32 +66,32 @@ namespace BOOM{
     // I.e. rows of X correspond to time points.
     DynamicRegressionStateModel(const Matrix &X);
     DynamicRegressionStateModel(const DynamicRegressionStateModel &rhs);
-    DynamicRegressionStateModel * clone()const;
+    DynamicRegressionStateModel * clone()const override;
 
     void set_xnames(const std::vector<string> &xnames);
     const std::vector<string> & xnames()const;
 
-    virtual void clear_data();
-    virtual void observe_state(const ConstVectorView then,
+    void clear_data() override;
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
-    virtual void observe_initial_state(const ConstVectorView &state);
-    virtual uint state_dimension()const;
+                               int time_now) override;
+    void observe_initial_state(const ConstVectorView &state) override;
+    uint state_dimension()const override;
 
-    virtual void simulate_state_error(VectorView eta, int t)const;
+    void simulate_state_error(VectorView eta, int t)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
 
-    virtual SparseVector observation_matrix(int t)const;
+    SparseVector observation_matrix(int t)const override;
 
     // The initial state is the value of the regression coefficients
     // at time 0.  Zero with a big variance is a good guess.
-    virtual Vec initial_state_mean()const;
-    void set_initial_state_mean(const Vec &mu);
+    Vector initial_state_mean()const override;
+    void set_initial_state_mean(const Vector &mu);
 
-    virtual Spd initial_state_variance()const;
-    void set_initial_state_variance(const Spd &sigma);
+    SpdMatrix initial_state_variance()const override;
+    void set_initial_state_variance(const SpdMatrix &sigma);
 
     const GaussianSuf * suf(int i)const;
     double sigsq(int i)const;
@@ -101,12 +101,14 @@ namespace BOOM{
     Ptr<UnivParams> Sigsq_prm(int i);
     const Ptr<UnivParams> Sigsq_prm(int i)const;
 
+    void add_forecast_data(const Matrix &predictors);
+
    private:
     void check_size(int n)const;
 
     uint xdim_;
     Vector initial_state_mean_;
-    Spd initial_state_variance_;
+    SpdMatrix initial_state_variance_;
     std::vector<string> xnames_;
 
     // Each model is the prior for the differences in regression

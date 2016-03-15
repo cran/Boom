@@ -255,8 +255,40 @@ namespace BOOM{
     return Matrix(ToBoomMatrixView(m));
   }
 
-  Spd ToBoomSpd(SEXP m){
+  SpdMatrix ToBoomSpdMatrix(SEXP m){
     return SpdMatrix(ToBoomMatrixView(m));
+  }
+
+  DataTable ToBoomDataTable(SEXP r_data_frame) {
+    if (!Rf_isFrame(r_data_frame)) {
+      report_error("r_data_frame must be a data.frame");
+    }
+    DataTable table;
+    std::vector<std::string> variable_names = getListNames(r_data_frame);
+    int number_of_variables = Rf_length(r_data_frame);
+    for (int i = 0; i < number_of_variables; ++i) {
+      SEXP r_variable = VECTOR_ELT(r_data_frame, i);
+      if (Rf_isFactor(r_variable)) {
+        Factor factor(r_variable);
+        table.append_variable(factor.vector_of_observations(),
+                              variable_names[i]);
+      } else if (Rf_isString(r_variable)) {
+        table.append_variable(make_catdat_ptrs(StringVector(r_variable)),
+                              variable_names[i]);
+      } else if (Rf_isNumeric(r_variable)) {
+        table.append_variable(ToBoomVector(r_variable),
+                              variable_names[i]);
+      } else {
+        std::ostringstream err;
+        err << "Variable " << i + 1
+            << " in the data frame ("
+            << variable_names[i]
+            << ") is neither numeric, factor, nor character.  "
+            << "I'm not sure what to do with it.";
+        report_error(err.str());
+      }
+    }
+    return table;
   }
 
   std::vector<bool> ToVectorBool(SEXP logical_vector){
@@ -373,6 +405,15 @@ namespace BOOM{
 
   CategoricalData Factor::to_cateogrical_data(int i) const {
     return CategoricalData(values_[i], levels_);
+  }
+
+  std::vector<Ptr<CategoricalData> > Factor::vector_of_observations() const {
+    std::vector<Ptr<CategoricalData> > ans;
+    ans.reserve(this->length());
+    for (int i = 0; i < length(); ++i) {
+      ans.push_back(new CategoricalData(values_[i], levels_));
+    }
+    return ans;
   }
 
 }  // namespace BOOM;

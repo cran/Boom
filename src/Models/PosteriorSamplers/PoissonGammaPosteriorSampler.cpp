@@ -25,8 +25,10 @@ namespace BOOM {
   PoissonGammaPosteriorSampler::PoissonGammaPosteriorSampler(
       PoissonGammaModel *model,
       Ptr<DoubleModel> mean_prior_distribution,
-      Ptr<DoubleModel> sample_size_prior)
-      : model_(model),
+      Ptr<DoubleModel> sample_size_prior,
+      RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
         prior_mean_prior_distribution_(mean_prior_distribution),
         prior_sample_size_prior_distribution_(sample_size_prior),
         prior_mean_sampler_(

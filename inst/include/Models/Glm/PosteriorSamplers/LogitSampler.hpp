@@ -35,11 +35,19 @@ namespace BOOM{
   {
   public:
     LogitSampler(LogisticRegressionModel *mod,
-		 Ptr<MvnBase> pri);
-    virtual void draw();
-    virtual double logpri()const;
+         Ptr<MvnBase> pri, RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
     void impute_latent_data();
     const Ptr<WeightedRegSuf> suf()const{return suf_;}
+
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
+    double log_posterior_at_mode() const {
+      return logpost_at_mode_;
+    }
 
   private:
     double draw_z(bool y, double eta)const;
@@ -50,10 +58,12 @@ namespace BOOM{
     Ptr<MvnBase> pri_;
     Ptr<WeightedRegSuf> suf_;
 
-    Spd ivar;     // workspace:  stores inverse variance
-    Vec ivar_mu;  // workspace:  stores un-normalized mean
+    SpdMatrix ivar;     // workspace:  stores inverse variance
+    Vector ivar_mu;  // workspace:  stores un-normalized mean
+
+    double logpost_at_mode_;
   };
 
-}
+}  // namespace BOOM
 
 #endif // BOOM_LOGIT_HOLMES_HELD_SAMPLER_HPP

@@ -37,27 +37,27 @@ namespace BOOM {
   class ArSuf : public SufstatDetails<DoubleData> {
    public:
     ArSuf(int number_of_lags);
-    virtual ArSuf * clone()const;
-    virtual void clear();
+    ArSuf * clone() const override;
+    void clear() override;
 
-    virtual void Update(const DoubleData &y);
-    void add_mixture_data(double y, const Vec &lags, double weight);
+    void Update(const DoubleData &y) override;
+    void add_mixture_data(double y, const Vector &lags, double weight);
 
-    virtual ArSuf * abstract_combine(Sufstat *s);
+    ArSuf * abstract_combine(Sufstat *s) override;
     void combine(Ptr<ArSuf> s);
     void combine(const ArSuf &s);
-    virtual Vec vectorize(bool minimal = true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal = true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal = true);
-    virtual ostream & print(ostream &out)const;
+    Vector vectorize(bool minimal = true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal = true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal = true) override;
+    ostream & print(ostream &out)const override;
 
     // forwarded calls to reg_suf_...
     double n()const{return reg_suf_->n();}
     double yty()const{return reg_suf_->yty();}
-    Vec xty()const{return reg_suf_->xty();}
-    Spd xtx()const{return reg_suf_->xtx();}
+    Vector xty()const{return reg_suf_->xty();}
+    SpdMatrix xtx()const{return reg_suf_->xtx();}
 
    private:
     // lags must be in the same order as the AR coefficients
@@ -85,17 +85,17 @@ namespace BOOM {
     ArModel(int number_of_lags = 1);
     ArModel(Ptr<VectorParams> autoregression_coefficients,
             Ptr<UnivParams> innovation_variance);
-    ArModel * clone()const;
+    ArModel * clone()const override;
 
     int number_of_lags()const;
 
     double sigma()const;
     double sigsq()const;
-    const Vec & phi()const;
+    const Vector & phi()const;
 
     void set_sigma(double sigma);
     void set_sigsq(double sigsq);
-    void set_phi(const Vec &phi);
+    void set_phi(const Vector &phi);
 
     Ptr<VectorParams> Phi_prm();
     const Ptr<VectorParams> Phi_prm()const;
@@ -104,7 +104,7 @@ namespace BOOM {
 
     // Returns a vector giving the autocovariance of the model for 0,
     // 1, 2, ..., number_of_lags lags.
-    Vec autocovariance(int number_of_lags)const;
+    Vector autocovariance(int number_of_lags)const;
 
     // Returns true if the polynomial \phi(z)
     //
@@ -112,15 +112,15 @@ namespace BOOM {
     //
     // has all its (complex) roots outside the unit circle, which is a
     // requirement for an AR(p) process to be stationary.
-    static bool check_stationary(const Vec &phi);
+    static bool check_stationary(const Vector &phi);
 
     // Simulate n time points from the process, starting from the
     // stationary distribution.
-    Vec simulate(int n)const;
+    Vector simulate(int n)const;
 
     // Simulate n time points from the process, starting from y0 as an
     // initial condition.
-    Vec simulate(int n, const Vec &y0)const;
+    Vector simulate(int n, const Vector &y0)const;
 
    private:
     // An AR(p) process can be represented as a white noise filter:
@@ -132,7 +132,7 @@ namespace BOOM {
     // generates a recurrence relationship for all higher order
     // coefficients (which must sum to zero).  The "\psi" coefficients
     // are stored as filter_coefficients_.
-    mutable Vec filter_coefficients_;
+    mutable Vector filter_coefficients_;
     mutable bool filter_coefficients_current_;
 
     void set_filter_coefficients()const;

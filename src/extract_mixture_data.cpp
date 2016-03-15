@@ -41,7 +41,7 @@ namespace BOOM {
      public:
       // rdata is a an R vector
       virtual std::vector<Ptr<Data> > Extract(SEXP rdata) const {
-        BOOM::Vec v = ToBoomVector(rdata);
+        BOOM::Vector v = ToBoomVector(rdata);
         int n = v.size();
         std::vector<Ptr<Data> > ans;
         ans.reserve(n);
@@ -111,7 +111,7 @@ namespace BOOM {
      public:
       // rdata is a an R vector
       virtual std::vector<Ptr<Data> > Extract(SEXP rdata) const {
-        Vec v = ToBoomVector(rdata);
+        Vector v = ToBoomVector(rdata);
         int n = v.size();
         std::vector<Ptr<Data> > ans;
         ans.reserve(n);
@@ -130,7 +130,7 @@ namespace BOOM {
      public:
       // rdata is an R matrix with each row
       virtual std::vector<Ptr<Data> > Extract(SEXP rdata) const {
-        BOOM::Mat y = ToBoomMatrix(rdata);
+        BOOM::Matrix y = ToBoomMatrix(rdata);
         int n = nrow(y);
         std::vector<Ptr<Data> > ans;
         ans.reserve(n);
@@ -159,8 +159,8 @@ namespace BOOM {
       // rdata is a list that contains two elements: a vector named y and
       // a matrix named x.
       virtual std::vector<Ptr<Data> > Extract(SEXP rdata) const {
-        Vec y = ToBoomVector(getListElement(rdata, "y"));
-        Mat x = ToBoomMatrix(getListElement(rdata, "x"));
+        Vector y = ToBoomVector(getListElement(rdata, "y"));
+        Matrix x = ToBoomMatrix(getListElement(rdata, "x"));
         int n = y.size();
         std::vector<Ptr<Data> > ans;
         ans.reserve(n);
@@ -175,7 +175,7 @@ namespace BOOM {
       void check_missing(Ptr<Data> d) const {
         Ptr<RegressionData> dp = d.dcast<RegressionData>();
         bool missing_response = R_IsNA(dp->y());
-        const Vec &x(dp->x());
+        const Vector &x(dp->x());
         int number_missing = count_missing(x);
         if(missing_response && number_missing == x.size()){
           dp->set_missing_status(BOOM::Data::completely_missing);
@@ -193,7 +193,7 @@ namespace BOOM {
       virtual std::vector<Ptr<Data> > Extract(SEXP rdata) const {
         int *y = INTEGER(getListElement(rdata, "y"));
         int *n = INTEGER(getListElement(rdata, "n"));
-        Mat x = ToBoomMatrix(getListElement(rdata, "x"));
+        Matrix x = ToBoomMatrix(getListElement(rdata, "x"));
         int nobs = nrow(x);
         std::vector<Ptr<Data> > ans;
         ans.reserve(nobs);
@@ -357,7 +357,7 @@ namespace BOOM {
         // more.
         ans.reserve(n);
         for(int i = 0; i < n; ++i){
-          Vec data = ToBoomVector(VECTOR_ELT(rknown_source, i));
+          Vector data = ToBoomVector(VECTOR_ELT(rknown_source, i));
           for(int j = 0; j < data.size(); ++j){
             double y = data[j];
             ans.push_back(R_IsNA(y) ? -1 : lround(y));
@@ -365,7 +365,7 @@ namespace BOOM {
         }
       }else if(Rf_isNumeric(rknown_source)){
         // if it is a numeric vector than unpack it
-        Vec data = ToBoomVector(rknown_source);
+        Vector data = ToBoomVector(rknown_source);
         ans.reserve(data.size());
         for(int j = 0; j < data.size(); ++j){
           double y = data[j];

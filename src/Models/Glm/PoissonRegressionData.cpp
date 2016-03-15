@@ -18,22 +18,36 @@
 
 #include <Models/Glm/PoissonRegressionData.hpp>
 #include <cpputil/report_error.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM {
 
-  PoissonRegressionData::PoissonRegressionData(int y, const Vec &x)
-      : GlmData<IntData>(y, x),
-        exposure_(1.0),
-        log_exposure_(0)
+  PoissonRegressionData::PoissonRegressionData(
+      int y,
+      const Vector &x,
+      double exposure)
+      : PoissonRegressionData(y, new VectorData(x), exposure)
   {}
 
-  PoissonRegressionData::PoissonRegressionData(int y, const Vec &x, double exposure)
-      : GlmData<IntData>(y, x),
+  PoissonRegressionData::PoissonRegressionData(
+      int y,
+      Ptr<VectorData> x,
+      double exposure)
+      : GlmData<IntData>(Ptr<IntData>(new IntData(y)),
+                         x),
         exposure_(exposure),
         log_exposure_(log(exposure))
   {
+    if (y < 0) {
+      report_error("Negative value of 'y' passed to "
+                   "PoissonRegressionData constructor.");
+    }
     if (exposure < 0) {
       report_error("You can't pass a negative exposure to the "
+                   "PoissonRegressionData constructor.");
+    }
+    if (exposure == 0 && y > 0) {
+      report_error("If exposure is 0 then y must also be 0 in "
                    "PoissonRegressionData constructor.");
     }
   }
@@ -49,5 +63,20 @@ namespace BOOM {
   double PoissonRegressionData::exposure()const{return exposure_;}
 
   double PoissonRegressionData::log_exposure()const{return log_exposure_;}
+
+  void PoissonRegressionData::set_exposure(double exposure, bool signal) {
+    if (exposure < 0) {
+      report_error("Exposure must be non-negative");
+    } else if (exposure <= 0.0) {
+      exposure_ = 0.0;
+      log_exposure_ = negative_infinity();
+    } else {
+      exposure_ = exposure;
+      log_exposure_ = log(exposure);
+    }
+    if (signal) {
+      Data::signal();
+    }
+  }
 
 }

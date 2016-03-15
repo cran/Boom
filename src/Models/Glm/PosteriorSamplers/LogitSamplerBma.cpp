@@ -30,9 +30,10 @@ namespace BOOM{
   typedef LogitSamplerBma LSB;
 
   LSB::LogitSamplerBma(LogisticRegressionModel *mod,
-		       Ptr<MvnBase> pri,
-		       Ptr<VariableSelectionPrior> vs)
-    : LogitSampler(mod,pri),
+               Ptr<MvnBase> pri,
+               Ptr<VariableSelectionPrior> vs,
+               RNG &seeding_rng)
+    : LogitSampler(mod, pri, seeding_rng),
       mod_(mod),
       pri_(pri),
       vs_(vs),
@@ -43,9 +44,9 @@ namespace BOOM{
     const Selector & inc(mod_->inc());
     double ans = vs_->logp(inc);
     if(inc.nvars() > 0){
-      Spd ivar = inc.select(pri_->siginv());
-      Vec mu = inc.select(pri_->mu());
-      Vec beta = mod_->included_coefficients();
+      SpdMatrix ivar = inc.select(pri_->siginv());
+      Vector mu = inc.select(pri_->mu());
+      Vector beta = mod_->included_coefficients();
       ans += dmvn(beta, mu, ivar, true);
     }
     return ans;
@@ -79,10 +80,10 @@ namespace BOOM{
     if(!std::isfinite(logp)){
       ostringstream err;
       err << "LogitSamplerBma did not start with a legal configuration."
-	  << endl
-	  << "Selector vector:  " << inc << endl
-	  << "beta:            " << mod_->included_coefficients() <<endl;
-      throw_exception<std::runtime_error>(err.str());
+      << endl
+      << "Selector vector:  " << inc << endl
+      << "beta:            " << mod_->included_coefficients() <<endl;
+      report_error(err.str());
     }
 
     std::vector<uint> flips = seq<uint>(0, nv-1);
@@ -106,17 +107,17 @@ namespace BOOM{
     num += .5*Ominv.logdet();
     if(num == BOOM::negative_infinity()) return num;
 
-    Vec mu = g.select(pri_->mu());
-    Vec Ominv_mu = Ominv * mu;
+    Vector mu = g.select(pri_->mu());
+    Vector Ominv_mu = Ominv * mu;
     num -= .5*mu.dot(Ominv_mu);
 
     bool ok=true;
     iV_tilde_ = Ominv + g.select(suf()->xtx());
-    Mat L = iV_tilde_.chol(ok);
+    Matrix L = iV_tilde_.chol(ok);
     if(!ok)  return BOOM::negative_infinity();
     double denom = sum(log(L.diag()));  // = .5 log |Ominv|
 
-    Vec S = g.select(suf()->xty()) + Ominv_mu;
+    Vector S = g.select(suf()->xty()) + Ominv_mu;
     Lsolve_inplace(L,S);
     denom-= .5*S.normsq();  // S.normsq =  beta_tilde ^T V_tilde beta_tilde
 
@@ -128,8 +129,8 @@ namespace BOOM{
   void LSB::draw_beta_given_gamma(){
     const Selector & inc(mod_->inc());
     Ominv = inc.select(pri_->siginv());
-    Spd ivar = Ominv + inc.select(suf()->xtx());
-    Vec b = inc.select(suf()->xty()) + Ominv * inc.select(pri_->mu());
+    SpdMatrix ivar = Ominv + inc.select(suf()->xtx());
+    Vector b = inc.select(suf()->xty()) + Ominv * inc.select(pri_->mu());
     b = rmvn_suf(ivar, b);
     mod_->set_included_coefficients(b);
   }

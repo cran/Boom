@@ -35,13 +35,17 @@ namespace BOOM{
   public:
     RegressionConjSampler(RegressionModel *,
                           Ptr<MvnGivenXandSigma>,
-                          Ptr<GammaModelBase>);
-    virtual void draw();
-    virtual double logpri()const;
+                          Ptr<GammaModelBase>,
+                          RNG &seeding_rng = GlobalRng::rng);
+    void draw() override;
+    double logpri() const override;
 
-    void find_posterior_mode();
+    void find_posterior_mode(double epsilon = 1e-5) override;
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
 
-    const Vec & b0()const;
+    const Vector & b0()const;
     double kappa()const;
     double prior_df()const;
     double prior_ss()const;
@@ -49,11 +53,11 @@ namespace BOOM{
     RegressionModel *m_;
     Ptr<MvnGivenXandSigma> mu_;
     Ptr<GammaModelBase> siginv_;
-    Vec beta_tilde;
-    Spd ivar;
+    Vector beta_tilde;
+    SpdMatrix ivar;
     double SS, DF;
     GenericGaussianVarianceSampler sigsq_sampler_;
     void set_posterior_suf();
   };
-}
+}  // namespace BOOM
 #endif// BOOM_REGRESSION_CONJUGATE_SAMPLER_HPP

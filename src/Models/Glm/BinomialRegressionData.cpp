@@ -16,13 +16,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Glm/BinomialLogitModel.hpp>
-#include <stdexcept>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   typedef BinomialRegressionData BRD;
-  BRD::BinomialRegressionData(uint y, uint n, const Vec &x, bool add_icpt)
-      : GlmData<IntData>(y,x,add_icpt),
+  BRD::BinomialRegressionData(double y, double n, const Vector &x)
+      : GlmData<DoubleData>(y, x),
+        n_(n)
+  {
+    check();
+  }
+
+  BRD::BinomialRegressionData(double y, double n, Ptr<VectorData> x)
+      : GlmData<DoubleData>(Ptr<DoubleData>(new DoubleData(y)), x),
         n_(n)
   {
     check();
@@ -30,31 +36,32 @@ namespace BOOM{
 
   BRD * BRD::clone()const{ return new BRD(*this);}
 
-  void BRD::set_n(uint n, bool check_n){
+  void BRD::set_n(double n, bool check_n){
     n_ = n;
     if(check_n) check();
   }
 
-  void BRD::set_y(uint y, bool check_n){
-    GlmData<IntData>::set_y(y);
+  void BRD::set_y(double y, bool check_n){
+    GlmData<DoubleData>::set_y(y);
     if(check_n) check();
   }
 
-  uint BRD::n()const{return n_;}
+  double BRD::n()const{return n_;}
 
   void BRD::check()const{
-    if( n_<y() ){
+    if( n_ < y() || n_ < 0 || y() < 0){
       ostringstream err;
       err << "error in BinomialRegressionData:  n < y" << endl
           << "  n = " << n_ << endl
           << "  y = " << y() << endl
           ;
-      throw_exception<std::runtime_error>(err.str());
+      report_error(err.str());
     }
   }
 
   ostream & BRD::display(ostream &out)const{
     out << n_ << " ";
-    return GlmData<IntData>::display(out);
+    return GlmData<DoubleData>::display(out);
   }
-}
+
+}  // namespace BOOM

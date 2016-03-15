@@ -18,39 +18,47 @@
 #include <iostream>
 #include <iomanip>
 #include <cpputil/string_utils.hpp>
+#include <uint.hpp>
 
-namespace BOOM{
-using namespace std;
-
-std::ostream & print_columns(std::ostream &out, const std::vector<Svec> &columns, unsigned pad){
-  unsigned nc = columns.size();
-  std::vector<unsigned> widths;
-  unsigned nr = 0;
-  for(unsigned i=0; i<nc; ++i){
-    unsigned w = 0;
-    unsigned ni = columns[i].size();
-    nr = std::max<unsigned>(nr, ni);
-    for(unsigned j=0; j<ni; ++j) w = std::max<unsigned>(w, columns[i][j].size());
-    w+= pad;
-    widths.push_back(w);
-  }
-
-  for(unsigned i=0; i<nr; ++i){
-    for(unsigned j=0; j<nc; ++j){
-      out << setw(widths[j]);
-      if(i<columns[j].size()) out << columns[j][i];
-      else out << string(widths[j], ' ');
+namespace BOOM {
+  std::ostream & print_columns(
+    std::ostream &out,
+    const std::vector<std::vector<std::string> >  &columns,
+    uint pad) {
+    unsigned nc = columns.size();
+    std::vector<unsigned> widths;
+    unsigned nr = 0;
+    for (unsigned i = 0; i < nc; ++i) {
+      unsigned w = 0;
+      unsigned ni = columns[i].size();
+      nr = std::max<unsigned>(nr, ni);
+      for (unsigned j = 0; j < ni; ++j) {
+        w = std::max<unsigned>(w, columns[i][j].size());
+      }
+      w += pad;
+      widths.push_back(w);
     }
-    out << endl;
+
+    for (unsigned i = 0; i < nr; ++i) {
+      for (unsigned j = 0; j < nc; ++j) {
+        out << std::setw(widths[j]);
+        if (i < columns[j].size()) out << columns[j][i];
+        else out << string(widths[j], ' ');
+      }
+      out << endl;
+    }
+    return out;
   }
-  return out;
-}
 
-ostream & print_two_columns(ostream & out, const Svec & left, const Svec &right, uint pad){
-  std::vector<Svec> cols;
-  cols.push_back(left);
-  cols.push_back(right);
-  return print_columns(out, cols, pad);
-}
+  ostream & print_two_columns(
+      ostream & out,
+      const std::vector<std::string> & left,
+      const std::vector<std::string> &right,
+      uint pad) {
+    std::vector<Svec> cols;
+    cols.push_back(left);
+    cols.push_back(right);
+    return print_columns(out, cols, pad);
+  }
 
-}
+}  // namespace BOOM

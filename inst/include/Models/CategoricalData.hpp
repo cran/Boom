@@ -37,30 +37,29 @@ namespace BOOM{
   // created without using operator new.
 
   public:
-    typedef std::vector<string> StringVec;
+    typedef std::vector<string> StringVector;
 
     CatKey();
     CatKey(uint Nlev);
-    CatKey(const StringVec &Labs);  // sorted list of labels
+    CatKey(const StringVector &Labs);  // sorted list of labels
     CatKey(const CatKey &rhs);        // observers not copied
 
     void Register(CategoricalData *);
     void Register(CategoricalData *, const string &lab, bool grow=true);
     void Remove(CategoricalData *);
     const string & operator[](uint i)const;
-    const StringVec  & labels()const;
+    const StringVector  & labels()const;
     uint findstr(const string &rhs, bool & found)const;
     uint findstr(const string &rhs)const;
     void add_label(const string &lab);  // notifies observers
     uint size()const;
-    void reorder(const StringVec &sv);
-    void relabel(const StringVec &sv);
-    void set_levels(const StringVec &sv);
+    void reorder(const StringVector &sv);
+    void relabel(const StringVector &sv);
+    void set_levels(const StringVector &sv);
     ostream & print(ostream &out)const;
   private:
     std::vector<string> labs_;
-    typedef std::set<CategoricalData *> ObsSet;
-    ObsSet observers;
+    std::set<CategoricalData *> observers;
     // Use ordinary pointers... not smart pointers!  Categorical data
     // will register itself with the key using the "this" pointer.  If
     // you use smart pointers in the ObsSet then registration will
@@ -69,7 +68,7 @@ namespace BOOM{
     friend void intrusive_ptr_add_ref(CatKey *k){ k->up_count();}
     friend void intrusive_ptr_release(CatKey *k){
       k->down_count(); if(k->ref_count()==0) delete k;}
-    std::vector<uint> map_levels(const StringVec &sv)const;
+    std::vector<uint> map_levels(const StringVector &sv)const;
   };
 
   inline ostream & operator<<(ostream &out, const CatKey &k){
@@ -81,29 +80,26 @@ namespace BOOM{
   //------------------------------------------------------------
   class CategoricalData : public DataTraits<uint>{
   public:
-    typedef std::vector<string> StringVec;
-    typedef Ptr<CatKey> pKey;
+    typedef std::vector<string> StringVector;
   private:
     uint val_;
-    pKey labs_;
+    Ptr<CatKey> labs_;
   protected:
     uint findstr(const string &s);
     uint findstr(const string &s)const;
   public:
-
     // constructors, assingment, comparison...
-    //    CategoricalData();               // val_ = 0, labs_=0
-    ~CategoricalData();
+    ~CategoricalData() override;
     CategoricalData(uint val, uint Nlevels);
-    CategoricalData(uint val, pKey labs);  // can't grow
-    CategoricalData(const string &s, pKey labs, bool grow=false);
+    CategoricalData(uint val, Ptr<CatKey> labs);  // can't grow
+    CategoricalData(const string &s, Ptr<CatKey> labs, bool grow=false);
     CategoricalData(uint val, CategoricalData &other);
     CategoricalData(const string &s, CategoricalData &other, bool grow=false);
 
     CategoricalData(const CategoricalData &rhs);  // share label vector
-    CategoricalData * clone()const;                // share label vector
+    CategoricalData * clone()const override;                // share label vector
 
-    virtual void set(const uint & val, bool signal=true);
+    void set(const uint & val, bool signal=true) override;
     virtual void set(const string &s, bool signal=true);
 
     bool operator==(uint rhs)const;
@@ -118,34 +114,33 @@ namespace BOOM{
     uint nlevels()const;  //  'value()' can be 0..nelvels()-1
 
     // value querries.............
-    const uint & value()const;
+    const uint & value()const override;
     const string &lab()const;
     const std::vector<string> & labels()const;
-    void relabel(const StringVec &);
-    pKey key()const{return labs_;}
+    void relabel(const StringVector &);
+    Ptr<CatKey> key()const{return labs_;}
     bool comparable(const CategoricalData &rhs)const;
 
     // input-output
-    virtual ostream & display(ostream &out)const;
-    //    virtual istream & read(istream &in);
+    ostream & display(ostream &out)const override;
 
     void print_key(std::ostream & out)const;
     void print_key(const string & fname)const;
 
     friend void share_labels(std::vector<Ptr<CategoricalData> > &);
     friend void set_order(std::vector<Ptr<CategoricalData> > &,
-			  const StringVec &ord);
+                          const StringVector &ord);
     friend class CatKey;
   };
   //------------------------------------------------------------
   class OrdinalData : public CategoricalData{
   public:
     OrdinalData(uint val, uint Nlevels);
-    OrdinalData(uint val, pKey labs);
-    OrdinalData(const std::string &s, pKey labs, bool grow=false);
+    OrdinalData(uint val, Ptr<CatKey> labs);
+    OrdinalData(const std::string &s, Ptr<CatKey> labs, bool grow=false);
 
     OrdinalData(const OrdinalData &rhs);
-    OrdinalData * clone()const;
+    OrdinalData * clone()const override;
 
     bool operator<(const OrdinalData &rhs)const;
     bool operator<=(const OrdinalData &rhs)const;
@@ -164,7 +159,7 @@ namespace BOOM{
   };
   //======================================================================
 
-  class CategoricalFreqDist : public FreqDist {
+  class CategoricalFreqDist : public FrequencyDistribution {
    public:
     CategoricalFreqDist(const std::vector<Ptr<CategoricalData> > &data);
   };
@@ -176,20 +171,17 @@ namespace BOOM{
 
   std::vector<Ptr<OrdinalData> > make_ord_ptrs(const std::vector<uint> &);
 
-  //  std::vector<CategoricalData> make_catdat(const std::vector<string> &);
-  // this is dangerous because smart pointers assume data were made
-  // by operator new
-
-
   void share_labels(std::vector<Ptr<CategoricalData> > &);
   void share_labels(std::vector<Ptr<OrdinalData> > &);
 
   void set_order(std::vector<Ptr<CategoricalData> > &,
-		 const std::vector<string> &);
+                 const std::vector<string> &);
   void set_order(std::vector<Ptr<OrdinalData> > &,
-		 const std::vector<string> &);
+                 const std::vector<string> &);
 
   void relabel(std::vector<Ptr<CategoricalData> > &);
   void relabel(std::vector<Ptr<OrdinalData> > &);
-}
+
+}  // namespace BOOM
+
 #endif //BOOM_CATEGORICAL_DATA_HPP

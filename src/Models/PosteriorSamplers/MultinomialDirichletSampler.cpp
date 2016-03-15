@@ -25,13 +25,15 @@ namespace BOOM{
   typedef MultinomialModel MM;
   typedef DirichletModel DM;
 
-  MDS::MultinomialDirichletSampler(MM *Mod, const Vec &Nu)
-    : mod_(Mod),
+  MDS::MultinomialDirichletSampler(MM *Mod, const Vector &Nu, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       pri_(new DM(Nu))
   {}
 
-  MDS::MultinomialDirichletSampler(MM *Mod, Ptr<DM> Pri)
-    : mod_(Mod),
+  MDS::MultinomialDirichletSampler(MM *Mod, Ptr<DM> Pri, RNG &seeding_rng)
+    : PosteriorSampler(seeding_rng),
+      mod_(Mod),
       pri_(Pri)
   {}
 
@@ -44,13 +46,14 @@ namespace BOOM{
   MDS * MDS::clone()const{return new MDS(*this);}
 
   void MDS::draw(){
-    Vec counts = pri_->nu() +  mod_->suf()->n();
-    Vec pi = rdirichlet_mt(rng(), counts);
+    Vector counts = pri_->nu() +  mod_->suf()->n();
+    Vector pi = rdirichlet_mt(rng(), counts);
     mod_->set_pi(pi);
   }
-  void MDS::find_posterior_mode(){
-    Vec counts = pri_->nu() +  mod_->suf()->n();
-    Vec pi = mdirichlet(counts);
+
+  void MDS::find_posterior_mode(double){
+    Vector counts = pri_->nu() +  mod_->suf()->n();
+    Vector pi = mdirichlet(counts);
     mod_->set_pi(pi);
   }
 
@@ -58,4 +61,4 @@ namespace BOOM{
     return pri_->logp(mod_->pi());
   }
 
-}
+}  // namespace BOOM

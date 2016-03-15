@@ -31,24 +31,24 @@ namespace BOOM{
     typedef SpdMatrix Spd;
 
     CM::CorrelationMatrix()
-      : Spd(){}
+      : SpdMatrix(){}
 
     CM::CorrelationMatrix(int dim)
-      : Spd(dim)
+      : SpdMatrix(dim)
     {
       set_diag(1.0, true);
     }
 
     CM::CorrelationMatrix(int dim, double *m, bool ColMajor)
-      : Spd(dim, m, ColMajor)
+      : SpdMatrix(dim, m, ColMajor)
     {}
 
     CM::CorrelationMatrix(const Matrix &m)
-      : Spd(var2cor(m))
+      : SpdMatrix(var2cor(m))
     {}
 
     CM::CorrelationMatrix(const CM &cm)
-      : Spd(cm)
+      : SpdMatrix(cm)
     {}
 
 
@@ -69,18 +69,18 @@ namespace BOOM{
       Vector ans(ans_size);
       Vector::iterator it = ans.begin();
       for(uint i=0; i<n; ++i){
-	dVector::const_iterator b = col_begin(i);
-	dVector::const_iterator e = minimal ? b+i : b+n;
-	it = std::copy(b,e,it);}
+        dVector::const_iterator b = col_begin(i);
+        dVector::const_iterator e = minimal ? b+i : b+n;
+        it = std::copy(b,e,it);}
       return ans; }
 
     Vector::const_iterator CM::unvectorize(Vector::const_iterator &b, bool minimal){
       uint n = ncol();
       for(uint i=0; i<n; ++i){
-	Vector::const_iterator e = minimal ? b+i : b+n;
-	dVector::iterator dest = col_begin(i);
-	std::copy(b,e,dest);
-	b=e;}
+        Vector::const_iterator e = minimal ? b+i : b+n;
+        dVector::iterator dest = col_begin(i);
+        std::copy(b,e,dest);
+        b=e;}
       make_symmetric();
       return b;
     }
@@ -92,10 +92,10 @@ namespace BOOM{
 //       Vector::const_iterator b = x.begin();
 //       uint n = ncol();
 //       for(uint i=1; i<n; ++i){
-// 	Vector::const_iterator e = b+i;
-// 	dVector::iterator dest = col_begin(i);
-// 	std::copy(b,e,dest);
-// 	b=e;}
+//      Vector::const_iterator e = b+i;
+//      dVector::iterator dest = col_begin(i);
+//      std::copy(b,e,dest);
+//      b=e;}
 //       make_symmetric();}
 
     uint CM::nelem()const{
@@ -109,9 +109,9 @@ namespace BOOM{
       Vector sd = v.diag();
       std::transform(sd.begin(), sd.end(), sd.begin(), ptr_fun<double>(::sqrt));
       for(uint i=0; i<n; ++i){
-	for(uint j=0; j<i; ++j){
-	  ans.unchecked(i,j) = ans.unchecked(j,i)
-	    = v.unchecked(i,j)/(sd[i]*sd[j]);}}
+        for(uint j=0; j<i; ++j){
+          ans.unchecked(i,j) = ans.unchecked(j,i)
+            = v.unchecked(i,j)/(sd[i]*sd[j]);}}
       return ans;
     }
 
@@ -120,10 +120,10 @@ namespace BOOM{
       assert (sd.size()==n);
       SpdMatrix ans(cor);
       for(uint i=0; i<n; ++i){
-	for(uint j = 0; j<i; ++j){
-	  ans.unchecked(i,j) *=sd[i]*sd[j];
-	  ans.unchecked(j,i) = ans.unchecked(i,j);}
-	ans.unchecked(i,i) *= sd[i]*sd[i];}
+        for(uint j = 0; j<i; ++j){
+          ans.unchecked(i,j) *=sd[i]*sd[j];
+          ans.unchecked(j,i) = ans.unchecked(i,j);}
+        ans.unchecked(i,i) *= sd[i]*sd[i];}
       return ans;
     }
 
@@ -133,7 +133,4 @@ namespace BOOM{
     bool CM::operator!=(const CM & rhs)const{
       return !SpdMatrix::operator==(rhs);}
 
-
-
-
-}
+}  // namespace BOOM

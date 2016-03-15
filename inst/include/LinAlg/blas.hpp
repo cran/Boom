@@ -240,6 +240,11 @@ namespace BOOM {
                double *B,
                const int ldb);
 
+    // Initialization function to allow for thread-safe use of routines that
+    // construct static lookup tables on first use.
+
+    void initialize_blas_globals();
+
   }  // namespace blas
 }  // namespace BOOM
 #endif // BOOM_BLAS_WRAPPER_HPP_

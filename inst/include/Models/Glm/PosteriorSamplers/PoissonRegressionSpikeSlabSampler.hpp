@@ -25,10 +25,11 @@ namespace BOOM {
         PoissonRegressionModel *model,
         Ptr<MvnBase> slab_prior,
         Ptr<VariableSelectionPrior> spike_prior,
-        int number_of_threads = 1);
+        int number_of_threads = 1,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     // If tf == true then draw_model_indicators is a no-op.  Otherwise
     // model indicators will be sampled each iteration.
@@ -41,16 +42,25 @@ namespace BOOM {
     void limit_model_selection(int max_flips);
 
     // Sets the coefficients in model_ to their posterior mode, and
-    // returns the value of the un-normalized log-posterior at the
+    // saves the value of the un-normalized log-posterior at the
     // mode.  The optimization is with respect to coefficients that
     // are "in" the model.  Dropped coefficients will remain zero.
-    double find_posterior_mode();
+    void find_posterior_mode(double epsilon = 1e-5) override;
+
+    bool can_find_posterior_mode() const override {
+      return true;
+    }
+
+    double log_posterior_at_mode() const {
+      return log_posterior_at_mode_;
+    }
 
    private:
     PoissonRegressionModel *model_;
     SpikeSlabSampler sam_;
     Ptr<MvnBase> slab_prior_;
     Ptr<VariableSelectionPrior> spike_prior_;
+    double log_posterior_at_mode_;
   };
 
 }  // namespace BOOM

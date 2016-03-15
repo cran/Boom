@@ -92,21 +92,21 @@ namespace BOOM{
   UniformSuf * US::abstract_combine(Sufstat *s){
     return abstract_combine_impl(this,s); }
 
-  Vec US::vectorize(bool)const{
-    Vec ans(2);
+  Vector US::vectorize(bool)const{
+    Vector ans(2);
     ans[0] = lo_;
     ans[1] = hi_;
     return ans;
   }
 
-  Vec::const_iterator US::unvectorize(Vec::const_iterator &v, bool){
+  Vector::const_iterator US::unvectorize(Vector::const_iterator &v, bool){
     lo_ = *v; ++v;
     hi_ = *v; ++v;
     return v;
   }
 
-  Vec::const_iterator US::unvectorize(const Vec &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator US::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 

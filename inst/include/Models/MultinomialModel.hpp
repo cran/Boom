@@ -22,9 +22,8 @@
 #include <Models/Sufstat.hpp>
 #include <Models/CategoricalData.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
-#include <Models/Policies/ConjugatePriorPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Policies/ParamPolicy_1.hpp>
-#include <Models/EmMixtureComponent.hpp>
 
 namespace BOOM{
 
@@ -33,76 +32,75 @@ namespace BOOM{
   {
   public:
     MultinomialSuf(uint p);
+    MultinomialSuf(const Vector &counts);
     MultinomialSuf(const MultinomialSuf &rhs);
-    MultinomialSuf* clone()const;
+    MultinomialSuf* clone()const override;
 
-    void Update(const CategoricalData &d);
+    void Update(const CategoricalData &d) override;
     void add_mixture_data(uint y, double prob);
     void add_mixture_data(const Vector &weights);
     void update_raw(uint k);
-    void clear();
+    void clear() override;
 
-    const Vec &n()const;
+    const Vector &n()const;
+    uint dim() const;
     void combine(Ptr<MultinomialSuf>);
     void combine(const MultinomialSuf &);
-    MultinomialSuf * abstract_combine(Sufstat *s);
+    MultinomialSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-					    bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-					    bool minimal=true);
-    virtual ostream &print(ostream &out)const;
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
+    ostream &print(ostream &out)const override;
+
   private:
-    Vec counts;
+    Vector counts_;
   };
 
   //======================================================================
-  class MultinomialDirichletSampler;
-  class DirichletModel;
-
   class MultinomialModel
     : public ParamPolicy_1<VectorParams>,
       public SufstatDataPolicy<CategoricalData, MultinomialSuf>,
-      public ConjugatePriorPolicy<MultinomialDirichletSampler>,
+      public PriorPolicy,
       public LoglikeModel,
-      public EmMixtureComponent
+      public MixtureComponent
   {
   public:
     MultinomialModel(uint Nlevels);
-    MultinomialModel(const Vec &probs );
+    MultinomialModel(const Vector &probs);
 
     // The argument is a vector of names to use for factor levels to
     // be modeled.
     MultinomialModel(const std::vector<string> &);
 
+    MultinomialModel(const MultinomialSuf &suf);
+
     template <class Fwd> // iterator promotable to uint
     MultinomialModel(Fwd b, Fwd e);
     MultinomialModel(const MultinomialModel &rhs);
-    MultinomialModel * clone()const;
+    MultinomialModel * clone()const override;
 
     uint nlevels()const;
+    uint dim()const;
+
     Ptr<VectorParams> Pi_prm();
     const Ptr<VectorParams> Pi_prm()const;
 
     const double & pi(int s) const;
-    const Vec & pi()const;
-    void set_pi(const Vec &probs);
+    const Vector & pi()const;
+    void set_pi(const Vector &probs);
 
-    uint size()const;         // number of potential outcomes;
-    double loglike(const Vector &probs)const;
-    void mle();
-    double pdf(const Data * dp, bool logscale) const;
+    double loglike(const Vector &probs)const override;
+    void mle() override;
+    double pdf(const Data * dp, bool logscale) const override;
     double pdf(Ptr<Data> dp, bool logscale) const;
     void add_mixture_data(Ptr<Data>, double prob);
 
-    void set_conjugate_prior(const Vec &nu);
-    void set_conjugate_prior(Ptr<DirichletModel>);
-    void set_conjugate_prior(Ptr<MultinomialDirichletSampler>);
-
     uint simdat()const;
    private:
-    mutable Vec logp_;
+    mutable Vector logp_;
     mutable bool logp_current_;
     void observe_logp();
     void set_observer();
@@ -113,14 +111,14 @@ namespace BOOM{
   MultinomialModel::MultinomialModel(Fwd b, Fwd e)
     : ParamPolicy(new VectorParams(1)),
       DataPolicy(new MultinomialSuf(1)),
-      ConjPriorPolicy()
+      PriorPolicy()
   {
     std::vector<uint> uivec(b,e);
     std::vector<Ptr<CategoricalData> >
       dvec(make_catdat_ptrs(uivec));
 
     uint nlev= dvec[0]->nlevels();
-    Vec probs(nlev, 1.0/nlev);
+    Vector probs(nlev, 1.0/nlev);
     set_pi(probs);
 
     set_data(dvec);

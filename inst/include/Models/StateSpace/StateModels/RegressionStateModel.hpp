@@ -45,31 +45,31 @@ namespace BOOM{
    public:
     RegressionStateModel(Ptr<RegressionModel>);
     RegressionStateModel(const RegressionStateModel &rhs);
-    virtual RegressionStateModel * clone()const;
+    RegressionStateModel * clone() const override;
 
     // clears sufficient statistics, but does not erase pointers to data.
-    virtual void clear_data();
+    void clear_data() override;
 
     // 'observe_state' is a no-op for this class because the state
     // model needs too much information in order to make the necessary
     // observations.  A class that contains a RegressionStateModel
     // should update an externally held pointer to reg_ each time a
     // state vector is observed.
-    virtual void observe_state(const ConstVectorView then,
+    void observe_state(const ConstVectorView then,
                                const ConstVectorView now,
-                               int time_now);
+                               int time_now) override;
 
-    virtual uint state_dimension()const;
+    uint state_dimension()const override;
 
-    virtual void simulate_state_error(VectorView eta, int t)const;
-    virtual void simulate_initial_state(VectorView eta)const;
+    void simulate_state_error(VectorView eta, int t)const override;
+    void simulate_initial_state(VectorView eta)const override;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const;
-    virtual SparseVector observation_matrix(int t)const;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    SparseVector observation_matrix(int t)const override;
 
-    virtual Vec initial_state_mean()const;
-    virtual Spd initial_state_variance()const;
+    Vector initial_state_mean()const override;
+    SpdMatrix initial_state_variance()const override;
 
    private:
     Ptr<RegressionModel> reg_;

@@ -110,12 +110,13 @@ namespace BOOM {
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees);
+        boost::function<double(int)> log_prior_on_number_of_trees,
+        RNG &seeding_rng = GlobalRng::rng);
 
     // The destructor should clear pointers to the
     // ResidualRegressionData owned by this class but observed by the
     // trees in the model.
-    virtual ~BartPosteriorSamplerBase();
+    ~BartPosteriorSamplerBase() override;
 
     // Sets the vector of move probabilities to the uniform
     // distribution.
@@ -129,12 +130,12 @@ namespace BOOM {
     // I implemented a skeleton version of logpri() to get this class
     // to compile.  It does not return anything useful, and will throw
     // an exception if called.
-    virtual double logpri()const;
+    double logpri() const override;
 
     // The draw method includes a call to check_residuals, to ensure
     // they have been created and placed where they need to be, and
     // calls to modify tree.
-    virtual void draw();
+    void draw() override;
 
     // Returns a draw of the mean parameter for the given leaf,
     // conditional on the tree structure and the data assigned to

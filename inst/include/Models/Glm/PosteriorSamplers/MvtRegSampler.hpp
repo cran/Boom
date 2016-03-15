@@ -37,12 +37,12 @@ namespace BOOM{
   public:
     // assumes vec(B)|Sigma ~ N( b, kappa * Sigma^{-1} \otimes I_p )
 
-    MvtRegSampler(MvtRegModel *m, const Mat &B, double kappa,
-		  double prior_df, const Spd & Sigma_guess,
-		  Ptr<DoubleModel> nu_prior);
+    MvtRegSampler(MvtRegModel *m, const Matrix &B, double kappa,
+          double prior_df, const SpdMatrix & Sigma_guess,
+          Ptr<DoubleModel> nu_prior, RNG &seeding_rng = GlobalRng::rng);
 
-    void draw();
-    double logpri()const;
+    void draw() override;
+    double logpri()const override;
   private:
     MvtRegModel *mod;
 
@@ -53,7 +53,7 @@ namespace BOOM{
     Ptr<DoubleModel> nu_prior;
     Ptr<SliceSampler> nu_sampler;
 
-    Vec yhat;
+    Vector yhat;
     void impute_w();
     double impute_w(Ptr<MvRegData> dp);
     void draw_Sigma();

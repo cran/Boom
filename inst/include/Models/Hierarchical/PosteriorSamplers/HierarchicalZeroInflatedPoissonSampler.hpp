@@ -36,10 +36,11 @@ namespace BOOM {
         Ptr<DoubleModel> lambda_mean_prior,
         Ptr<DoubleModel> lambda_sample_size_prior,
         Ptr<DoubleModel> zero_probability_mean_prior,
-        Ptr<DoubleModel> zero_probability_sample_size_prior);
+        Ptr<DoubleModel> zero_probability_sample_size_prior,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
    private:
     HierarchicalZeroInflatedPoissonModel *model_;
     Ptr<DoubleModel> lambda_mean_prior_;

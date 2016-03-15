@@ -52,9 +52,9 @@ namespace BOOM{
     check_dim(then);
     check_dim(now);
 
-    Vec mu(2);
+    Vector mu(2);
     state_transition_matrix_->multiply(VectorView(mu), then);
-    Vec err = now - mu;
+    Vector err = now - mu;
 
     suf()->update_raw(err);
   }
@@ -83,14 +83,14 @@ namespace BOOM{
   SparseVector LLTSM::observation_matrix(int)const{
     return observation_matrix_; }
 
-  Vec LLTSM::initial_state_mean()const{return initial_state_mean_;}
-  Spd LLTSM::initial_state_variance()const{return initial_state_variance_;}
-  void LLTSM::set_initial_state_mean(const Vec &v){
+  Vector LLTSM::initial_state_mean()const{return initial_state_mean_;}
+  SpdMatrix LLTSM::initial_state_variance()const{return initial_state_variance_;}
+  void LLTSM::set_initial_state_mean(const Vector &v){
     initial_state_mean_ = v; }
-  void LLTSM::set_initial_state_variance(const Spd &Sigma){
+  void LLTSM::set_initial_state_variance(const SpdMatrix &Sigma){
     initial_state_variance_ = Sigma; }
 
-  void LLTSM::set_Sigma(const Spd &Sigma){
+  void LLTSM::set_Sigma(const SpdMatrix &Sigma){
     ZeroMeanMvnModel::set_Sigma(Sigma);
     state_variance_matrix_->set_matrix(Sigma);
   }

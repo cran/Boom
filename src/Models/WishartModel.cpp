@@ -17,13 +17,15 @@
 */
 
 #include <Models/WishartModel.hpp>
-#include <distributions.hpp>
-#include <cpputil/math_utils.hpp>
-#include <cmath>
-#include <numopt.hpp>
+
+#include <LinAlg/Cholesky.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <TargetFun/Loglike.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
+#include <TargetFun/Loglike.hpp>
+#include <cmath>
+#include <cpputil/math_utils.hpp>
+#include <distributions.hpp>
+#include <numopt.hpp>
 
 
 namespace BOOM{
@@ -45,14 +47,13 @@ namespace BOOM{
 
   WishartSuf *WS::clone() const{ return new WishartSuf(*this);}
 
-
   void WishartSuf::clear(){
     sumldw_=0.0;
     sumW_ =0.0;
     n_ = 0.0;  }
 
   void WishartSuf::Update(const SpdData &dp){
-    const Spd &W(dp.value());
+    const SpdMatrix &W(dp.value());
     sumldw_ += W.logdet();
     sumW_ += W;
     n_+= 1.0; }
@@ -79,7 +80,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vec::const_iterator WishartSuf::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator WishartSuf::unvectorize(Vector::const_iterator &v,
                                               bool minimal){
     sumW_.unvectorize(v, minimal);
     n_ = *v;      ++v;
@@ -87,8 +88,8 @@ namespace BOOM{
     return v;
   }
 
-  Vec::const_iterator WishartSuf::unvectorize(const Vector &v, bool minimal){
-    Vec::const_iterator it = v.begin();
+  Vector::const_iterator WishartSuf::unvectorize(const Vector &v, bool minimal){
+    Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
@@ -98,16 +99,9 @@ namespace BOOM{
                << "sumW_ = " << endl << sumW_;
   }
 
-
   //======================================================================
 
   typedef WishartModel WM;
-
-  WM::WishartModel(uint p)
-    : ParamPolicy(new UnivParams(p+1), new SpdParams(p)),
-      DataPolicy(new WS(p)),
-      PriorPolicy()
-  {}
 
   WM::WishartModel(uint p, double pri_df, double v)
     : ParamPolicy(new UnivParams(pri_df), new SpdParams(p, v*pri_df)),
@@ -115,11 +109,17 @@ namespace BOOM{
       PriorPolicy()
   {}
 
-  WM::WishartModel(double pri_df, const Spd &PriVarEst)
+  WM::WishartModel(double pri_df, const SpdMatrix &PriVarEst)
     : ParamPolicy(new UnivParams(pri_df), new SpdParams(PriVarEst*pri_df)),
       DataPolicy(new WS(PriVarEst.nrow())),
       PriorPolicy()
-  {}
+  {
+    Chol chol(sumsq());
+    if (!chol.is_pos_def()) {
+      report_error("Sum of squares matrix must be positive definite in "
+                   "WishartModel constructor");
+    }
+  }
 
   WM::WishartModel(const WM &rhs)
     : Model(rhs),
@@ -146,11 +146,11 @@ namespace BOOM{
     unvectorize_params(theta);
   }
 
-  double WishartModel::logp(const Spd &W) const{
+  double WishartModel::logp(const SpdMatrix &W) const{
     return dWish(W, sumsq(), nu(), true); }
 
   void WishartModel::initialize_params(){
-    Spd mean(suf()->sumW());
+    SpdMatrix mean(suf()->sumW());
     mean/= suf()->n();
     set_nu(2*mean.nrow()); // out of thin air
     set_sumsq((mean/nu()).inv());
@@ -165,11 +165,11 @@ namespace BOOM{
     return ParamPolicy::prm2();}
 
   const double & WM::nu() const{return Nu_prm()->value();}
-  const Spd &WM::sumsq() const{return Sumsq_prm()->value();}
+  const SpdMatrix &WM::sumsq() const{return Sumsq_prm()->value();}
   void WM::set_nu(double Nu){Nu_prm()->set(Nu);}
-  void WM::set_sumsq(const Spd &S){Sumsq_prm()->set(S);}
+  void WM::set_sumsq(const SpdMatrix &S){Sumsq_prm()->set(S);}
 
-  Spd WishartModel::simdat(){ return rWish(nu(), sumsq()); }
+  SpdMatrix WishartModel::simdat(){ return rWish(nu(), sumsq()); }
 
   double WishartModel::Loglike(const Vector &sumsq_triangle_nu,
                                Vector &g, uint nd)const{
@@ -179,7 +179,7 @@ namespace BOOM{
     SpdParams Sumsq_arg(dim());
     Vector::const_iterator it = Sumsq_arg.unvectorize(sumsq_triangle_nu, true);
     double nu = *it;
-    const Spd &SS(Sumsq_arg.var());
+    const SpdMatrix &SS(Sumsq_arg.var());
 
     if(nu <k) return negative_infinity();
     double ldSS = 0;
@@ -190,7 +190,7 @@ namespace BOOM{
 
     double n = suf()->n();
     double sumldw = suf()->sumldw();
-    const Spd &sumW(suf()->sumW());
+    const SpdMatrix &sumW(suf()->sumW());
 
     double tab = traceAB(SS, sumW);
     double tmp1(0), tmp2(0);
@@ -201,17 +201,17 @@ namespace BOOM{
     }
 
     double ans = .5*( n*(-nu*k*log2 - .5*k*(k-1)*logpi -2*tmp1 + nu*ldSS)
- 		      +(nu-k-1)*sumldw - tab);
+                      +(nu-k-1)*sumldw - tab);
     if(nd>0){
       double dnu = .5*( n*(-k*log2 - tmp2+ldSS) + sumldw);
 
-      Spd SSinv(SS.inv());
+      SpdMatrix SSinv(SS.inv());
       int m=0;
       for(int i=0; i<k; ++i){
- 	for(int j=0; j<=i; ++j){
- 	  g[m] = .5*n*nu * (i==j? SSinv(i,i) : 2*SSinv(i,j));
- 	  g[m] -= .5*(i==j ? sumW(i,i) : 2* sumW(i,j));
- 	  ++m; }}
+        for(int j=0; j<=i; ++j){
+          g[m] = .5*n*nu * (i==j? SSinv(i,i) : 2*SSinv(i,j));
+          g[m] -= .5*(i==j ? sumW(i,i) : 2* sumW(i,j));
+          ++m; }}
       g[m] = dnu;
     }
     return ans;

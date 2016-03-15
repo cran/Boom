@@ -22,14 +22,15 @@
 #include <Models/PoissonModel.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/Policies/CompositeParamPolicy.hpp>
+#include <Models/Hierarchical/HierarchicalModel.hpp>
 
 namespace BOOM {
 
   class HierarchicalPoissonData : public Data {
    public:
     HierarchicalPoissonData(double event_count, double exposure);
-    HierarchicalPoissonData * clone()const;
-    virtual ostream & display(ostream &out)const;
+    HierarchicalPoissonData * clone()const override;
+    ostream & display(ostream &out)const override;
     double event_count() const {return event_count_;}
     double exposure() const {return exposure_;}
    private:
@@ -37,54 +38,23 @@ namespace BOOM {
     double exposure_;
   };
 
+  // The usual Poisson/gamma hierarchical model.
+  //
+  //      y[i] | lambda[i] ~ Poisson(lambda[i] * exposure[i])
+  // labmda[i] | (a, b)    ~ Gamma(a, b)
   class HierarchicalPoissonModel
-      : public CompositeParamPolicy,
-        public PriorPolicy {
+      : public HierarchicalModelBase<PoissonModel, GammaModel> {
    public:
-
     HierarchicalPoissonModel(double lambda_prior_guess,
                              double lambda_prior_sample_size);
-
     HierarchicalPoissonModel(Ptr<GammaModel> prior_model);
-
-    HierarchicalPoissonModel(const HierarchicalPoissonModel &rhs);
-
-    virtual HierarchicalPoissonModel * clone()const;
-
-    void add_data_level_model(Ptr<PoissonModel> data_level_model);
-
-    // Removes all data_level_models and their associated parameters
-    // and data.
-    virtual void clear_data();
-
-    // Clear the data from all data_level_models, but does not delete
-    // the models.
-    void clear_client_data();
-
-    // Clear the learning methods for each of the client models.
-    virtual void clear_methods();
-
-    // Adds the data_level_models from rhs to this.
-    virtual void combine_data(const Model &rhs, bool just_suf = true);
+    HierarchicalPoissonModel * clone() const override;
 
     // Creates a new data_level_model with data assigned.
-    virtual void add_data(Ptr<Data>);
-
-    // Returns the number of data_level_models managed by this model.
-    int number_of_groups()const;
-
-    PoissonModel * data_model(int which_group);
-    const PoissonModel * data_model(int which_group)const;
-    GammaModel * prior_model();
-    const GammaModel * prior_model()const;
+    void add_data(Ptr<Data>) override;
 
     double prior_mean()const;
     double prior_sample_size()const;
-
-   private:
-    void initialize();
-    Ptr<GammaModel> prior_;
-    std::vector<Ptr<PoissonModel> > data_level_models_;
   };
 }  // namespace BOOM
 

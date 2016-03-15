@@ -30,8 +30,8 @@ namespace BOOM{
     : public SufstatDetails<WeightedRegressionData>
   {
   private:
-    mutable Spd xtwx_;
-    Vec xtwy_;
+    mutable SpdMatrix xtwx_;
+    Vector xtwy_;
     double n_;  // xtx_(0,0) is the sum of the weights,
     double yt_w_y_;
     double sumlogw_;
@@ -44,43 +44,44 @@ namespace BOOM{
     typedef Ptr<dataset_type, false> dsetPtr;
 
     WeightedRegSuf(int p); // dimension of beta
-    WeightedRegSuf(const Mat &X, const Vec &y); // w implicitly 1.0
-    WeightedRegSuf(const Mat &X, const Vec &y, const Vec &w);
+    WeightedRegSuf(const Matrix &X, const Vector &y); // w implicitly 1.0
+    WeightedRegSuf(const Matrix &X, const Vector &y, const Vector &w);
     WeightedRegSuf(const dsetPtr &dat);
     WeightedRegSuf(const WeightedRegSuf &rhs);  // value semantics
 
-    WeightedRegSuf * clone()const;
+    WeightedRegSuf * clone()const override;
 
-    virtual void reweight(const Mat &X, const Vec &y, const Vec &w);
+    virtual void reweight(const Matrix &X, const Vector &y, const Vector &w);
     virtual void reweight(const dsetPtr &dat);
 
     //    virtual void Update(const RegressionData &);
-    virtual void Update(const WeightedRegressionData &);
-    void add_data(const Vec &x, double y, double w);
-    virtual void clear();
+    void Update(const WeightedRegressionData &) override;
+    void add_data(const Vector &x, double y, double w);
+    void clear() override;
     virtual uint size()const;  // dimension of beta
     virtual double yty()const;              // Y^t W Y
-    virtual Vec xty()const;                 // X^T W Y
-    virtual Spd xtx()const;                 // X^T W X
-    virtual Vec xty(const Selector &)const;  // X^T W Y
-    virtual Spd xtx(const Selector &)const;  // X^T W X
-    virtual Vec beta_hat()const;            // WLS estimate
+    virtual Vector xty()const;                 // X^T W Y
+    virtual SpdMatrix xtx()const;                 // X^T W X
+    virtual Vector xty(const Selector &)const;  // X^T W Y
+    virtual SpdMatrix xtx(const Selector &)const;  // X^T W X
+    virtual Vector beta_hat()const;            // WLS estimate
+    double weighted_sum_of_squared_errors(const Vector &beta) const;
     virtual double SSE()const;   //
     virtual double SST()const;   // weighted sum of squares
     virtual double ybar()const;  // weighted average
     virtual double n()const;
     virtual double sumw()const; // sum of weights
     virtual double sumlogw()const; // sum of weights
-    virtual ostream & print(ostream &out)const;
+    ostream & print(ostream &out)const override;
     void combine(Ptr<WeightedRegSuf>);
     void combine(const WeightedRegSuf &);
-    WeightedRegSuf * abstract_combine(Sufstat *s);
+    WeightedRegSuf * abstract_combine(Sufstat *s) override;
 
-    virtual Vec vectorize(bool minimal=true)const;
-    virtual Vec::const_iterator unvectorize(Vec::const_iterator &v,
-                                            bool minimal=true);
-    virtual Vec::const_iterator unvectorize(const Vec &v,
-                                            bool minimal=true);
+    Vector vectorize(bool minimal=true)const override;
+    Vector::const_iterator unvectorize(Vector::const_iterator &v,
+                                            bool minimal=true) override;
+    Vector::const_iterator unvectorize(const Vector &v,
+                                            bool minimal=true) override;
   };
 
   inline ostream & operator<<(ostream & out, const WeightedRegSuf &s){
@@ -100,37 +101,36 @@ namespace BOOM{
     typedef WeightedRegSuf suf_type;
 
     WeightedRegressionModel(uint p);
-    WeightedRegressionModel(const Vec &b, double Sigma);
+    WeightedRegressionModel(const Vector &b, double Sigma);
     WeightedRegressionModel(const WeightedRegressionModel &rhs);
-    WeightedRegressionModel(const Mat &X, const Vec &y);
-    WeightedRegressionModel(const Mat &X, const Vec &y, const Vec &w);
+    WeightedRegressionModel(const Matrix &X, const Vector &y);
+    WeightedRegressionModel(const Matrix &X, const Vector &y, const Vector &w);
     WeightedRegressionModel(const DatasetType &d, bool all=true);
-    WeightedRegressionModel * clone()const;
+    WeightedRegressionModel * clone()const override;
 
-    virtual GlmCoefs & coef();
-    virtual const GlmCoefs & coef()const;
-    virtual Ptr<GlmCoefs> coef_prm();
-    virtual const Ptr<GlmCoefs> coef_prm()const;
+    GlmCoefs & coef() override;
+    const GlmCoefs & coef()const override;
+    Ptr<GlmCoefs> coef_prm() override;
+    const Ptr<GlmCoefs> coef_prm()const override;
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
 
     // beta() and Beta() inherited from GLM;
-    //    void set_beta(const Vec &b);
+    //    void set_beta(const Vector &b);
     void set_sigsq(double s2);
 
     const double & sigsq()const;
     double sigma()const;
 
-    void mle();
+    void mle() override;
     // The argument is a vector with leading coefficients 'beta' and
     // final element sigsq.
     double Loglike(const Vector &beta_sigsq,
-                   Vec &g, Mat &h, uint nd)const;
+                   Vector &g, Matrix &h, uint nd)const override;
     double pdf(dPtr, bool)const;
     double pdf(Ptr<data_type>, bool)const;
-
   };
 
-}
+}  // namespace BOOM
 
 #endif // BOOM_WEIGHTED_REGRESSION_MODEL_HPP

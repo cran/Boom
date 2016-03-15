@@ -32,10 +32,11 @@ namespace BOOM{
                                      Ptr<GammaModelBase> average_daily_rate_prior,
                                      Ptr<DirichletModel> day_of_week_prior,
                                      Ptr<DirichletModel> weekday_hourly_prior,
-                                     Ptr<DirichletModel> weekend_hourly_prior);
+                                     Ptr<DirichletModel> weekend_hourly_prior,
+                                     RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void draw();
-    virtual double logpri()const;
+    void draw() override;
+    double logpri() const override;
 
     void draw_average_daily_rate();
     void draw_daily_pattern();

@@ -96,12 +96,6 @@ namespace BOOM{
   {}
 
   template<class D, class TS, class S>
-  TimeSeriesSufstatDataPolicy<D,TS,S> *
-  TimeSeriesSufstatDataPolicy<D,TS,S>::clone()const{
-    return new DataPolicy(*this);}
-
-
-  template<class D, class TS, class S>
   TimeSeriesSufstatDataPolicy<D,TS,S> &
   TimeSeriesSufstatDataPolicy<D,TS,S>::operator=(const DataPolicy &rhs){
     if(&rhs==this) return *this;

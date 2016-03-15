@@ -1,8 +1,8 @@
 SdPrior <- function(sigma.guess,
-                          sample.size = .01,
-                          initial.value = sigma.guess,
-                          fixed = FALSE,
-                          upper.limit = Inf) {
+                    sample.size = .01,
+                    initial.value = sigma.guess,
+                    fixed = FALSE,
+                    upper.limit = Inf) {
   ## Generates an object of class SdPrior that can be used as an input
   ## to a Bayesian model for a standard deviation paramter.
   ans <- list(prior.guess = sigma.guess,
@@ -18,15 +18,15 @@ NormalPrior <- function(mu, sigma, initial.value = mu) {
   ## Returns a list with the information needed to specify a Gaussian
   ## prior on a scalar parameter.
   ans <- list(mu = mu, sigma = sigma, initial.value = initial.value)
-  class(ans) <- c("NormalPrior", "DoubleModel", "Prior")
+  class(ans) <- c("NormalPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
 
 Ar1CoefficientPrior <- function(mu = 0,
-                                      sigma = 1,
-                                      force.stationary = TRUE,
-                                      force.positive = FALSE,
-                                      initial.value = mu) {
+                                sigma = 1,
+                                force.stationary = TRUE,
+                                force.positive = FALSE,
+                                initial.value = mu) {
   ## Returns a list with the information needed to supply a prior
   ## distribution on an AR1 coefficient.
   ans <- NormalPrior(mu, sigma, initial.value)
@@ -36,7 +36,7 @@ Ar1CoefficientPrior <- function(mu = 0,
   return(ans)
 }
 
-BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL){
+BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL) {
   ## Returns an object of class "BetaPrior", which is a list
   ## containing the parameters of a beta distribution.  The prior can
   ## either be given in terms of 'a' and 'b', or it can be given in
@@ -48,7 +48,7 @@ BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL){
               length(mean) == 1 &&
               length(sample.size) == 1)
     a <- mean * sample.size
-    b <- (1-mean) * sample.size
+    b <- (1 - mean) * sample.size
   }
 
   stopifnot(is.numeric(a))
@@ -58,11 +58,11 @@ BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL){
   stopifnot(a > 0)
   stopifnot(b > 0)
   ans <- list(a = a, b = b);
-  class(ans) <- c("BetaPrior", "DoubleModel", "Prior")
+  class(ans) <- c("BetaPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
 
-UniformPrior <- function(lo = 0, hi = 1, initial.value = NULL){
+UniformPrior <- function(lo = 0, hi = 1, initial.value = NULL) {
   ## A uniform prior distribution on the interval [lo, hi].
   ## Args:
   ##   lo:  The lower limit of prior support.
@@ -78,11 +78,12 @@ UniformPrior <- function(lo = 0, hi = 1, initial.value = NULL){
     initial.value <- .5 * (lo + hi)
   }
   ans <- list(lo = lo, hi = hi)
-  class(ans) <- c("UniformPrior", "DoubleModel", "Prior")
+  class(ans) <- c("UniformPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
 
-GammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL, initial.value = NULL) {
+GammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL,
+                       initial.value = NULL) {
   ## Gamma distribution with parameters (a, b), where the mean is a/b
   ## and variance is a/b^2.
   ## Args:
@@ -112,11 +113,11 @@ GammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL, initial.value = NU
   stopifnot(all(a > 0))
   stopifnot(all(b > 0))
 
-  if(is.null(initial.value)){
-    initial.value <- a/b
+  if (is.null(initial.value)) {
+    initial.value <- a / b
   }
   ans <- list(a = a, b = b, initial.value = initial.value)
-  class(ans) <- c("GammaPrior", "DoubleModel", "Prior")
+  class(ans) <- c("GammaPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
 
@@ -138,8 +139,8 @@ MarkovPrior <- function(prior.transition.counts = NULL,
   ##   uniform.prior.value: The default value to use for entries of
   ##     prior.transition.counts and prior.initial.state.counts, when
   ##     they are not supplied by the user.
-  if(is.null(state.space.size)) {
-    if(is.null(prior.transition.counts) && is.null(prior.transition.counts)) {
+  if (is.null(state.space.size)) {
+    if (is.null(prior.transition.counts) && is.null(prior.transition.counts)) {
       stop("Either 'state.space.size' or one of 'prior.transition.counts' or",
            "'prior.initial.state.counts' must be supplied to MarkovPrior")
     }
@@ -166,9 +167,10 @@ MarkovPrior <- function(prior.transition.counts = NULL,
     ## If state.space.size and prior.transition.counts are both
     ## present then issue a warning if they don't match, and use
     ## prior.transition.counts.
-    if(state.space.size != nrow(prior.transition.counts)) {
+    if (state.space.size != nrow(prior.transition.counts)) {
       warning("state.space.size is ", state.space.size,
-              ", but nrow(prior.transition.counts) is", nrow(prior.transition.counts),
+              ", but nrow(prior.transition.counts) is",
+              nrow(prior.transition.counts),
               ".  Changing state.space.size to nrow(prior.transition.counts).")
       state.space.size <- nrow(prior.transition.counts)
     }
@@ -201,7 +203,7 @@ DirichletPrior <- function(prior.counts, initial.value = NULL) {
   stopifnot(is.numeric(prior.counts))
   stopifnot(length(prior.counts) > 0)
   stopifnot(all(prior.counts > 0))
-  if(is.null(initial.value)){
+  if (is.null(initial.value)) {
     initial.value <- prior.counts / sum(prior.counts)
   }
   ans <- list(prior.counts = prior.counts)
@@ -233,9 +235,9 @@ NormalInverseGammaPrior <- function(mu.guess,
   ans <- list(mu.guess = mu.guess,
               mu.guess.weight = mu.guess.weight,
               sigma.prior = SdPrior(
-                sigma.guess = sigma.guess,
-                sample.size = sigma.guess.weight,
-                ...))
+                  sigma.guess = sigma.guess,
+                  sample.size = sigma.guess.weight,
+                  ...))
   class(ans) <- c("NormalInverseGammaPrior", "Prior")
   return(ans)
 }

@@ -33,10 +33,11 @@ namespace BOOM {
         Ptr<GammaModelBase> sigsq_level_prior,
         Ptr<DoubleModel> nu_level_prior,
         Ptr<GammaModelBase> sigsq_slope_prior,
-        Ptr<DoubleModel> nu_slope_prior);
+        Ptr<DoubleModel> nu_slope_prior,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual double logpri()const;
-    virtual void draw();
+    double logpri() const override;
+    void draw() override;
 
     void set_sigma_level_upper_limit(double upper_limit);
     void set_sigma_slope_upper_limit(double upper_limit);

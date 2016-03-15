@@ -15,25 +15,33 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-namespace BOOM{
-  typedef PosteriorSampler PS;
 
-  void intrusive_ptr_add_ref(PosteriorSampler *m){ m->up_count(); }
-  void intrusive_ptr_release(PosteriorSampler *m){
+#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <cpputil/report_error.hpp>
+
+namespace BOOM{
+
+  void intrusive_ptr_add_ref(PosteriorSampler *m) { m->up_count(); }
+
+  void intrusive_ptr_release(PosteriorSampler *m) {
     m->down_count(); if(m->ref_count()==0) delete m; }
 
-  PS::PosteriorSampler()
-      : rng_(seed_rng())
+  PosteriorSampler::PosteriorSampler(RNG &seeding_rng)
+      : rng_(seed_rng(seeding_rng))
   {}
 
-  PS::PosteriorSampler(const PS &rhs)
+  PosteriorSampler::PosteriorSampler(const PosteriorSampler &rhs)
       : RefCounted(rhs)
   {
     rng_.seed(seed_rng(rhs.rng()));
   }
 
-  void PosteriorSampler::set_seed(unsigned long s){
+  void PosteriorSampler::set_seed(unsigned long s) {
     rng_.seed(s);
   }
-}
+
+  void PosteriorSampler::find_posterior_mode(double epsilon) {
+    report_error("Sampler class does not implement find_posterior_mode.");
+  }
+
+}  // namespace BOOM

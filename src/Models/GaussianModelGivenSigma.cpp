@@ -76,7 +76,7 @@ namespace BOOM{
     return ans;
   }
 
-  double GMGS::Logp(const Vec &x, Vec &g, Mat &h, uint nd)const{
+  double GMGS::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
     double X=x[0];
     double G(0),H(0);
     double ans = Logp(X,G,H,nd);
@@ -85,7 +85,7 @@ namespace BOOM{
     return ans;
   }
 
-  double GMGS::Loglike(const Vector &mu_kappa, Vec &g, Mat &h, uint nd) const {
+  double GMGS::Loglike(const Vector &mu_kappa, Vector &g, Matrix &h, uint nd) const {
     if (mu_kappa.size() != 2 || mu_kappa[1] <= 0) {
       report_error("Illegal argument passed to GaussianModelGivenSigma::Loglike.");
     }

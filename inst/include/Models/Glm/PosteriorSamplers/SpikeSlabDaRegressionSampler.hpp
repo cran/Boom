@@ -120,10 +120,11 @@ namespace BOOM {
         Ptr<GammaModelBase> siginv_prior,
         const Vector & prior_inclusion_probabilities,
         double complete_data_information_matrix_fudge_factor = .01,
-        double fallback_probability = 0.0);
+        double fallback_probability = 0.0,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual double logpri()const;
-    virtual void draw();
+    double logpri() const override;
+    void draw() override;
 
     // Compute the inclusion probability of coefficient i given complete
     // data.  The complete data makes all the coefficients independent.

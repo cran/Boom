@@ -45,7 +45,7 @@ namespace BOOM{
   public:
     GaussianModelGivenSigma(Ptr<UnivParams> sigsq, double mu0=0,
 			    double kappa=1);
-    GaussianModelGivenSigma * clone()const;
+    GaussianModelGivenSigma * clone()const override;
 
     void set_sigsq(Ptr<UnivParams>);
     void set_params(double mu0, double kappa);
@@ -65,17 +65,17 @@ namespace BOOM{
     const Ptr<UnivParams> Mu_prm()const;
     const Ptr<UnivParams> Kappa_prm()const;
 
-    virtual void mle();
+    void mle() override;
 
-    double Logp(double x, double &g, double &h, uint nd)const;
-    double Logp(const Vec & x, Vec &g, Mat &h, uint nd)const;
-    double Loglike(const Vector &mu_kappa, Vec &g, Mat &h, uint nd)const;
+    double Logp(double x, double &g, double &h, uint nd)const override;
+    double Logp(const Vector & x, Vector &g, Matrix &h, uint nd)const;
+    double Loglike(const Vector &mu_kappa, Vector &g, Matrix &h, uint nd)const override;
 
     void set_semi_conj_prior(double mu0, double v_mu0,
 			     double pdf, double sigma_guess);
     void set_conj_prior(double mu0, double mu_n,
 			double pdf, double pss);
-    virtual double sim()const;
+    double sim()const override;
 
     void add_data_raw(double x);
 

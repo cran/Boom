@@ -54,17 +54,17 @@ namespace BOOM{
     }
 
     CompositeModel(const CompositeModel &rhs);
-    CompositeModel * clone()const;
+    CompositeModel * clone()const override;
 
     virtual void add_model(Ptr<MixtureComponent>);
 
-    virtual void add_data(Ptr<CompositeData>);
-    virtual void add_data(Ptr<Data>);
-    virtual void clear_data();
+    void add_data(Ptr<CompositeData>) override;
+    void add_data(Ptr<Data>) override;
+    void clear_data() override;
 
     double pdf(const CompositeData &, bool logscale)const;
     double pdf(Ptr<Data>, bool logscale)const;
-    double pdf(const Data *, bool logscale)const;
+    double pdf(const Data *, bool logscale)const override;
 
     std::vector<Ptr<MixtureComponent> > &components();
     const std::vector<Ptr<MixtureComponent> > &components()const;

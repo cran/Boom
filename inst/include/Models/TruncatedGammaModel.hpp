@@ -30,7 +30,7 @@ class TruncatedGammaModel
 {
  public:
   TruncatedGammaModel(double a, double b, double trunc);
-  double logp(double x)const;
+  double logp(double x)const override;
 
  private:
   double trunc_;

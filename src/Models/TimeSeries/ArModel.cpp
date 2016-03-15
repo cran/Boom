@@ -53,7 +53,7 @@ namespace BOOM{
     }
   }
 
-  void ArSuf::add_mixture_data(double y, const Vec &x, double weight){
+  void ArSuf::add_mixture_data(double y, const Vector &x, double weight){
     reg_suf_->add_mixture_data(y, x, weight);
   }
 
@@ -69,16 +69,16 @@ namespace BOOM{
     return abstract_combine_impl<ArSuf>(this, s);
   }
 
-  Vec ArSuf::vectorize(bool minimal)const{
+  Vector ArSuf::vectorize(bool minimal)const{
     return reg_suf_->vectorize(minimal);
   }
 
-  Vec::const_iterator ArSuf::unvectorize(Vec::const_iterator &v,
+  Vector::const_iterator ArSuf::unvectorize(Vector::const_iterator &v,
                                          bool minimal){
     return reg_suf_->unvectorize(v, minimal);
   }
 
-  Vec::const_iterator ArSuf::unvectorize(const Vec &v,
+  Vector::const_iterator ArSuf::unvectorize(const Vector &v,
                                          bool minimal){
     return reg_suf_->unvectorize(v, minimal);
   }
@@ -127,7 +127,7 @@ namespace BOOM{
     return Sigsq_prm()->value();
   }
 
-  const Vec &ArModel::phi()const{
+  const Vector &ArModel::phi()const{
     return Phi_prm()->value();
   }
 
@@ -139,7 +139,7 @@ namespace BOOM{
     Sigsq_prm()->set(sigsq);
   }
 
-  void ArModel::set_phi(const Vec &phi){
+  void ArModel::set_phi(const Vector &phi){
     Phi_prm()->set(phi);
   }
 
@@ -148,7 +148,7 @@ namespace BOOM{
   Ptr<UnivParams> ArModel::Sigsq_prm(){ return prm2(); }
   const Ptr<UnivParams> ArModel::Sigsq_prm()const{ return prm2(); }
 
-  bool ArModel::check_stationary(const Vec &phi){
+  bool ArModel::check_stationary(const Vector &phi){
     // The process is stationary if the roots of the polynomial
     //
     // 1 - phi[0]*z - ... - phi[p-1]*z^p.
@@ -179,7 +179,7 @@ namespace BOOM{
 
   Vector ArModel::autocovariance(int number_of_lags)const{
     set_filter_coefficients();
-    Vec ans(number_of_lags + 1);
+    Vector ans(number_of_lags + 1);
     for(int lag = 0; lag <= number_of_lags; ++lag){
       int n = filter_coefficients_.size() - lag;
       const ConstVectorView psi(filter_coefficients_, 0, n);
@@ -189,21 +189,21 @@ namespace BOOM{
     return ans * sigsq();
   }
 
-  Vec ArModel::simulate(int n) const {
+  Vector ArModel::simulate(int n) const {
     int p = number_of_lags();
-    Vec acf = autocovariance(p);
-    Spd Sigma(p);
+    Vector acf = autocovariance(p);
+    SpdMatrix Sigma(p);
     Sigma.diag() = acf[0];
     for(int i = 1; i < p; ++i) {
       Sigma.subdiag(i) = acf[i];
       Sigma.superdiag(i) = acf[i];
     }
-    Vec zero(p, 0.0);
-    Vec y0 = rmvn(zero, Sigma);
+    Vector zero(p, 0.0);
+    Vector y0 = rmvn(zero, Sigma);
     return simulate(n, y0);
   }
 
-  Vec ArModel::simulate(int n, const Vec &y0) const {
+  Vector ArModel::simulate(int n, const Vector &y0) const {
     if(y0.size() != number_of_lags()){
       ostringstream err;
       err << "Error in ArModel::simulate." << endl
@@ -212,9 +212,9 @@ namespace BOOM{
           << endl;
       report_error(err.str());
     }
-    const Vec &phi(this->phi());
+    const Vector &phi(this->phi());
     std::deque<double> lags(y0.rbegin(), y0.rend());
-    Vec ans;
+    Vector ans;
     ans.reserve(n);
     for(int i = 0; i < n; ++i) {
       double mu = 0;
@@ -243,7 +243,7 @@ namespace BOOM{
   // psi.
   void ArModel::set_filter_coefficients()const{
     if (filter_coefficients_current_) return;
-    const Vec &phi(this->phi());
+    const Vector &phi(this->phi());
     int p = phi.size();
 
     filter_coefficients_.resize(2);

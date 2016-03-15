@@ -185,7 +185,7 @@ namespace BOOM {
     KullbackLeiblerDivergence(
         ScalarTarget logf, const NormalMixtureApproximation &approx,
         double lower_limit, double upper_limit, double guess_at_mode);
-    virtual double integrand(double x)const;
+    double integrand(double x)const override;
   };
 
   class AbsNormDistance : public ApproximationDistance {
@@ -193,7 +193,7 @@ namespace BOOM {
     AbsNormDistance(
         ScalarTarget logf, const NormalMixtureApproximation &approx,
         double lower_limit, double upper_limit, double guess_at_mode);
-    virtual double integrand(double x)const;
+    double integrand(double x)const override;
   };
 
   //======================================================================
