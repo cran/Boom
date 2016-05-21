@@ -219,6 +219,13 @@ namespace BOOM {
     return y == 0 ? lse2(log_zero_prob_, logp1) : logp1;
   }
 
+  double ZeroInflatedPoissonModel::sim() const {
+    if (runif() < zero_probability()) {
+      return 0;
+    }
+    return rpois(lambda());
+  }
+
   void ZeroInflatedPoissonModel::check_log_probabilities()const{
     if(log_zero_prob_current_) return;
     double p = zero_probability();

@@ -62,8 +62,7 @@ namespace Rmath{
  *         If (i > 7), use Stirling's approximation, otherwise use table lookup.
 */
 
-static double afc(int i)
-{
+double afc(int i) {
     const double al[9] =
     {
         0.0,

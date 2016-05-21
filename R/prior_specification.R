@@ -121,6 +121,36 @@ GammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL,
   return(ans)
 }
 
+LognormalPrior <- function(mu = 0.0, sigma = 1.0, initial.value = NULL) {
+  ## A lognormal distribution, where log(y) ~ N(mu, sigma).  The mean
+  ## of this distribution is exp(mu + 0.5 * sigma^2), so don't only
+  ## focus on the mean parameter here.
+  ##
+  ## Args:
+  ##   mu:  mean of the corresponding normal distribution.
+  ##   sigma: standard deviation of the corresponding normal
+  ##     distribution.  WARNING: If something looks strange in your
+  ##     program, look out for SD != Variance errors.
+  stopifnot(is.numeric(mu),
+            length(mu) == 1,
+            is.finite(mu))
+  stopifnot(is.numeric(sigma),
+            length(sigma) == 1,
+            sigma > 0,
+            is.finite(sigma))
+  if (is.null(initial.value)) {
+    initial.value <- exp(mu + .5 * sigma^2)
+  }
+  stopifnot(is.numeric(initial.value),
+            length(initial.value) == 1,
+            initial.value > 0,
+            is.finite(initial.value))
+
+  ans <- list(mu = mu, sigma = sigma, initial.value = initial.value)
+  class(ans) <- c("LognormalPrior", "DiffDoubleModel", "DoubleModel", "Prior")
+  return(ans)
+}
+
 MarkovPrior <- function(prior.transition.counts = NULL,
                         prior.initial.state.counts = NULL,
                         state.space.size = NULL,

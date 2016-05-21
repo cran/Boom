@@ -22,6 +22,7 @@
 #include <Models/DiscreteUniformModel.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/GaussianModel.hpp>
+#include <Models/LognormalModel.hpp>
 #include <Models/MarkovModel.hpp>
 #include <Models/PoissonModel.hpp>
 #include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
@@ -78,14 +79,14 @@ namespace BOOM{
         : a_(Rf_asReal(getListElement(prior, "a"))),
           b_(Rf_asReal(getListElement(prior, "b")))
     {
-      SEXP rinitial_value;
-      PROTECT(rinitial_value = getListElement(prior, "initial.value"));
+      RMemoryProtector protector;
+      SEXP rinitial_value = protector.protect(
+          getListElement(prior, "initial.value"));
       if (rinitial_value == R_NilValue) {
         initial_value_ = Rf_asReal(rinitial_value);
       }else{
         initial_value_ = a_ / b_;
       }
-      UNPROTECT(1);
     }
 
     std::ostream & GammaPrior::print(std::ostream &out)const{
@@ -270,16 +271,20 @@ namespace BOOM{
       if (Rf_inherits(r_spec, "GammaPrior")) {
         GammaPrior spec(r_spec);
         return new GammaModel(spec.a(), spec.b());
-      }else if (Rf_inherits(r_spec, "BetaPrior")) {
+      } else if (Rf_inherits(r_spec, "BetaPrior")) {
         BetaPrior spec(r_spec);
         return new BetaModel(spec.a(), spec.b());
-      }else if (Rf_inherits(r_spec, "NormalPrior")) {
+      } else if (Rf_inherits(r_spec, "NormalPrior")) {
         NormalPrior spec(r_spec);
         return new GaussianModel(spec.mu(), spec.sigma() * spec.sigma());
-      }else if (Rf_inherits(r_spec, "UniformPrior")) {
+      } else if (Rf_inherits(r_spec, "UniformPrior")) {
         double lo = Rf_asReal(getListElement(r_spec, "lo"));
         double hi = Rf_asReal(getListElement(r_spec, "hi"));
         return new UniformModel(lo, hi);
+      } else if (Rf_inherits(r_spec, "LognormalPrior")) {
+        double mu = Rf_asReal(getListElement(r_spec, "mu"));
+        double sigma = Rf_asReal(getListElement(r_spec, "sigma"));
+        return new LognormalModel(mu, sigma);
       }
       report_error("Could not convert specification into a DoubleModel");
       return nullptr;

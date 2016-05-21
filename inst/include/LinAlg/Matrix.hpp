@@ -66,7 +66,10 @@ namespace BOOM{
     FwdIt assign(FwdIt begin, FwdIt end);
 
     void swap(Matrix &rhs); // efficient.. swaps pointers and size info
-    virtual void randomize();  // fills entries with U(0,1) random variables.
+
+    // Fill matrix entries with U(0,1) random variables.
+    // Returns *this.
+    virtual Matrix &randomize();
     virtual ~Matrix();
 
     // Returns true if empty, or if std::isfinite returns 'true' on
@@ -238,7 +241,12 @@ namespace BOOM{
     virtual Matrix & operator/=(double x);
 
     Matrix & operator+=(const Matrix &m);
+    Matrix & operator+=(const SubMatrix &m);
+    Matrix & operator+=(const ConstSubMatrix &m);
+
     Matrix & operator-=(const Matrix &m);
+    Matrix & operator-=(const SubMatrix &m);
+    Matrix & operator-=(const ConstSubMatrix &m);
 
     Matrix & exp();  // in place exponentiation
     Matrix & log();  // in place logarithm

@@ -61,6 +61,11 @@ namespace BOOM{
         zero_threshold_(1e-8),
         log_probabilities_are_current_(false)
   {
+    if (sum_of_positives == 0 &&
+        (sum_of_logs_of_positives != 0 || number_of_positives != 0)) {
+      report_error("If sum_of_positives is zero, then sum_of_log_positives and "
+                   "number_of_positives must also be zero.");
+    }
     gamma_->suf()->set(sum_of_positives,
                        sum_of_logs_of_positives,
                        number_of_positives);

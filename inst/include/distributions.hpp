@@ -27,7 +27,6 @@
 #include <uint.hpp>
 
 namespace BOOM {
-  void set_seed(unsigned int I1, unsigned int I2);
   class VectorView;
   class ConstVectorView;
 

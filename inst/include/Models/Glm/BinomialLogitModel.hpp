@@ -54,6 +54,13 @@ namespace BOOM{
     Ptr<GlmCoefs> coef_prm() override{return ParamPolicy::prm();}
     const Ptr<GlmCoefs> coef_prm()const override{return ParamPolicy::prm();}
 
+    double success_probability(const Vector &x) const;
+    double success_probability(const VectorView &x) const;
+    double success_probability(const ConstVectorView &x) const;
+    double failure_probability(const Vector &x) const;
+    double failure_probability(const VectorView &x) const;
+    double failure_probability(const ConstVectorView &x) const;
+
     double pdf(const Data * dp, bool logscale)const override;
     virtual double pdf(dPtr dp, bool logscale)const;
     virtual double pdf(Ptr<BinomialRegressionData>, bool)const;

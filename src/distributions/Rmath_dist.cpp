@@ -266,24 +266,6 @@ namespace BOOM{
   double pnt(double x, double df, double mu, bool low, bool log){
     return Rmath::pnt(x,df,mu,low,log);}
 
-  /* Wilcoxon Rank Sum Distribution */
-  double dwilcox(double x, double m, double n, bool log){
-    return Rmath::dwilcox(x,m,n,log);}
-  double pwilcox(double x, double m, double n, bool low, bool log){
-    return Rmath::pwilcox(x,m,n,low,log);}
-  double qwilcox(double p, double m, double n, bool low, bool log){
-    return Rmath::qwilcox(p,m,n,low,log);}
-  double rwilcox(double m, double n){return Rmath::rwilcox(m,n);}
-
-  /* Wilcoxon Signed Rank Distribution */
-  double dsignrank(double x, double n, bool log){
-    return Rmath::dsignrank(x,n,log);}
-  double psignrank(double x, double n, bool low, bool log){
-    return Rmath::psignrank(x,n,low,log);}
-  double qsignrank(double p, double n, bool low, bool log){
-    return Rmath::qsignrank(p,n,low,log);}
-  double rsignrank(double n){ return Rmath::rsignrank(n);}
-
   /* Gamma and Related Functions */
   double gamma(double x){ return Rmath::gammafn(x);}
   double lgamma(double x){ return Rmath::lgammafn(x);}

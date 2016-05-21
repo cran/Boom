@@ -416,6 +416,12 @@ namespace BOOM{
       block(0, 0) += 1.0;
     }
 
+    Matrix dense() const override {
+      Matrix ans(nrow(), ncol(), 0.0);
+      ans(0, 0) = 1.0;
+      return ans;
+    }
+
    private:
     int nrow_;
   };
@@ -474,6 +480,12 @@ namespace BOOM{
       conforms_to_rows(m.nrow());
       conforms_to_cols(m.ncol());
       m.diag() += 1.0;
+    }
+
+    Matrix dense() const override {
+      Matrix ans(nrow_, ncol_, 0.0);
+      ans.diag() = 1.0;
+      return ans;
     }
 
    private:
@@ -649,7 +661,10 @@ namespace BOOM{
 
     // Returns a dense matrix representation of *this.  Mainly for
     // debugging and testing.
-    Matrix dense() const;
+    //
+    // The default implementation only works for square matrices.
+    // Child classes that can be non-square should override.
+    virtual Matrix dense() const;
   };
 
   //======================================================================

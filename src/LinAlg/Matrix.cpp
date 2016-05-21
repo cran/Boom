@@ -181,11 +181,12 @@ namespace BOOM{
     std::swap(nc_, rhs.nc_);
     std::swap(V, rhs.V); }
 
-  void Matrix::randomize() {
+  Matrix & Matrix::randomize() {
     uint n = nr_ * nc_;
     for (uint i=0; i<n; ++i) {
       V[i] = runif (0,1);
     }
+    return *this;
   }
 
   Matrix::~Matrix() {}
@@ -930,9 +931,39 @@ namespace BOOM{
     return *this;
   }
 
+  Matrix & Matrix::operator+=(const SubMatrix &m) {
+    SubMatrix lhs(*this);
+    lhs += m;
+    return *this;
+  }
+
+  Matrix & Matrix::operator+=(const ConstSubMatrix &m) {
+    SubMatrix lhs(*this);
+    lhs += m;
+    return *this;
+  }
+
   Matrix & Matrix::operator-= (const Matrix &m) {
-    assert(same_dim(m));
+    if (!same_dim(m)) {
+      ostringstream err;
+      err << "Matrix::operator-= wrong dimension:  "
+          << "LHS[" <<nrow() << "," << ncol() << "]   RHS["
+          << m.nrow() << "," << m.ncol() << ")";
+      report_error(err.str());
+    }
     V-= m.V;
+    return *this;
+  }
+
+  Matrix & Matrix::operator-=(const SubMatrix &m) {
+    SubMatrix lhs(*this);
+    lhs -= m;
+    return *this;
+  }
+
+  Matrix & Matrix::operator-=(const ConstSubMatrix &m) {
+    SubMatrix lhs(*this);
+    lhs -= m;
     return *this;
   }
 
@@ -1056,8 +1087,7 @@ namespace BOOM{
   double Matrix::prod() const {
     return accumulate(V.begin(), V.end(), 1.0, mul);}
 
-  double Matrix::max() const {
-    return *max_element(begin(), end());}
+  double Matrix::max() const { return *std::max_element(begin(), end()); }
 
   double Matrix::min() const {
     return *min_element(begin(), end()); }
@@ -1102,27 +1132,28 @@ namespace BOOM{
       for (int i = 0; i < row_names_.size(); ++i) {
         max_row_label = std::max<int>(max_row_label, row_names_[i].size());
       }
-      out << setw(max_row_label) << " " << " ";
+      out << std::setw(max_row_label) << " "
+          << " ";
     }
 
     bool have_col_names = !col_names_.empty();
     if (have_col_names) {
       for (int i = 0; i < col_names_.size(); ++i) {
         int col_width = std::max<int>(col_names_[i].size(), 8);
-        out << setw(col_width) << col_names_[i] << " ";
+        out << std::setw(col_width) << col_names_[i] << " ";
       }
       out << endl;
     }
 
     for (int i = 0; i < nrow(); ++i) {
       if (have_row_names) {
-        out << setw(max_row_label) << std::left
-            << row_names_[i] << std::right << " ";
+        out << std::setw(max_row_label) << std::left << row_names_[i]
+            << std::right << " ";
       }
       for (int j = 0; j < ncol(); ++j) {
         int col_width =
             have_col_names ? std::max<int>(col_names_[j].size(), 8) : 8;
-        out << setw(col_width) << unchecked(i, j) << " ";
+        out << std::setw(col_width) << unchecked(i, j) << " ";
       }
       out << endl;
     }

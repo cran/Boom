@@ -85,21 +85,27 @@ namespace BOOM{
 
   VV::VectorView(Vector &v, uint first)
       : V(v.data()+first),
-      nelem_(v.size()-first),
-      stride_(1)
-      {}
+        nelem_(v.size()-first),
+        stride_(1)
+  {}
 
   VV::VectorView(Vector &v, uint first, uint len)
       : V(v.data()+first),
-      nelem_(len),
-      stride_(1)
-      {}
+        nelem_(len),
+        stride_(1)
+  {}
+
+  VV::VectorView(VectorView v, uint first)
+      : V(v.data() + first * v.stride()),
+        nelem_(v.size() - first),
+        stride_(v.stride())
+  {}
 
   VV::VectorView(VectorView v, uint first, uint len)
       : V(v.data() + first * v.stride()),
-      nelem_(len),
-      stride_(v.stride())
-      {}
+        nelem_(len),
+        stride_(v.stride())
+  {}
 
   VV & VV::operator=(double x){
     std::fill(begin(), end(), x);
@@ -285,11 +291,11 @@ namespace BOOM{
     return *it; }
 
   double VV::max()const{
-    const_iterator it = max_element(begin(), end());
+    const_iterator it = std::max_element(begin(), end());
     return *it; }
 
   uint VV::imax()const{
-    const_iterator it = max_element(begin(), end());
+    const_iterator it = std::max_element(begin(), end());
     return it-begin();}
 
   uint VV::imin()const{
@@ -432,11 +438,11 @@ namespace BOOM{
     return *it; }
 
   double CVV::max()const{
-    const_iterator it = max_element(begin(), end());
+    const_iterator it = std::max_element(begin(), end());
     return *it; }
 
   uint CVV::imax()const{
-    const_iterator it = max_element(begin(), end());
+    const_iterator it = std::max_element(begin(), end());
     return it-begin();}
 
   uint CVV::imin()const{

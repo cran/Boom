@@ -474,7 +474,7 @@ namespace BOOM{
       // By subtracting off the maximal value, the largest element of
       // exp(ans) will be 1, which will prevent overflow.
       ans -= max(ans);
-      ans.transform(::exp);
+      ans = exp(ans);
       ans /= sum(ans);
       return ans;
     }

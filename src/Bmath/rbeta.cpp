@@ -47,7 +47,7 @@
 #include <distributions/rng.hpp>
 namespace Rmath{
 
-#define expmax  (numeric_limits<double>::max_exponent * M_LN2)/* = log(numeric_limits<double>::max()) */
+constexpr double expmax = (numeric_limits<double>::max_exponent * M_LN2);
 
   double rbeta_mt(BOOM::RNG & rng, double aa, double bb);
 
@@ -56,23 +56,9 @@ namespace Rmath{
   }
 
   double rbeta_mt(BOOM::RNG & rng, double aa, double bb){
-
-    // The R version IS NOT THREAD SAFE because of the static
-    // variables I took out the static variables, so this function now
-    // reinitializes every time.  If this takes too long then consider
-    // using two calls to a boost::gamma_distribution to do the draws
-
     double a, b, alpha;
     double r, s, t, u1, u2, v, w, y, z;
-
-    //    int qsame;
-    /* FIXME:  Keep Globals (properly) for threading */
-    /* Uses these GLOBALS to save time when many rv's are generated : */
-
     double beta, gamma, delta, k1, k2;
-//     static double beta, gamma, delta, k1, k2;
-//     static double olda = -1.0;
-//     static double oldb = -1.0;
 
     if (aa <= 0. || bb <= 0. || (!R_FINITE(aa) && !R_FINITE(bb)))
       ML_ERR_return_NAN;
@@ -84,8 +70,6 @@ namespace Rmath{
       return 0.0;
 
     /* Test if we need new "initializing" */
-//     qsame = (olda == aa) && (oldb == bb);
-//     if (!qsame) { olda = aa; oldb = bb; }
 
     a = std::min(aa, bb);
     b = std::max(aa, bb); /* a <= b */
@@ -103,7 +87,6 @@ namespace Rmath{
 
       /* changed notation, now also a <= b (was reversed) */
 
-      //      if (!qsame) { /* initialize */
       beta = 1.0 / a;
       delta = 1.0 + b - a;
       k1 = delta * (0.0138889 + 0.0416667 * a) / (b * beta - 0.777778);
@@ -111,8 +94,6 @@ namespace Rmath{
         //      }
       /* FIXME: "do { } while()", but not trivially because of "continue"s:*/
       for(;;) {
-        //          u1 = unif_rand();
-        //          u2 = unif_rand();
         u1 = rng();
         u2 = rng();
         if (u1 < 0.5) {
@@ -139,27 +120,22 @@ namespace Rmath{
 
     }
     else {              /* Algorithm BB */
-
-      //      if (!qsame) { /* initialize */
       beta = sqrt((alpha - 2.0) / (2.0 * a * b - alpha));
       gamma = a + 1.0 / beta;
-        //      }
       do {
         u1 = rng();
         u2 = rng();
-        //          u1 = unif_rand();
-        //          u2 = unif_rand();
-
         v_w_from__u1_bet(a);
-
         z = u1 * u1 * u2;
         r = gamma * v - 1.3862944;
         s = a + r - w;
-        if (s + 2.609438 >= 5.0 * z)
+        if (s + 2.609438 >= 5.0 * z) {
           break;
+        }
         t = log(z);
-        if (s > t)
+        if (s > t) {
           break;
+        }
       }
       while (r + alpha * log(alpha / (b + w)) < t);
 

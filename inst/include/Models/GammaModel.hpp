@@ -45,6 +45,9 @@ namespace BOOM{
     void update_raw(double y);
     void add_mixture_data(double y, double prob);
 
+    // Add the given sufficient components to the sufficient statistics.
+    void increment(double n, double sumy, double sumlog);
+
     double sum()const;
     double sumlog()const;
     double n()const;

@@ -70,7 +70,7 @@ namespace BOOM {
         ++pos;
       }
     }
-    return make_pair(unique_draws, weight);
+    return std::make_pair(unique_draws, weight);
   }
 
   Matrix ImportanceResampler::draw_and_resample(

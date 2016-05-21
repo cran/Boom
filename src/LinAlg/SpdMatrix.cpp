@@ -152,19 +152,20 @@ namespace BOOM{
 
    void SpdMatrix::swap(SpdMatrix &rhs){ Matrix::swap(rhs); }
 
-   void SpdMatrix::randomize(){
+   SpdMatrix & SpdMatrix::randomize() {
      Matrix::randomize();
      SpdMatrix tmp(nrow());
      dsyrk(Upper, Trans, nrow(), nrow(),
           1.0, data(), nrow(), 0.0, tmp.data(), tmp.nrow());
      swap(tmp);
      reflect();
+     return *this;
    }
 
    uint SpdMatrix::nelem()const{
      uint n = nrow();
-     return n*(n+1)/2;}
-
+     return n*(n+1)/2;
+   }
 
    SpdMatrix & SpdMatrix::resize(uint n){
      Matrix::resize(n,n);
@@ -241,10 +242,13 @@ namespace BOOM{
      dposv_("U", &n, &nrhs, LLT.data(), &n, ans.data(), &n, &info);
      if(info!=0){
        ostringstream msg;
-       msg << "Matrix not positive definite in SpdMatrix::solve(Matrix)" << endl
-           << "info = "<< info <<  endl <<"arguments: " << endl
-           << "n = " << n << "  nrhs = " << nrhs << endl
-           << "SpdMatrix: " << endl << *this << endl;
+       msg << "Matrix not positive definite in SpdMatrix::solve(Matrix)"
+           << std::endl
+           << "info = " << info << std::endl
+           << "arguments: " << std::endl
+           << "n = " << n << "  nrhs = " << nrhs << std::endl
+           << "SpdMatrix: " << std::endl
+           << *this << std::endl;
        report_error(msg.str());
      }
      return ans;
@@ -256,7 +260,7 @@ namespace BOOM{
      if (!ok) {
        ostringstream msg;
        msg << "Matrix not positive definite in SpdMatrix::solve(Vector)."
-           << endl;
+           << std::endl;
        report_error(msg.str());
      }
      return ans;

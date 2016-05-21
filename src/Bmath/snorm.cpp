@@ -54,10 +54,7 @@ namespace Rmath{
 
 #define repeat for(;;)
 
-#ifdef MATHLIB_STANDALONE
-static
-#endif
-double BM_norm_keep = 0.0;
+static PLATFORM_THREAD_LOCAL double BM_norm_keep = 0.0;
 
 N01type N01_kind = KINDERMAN_RAMAGE;
 

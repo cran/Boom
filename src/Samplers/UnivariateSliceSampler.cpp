@@ -15,11 +15,13 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
+
 #include <Samplers/UnivariateSliceSampler.hpp>
-#include <distributions.hpp>
 #include <cmath>
 #include <cassert>
+#include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   typedef UnivariateSliceSampler USS;
@@ -49,6 +51,25 @@ USS::UnivariateSliceSampler(const Target &logpost,
       theta_[i] = scalar_samplers_[i].draw(theta_[i]);
     }
     return theta_;
+  }
+
+  void USS::set_limits(const Vector &lower, const Vector &upper) {
+    if (lower.size() != scalar_samplers_.size()
+        || upper.size() != scalar_samplers_.size()) {
+      report_error("Limits are wrong dimension in "
+                   "UnivariateSliceSampler::set_limits.");
+    }
+    for (size_t i = 0; i < lower.size(); ++i) {
+      if (upper[i] <= lower[i]) {
+        report_error("Upper limit must be larger than lower limit.");
+      }
+      if (std::isfinite(lower[i])) {
+        scalar_samplers_[i].set_lower_limit(lower[i]);
+      }
+      if (std::isfinite(upper[i])) {
+        scalar_samplers_[i].set_upper_limit(upper[i]);
+      }
+    }
   }
 
 }  // namespace BOOM

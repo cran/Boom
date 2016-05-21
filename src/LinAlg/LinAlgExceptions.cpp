@@ -30,15 +30,14 @@ namespace BOOM{
 
   string print_matrix_limits(const Matrix &m, const string &name=""){
     ostringstream out;
-    out << name << "[" << m.nrow() << ","
-        << m.ncol() << "] = " << endl
-        << m << endl;
+    out << name << "[" << m.nrow() << "," << m.ncol() << "] = " << std::endl
+        << m << std::endl;
     return out.str();
   }
 
   const char * matrix_not_positive_definite::what()const throw(){
     ostringstream out;
-    out << msg << endl;
+    out << msg << std::endl;
     out << print_matrix_limits(m);
     return out.str().c_str();
   }

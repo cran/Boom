@@ -86,12 +86,12 @@ double rpois(double mu)
     };
 
     /* These are static --- persistent between calls for same mu : */
-    static int l, m;
+    static PLATFORM_THREAD_LOCAL int l, m;
 
-    static double b1, b2, c, c0, c1, c2, c3;
-    static double pp[36], p0, p, q, s, d, omega;
-    static double big_l;/* integer "w/o overflow" */
-    static double muprev = 0., muprev2 = 0.;/*, muold    = 0.*/
+    static PLATFORM_THREAD_LOCAL double b1, b2, c, c0, c1, c2, c3;
+    static PLATFORM_THREAD_LOCAL double pp[36], p0, p, q, s, d, omega;
+    static PLATFORM_THREAD_LOCAL double big_l; /* integer "w/o overflow" */
+    static PLATFORM_THREAD_LOCAL double muprev = 0., muprev2 = 0.;
 
     /* Local Vars  [initialize some for -Wall]: */
     double del, difmuk= 0., E= 0., fk= 0., fx, fy, g, px, py, t, u= 0., v, x;

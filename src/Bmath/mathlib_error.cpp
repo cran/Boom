@@ -10,12 +10,12 @@ namespace Rmath{
 
   void mathlib_error(const string &s, int d){
     ostringstream err;
-    err << s << " " <<d << endl;
+    err << s << " " << d << std::endl;
     report_error(err.str());
   }
   void mathlib_error(const string &s, double d){
     ostringstream err;
-    err << s << " " <<d << endl;
+    err << s << " " << d << std::endl;
     report_error(err.str());
   }
 }

@@ -24,6 +24,7 @@
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/ParamTypes.hpp>
+#include <Models/Glm/GlmCoefs.hpp>
 #include <LinAlg/Selector.hpp>
 
 /*************************************************************************
@@ -91,7 +92,7 @@ namespace BOOM{
     const VarPtr variable(uint i)const;
     VarPtr variable(uint i);
 
-    Selector simulate()const;
+    Selector simulate(RNG &rng)const;
     uint potential_nvars()const;
 
     void add_main_effect(uint pos, double prob, const string & vname="");
@@ -138,5 +139,6 @@ namespace BOOM{
   };
 
   ostream & operator<<(ostream &out, const VariableSelectionPrior &);
+
 }
 #endif// BOOM_VARIABLE_SELECTION_PRIOR_HPP

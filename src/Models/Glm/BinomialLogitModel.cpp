@@ -67,6 +67,40 @@ namespace BOOM{
   BLM* BinomialLogitModel::clone()const{
     return new BinomialLogitModel(*this);}
 
+  namespace {
+    // Compute the probability of success (or failure) at a value of x.
+    // Args:
+    //   x:  The vector-like object at which the probability is desired.
+    //   beta:  The logistic regression coefficients multiplying x.
+    //   success: If true, then the probability of success is
+    //     returned.  Otherwise the probability of failure is returned.
+    template <class VECTOR>
+    double logit_success_probability(
+        const VECTOR &x, const GlmCoefs &beta, bool success) {
+      double eta = beta.predict(x);
+      return plogis(eta, 0, 1, success, false);
+    }
+  }
+
+  double BLM::success_probability(const Vector &x) const {
+    return logit_success_probability(x, coef(), true);
+  }
+  double BLM::success_probability(const VectorView &x) const {
+    return logit_success_probability(x, coef(), true);
+  }
+  double BLM::success_probability(const ConstVectorView &x) const {
+    return logit_success_probability(x, coef(), true);
+  }
+  double BLM::failure_probability(const Vector &x) const {
+    return logit_success_probability(x, coef(), false);
+  }
+  double BLM::failure_probability(const VectorView &x) const {
+    return logit_success_probability(x, coef(), false);
+  }
+  double BLM::failure_probability(const ConstVectorView &x) const {
+    return logit_success_probability(x, coef(), false);
+  }
+
   double BLM::pdf(dPtr dp, bool logscale) const{
     return pdf(DAT(dp), logscale);}
 

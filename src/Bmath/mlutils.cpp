@@ -135,7 +135,7 @@ int R_IsNaNorNA(double x)
 /* } */
 #endif /* IEEE_754 */
 
-static double myfmod(double x1, double x2)
+inline double myfmod(double x1, double x2)
 {
     double q = x1 / x2;
     return x1 - FLOOR(q) * x2;

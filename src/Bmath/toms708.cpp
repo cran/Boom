@@ -14,31 +14,31 @@
 
 namespace Rmath{
 
-static double bfrac(double, double, double, double, double, double, int log_p);
-static void bgrat(double, double, double, double, double *, double, int *);
-static void grat1(double, double, double, double *, double *, double);
-static double apser(double, double, double, double);
-static double bpser(double, double, double, double, int log_p);
-static double basym(double, double, double, double, int log_p);
-static double fpser(double, double, double, double, int log_p);
-static double bup(double, double, double, double, int, double);
-static double exparg(int);
-static double psi(double);
-static double gam1(double);
-static double gamln1(double);
-static double betaln(double, double);
-static double algdiv(double, double);
-static double brcmp1(int, double, double, double, double);
-static double brcomp(double, double, double, double, int log_p);
-static double rlog1(double);
-static double bcorr(double, double);
-static double gamln(double);
-static double alnrel(double);
-static double esum(int, double);
-static double erf__(double);
-static double rexpm1(double);
-static double erfc1(int, double);
-static double gsumln(double, double);
+double bfrac(double, double, double, double, double, double, int log_p);
+void bgrat(double, double, double, double, double *, double, int *);
+void grat1(double, double, double, double *, double *, double);
+double apser(double, double, double, double);
+double bpser(double, double, double, double, int log_p);
+double basym(double, double, double, double, int log_p);
+double fpser(double, double, double, double, int log_p);
+double bup(double, double, double, double, int, double);
+double exparg(int);
+double psi(double);
+double gam1(double);
+double gamln1(double);
+double betaln(double, double);
+double algdiv(double, double);
+double brcmp1(int, double, double, double, double);
+double brcomp(double, double, double, double, int log_p);
+double rlog1(double);
+double bcorr(double, double);
+double gamln(double);
+double alnrel(double);
+double esum(int, double);
+double erf__(double);
+double rexpm1(double);
+double erfc1(int, double);
+double gsumln(double, double);
 
 /*      ALGORITHM 708, COLLECTED ALGORITHMS FROM ACM.
  *      This work published in  Transactions On Mathematical Software,
@@ -114,18 +114,18 @@ bratio(double a, double b, double x, double y, double *w, double *w1,
     if (a == 0.0) goto L211;
     if (b == 0.0) goto L201;
 
-    eps = max(eps, 1e-15);
-    if (max(a,b) < eps * .001) { /* procedure for a and b < 0.001 * eps */
-        /* L230: */
-        if(log_p) {
-            z = log(a + b);
-            *w  = log(b) - z;
-            *w1 = log(a) - z;
-        } else {
-            *w  = b / (a + b);
-            *w1 = a / (a + b);
-        }
-        return;
+    eps = std::max(eps, 1e-15);
+    if (std::max(a, b) < eps * .001) { /* procedure for a and b < 0.001 * eps */
+      /* L230: */
+      if (log_p) {
+        z = log(a + b);
+        *w = log(b) - z;
+        *w1 = log(a) - z;
+      } else {
+        *w = b / (a + b);
+        *w1 = a / (a + b);
+      }
+      return;
     }
 
 #define SET_0_noswap \
@@ -136,8 +136,8 @@ bratio(double a, double b, double x, double y, double *w, double *w1,
     a0 = b;  x0 = y; \
     b0 = a;  y0 = x;
 
-    if (min(a,b) > 1.0) {
-        goto L30;
+    if (std::min(a, b) > 1.0) {
+      goto L30;
     }
 
 /*             PROCEDURE FOR a0 <= 1 OR b0 <= 1 */
@@ -150,37 +150,37 @@ bratio(double a, double b, double x, double y, double *w, double *w1,
     }
     /* now have  x0 <= 1/2 <= y0  (still  x0+y0 == 1) */
 
-    if (b0 < min(eps, eps * a0)) { /* L80: */
-        *w = fpser(a0, b0, x0, eps, log_p);
-        *w1 = log_p ? R_D_LExp(*w) : 0.5 - *w + 0.5;
-        goto L_end_after_log;
+    if (b0 < std::min(eps, eps * a0)) { /* L80: */
+      *w = fpser(a0, b0, x0, eps, log_p);
+      *w1 = log_p ? R_D_LExp(*w) : 0.5 - *w + 0.5;
+      goto L_end_after_log;
     }
 
-    if (a0 < min(eps, eps * b0) && b0 * x0 <= 1.0) { /* L90: */
-        *w1 = apser(a0, b0, x0, eps);
-        *w = 0.5 - *w1 + 0.5;
-        goto L_end;
+    if (a0 < std::min(eps, eps * b0) && b0 * x0 <= 1.0) { /* L90: */
+      *w1 = apser(a0, b0, x0, eps);
+      *w = 0.5 - *w1 + 0.5;
+      goto L_end;
     }
 
-    if (max(a0,b0) > 1.0) { /* L20:  min(a,b) <= 1 < max(a,b)  */
-        if (b0 <= 1.0) {
-            goto L100;
+    if (std::max(a0, b0) > 1.0) { /* L20:  min(a,b) <= 1 < max(a,b)  */
+      if (b0 <= 1.0) {
+        goto L100;
+      }
+      if (x0 >= 0.29) { /* was 0.3, PR#13786 */
+        goto L110;
+      }
+      if (x0 < 0.1) {
+        if (pow(x0 * b0, a0) <= 0.7) {
+          goto L100;
         }
-        if (x0 >= 0.29) { /* was 0.3, PR#13786 */
-            goto L110;
-        }
-        if (x0 < 0.1) {
-            if (pow(x0*b0, a0) <= 0.7) {
-                goto L100;
-            }
-        }
-        if (b0 > 15.0) {
-            *w1 = 0.;
-            goto L131;
-        }
+      }
+      if (b0 > 15.0) {
+        *w1 = 0.;
+        goto L131;
+      }
     } else { /*  a, b <= 1 */
-        if (a0 >= min(0.2, b0)) {
-            goto L100;
+      if (a0 >= std::min(0.2, b0)) {
+        goto L100;
         }
         if (pow(x0, a0) <= 0.9) {
             goto L100;
@@ -374,7 +374,7 @@ double fpser(double a, double b, double x, double eps, int log_p)
     return ans;
 } /* fpser */
 
-static double apser(double a, double b, double x, double eps)
+double apser(double a, double b, double x, double eps)
 {
 /* -----------------------------------------------------------------------
  *     apser() yields the incomplete beta ratio  I_{1-x}(b,a)  for
@@ -382,7 +382,7 @@ static double apser(double a, double b, double x, double eps)
  *     Use only if above inequalities are satisfied.
  * ----------------------------------------------------------------------- */
 
-    static double const g = .577215664901533;
+    double const g = .577215664901533;
 
     double tol, c, j, s, t, aj;
     double bx = b * x;
@@ -406,7 +406,7 @@ static double apser(double a, double b, double x, double eps)
     return -a * (c + s);
 } /* apser */
 
-static double bpser(double a, double b, double x, double eps, int log_p)
+double bpser(double a, double b, double x, double eps, int log_p)
 {
 /* -----------------------------------------------------------------------
  * Power SERies expansion for evaluating I_x(a,b) when
@@ -422,67 +422,66 @@ static double bpser(double a, double b, double x, double eps, int log_p)
 /* ----------------------------------------------------------------------- */
 /*            compute the factor  x^a/(a*Beta(a,b)) */
 /* ----------------------------------------------------------------------- */
-    a0 = min(a,b);
+    a0 = std::min(a, b);
     if (a0 >= 1.0) { /*          ------  1 <= a0 <= b0  ------ */
         z = a * log(x) - betaln(a, b);
         ans = log_p ? z - log(a) : exp(z) / a;
     }
     else {
-        b0 = max(a,b);
+      b0 = std::max(a, b);
 
-        if (b0 < 8.0) {
+      if (b0 < 8.0) {
+        if (b0 <= 1.0) { /*  ------  a0 < 1  and  b0 <= 1  ------ */
 
-            if (b0 <= 1.0) { /*  ------  a0 < 1  and  b0 <= 1  ------ */
+          if (log_p) {
+            ans = a * log(x);
+          } else {
+            ans = pow(x, a);
+            if (ans == 0.) /* once underflow, always underflow .. */
+              return ans;
+          }
+          apb = a + b;
+          if (apb > 1.0) {
+            u = a + b - 1.;
+            z = (gam1(u) + 1.0) / apb;
+          } else {
+            z = gam1(apb) + 1.0;
+          }
+          c = (gam1(a) + 1.0) * (gam1(b) + 1.0) / z;
 
-                if(log_p) {
-                    ans = a * log(x);
-                } else {
-                    ans = pow(x, a);
-                    if (ans == 0.) /* once underflow, always underflow .. */
-                        return ans;
-                }
-                apb = a + b;
-                if (apb > 1.0) {
-                    u = a + b - 1.;
-                    z = (gam1(u) + 1.0) / apb;
-                } else {
-                    z = gam1(apb) + 1.0;
-                }
-                c = (gam1(a) + 1.0) * (gam1(b) + 1.0) / z;
+          if (log_p) /* FIXME ? -- improve quite a bit for c ~= 1 */
+            ans += log(c * (b / apb));
+          else
+            ans *= c * (b / apb);
 
-                if(log_p) /* FIXME ? -- improve quite a bit for c ~= 1 */
-                    ans += log(c * (b / apb));
-                else
-                    ans *=  c * (b / apb);
+        } else { /*         ------  a0 < 1 < b0 < 8  ------ */
 
-            } else { /*         ------  a0 < 1 < b0 < 8  ------ */
-
-                u = gamln1(a0);
-                m = b0 - 1.0;
-                if (m >= 1) {
-                    c = 1.0;
-                    for (i = 1; i <= m; ++i) {
-                        b0 += -1.0;
-                        c *= b0 / (a0 + b0);
-                    }
-                    u += log(c);
-                }
-
-                z = a * log(x) - u;
-                b0 += -1.0;
-                apb = a0 + b0;
-                if (apb > 1.0) {
-                    u = a0 + b0 - 1.;
-                    t = (gam1(u) + 1.0) / apb;
-                } else {
-                    t = gam1(apb) + 1.0;
-                }
-
-                if(log_p) /* FIXME? potential for improving log(t) */
-                    ans = z + log(a0 / a) + log1p(gam1(b0)) - log(t);
-                else
-                    ans = exp(z) * (a0 / a) * (gam1(b0) + 1.0) / t;
+          u = gamln1(a0);
+          m = b0 - 1.0;
+          if (m >= 1) {
+            c = 1.0;
+            for (i = 1; i <= m; ++i) {
+              b0 += -1.0;
+              c *= b0 / (a0 + b0);
             }
+            u += log(c);
+          }
+
+          z = a * log(x) - u;
+          b0 += -1.0;
+          apb = a0 + b0;
+          if (apb > 1.0) {
+            u = a0 + b0 - 1.;
+            t = (gam1(u) + 1.0) / apb;
+          } else {
+            t = gam1(apb) + 1.0;
+          }
+
+          if (log_p) /* FIXME? potential for improving log(t) */
+            ans = z + log(a0 / a) + log1p(gam1(b0)) - log(t);
+          else
+            ans = exp(z) * (a0 / a) * (gam1(b0) + 1.0) / t;
+        }
 
         } else { /*             ------  a0 < 1 < 8 <= b0  ------ */
 
@@ -522,7 +521,7 @@ static double bpser(double a, double b, double x, double eps, int log_p)
     return ans;
 } /* bpser */
 
-static double bup(double a, double b, double x, double y, int n, double eps)
+double bup(double a, double b, double x, double y, int n, double eps)
 {
 /* ----------------------------------------------------------------------- */
 /*     EVALUATION OF I_x(A,B) - I_x(A+N,B) WHERE N IS A POSITIVE INT. */
@@ -621,7 +620,7 @@ L50:
     return ret_val;
 } /* bup */
 
-static double bfrac(double a, double b, double x, double y, double lambda,
+double bfrac(double a, double b, double x, double y, double lambda,
                     double eps, int log_p)
 {
 /* -----------------------------------------------------------------------
@@ -690,13 +689,13 @@ static double bfrac(double a, double b, double x, double y, double lambda,
     return (log_p ? brc + log(r) : brc * r);
 } /* bfrac */
 
-static double brcomp(double a, double b, double x, double y, int log_p)
+double brcomp(double a, double b, double x, double y, int log_p)
 {
 /* -----------------------------------------------------------------------
  *               Evaluation of x^a * y^b / Beta(a,b)
  * ----------------------------------------------------------------------- */
 
-    static double const__ = .398942280401433; /* == 1/sqrt(2*pi); */
+    constexpr double const__ = .398942280401433; /* == 1/sqrt(2*pi); */
     /* R has  M_1_SQRT_2PI , and M_LN_SQRT_2PI = ln(sqrt(2*pi)) = 0.918938.. */
 
     int i, n;
@@ -707,7 +706,7 @@ static double brcomp(double a, double b, double x, double y, int log_p)
     if (x == 0.0 || y == 0.0) {
         return R_D__0;
     }
-    a0 = min(a, b);
+    a0 = std::min(a, b);
     if (a0 >= 8.0) {
         goto L100;
     }
@@ -736,7 +735,7 @@ static double brcomp(double a, double b, double x, double y, int log_p)
 /*              PROCEDURE FOR a < 1 OR b < 1 */
 /* ----------------------------------------------------------------------- */
 
-    b0 = max(a, b);
+    b0 = std::max(a, b);
     if (b0 >= 8.0) { /* L80: */
         u = gamln1(a0) + algdiv(a0, b0);
 
@@ -830,13 +829,13 @@ L100:
            : const__ * sqrt(b * x0) * z * exp(-bcorr(a, b)));
 } /* brcomp */
 
-static double brcmp1(int mu, double a, double b, double x, double y)
+double brcmp1(int mu, double a, double b, double x, double y)
 {
 /* -----------------------------------------------------------------------
  *          EVALUATION OF  EXP(MU) * (X^A * Y^B / BETA(A,B))
  * ----------------------------------------------------------------------- */
 
-    static double const__ = .398942280401433; /* == 1/sqrt(2*pi); */
+    constexpr double const__ = .398942280401433; /* == 1/sqrt(2*pi); */
     /* R has  M_1_SQRT_2PI */
 
     /* System generated locals */
@@ -848,7 +847,7 @@ static double brcmp1(int mu, double a, double b, double x, double y)
     double t, u, v, z, a0, b0, x0, y0, apb, lnx, lny;
     double lambda;
 
-    a0 = min(a,b);
+    a0 = std::min(a, b);
     if (a0 >= 8.0) {
         goto L100;
     }
@@ -882,9 +881,9 @@ L20:
 /*              PROCEDURE FOR A < 1 OR B < 1 */
 /* ----------------------------------------------------------------------- */
 L30:
-    b0 = max(a,b);
-    if (b0 >= 8.0) {
-        goto L80;
+  b0 = std::max(a, b);
+  if (b0 >= 8.0) {
+    goto L80;
     }
     if (b0 > 1.0) {
         goto L60;
@@ -996,7 +995,7 @@ L130:
 
 } /* brcmp1 */
 
-static void bgrat(double a, double b, double x, double y, double *w,
+void bgrat(double a, double b, double x, double y, double *w,
                   double eps, int *ierr)
 {
 /* -----------------------------------------------------------------------
@@ -1084,7 +1083,7 @@ L_Error:
     return;
 } /* bgrat */
 
-static void grat1(double a, double x, double r, double *p, double *q,
+void grat1(double a, double x, double r, double *p, double *q,
                   double eps)
 {
 /* -----------------------------------------------------------------------
@@ -1201,7 +1200,7 @@ L120:
 
 } /* grat1 */
 
-static double basym(double a, double b, double lambda, double eps, int log_p)
+double basym(double a, double b, double lambda, double eps, int log_p)
 {
 /* ----------------------------------------------------------------------- */
 /*     ASYMPTOTIC EXPANSION FOR I_x(A,B) FOR LARGE A AND B. */
@@ -1217,9 +1216,9 @@ static double basym(double a, double b, double lambda, double eps, int log_p)
 #define num_IT 20
 /*            THE ARRAYS A0, B0, C, D HAVE DIMENSION NUM + 1. */
 
-    static double const e0 = 1.12837916709551;/* e0 == 2/sqrt(pi) */
-    static double const e1 = .353553390593274;/* e1 == 2^(-3/2)   */
-    static double const ln_e0 = 0.120782237635245; /* == ln(e0) */
+    constexpr double e0 = 1.12837916709551;/* e0 == 2/sqrt(pi) */
+    constexpr double e1 = .353553390593274;/* e1 == 2^(-3/2)   */
+    constexpr double ln_e0 = 0.120782237635245; /* == ln(e0) */
 
     double a0[num_IT + 1], b0[num_IT + 1], c[num_IT + 1], d[num_IT + 1];
     double f, h, r, s, t, u, w, z, j0, j1, h2, r0, r1, t0, t1, w0, z0, z2, hn, zn;
@@ -1321,7 +1320,7 @@ static double basym(double a, double b, double lambda, double eps, int log_p)
 } /* basym_ */
 
 
-static double exparg(int l)
+double exparg(int l)
 {
 /* -------------------------------------------------------------------- */
 /*     IF L = 0 THEN  EXPARG(L) = THE LARGEST POSITIVE W FOR WHICH */
@@ -1333,7 +1332,7 @@ static double exparg(int l)
 /*     NOTE... ONLY AN APPROXIMATE VALUE FOR EXPARG(L) IS NEEDED. */
 /* -------------------------------------------------------------------- */
 
-    static double const lnb = .69314718055995;
+    constexpr double lnb = .69314718055995;
     int m;
 
     if (l == 0) {
@@ -1344,7 +1343,7 @@ static double exparg(int l)
     return m * lnb * .99999;
 } /* exparg */
 
-static double esum(int mu, double x)
+double esum(int mu, double x)
 {
 /* ----------------------------------------------------------------------- */
 /*                    EVALUATION OF EXP(MU + X) */
@@ -1385,12 +1384,12 @@ double rexpm1(double x)
 /*            EVALUATION OF THE FUNCTION EXP(X) - 1 */
 /* ----------------------------------------------------------------------- */
 
-    static double p1 = 9.14041914819518e-10;
-    static double p2 = .0238082361044469;
-    static double q1 = -.499999999085958;
-    static double q2 = .107141568980644;
-    static double q3 = -.0119041179760821;
-    static double q4 = 5.95130811860248e-4;
+    constexpr double p1 = 9.14041914819518e-10;
+    constexpr double p2 = .0238082361044469;
+    constexpr double q1 = -.499999999085958;
+    constexpr double q2 = .107141568980644;
+    constexpr double q3 = -.0119041179760821;
+    constexpr double q4 = 5.95130811860248e-4;
 
     if (fabs(x) <= 0.15) {
         return x * (((p2 * x + p1) * x + 1.0) /
@@ -1406,18 +1405,18 @@ double rexpm1(double x)
 
 } /* rexpm1 */
 
-static double alnrel(double a)
+double alnrel(double a)
 {
 /* -----------------------------------------------------------------------
  *            Evaluation of the function ln(1 + a)
  * ----------------------------------------------------------------------- */
 
-    static double p1 = -1.29418923021993;
-    static double p2 = .405303492862024;
-    static double p3 = -.0178874546012214;
-    static double q1 = -1.62752256355323;
-    static double q2 = .747811014037616;
-    static double q3 = -.0845104217945565;
+    constexpr double p1 = -1.29418923021993;
+    constexpr double p2 = .405303492862024;
+    constexpr double p3 = -.0178874546012214;
+    constexpr double q1 = -1.62752256355323;
+    constexpr double q2 = .747811014037616;
+    constexpr double q3 = -.0845104217945565;
 
     if (fabs(a) <= 0.375) {
         double t, t2, w;
@@ -1432,19 +1431,19 @@ static double alnrel(double a)
     }
 } /* alnrel */
 
-static double rlog1(double x)
+double rlog1(double x)
 {
 /* -----------------------------------------------------------------------
  *             Evaluation of the function  x - ln(1 + x)
  * ----------------------------------------------------------------------- */
 
-    static double a = .0566749439387324;
-    static double b = .0456512608815524;
-    static double p0 = .333333333333333;
-    static double p1 = -.224696413112536;
-    static double p2 = .00620886815375787;
-    static double q1 = -1.27408923933623;
-    static double q2 = .354508718369557;
+    constexpr double a = .0566749439387324;
+    constexpr double b = .0456512608815524;
+    constexpr double p0 = .333333333333333;
+    constexpr double p1 = -.224696413112536;
+    constexpr double p2 = .00620886815375787;
+    constexpr double q1 = -1.27408923933623;
+    constexpr double q2 = .354508718369557;
 
     double h, r, t, w, w1;
 
@@ -1476,7 +1475,7 @@ static double rlog1(double x)
 
 } /* rlog1 */
 
-static double erf__(double x)
+double erf__(double x)
 {
 /* -----------------------------------------------------------------------
  *             EVALUATION OF THE REAL ERROR FUNCTION
@@ -1484,20 +1483,20 @@ static double erf__(double x)
 
     /* Initialized data */
 
-    static double c = .564189583547756;
-    static double a[5] = { 7.7105849500132e-5,-.00133733772997339,
+    constexpr double c = .564189583547756;
+    constexpr double a[5] = { 7.7105849500132e-5,-.00133733772997339,
             .0323076579225834,.0479137145607681,.128379167095513 };
-    static double b[3] = { .00301048631703895,.0538971687740286,
+    constexpr double b[3] = { .00301048631703895,.0538971687740286,
             .375795757275549 };
-    static double p[8] = { -1.36864857382717e-7,.564195517478974,
+    constexpr double p[8] = { -1.36864857382717e-7,.564195517478974,
             7.21175825088309,43.1622272220567,152.98928504694,
             339.320816734344,451.918953711873,300.459261020162 };
-    static double q[8] = { 1.,12.7827273196294,77.0001529352295,
+    constexpr double q[8] = { 1.,12.7827273196294,77.0001529352295,
             277.585444743988,638.980264465631,931.35409485061,
             790.950925327898,300.459260956983 };
-    static double r[5] = { 2.10144126479064,26.2370141675169,
+    constexpr double r[5] = { 2.10144126479064,26.2370141675169,
             21.3688200555087,4.6580782871847,.282094791773523 };
-    static double s[4] = { 94.153775055546,187.11481179959,
+    constexpr double s[4] = { 94.153775055546,187.11481179959,
             99.0191814623914,18.0124575948747 };
 
     /* System generated locals */
@@ -1547,7 +1546,7 @@ static double erf__(double x)
 
 } /* erf */
 
-static double erfc1(int ind, double x)
+double erfc1(int ind, double x)
 {
 /* ----------------------------------------------------------------------- */
 /*         EVALUATION OF THE COMPLEMENTARY ERROR FUNCTION */
@@ -1558,20 +1557,20 @@ static double erfc1(int ind, double x)
 
     /* Initialized data */
 
-    static double c = .564189583547756;
-    static double a[5] = { 7.7105849500132e-5,-.00133733772997339,
+    constexpr double c = .564189583547756;
+    constexpr double a[5] = { 7.7105849500132e-5,-.00133733772997339,
             .0323076579225834,.0479137145607681,.128379167095513 };
-    static double b[3] = { .00301048631703895,.0538971687740286,
+    constexpr double b[3] = { .00301048631703895,.0538971687740286,
             .375795757275549 };
-    static double p[8] = { -1.36864857382717e-7,.564195517478974,
+    constexpr double p[8] = { -1.36864857382717e-7,.564195517478974,
             7.21175825088309,43.1622272220567,152.98928504694,
             339.320816734344,451.918953711873,300.459261020162 };
-    static double q[8] = { 1.,12.7827273196294,77.0001529352295,
+    constexpr double q[8] = { 1.,12.7827273196294,77.0001529352295,
             277.585444743988,638.980264465631,931.35409485061,
             790.950925327898,300.459260956983 };
-    static double r[5] = { 2.10144126479064,26.2370141675169,
+    constexpr double r[5] = { 2.10144126479064,26.2370141675169,
             21.3688200555087,4.6580782871847,.282094791773523 };
-    static double s[4] = { 94.153775055546,187.11481179959,
+    constexpr double s[4] = { 94.153775055546,187.11481179959,
             99.0191814623914,18.0124575948747 };
 
     /* System generated locals */
@@ -1669,7 +1668,7 @@ L60:
     return ret_val;
 } /* erfc1 */
 
-static double gam1(double a)
+double gam1(double a)
 {
 /*     ------------------------------------------------------------------ */
 /*     COMPUTATION OF 1/GAMMA(A+1) - 1  FOR -0.5 <= A <= 1.5 */
@@ -1677,17 +1676,17 @@ static double gam1(double a)
 
     /* Initialized data */
 
-    static double p[7] = { .577215664901533,-.409078193005776,
+    constexpr double p[7] = { .577215664901533,-.409078193005776,
             -.230975380857675,.0597275330452234,.0076696818164949,
             -.00514889771323592,5.89597428611429e-4 };
-    static double q[5] = { 1.,.427569613095214,.158451672430138,
+    constexpr double q[5] = { 1.,.427569613095214,.158451672430138,
             .0261132021441447,.00423244297896961 };
-    static double r[9] = { -.422784335098468,-.771330383816272,
+    constexpr double r[9] = { -.422784335098468,-.771330383816272,
             -.244757765222226,.118378989872749,9.30357293360349e-4,
             -.0118290993445146,.00223047661158249,2.66505979058923e-4,
             -1.32674909766242e-4 };
-    static double s1 = .273076135303957;
-    static double s2 = .0559398236957378;
+    constexpr double s1 = .273076135303957;
+    constexpr double s2 = .0559398236957378;
 
     double ret_val;
     double d, t, w, bot, top;
@@ -1738,7 +1737,7 @@ L31:
     return ret_val;
 } /* gam1 */
 
-static double gamln1(double a)
+double gamln1(double a)
 {
 /* ----------------------------------------------------------------------- */
 /*     EVALUATION OF LN(GAMMA(1 + A)) FOR -0.2 <= A <= 1.25 */
@@ -1746,30 +1745,30 @@ static double gamln1(double a)
 
     /* Initialized data */
 
-    static double p0 = .577215664901533;
-    static double p1 = .844203922187225;
-    static double p2 = -.168860593646662;
-    static double p3 = -.780427615533591;
-    static double p4 = -.402055799310489;
-    static double p5 = -.0673562214325671;
-    static double p6 = -.00271935708322958;
-    static double q1 = 2.88743195473681;
-    static double q2 = 3.12755088914843;
-    static double q3 = 1.56875193295039;
-    static double q4 = .361951990101499;
-    static double q5 = .0325038868253937;
-    static double q6 = 6.67465618796164e-4;
-    static double r0 = .422784335098467;
-    static double r1 = .848044614534529;
-    static double r2 = .565221050691933;
-    static double r3 = .156513060486551;
-    static double r4 = .017050248402265;
-    static double r5 = 4.97958207639485e-4;
-    static double s1 = 1.24313399877507;
-    static double s2 = .548042109832463;
-    static double s3 = .10155218743983;
-    static double s4 = .00713309612391;
-    static double s5 = 1.16165475989616e-4;
+    constexpr double p0 = .577215664901533;
+    constexpr double p1 = .844203922187225;
+    constexpr double p2 = -.168860593646662;
+    constexpr double p3 = -.780427615533591;
+    constexpr double p4 = -.402055799310489;
+    constexpr double p5 = -.0673562214325671;
+    constexpr double p6 = -.00271935708322958;
+    constexpr double q1 = 2.88743195473681;
+    constexpr double q2 = 3.12755088914843;
+    constexpr double q3 = 1.56875193295039;
+    constexpr double q4 = .361951990101499;
+    constexpr double q5 = .0325038868253937;
+    constexpr double q6 = 6.67465618796164e-4;
+    constexpr double r0 = .422784335098467;
+    constexpr double r1 = .848044614534529;
+    constexpr double r2 = .565221050691933;
+    constexpr double r3 = .156513060486551;
+    constexpr double r4 = .017050248402265;
+    constexpr double r5 = 4.97958207639485e-4;
+    constexpr double s1 = 1.24313399877507;
+    constexpr double s2 = .548042109832463;
+    constexpr double s3 = .10155218743983;
+    constexpr double s4 = .00713309612391;
+    constexpr double s5 = 1.16165475989616e-4;
 
     double w;
 
@@ -1786,7 +1785,7 @@ static double gamln1(double a)
     }
 } /* gamln1 */
 
-static double psi(double x)
+double psi(double x)
 {
 /* ---------------------------------------------------------------------
 
@@ -1807,17 +1806,17 @@ static double psi(double x)
 /*     A.H. Morris (NSWC). */
 /* --------------------------------------------------------------------- */
 
-    static double piov4 = .785398163397448; /* == pi / 4 */
+    constexpr double piov4 = .785398163397448; /* == pi / 4 */
 /*     dx0 = zero of psi() to extended precision : */
-    static double dx0 = 1.461632144968362341262659542325721325;
+    constexpr double dx0 = 1.461632144968362341262659542325721325;
 
 /* --------------------------------------------------------------------- */
 /*     COEFFICIENTS FOR RATIONAL APPROXIMATION OF */
 /*     PSI(X) / (X - X0),  0.5 <= X <= 3.0 */
-    static double p1[7] = { .0089538502298197,4.77762828042627,
+    constexpr double p1[7] = { .0089538502298197,4.77762828042627,
             142.441585084029,1186.45200713425,3633.51846806499,
             4138.10161269013,1305.60269827897 };
-    static double q1[6] = { 44.8452573429826,520.752771467162,
+    constexpr double q1[6] = { 44.8452573429826,520.752771467162,
             2210.0079924783,3641.27349079381,1908.310765963,
             6.91091682714533e-6 };
 /* --------------------------------------------------------------------- */
@@ -1827,9 +1826,9 @@ static double psi(double x)
 /*     COEFFICIENTS FOR RATIONAL APPROXIMATION OF */
 /*     PSI(X) - LN(X) + 1 / (2*X),  X > 3.0 */
 
-    static double p2[4] = { -2.12940445131011,-7.01677227766759,
+    constexpr double p2[4] = { -2.12940445131011,-7.01677227766759,
             -4.48616543918019,-.648157123766197 };
-    static double q2[4] = { 32.2703493791143,89.2920700481861,
+    constexpr double q2[4] = { 32.2703493791143,89.2920700481861,
             54.6117738103215,7.77788548522962 };
 /* --------------------------------------------------------------------- */
 
@@ -1982,19 +1981,19 @@ L_err:
     return 0.;
 } /* psi */
 
-static double betaln(double a0, double b0)
+double betaln(double a0, double b0)
 {
 /* -----------------------------------------------------------------------
  *     Evaluation of the logarithm of the beta function  ln(beta(a0,b0))
  * ----------------------------------------------------------------------- */
 
-    static double e = .918938533204673;/* e == 0.5*LN(2*PI) */
+    constexpr double e = .918938533204673;/* e == 0.5*LN(2*PI) */
 
     double a, b, c, h, u, v, w, z;
     int i, n;
 
-    a = min(a0 ,b0);
-    b = max(a0, b0);
+    a = std::min(a0, b0);
+    b = std::max(a0, b0);
     if (a >= 8.0) {
         goto L60;
     }
@@ -2082,7 +2081,7 @@ L60:
 
 } /* betaln */
 
-static double gsumln(double a, double b)
+double gsumln(double a, double b)
 {
 /* ----------------------------------------------------------------------- */
 /*          EVALUATION OF THE FUNCTION LN(GAMMA(A + B)) */
@@ -2102,7 +2101,7 @@ static double gsumln(double a, double b)
 
 } /* gsumln */
 
-static double bcorr(double a0, double b0)
+double bcorr(double a0, double b0)
 {
 /* ----------------------------------------------------------------------- */
 
@@ -2113,12 +2112,12 @@ static double bcorr(double a0, double b0)
 /* ----------------------------------------------------------------------- */
     /* Initialized data */
 
-    static double c0 = .0833333333333333;
-    static double c1 = -.00277777777760991;
-    static double c2 = 7.9365066682539e-4;
-    static double c3 = -5.9520293135187e-4;
-    static double c4 = 8.37308034031215e-4;
-    static double c5 = -.00165322962780713;
+    constexpr double c0 = .0833333333333333;
+    constexpr double c1 = -.00277777777760991;
+    constexpr double c2 = 7.9365066682539e-4;
+    constexpr double c3 = -5.9520293135187e-4;
+    constexpr double c4 = 8.37308034031215e-4;
+    constexpr double c5 = -.00165322962780713;
 
     /* System generated locals */
     double ret_val, r1;
@@ -2126,8 +2125,8 @@ static double bcorr(double a0, double b0)
     /* Local variables */
     double a, b, c, h, t, w, x, s3, s5, x2, s7, s9, s11;
 /* ------------------------ */
-    a = min(a0, b0);
-    b = max(a0, b0);
+    a = std::min(a0, b0);
+    b = std::max(a0, b0);
 
     h = a / b;
     c = h / (h + 1.0);
@@ -2161,7 +2160,7 @@ static double bcorr(double a0, double b0)
     return ret_val;
 } /* bcorr */
 
-static double algdiv(double a, double b)
+double algdiv(double a, double b)
 {
 /* ----------------------------------------------------------------------- */
 
@@ -2176,12 +2175,12 @@ static double algdiv(double a, double b)
 
     /* Initialized data */
 
-    static double c0 = .0833333333333333;
-    static double c1 = -.00277777777760991;
-    static double c2 = 7.9365066682539e-4;
-    static double c3 = -5.9520293135187e-4;
-    static double c4 = 8.37308034031215e-4;
-    static double c5 = -.00165322962780713;
+    constexpr double c0 = .0833333333333333;
+    constexpr double c1 = -.00277777777760991;
+    constexpr double c2 = 7.9365066682539e-4;
+    constexpr double c3 = -5.9520293135187e-4;
+    constexpr double c4 = 8.37308034031215e-4;
+    constexpr double c5 = -.00165322962780713;
 
     double c, d, h, t, u, v, w, x, s3, s5, x2, s7, s9, s11;
 
@@ -2225,7 +2224,7 @@ static double algdiv(double a, double b)
         return w - u - v;
 } /* algdiv */
 
-static double gamln(double a)
+double gamln(double a)
 {
 /* -----------------------------------------------------------------------
  *            Evaluation of  ln(gamma(a))  for positive a
@@ -2235,14 +2234,14 @@ static double gamln(double a)
 /*          Dahlgren, Virginia */
 /* ----------------------------------------------------------------------- */
 
-    static double d = .418938533204673;/* d == 0.5*(LN(2*PI) - 1) */
+    constexpr double d = .418938533204673;/* d == 0.5*(LN(2*PI) - 1) */
 
-    static double c0 = .0833333333333333;
-    static double c1 = -.00277777777760991;
-    static double c2 = 7.9365066682539e-4;
-    static double c3 = -5.9520293135187e-4;
-    static double c4 = 8.37308034031215e-4;
-    static double c5 = -.00165322962780713;
+    constexpr double c0 = .0833333333333333;
+    constexpr double c1 = -.00277777777760991;
+    constexpr double c2 = 7.9365066682539e-4;
+    constexpr double c3 = -5.9520293135187e-4;
+    constexpr double c4 = 8.37308034031215e-4;
+    constexpr double c5 = -.00165322962780713;
 
     if (a <= 0.8)
         return gamln1(a) - log(a);

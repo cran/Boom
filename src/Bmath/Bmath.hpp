@@ -190,9 +190,6 @@ namespace Rmath{
   double        unif_rand(BOOM::RNG &);
   double        exp_rand(BOOM::RNG &);
 
-  void set_seed(unsigned int, unsigned int);
-
-
   /* Normal Distribution */
 
 // #define pnorm pnorm5

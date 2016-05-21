@@ -52,8 +52,10 @@ namespace BOOM{
     bool operator==(const SpdMatrix &)const;
 
     void  swap(SpdMatrix &rhs);
-    void randomize() override;  // fills entries with U(0,1) random variables,
-                       // then multiply by self-transpose.
+    // Fill entries with U(0,1) random variables, then multiply by
+    // self-transpose.
+    // Returns *this;
+    SpdMatrix & randomize() override;
 
     //-------- size and shape info ----------
     virtual uint nelem()const;         // number of distinct elements

@@ -34,7 +34,7 @@ namespace BOOM {
   // regression with parameter vector alpha.
   //
   // Let p(x) = 1 / (1 + exp(alpha.dot(-x))) be the probability that y
-  // is nonzero, and let and let mu(x) = beta.dot(x).  The distribution
+  // is nonzero, and let mu(x) = beta.dot(x).  The distribution
   // is a mixture:
   //
   //   f(y) = (1-p(x)) * I{0} + p(x) * Lognormal(mu, sigma^2).

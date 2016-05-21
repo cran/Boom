@@ -53,6 +53,14 @@
 #include <Bmath/Bmath.hpp>
 #include <cpputil/math_utils.hpp>
 
+// TODO(stevescott): Once all CRAN platforms support the thread_local
+// keyword remove this macro.
+#if defined(NO_BOOST_THREADS)
+#define PLATFORM_THREAD_LOCAL
+#else
+#define PLATFORM_THREAD_LOCAL thread_local
+#endif
+
 namespace Rmath{
   using namespace std;
   using std::string;

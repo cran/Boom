@@ -394,12 +394,10 @@ namespace BOOM{
   }
 
   double Vector::min()const{ return *min_element(begin(), end());}
-  double Vector::max()const{
-    return *max_element(begin(), end());
-  }
+  double Vector::max() const { return *std::max_element(begin(), end()); }
 
   uint Vector::imax()const{
-    const_iterator it = max_element(begin(), end());
+    const_iterator it = std::max_element(begin(), end());
     return it-begin();}
 
   uint Vector::imin()const{
@@ -667,44 +665,47 @@ namespace BOOM{
   }
 
   namespace {
-  //    template <class VECTOR>
-  //    Vector vector_transform(const VECTOR &x,
+    typedef double (*DoubleFunction)(double);
     Vector vector_transform(const ConstVectorView &x,
                             std::function<double(double)> f) {
       Vector ans(x.size());
       std::transform(x.begin(), x.end(), ans.begin(), f);
       return ans;
     }
-  }
 
+  }  // namespace
+
+  //======================================================================
+  // The static_cast in the following transformation functions is
+  // there to help with overload resolution.  See b/28857895.
   Vector log(const Vector &x){
-    return vector_transform(x, ::log);
+    return vector_transform(x, static_cast<DoubleFunction>(::log));
   }
   Vector log(const VectorView &x){
-    return vector_transform(x, ::log);
+    return vector_transform(x, static_cast<DoubleFunction>(::log));
   }
   Vector log(const ConstVectorView &x){
-    return vector_transform(x, ::log);
+    return vector_transform(x, static_cast<DoubleFunction>(::log));
   }
 
   Vector exp(const Vector &x){
-    return vector_transform(x, ::exp);
+    return vector_transform(x, static_cast<DoubleFunction>(::exp));
   }
   Vector exp(const VectorView &x){
-    return vector_transform(x, ::exp);
+    return vector_transform(x, static_cast<DoubleFunction>(::exp));
   }
   Vector exp(const ConstVectorView &x){
-    return vector_transform(x, ::exp);
+    return vector_transform(x, static_cast<DoubleFunction>(::exp));
   }
 
   Vector sqrt(const Vector &x){
-    return vector_transform(x, ::sqrt);
+    return vector_transform(x, static_cast<DoubleFunction>(::sqrt));
   }
   Vector sqrt(const VectorView &x){
-    return vector_transform(x, ::sqrt);
+    return vector_transform(x, static_cast<DoubleFunction>(::sqrt));
   }
   Vector sqrt(const ConstVectorView &x){
-    return vector_transform(x, ::sqrt);
+    return vector_transform(x, static_cast<DoubleFunction>(::sqrt));
   }
 
   Vector pow(const Vector &x, double power){
@@ -734,13 +735,13 @@ namespace BOOM{
   }
 
   Vector abs(const Vector &x) {
-    return vector_transform(x, ::fabs);
+    return vector_transform(x, static_cast<DoubleFunction>(::fabs));
   }
   Vector abs(const VectorView &x) {
-    return vector_transform(x, ::fabs);
+    return vector_transform(x, static_cast<DoubleFunction>(::fabs));
   }
   Vector abs(const ConstVectorView &x) {
-    return vector_transform(x, ::fabs);
+    return vector_transform(x, static_cast<DoubleFunction>(::fabs));
   }
 
   namespace {

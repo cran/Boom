@@ -40,9 +40,14 @@ namespace BOOM{
 
     //--------- constructors, destructor, assigment, operator== ----------
     VectorView(double *first_elem, uint Nelem, int Stride);
-    explicit VectorView(Vector &v, uint first = 0);
-    VectorView(Vector &v, uint first, uint len);
 
+    // View from a specified first element until the end.
+    explicit VectorView(Vector &v, uint first = 0);
+    // No default argument for 'first', to distinguish from copy constructor.
+    VectorView(VectorView v, uint first);
+
+    // Contiguous view for 'len' elements, starting from 'first'.
+    VectorView(Vector &v, uint first, uint len);
     VectorView(VectorView v, uint first, uint len);
 
     VectorView & operator=(double x);
@@ -182,18 +187,17 @@ namespace BOOM{
     // View an aribtrary chunk of memory
     ConstVectorView(const double *first_elem, uint Nelem, int Stride);
 
-    // View from first_element to the end.  This constructor is
+    // View from first_element to the end.  These constructors are
     // non-explicit because I want automatic conversions from Vector
     // and VectorView to ConstVectorView to be legal.
     ConstVectorView(const Vector &v, uint first_element = 0);
     ConstVectorView(const VectorView &rhs, uint first_element = 0);
+    ConstVectorView(const ConstVectorView &v, uint first_element = 0);
 
-    // View from first_element to first_lement + length - 1
+    // View from first_element to first_element + length - 1
     ConstVectorView(const Vector &v, uint first_element, uint length);
     ConstVectorView(const VectorView &v, uint first_element, uint length);
-    ConstVectorView(const ConstVectorView &v, uint first_element);
     ConstVectorView(const ConstVectorView &v, uint first_element, uint length);
-
 
     template <class V>
     explicit ConstVectorView(const V &rhs)

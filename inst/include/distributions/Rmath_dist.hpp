@@ -211,20 +211,6 @@ namespace BOOM{
 
   double pnt(double x, double df, double mu=0, bool low=true, bool log=false);
 
-  /* Wilcoxon Rank Sum Distribution */
-
-  double dwilcox(double x, double m, double n, bool log=false);
-  double pwilcox(double x, double m, double n, bool low=true, bool log=false);
-  double qwilcox(double p, double m, double n, bool low=true, bool log=false);
-  double rwilcox(double m, double n);
-
-  /* Wilcoxon Signed Rank Distribution */
-
-  double dsignrank(double x, double n, bool log=false);
-  double psignrank(double x, double n, bool low=true, bool log=false);
-  double qsignrank(double p, double n, bool low=true, bool log=false);
-  double rsignrank(double n);
-
   /* Gamma and Related Functions */
   double gamma(double);
   double lgamma(double);

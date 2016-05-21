@@ -47,6 +47,11 @@ namespace BOOM{
                            RNG *rng = nullptr);
     Vector draw(const Vector &x) override;
 
+    // Set lower and upper limits for the domain of each variable.
+    // negative_infinity() and infinity() are legal values, but
+    // lower[i] < upper[i] is a requirement for all i.
+    void set_limits(const Vector &lower, const Vector &upper);
+
    private:
     Target f_;
     std::vector<ScalarTargetFunAdapter> scalar_targets_;

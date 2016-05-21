@@ -72,7 +72,7 @@ double pnchisq_raw(double x, double f, double theta,
     if(-lam < my_dbl_min_exp){
       ostringstream err;
       err << "non centrality parameter (=" << theta
-          << ") too large for current algorithm" << endl;
+          << ") too large for current algorithm" << std::endl;
       report_error(err.str());
     }
     /* evaluate the first term */

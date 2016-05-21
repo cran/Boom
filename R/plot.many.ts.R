@@ -35,6 +35,9 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
     else y <- refline[i]
     abline(h = y, lty = 3)
   }
+  if (is.matrix(x) && missing(labs)) {
+    labs <- colnames(x)
+  }
   if (is.data.frame(x)) {
     if (missing(labs))
       labs <- names(x)

@@ -73,7 +73,12 @@ namespace BOOM{
     ConstVectorView superdiag(int i)const;
 
     SubMatrix & operator+=(const Matrix &m);
+    SubMatrix & operator+=(const SubMatrix &m);
+    SubMatrix & operator+=(const ConstSubMatrix &m);
+
     SubMatrix & operator-=(const Matrix &m);
+    SubMatrix & operator-=(const SubMatrix &m);
+    SubMatrix & operator-=(const ConstSubMatrix &m);
 
     SubMatrix & operator*=(double x);
     SubMatrix & operator/=(double x);
@@ -159,6 +164,18 @@ namespace BOOM{
   bool operator==(const ConstSubMatrix &lhs, const Matrix &rhs);
   bool operator==(const ConstSubMatrix &lhs, const SubMatrix &rhs);
   bool operator==(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
+
+  Matrix operator+(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const ConstSubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator+(const ConstSubMatrix &lhs, const Matrix &rhs);
+
+  Matrix operator-(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const ConstSubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator-(const ConstSubMatrix &lhs, const Matrix &rhs);
 
 }  // namespace BOOM
 

@@ -143,8 +143,7 @@ namespace Rmath{
  -- Thanks to Ian Smith for ideas.
 */
 
-static double pdhyper (double x, double NR, double NB, double n, int log_p)
-{
+double pdhyper (double x, double NR, double NB, double n, int log_p) {
 /*
  * Calculate
  *
@@ -170,7 +169,6 @@ static double pdhyper (double x, double NR, double NB, double n, int log_p)
 
     return log_p ? log1p(sum) : 1 + sum;
 }
-
 
 inline double forceint(double x){
   return floor(x + .5);

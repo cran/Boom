@@ -70,7 +70,7 @@ namespace BOOM{
       uint from, to;
       in >> from >> dash >> to;
       vector<uint> irng = seq(from, to);
-      copy(irng.begin(), irng.end(), back_inserter(ans));
+      std::copy(irng.begin(), irng.end(), back_inserter(ans));
      }
   }
 
@@ -78,8 +78,9 @@ namespace BOOM{
     sz bad = range.find_first_not_of("0123456789,-");
     if(bad == not_found) return;
     ostringstream msg;
-    msg << "Illegal characters passed to RangeParser(string) : "  << range << endl
-	<< " only positive integers, commas (,) , and dashes (-) allowed.";
+    msg << "Illegal characters passed to RangeParser(string) : " << range
+        << std::endl
+        << " only positive integers, commas (,) , and dashes (-) allowed.";
     report_error(msg.str());
   }
 

@@ -24,7 +24,7 @@
 #include <LinAlg/Types.hpp>
 #include <BOOM.hpp>
 #include <boost/function.hpp>
-#include <cpputil/ThrowException.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 

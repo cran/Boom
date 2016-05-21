@@ -61,8 +61,7 @@
 #include "dpq.hpp"
 namespace Rmath{
 
-static double wprob(double w, double rr, double cc)
-{
+double wprob(double w, double rr, double cc) {
 /*  wprob() :
 
         This function calculates probability integral of Hartley's
@@ -433,4 +432,3 @@ double ptukey(double q, double rr, double cc, double df,
     return R_DT_val(ans);
 }
 }
-

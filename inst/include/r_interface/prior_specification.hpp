@@ -402,7 +402,7 @@ namespace BOOM{
       Ptr<VariableSelectionPrior> spike() {return spike_;}
       Ptr<IndependentMvnModelGivenScalarSigma> slab() {return slab_;}
       Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
-      int max_flips() {return max_flips_;}
+      int max_flips() const {return max_flips_;}
       double sigma_upper_limit() const {return sigma_upper_limit_;}
 
      private:

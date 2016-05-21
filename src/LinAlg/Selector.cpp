@@ -27,7 +27,6 @@
 #include <distributions.hpp>
 
 #include <algorithm>
-#include <stdexcept>
 #include <sstream>
 
 namespace BOOM {
@@ -331,11 +330,22 @@ namespace BOOM {
   Vector Selector::expand(const ConstVectorView & x) const {
     return inc_expand(x,*this); }
 
+  SpdMatrix Selector::expand(const SpdMatrix &dense_matrix) {
+    SpdMatrix sparse_matrix(nvars_possible());
+    uint dense_n = nvars();
+    for (uint i = 0; i < dense_n; ++i) {
+      for (uint j = 0; j < dense_n; ++j) {
+        sparse_matrix(indx(i), indx(j)) = dense_matrix(i, j);
+      }
+    }
+    return sparse_matrix;
+  }
+
   Vector Selector::select_add_int(const Vector &x) const {
-    assert(x.size() == nvars_possible()-1);
-    if (include_all_) return concat(1.0,x);
+    assert(x.size()==nvars_possible() - 1);
+    if(include_all_) return concat(1.0, x);
     Vector ans(nvars());
-    ans[0]= inc(0) ? 1.0 : x[indx(0)-1];
+    ans[0]= inc(0) ? 1.0 : x[indx(0) - 1];
     for (uint i = 1; i < nvars(); ++i) ans[i] = x[indx(i)-1];
     return ans;
   }

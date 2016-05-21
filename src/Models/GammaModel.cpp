@@ -62,6 +62,12 @@ namespace BOOM{
     sumlog_ += log(x);
   }
 
+  void GS::increment(double n, double sum, double sumlog) {
+    n_ += n;
+    sum_ += sum;
+    sumlog_ += sumlog;
+  }
+
   void GS::add_mixture_data(double y, double prob){
     n_ += prob;
     sum_ += prob * y;

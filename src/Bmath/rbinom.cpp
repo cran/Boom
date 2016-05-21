@@ -70,14 +70,12 @@ unsigned int rbinom_mt(BOOM::RNG & rng, int n, double p){
 
 unsigned int rbinom(int  nin, double pp)
 {
-    /* FIXME: These should become THREAD_specific globals : */
+    static PLATFORM_THREAD_LOCAL double c, fm, npq, p1, p2, p3, p4, qn;
+    static PLATFORM_THREAD_LOCAL double xl, xll, xlr, xm, xr;
 
-    static double c, fm, npq, p1, p2, p3, p4, qn;
-    static double xl, xll, xlr, xm, xr;
-
-    static double psave = -1.0;
-    static int nsave = -1;
-    static int m;
+    static PLATFORM_THREAD_LOCAL double psave = -1.0;
+    static PLATFORM_THREAD_LOCAL int nsave = -1;
+    static PLATFORM_THREAD_LOCAL int m;
 
     double f, f1, f2, u, v, w, w2, x, x1, x2, z, z2;
     double p, q, np, g, r, al, alv, amaxp, ffm, ynorm;
@@ -89,9 +87,9 @@ unsigned int rbinom(int  nin, double pp)
 
     if ( !R_FINITE(pp) ||pp < 0. || pp > 1.){
       ostringstream err;
-      err << "must have 0<= p <= 1 in rbinom" << endl
-          << "n = " << nin << endl
-          << "p = " << pp <<endl;
+      err << "must have 0<= p <= 1 in rbinom" << std::endl
+          << "n = " << nin << std::endl
+          << "p = " << pp << std::endl;
       report_error(err.str());
     }
         /* n=0, p=0, p=1 are not errors <TSL>*/
@@ -106,10 +104,6 @@ unsigned int rbinom(int  nin, double pp)
     g = r * (n + 1);
 
     /* Setup, perform only when parameters change [using static (globals): */
-
-    /* FIXING: Want this thread safe
-       -- use as little (thread globals) as possible
-    */
     if (pp != psave || static_cast<int>(n) != nsave) {
         psave = pp;
         nsave = static_cast<int>(n);

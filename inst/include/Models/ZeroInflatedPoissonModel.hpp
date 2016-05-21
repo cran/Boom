@@ -92,6 +92,7 @@ namespace BOOM {
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     double pdf(const Data * dp, bool logscale)const override;
     double logp(int y)const;
+    double sim()const;
    private:
     mutable double log_zero_prob_;
     mutable double log_poisson_prob_;

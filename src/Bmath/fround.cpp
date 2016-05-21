@@ -57,8 +57,7 @@ namespace Rmath{
 #ifdef _WIN32
 /* earlier Windows headers did not include rint */
 #if __MINGW32_MAJOR_VERSION < 2
-static __inline__ double rint (double x)
-{
+inline double rint (double x) {
     double retval;
     __asm__ ("frndint;": "=t" (retval) : "0" (x));
     return retval;
@@ -69,7 +68,7 @@ static __inline__ double rint (double x)
 #ifdef USE_BUILTIN_RINT
 #define R_rint private_rint
 
-static double private_rint(double x)
+double private_rint(double x)
 {
     double tmp, sgn = 1.0;
     long ltmp;

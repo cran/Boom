@@ -54,12 +54,13 @@ namespace BOOM{
       if(!std::isfinite(probsum)){
         std::ostringstream err;
         err << "infinite or NA probabilities supplied to rmulti:  prob = "
-            << prob << endl;
+            << prob << std::endl;
         report_error(err.str());
       }
       if(probsum <= 0){
         std::ostringstream err;
-        err << "zero or negative normalizing constant in rmulti:  prob = " << prob << endl;
+        err << "zero or negative normalizing constant in rmulti:  prob = "
+            << prob << std::endl;
         report_error(err.str());
       }
       double tmp=runif_mt(rng, 0,probsum);
@@ -69,8 +70,8 @@ namespace BOOM{
         psum+=prob(i);
         if(tmp<=psum) return i;}
       ostringstream msg;
-      msg << "rmulti failed:  prob = " << prob << endl
-          << "psum = " << psum << endl;
+      msg << "rmulti failed:  prob = " << prob << std::endl
+          << "psum = " << psum << std::endl;
       report_error(msg.str());
       return 0;
     }

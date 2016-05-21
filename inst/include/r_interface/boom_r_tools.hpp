@@ -225,6 +225,44 @@ namespace BOOM{
     Ptr<CatKey> levels_;
   };
 
-}
+  // A class to handle protection of R objects in an exception safe
+  // way.  Define a single RMemoryProtector at the start of any
+  // function where R memory needs to be allocated.  Then instead of
+  // writing
+  // PROTECT(my_r_object);
+  // /* do stuff */
+  // UNPROTECT(1);
+  //
+  // you write
+  // RMemoryProtector protector;
+  // protector.protect(my_r_object);
+  //  /* do stuff */
+  //
+  // There is no need to call UNPROTECT, which is handled by the class
+  // destructor.
+  class RMemoryProtector {
+   public:
+    RMemoryProtector() : protection_count_(0) {}
+
+    ~RMemoryProtector() {
+      UNPROTECT(protection_count_);
+    }
+
+    // Args:
+    //   r_object: An R object that needs protecting for the life of
+    //     this RMemoryProtector object.
+    // Returns:
+    //   The protected r_object.
+    SEXP protect(SEXP r_object) {
+      PROTECT(r_object);
+      ++protection_count_;
+      return r_object;
+    }
+
+   private:
+    int protection_count_;
+  };
+
+}  // namespace BOOM
 
 #endif  // BOOM_R_TOOLS_HPP_

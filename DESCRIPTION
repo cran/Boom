@@ -1,6 +1,6 @@
 Package: Boom
-Version: 0.3
-Date: 2016-03-08
+Version: 0.4
+Date: 2016-05-19
 Title: Bayesian Object Oriented Modeling
 Author: Steven L. Scott is the sole author and creator of the BOOM
    project.  Some code in the BOOM libraries has been modified from
@@ -23,6 +23,6 @@ LinkingTo: BH (>= 1.15.0-2)
 Encoding: UTF-8
 SystemRequirements: GNU Make, C++11
 NeedsCompilation: yes
-Packaged: 2016-03-11 15:51:51 UTC; stevescott
+Packaged: 2016-05-20 14:52:48 UTC; stevescott
 Repository: CRAN
-Date/Publication: 2016-03-15 16:10:26
+Date/Publication: 2016-05-21 15:42:34

@@ -49,7 +49,6 @@ namespace BOOM{
         stride(nrow)
   {}
 
-// TODO(stevescott):  need a unit test here
   SM::SubMatrix(SM &m, uint rlo, uint rhi, uint clo, uint chi)
       : start_(m.start_ + rlo + clo * m.stride),
         nr_(rhi - rlo + 1),
@@ -220,11 +219,47 @@ namespace BOOM{
     return *this;
   }
 
+  SM & SM::operator+=(const SubMatrix &rhs){
+    assert(rhs.nrow() == nr_ && rhs.ncol() == nc_);
+    for(uint i = 0; i < nc_; ++i) {
+      VectorView v(cols(i), nr_, 1);
+      v += rhs.col(i);
+    }
+    return *this;
+  }
+
+  SM & SM::operator+=(const ConstSubMatrix &rhs){
+    assert(rhs.nrow() == nr_ && rhs.ncol() == nc_);
+    for(uint i = 0; i < nc_; ++i) {
+      VectorView v(cols(i), nr_, 1);
+      v += rhs.col(i);
+    }
+    return *this;
+  }
+
   SM & SM::operator-=(const Matrix &rhs){
     assert(rhs.nrow()==nr_ && rhs.ncol()==nc_);
     for(uint i=0; i<nc_; ++i){
       VectorView v(cols(i), nr_, 1);
-      v-= rhs.col(i);
+      v -= rhs.col(i);
+    }
+    return *this;
+  }
+
+  SM & SM::operator-=(const SubMatrix &rhs){
+    assert(rhs.nrow()==nr_ && rhs.ncol()==nc_);
+    for(uint i=0; i<nc_; ++i){
+      VectorView v(cols(i), nr_, 1);
+      v -= rhs.col(i);
+    }
+    return *this;
+  }
+
+  SM & SM::operator-=(const ConstSubMatrix &rhs){
+    assert(rhs.nrow()==nr_ && rhs.ncol()==nc_);
+    for(uint i=0; i<nc_; ++i){
+      VectorView v(cols(i), nr_, 1);
+      v -= rhs.col(i);
     }
     return *this;
   }
@@ -400,6 +435,58 @@ namespace BOOM{
   }
     bool operator==(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs){
     return MatrixEquals(lhs, rhs);
+  }
+
+  namespace {
+    template <class M1, class M2>
+    Matrix MatrixAdd(const M1 &m1, const M2 &m2) {
+      Matrix ans(m1);
+      SubMatrix view(ans);
+      view += m2;
+      return ans;
+    }
+  }  // namespace
+
+  Matrix operator+(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs)  {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const ConstSubMatrix &lhs, const SubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const ConstSubMatrix &lhs, const Matrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+
+  namespace {
+    template <class M1, class M2>
+    Matrix MatrixSubtract(const M1 &m1, const M2 &m2) {
+      Matrix ans(m1);
+      SubMatrix view(ans);
+      view -= m2;
+      return ans;
+    }
+  }  // namespace
+
+  Matrix operator-(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const ConstSubMatrix &lhs, const SubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const ConstSubMatrix &lhs, const Matrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
   }
 
 } // namespace BOOM

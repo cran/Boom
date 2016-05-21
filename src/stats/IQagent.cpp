@@ -44,7 +44,7 @@ namespace BOOM{
       probs_(probs),
       ecdf_(VEC(0))
   {
-    sort(probs_.begin(), probs_.end());
+    std::sort(probs_.begin(), probs_.end());
     quantiles_.resize(probs_.size());
   }
   //-----------------------------------------------------------------------

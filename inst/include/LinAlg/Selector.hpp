@@ -124,6 +124,7 @@ namespace BOOM{
 
     Vector select(const VectorView & x) const;
     Vector select(const ConstVectorView & x) const;
+    SpdMatrix expand(const SpdMatrix &dense_part_of_sparse_matrix);
 
     Vector expand(const Vector &x) const;
     Vector expand(const VectorView &x) const;

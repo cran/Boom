@@ -78,8 +78,7 @@ namespace Rmath{
  *      is treated as infinity.
  */
 
-static double qinv(double p, double c, double v)
-{
+double qinv(double p, double c, double v) {
     const double p0 = 0.322232421088;
     const double q0 = 0.993484626060e-01;
     const double p1 = -1.0;
@@ -213,4 +212,3 @@ double qtukey(double p, double rr, double cc, double df,
     return ans;
 }
 }
-

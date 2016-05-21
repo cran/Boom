@@ -157,9 +157,7 @@
 #include "nmath.hpp"
 namespace Rmath{
 
-static
-void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)
-{
+void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr) {
     const double bvalues[] = {  /* Bernoulli Numbers */
          1.00000000000000000e+00,
         -5.00000000000000000e-01,
@@ -415,7 +413,7 @@ void dpsifn(double x, int n, int kode, int m, double *ans, int *nz, int *ierr)
     }
     return;
 
-  L20:  
+  L20:
     for(i = 1; i <= nx; i++)
         s += 1. / (x + nx - i);
 
@@ -481,4 +479,3 @@ double pentagamma(double x)
     return 6.0 * ans;
 }
 }
-
