@@ -20,19 +20,19 @@
 #include <distributions.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cpputil/Constants.hpp>
 
-namespace BOOM{
+namespace BOOM {
   //======================================================================
   double dmvt(const Vector &x,  const Vector &mu,
- 	      const SpdMatrix &Siginv, double nu, bool logscale){
+              const SpdMatrix &Siginv, double nu, bool logscale){
     double ldsi = Siginv.logdet();
     return dmvt(x, mu, Siginv, nu, ldsi, logscale);
   }
   //======================================================================
-  double dmvt(const Vector &x,  const Vector &mu, const SpdMatrix &Siginv, double nu,
-	      double ldsi, bool logscale){
+  double dmvt(const Vector &x,  const Vector &mu, const SpdMatrix &Siginv,
+              double nu, double ldsi, bool logscale){
     long dim = mu.size();
     double nc = lgamma( (nu + dim)/2.0 ) + .5 * ldsi
         - lgamma(nu/2.0) - (.5*dim) * (log(nu) + Constants::log_pi);
@@ -51,10 +51,12 @@ namespace BOOM{
   }
 
   Vector rmvt_ivar(const Vector &mu, const SpdMatrix &ivar, double nu){
-    return rmvt_ivar_mt(GlobalRng::rng, mu, ivar, nu);  }
+    return rmvt_ivar_mt(GlobalRng::rng, mu, ivar, nu);
+  }
 
-  Vector rmvt_ivar_mt(RNG & rng, const Vector &mu, const SpdMatrix &ivar, double nu){
+  Vector rmvt_ivar_mt(RNG & rng, const Vector &mu, const SpdMatrix &ivar,
+                      double nu) {
     double w = rgamma_mt(rng, nu/2,nu/2);
     return rmvn_ivar_mt(rng, mu, w*ivar);
   }
-}
+}  // namespace BOOM

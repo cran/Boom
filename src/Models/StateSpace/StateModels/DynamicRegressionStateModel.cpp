@@ -19,10 +19,14 @@
 #include <Models/StateSpace/StateModels/DynamicRegressionStateModel.hpp>
 #include <distributions.hpp>
 #include <stats/moments.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM {
+  namespace {
+    typedef DynamicRegressionStateModel DRSM;
+  }
 
-  DynamicRegressionStateModel::DynamicRegressionStateModel(const Matrix &X)
+  DRSM::DynamicRegressionStateModel(const Matrix &X)
       : xdim_(ncol(X)),
         initial_state_mean_(ncol(X), 0.0),
         initial_state_variance_(ncol(X), 1.0),
@@ -54,7 +58,7 @@ namespace BOOM {
         diagonal_variances_.size()));
   }
 
-  DynamicRegressionStateModel::DynamicRegressionStateModel(
+  DRSM::DynamicRegressionStateModel(
       const DynamicRegressionStateModel &rhs)
       : StateModel(rhs),
         CompositeParamPolicy(rhs),
@@ -82,14 +86,14 @@ namespace BOOM {
         diagonal_variances_.size()));
   }
 
-  DynamicRegressionStateModel * DynamicRegressionStateModel::clone()const{
+  DynamicRegressionStateModel * DRSM::clone()const{
     return new DynamicRegressionStateModel(*this);}
 
-  void DynamicRegressionStateModel::set_xnames(
+  void DRSM::set_xnames(
       const std::vector<string> &xnames) {
     if (xnames.size() != state_dimension()) {
       std::ostringstream err;
-      err << "Error in DynamicRegressionStateModel::set_xnames." << endl
+      err << "Error in DRSM::set_xnames." << endl
           << "The size of xnames is " << xnames.size() << endl
           << "But ncol(X) is " << state_dimension() << endl;
       report_error(err.str());
@@ -97,17 +101,17 @@ namespace BOOM {
     xnames_ = xnames;
   }
 
-  const std::vector<string> & DynamicRegressionStateModel::xnames()const{
+  const std::vector<string> & DRSM::xnames()const{
     return xnames_;
   }
 
-  void DynamicRegressionStateModel::clear_data() {
+  void DRSM::clear_data() {
     for(int i = 0; i < coefficient_transition_model_.size(); ++i){
       coefficient_transition_model_[i]->clear_data();
     }
   }
 
-  void DynamicRegressionStateModel::observe_state(
+  void DRSM::observe_state(
       const ConstVectorView then, const ConstVectorView now, int time_now){
     check_size(then.size());
     check_size(now.size());
@@ -117,12 +121,24 @@ namespace BOOM {
     }
   }
 
-  void DynamicRegressionStateModel::observe_initial_state(
+  void DRSM::observe_initial_state(
       const ConstVectorView &state){}
 
-  uint DynamicRegressionStateModel::state_dimension()const{return xdim_;}
+  uint DRSM::state_dimension()const{return xdim_;}
 
-  void DynamicRegressionStateModel::simulate_state_error(VectorView eta, int t)const{
+  void DRSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    for (int s = 0; s < coefficient_transition_model_.size(); ++s){
+      coefficient_transition_model_[s]->suf()->update_expected_value(
+          1.0,
+          state_error_mean[s],
+          state_error_variance(s, s) + square(state_error_mean[s]));
+    }
+  }
+
+  void DRSM::simulate_state_error(VectorView eta, int t)const{
     check_size(eta.size());
     for (int i = 0; i < eta.size(); ++i) {
       eta[i] = rnorm(0, coefficient_transition_model_[i]->sigma());
@@ -130,62 +146,72 @@ namespace BOOM {
   }
 
   Ptr<SparseMatrixBlock>
-      DynamicRegressionStateModel::state_transition_matrix(int t)const{
+      DRSM::state_transition_matrix(int t)const{
     return transition_matrix_;
   }
 
   Ptr<SparseMatrixBlock>
-      DynamicRegressionStateModel::state_variance_matrix(int t)const{
+      DRSM::state_variance_matrix(int t)const{
     return transition_variance_matrix_;
   }
 
-  SparseVector DynamicRegressionStateModel::observation_matrix(int t)const{
+  Ptr<SparseMatrixBlock>
+      DRSM::state_error_expander(int t) const {
+    return state_transition_matrix(t);
+  }
+
+  Ptr<SparseMatrixBlock>
+      DRSM::state_error_variance(int t) const {
+    return state_variance_matrix(t);
+  }
+
+  SparseVector DRSM::observation_matrix(int t)const{
     return X_[t];
   }
 
-  Vector DynamicRegressionStateModel::initial_state_mean()const{
+  Vector DRSM::initial_state_mean()const{
     return initial_state_mean_;
   }
 
-  void DynamicRegressionStateModel::set_initial_state_mean(const Vector &mu){
+  void DRSM::set_initial_state_mean(const Vector &mu){
     check_size(mu.size());
     initial_state_mean_ = mu;
   }
 
-  SpdMatrix DynamicRegressionStateModel::initial_state_variance()const{
+  SpdMatrix DRSM::initial_state_variance()const{
     return initial_state_variance_;
   }
 
-  void DynamicRegressionStateModel::set_initial_state_variance(const SpdMatrix &V) {
+  void DRSM::set_initial_state_variance(const SpdMatrix &V) {
     check_size(V.nrow());
     initial_state_variance_ = V;
   }
 
-  const GaussianSuf * DynamicRegressionStateModel::suf(int i)const{
+  const GaussianSuf * DRSM::suf(int i)const{
     return coefficient_transition_model_[i]->suf().get();
   }
 
-  double DynamicRegressionStateModel::sigsq(int i)const{
+  double DRSM::sigsq(int i)const{
     return coefficient_transition_model_[i]->sigsq();
   }
 
-  void DynamicRegressionStateModel::set_sigsq(double sigsq, int i){
+  void DRSM::set_sigsq(double sigsq, int i){
     coefficient_transition_model_[i]->set_sigsq(sigsq);
   }
 
-  const Vector & DynamicRegressionStateModel::predictor_variance()const{
+  const Vector & DRSM::predictor_variance()const{
    return predictor_variance_;
   }
 
-  Ptr<UnivParams> DynamicRegressionStateModel::Sigsq_prm(int i){
+  Ptr<UnivParams> DRSM::Sigsq_prm(int i){
     return coefficient_transition_model_[i]->Sigsq_prm();
   }
 
-  const Ptr<UnivParams> DynamicRegressionStateModel::Sigsq_prm(int i)const{
+  const Ptr<UnivParams> DRSM::Sigsq_prm(int i)const{
     return coefficient_transition_model_[i]->Sigsq_prm();
   }
 
-  void DynamicRegressionStateModel::add_forecast_data(
+  void DRSM::add_forecast_data(
       const Matrix &predictors) {
     if (ncol(predictors) != xdim_) {
       report_error("Forecast data has the wrong number of columns");
@@ -199,7 +225,7 @@ namespace BOOM {
     }
   }
 
-  void DynamicRegressionStateModel::check_size(int n)const{
+  void DRSM::check_size(int n)const{
     if (n != xdim_) {
       report_error("Wrong sized vector or matrix argument in"
                    " DynamicRegressionStateModel");

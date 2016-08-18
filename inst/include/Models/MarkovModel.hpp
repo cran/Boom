@@ -35,7 +35,7 @@
 #include <Models/TimeSeries/TimeSeriesSufstatDataPolicy.hpp>
 
 #include <Models/Sufstat.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 

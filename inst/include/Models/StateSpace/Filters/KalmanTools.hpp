@@ -20,7 +20,7 @@
 #define BOOM_KALMAN_TOOLS_HPP
 
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 
 namespace BOOM{
   // Returns the likelihood contribution of y given previous y's.

@@ -75,8 +75,22 @@ namespace BOOM{
     return loglike;
   }
 
-  // For the math behind this update, see Durbin and Koopman, second
-  // edition, page 95, Section 4.5.3.
+  // As part of the Kalman smoothing (backward) recursion, update the
+  // vector r[t] and the matrix N[t] to time t-1.
+  //
+  // Args:
+  //   The arguments below correspond to elements in Durbin and
+  //     Koopman, second edition, page 95, Section 4.5.3, in the
+  //     equation following (4.69).
+  //   scaled_residual_r: On input this is r[t].  On output it is
+  //     r[t-1].
+  //   scaled_residual_variance_N: On input this is N[t], on output it
+  //     is N[t-1].
+  //   transition_matrix_T:  T[t]
+  //   kalman_gain_K: K[t]
+  //   observation_matrix_Z:  Z[t]'
+  //   forecast_variance:  F[t]
+  //   forecast_error: v[t]
   void sparse_scalar_kalman_disturbance_smoother_update(
       Vector &scaled_residual_r,
       SpdMatrix &scaled_residual_variance_N,
@@ -86,6 +100,12 @@ namespace BOOM{
       double forecast_variance,
       double forecast_error) {
 
+    // The recursion is given by the following system of equations:
+    // u[t]    = (v[t] / F[t]) - K[t] * r[t]
+    // r[t-1]  = (Z[t] * u[t]) + (T[t]' * r[t])
+    // D[t]    = (1.0 / F[t]) + K[t]' * N[t] * K[t]
+    // N[t-1]  = ZDZ' + T'NT - ZK'NT - T'NKZ'  // all [t]
+
     // u[t] = F[t]^{-1} * v[t] - K[t].dot(r[t])
     double u = forecast_error / forecast_variance
         - kalman_gain_K.dot(scaled_residual_r);
@@ -94,17 +114,22 @@ namespace BOOM{
     observation_matrix_Z.add_this_to(previous_r, u);
     scaled_residual_r = previous_r;
 
-    double D = 1.0 / forecast_variance
+    // D = (1/F) + K'NK
+    double D = (1.0 / forecast_variance)
         + scaled_residual_variance_N.Mdist(kalman_gain_K);
+
     SpdMatrix previousN = scaled_residual_variance_N;
     transition_matrix_T.sandwich_inplace_transpose(previousN);
+    // N[t-1] = T'NT
     observation_matrix_Z.add_outer_product(previousN, D);
+    // N[t-1] = ZDZ' + T'NT
 
     Vector TprimeNK = transition_matrix_T.Tmult(
         scaled_residual_variance_N * kalman_gain_K);
     Matrix TprimeNKZ = observation_matrix_Z.outer_product_transpose(TprimeNK);
-    // Next, previousN = previousN - TprimeNKZ - TprimeNKZ.transpose().
-    // Doing it this way should maximize the use of blas routines.
+    // Next, previousN = previousN - TprimeNKZ -
+    // TprimeNKZ.transpose().  Subtracting the transpose column by
+    // column should maximize the use of blas routines.
     previousN -= TprimeNKZ;
     for (int i = 0; i < ncol(previousN); ++i) {
       previousN.col(i) -= TprimeNKZ.row(i);

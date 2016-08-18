@@ -36,9 +36,30 @@ namespace BOOM{
     double n = mod_->n() * mod_->suf()->nobs();
     double nno = n - nyes;
     double p;
+    int ntries = 0;
     do {
+      // In most cases this do loop will finish without repeating.  It
+      // exists to guard against cases where rbeta returns values of p
+      // on the boundary, or nan.
       p = rbeta_mt(rng(), a + nyes, b+nno);
-    } while(p <= 0 || p >= 1);
+      if (++ntries > 500) {
+        const double epsilon = std::numeric_limits<double>::epsilon();
+        if (p >= 1.0) {
+          p = 1.0 - epsilon;
+        } else if (p <= 0.0) {
+          p = epsilon;
+        } else if (!std::isfinite(p)) {
+          ostringstream err;
+          err << "Too many attempts in BetaBinomialSampler::draw()." << endl
+              << "a = " << a << endl
+              << "b = " << b << endl
+              << "a + nyes = " << a + nyes << endl
+              << "b + nno  = " << b + nno << endl
+              << "last simulated value of p: " << p << endl;
+          report_error(err.str());
+        }
+      }
+    } while(p <= 0 || p >= 1 || !std::isfinite(p));
     mod_->set_prob(p);
   }
 

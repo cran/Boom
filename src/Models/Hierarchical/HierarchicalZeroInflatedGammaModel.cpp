@@ -224,6 +224,23 @@ namespace BOOM {
     return positive_probability_prior_mean() * mean_parameter_prior_mean();
   }
 
+  HierarchicalZeroInflatedGammaData HZIGM::sim(int64_t n) const {
+    const double positive_probability = prior_for_positive_probability_->sim();
+    const double gamma_mean = prior_for_mean_parameters_->sim();
+    const double gamma_shape = prior_for_shape_parameters_->sim();
+    int number_of_positives = rbinom(n, positive_probability);
+    int number_of_zeros = n - number_of_positives;
+    double sum = 0.0;
+    double sum_of_logs_of_positives = 0.0;
+    for (int i = 0; i < number_of_positives; ++i) {
+      double value = rgamma(gamma_shape, gamma_shape / gamma_mean);
+      sum += value;
+      sum_of_logs_of_positives += log(value);
+    }
+    return HierarchicalZeroInflatedGammaData(
+        number_of_zeros, number_of_positives, sum, sum_of_logs_of_positives);
+  }
+
   void HZIGM::setup() {
     ParamPolicy::add_model(prior_for_mean_parameters_);
     ParamPolicy::add_model(prior_for_shape_parameters_);

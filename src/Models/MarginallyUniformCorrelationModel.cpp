@@ -37,7 +37,7 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  double MUCM::logp(const Corr & R)const{
+  double MUCM::logp(const CorrelationMatrix & R)const{
     // un-normalized
     uint k = R.dim();
     double ldR = R.logdet();
@@ -49,7 +49,7 @@ namespace BOOM{
 
   uint MUCM::dim()const{return dim_;}
 
-  Corr MUCM::sim()const{
+  CorrelationMatrix MUCM::sim()const{
     uint d = dim();
     SpdMatrix I(d, 1.0);
     SpdMatrix Sigma = rWish(d+1, I, true); // inverse wishart

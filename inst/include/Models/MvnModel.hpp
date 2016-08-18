@@ -19,7 +19,7 @@
 #ifndef MVN_MODEL_H
 #define MVN_MODEL_H
 
-#include <LinAlg/Types.hpp>
+
 #include <Models/ModelTypes.hpp>
 #include <Models/Sufstat.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>

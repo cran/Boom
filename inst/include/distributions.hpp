@@ -19,10 +19,13 @@
 #ifndef BOOM_DISTRIBUTIONS_HPP
 #define BOOM_DISTRIBUTIONS_HPP
 
-#include <cpputil/ThrowException.hpp>
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Matrix.hpp>
+#include <LinAlg/SpdMatrix.hpp>
+
 #include <distributions/Rmath_dist.hpp>
 #include <distributions/rng.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <vector>
 #include <uint.hpp>
 

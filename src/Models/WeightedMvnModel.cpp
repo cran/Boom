@@ -19,7 +19,7 @@
 #include <Models/WeightedMvnModel.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <distributions.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>

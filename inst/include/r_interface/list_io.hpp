@@ -7,7 +7,7 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SubMatrix.hpp>
 #include <LinAlg/Array.hpp>
-#include <LinAlg/Types.hpp>
+
 
 #include <Models/ParamTypes.hpp>
 #include <Models/SpdParams.hpp>
@@ -352,6 +352,32 @@ namespace BOOM{
    private:
     void CheckSize();
     Ptr<MatrixParams> prm_;
+    ArrayView array_view_;
+  };
+
+  // For managing vectors of coefficients in a hierarchical model.
+  class HierarchicalVectorListElement
+      : public RealValuedRListIoElement {
+   public:
+    // Use this constructor if you have a list of parameter vectors
+    // already collected.
+    HierarchicalVectorListElement(
+        const std::vector<Ptr<VectorParams>> &parameters,
+        const std::string &param_name);
+
+    // Use this constructor if you plan to add parameter vectors one
+    // at a time.  This use case obviously requires holding onto the
+    // list element pointer outside of an RListIoManager.
+    HierarchicalVectorListElement(const std::string &param_name);
+
+    void add_vector(Ptr<VectorParams> vector);
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
+   private:
+    void CheckSize();
+    std::vector<Ptr<VectorData>> parameters_;
     ArrayView array_view_;
   };
 

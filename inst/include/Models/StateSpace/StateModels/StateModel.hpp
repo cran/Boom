@@ -33,7 +33,7 @@ namespace BOOM{
   // draws from N(0, Q) so that the dimension of RQR^T matches the
   // state dimension.
   class StateModel
-      : virtual public Model
+      : virtual public PosteriorModeModel
   {
    public:
     // Traditional state models are Gaussian, but Bayesian modeling
@@ -68,20 +68,47 @@ namespace BOOM{
     virtual void observe_initial_state(const ConstVectorView &state);
 
     // The dimension of the state vector.
-    virtual uint state_dimension()const=0;
+    virtual uint state_dimension() const = 0;
+
+    // The dimension of the full-rank state error term.  This might be
+    // smaller than state_dimension if the transition equation
+    // contains a determinisitc component.  For example, the seasonal
+    // model has state_dimension = number_of_seasons - 1, but
+    // state_error_dimension = 1.
+    virtual uint state_error_dimension() const = 0;
+
+    // Add the observed error mean and variance to the complete data
+    // sufficient statistics.  Child classes can choose to implement
+    // this method by throwing an exception.
+    virtual void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) = 0;
 
     // Simulates the state eror at time t, for moving to time t+1.
-    virtual void simulate_state_error(VectorView eta, int t)const = 0;
-    virtual void simulate_initial_state(VectorView eta)const;
+    virtual void simulate_state_error(VectorView eta, int t) const = 0;
+    virtual void simulate_initial_state(VectorView eta) const;
 
-    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t)const = 0;
-    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t)const = 0;
+    virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t) const = 0;
+
+    // The state_variance_matrix has state_dimension rows and columns.
+    // This is Durbin and Koopman's R_t Q_t R_t^T
+    virtual Ptr<SparseMatrixBlock> state_variance_matrix(int t) const = 0;
+
+    // The state_expander_matrix has state_dimension rows and
+    // state_error_dimension columns.  This is Durbin and Koopman's
+    // R_t matrix.
+    virtual Ptr<SparseMatrixBlock> state_error_expander(int t) const = 0;
+
+    // The state_error_variance matrix has state_error_dimension rows
+    // and columns.  This is Durbin and Koopman's Q_t matrix.
+    virtual Ptr<SparseMatrixBlock> state_error_variance(int t) const = 0;
 
     //  For now, limit models to have constant observation matrices.
     //  This will prevent true DLM's with coefficients in the Kalman
     //  filter, because this is where the x's would go, but we'll need
     //  a different API for that case anyway.
-    virtual SparseVector observation_matrix(int t)const = 0;
+    virtual SparseVector observation_matrix(int t) const = 0;
 
     virtual Vector initial_state_mean()const = 0;
     virtual SpdMatrix initial_state_variance()const = 0;
@@ -99,6 +126,7 @@ namespace BOOM{
     // (instead of simply conditionally Gaussian), the default
     // behavior for these member functions is a no-op.
     virtual void set_behavior(Behavior) {}
+
   };
 }
 

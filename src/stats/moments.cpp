@@ -21,7 +21,6 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
 
 namespace BOOM{
   inline double SQ(double x){return x*x;}

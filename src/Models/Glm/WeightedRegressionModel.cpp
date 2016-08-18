@@ -18,7 +18,7 @@
 
 #include <Models/Glm/WeightedRegressionModel.hpp>
 #include <distributions.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cmath>
 #include <cpputil/math_utils.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
@@ -147,6 +147,15 @@ namespace BOOM{
   void WRS::reweight(const dsetPtr &dp) {
     clear();
     for (uint i=0; i < dp->size(); ++i) update((*dp)[i]);
+  }
+
+  //------------------------------------------------------------
+  void WRS::set_xtwx(const SpdMatrix &xtwx) {
+    xtwx_ = xtwx;
+  }
+
+  void WRS::set_xtwy(const Vector &xtwy) {
+    xtwy_ = xtwy;
   }
 
   //------------------------------------------------------------

@@ -19,7 +19,7 @@
 
 #include <distributions.hpp>
 
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Cholesky.hpp>
@@ -28,11 +28,11 @@
 
 #include <iostream>
 
-namespace BOOM{
+namespace BOOM {
 
   double dmatrix_normal_ivar(const Matrix &Y,const Matrix &Mu,
-			const SpdMatrix & Siginv, const SpdMatrix & Ominv,
-			bool logscale){
+                        const SpdMatrix & Siginv, const SpdMatrix & Ominv,
+                        bool logscale){
 
     double ldoi = Ominv.logdet();
     double ldsi = Siginv.logdet();
@@ -40,9 +40,9 @@ namespace BOOM{
   }
 
   double dmatrix_normal_ivar(const Matrix &Y,const Matrix &Mu,
-			const SpdMatrix & Siginv, double ldsi,
-			const SpdMatrix & Ominv, double ldoi,
-			bool logscale){
+                        const SpdMatrix & Siginv, double ldsi,
+                        const SpdMatrix & Ominv, double ldoi,
+                        bool logscale){
 
     // Y~ matrix_normal(Mu, Siginv, Ominv) if
     // Vector(Y) ~ N(Vector(Mu), (Siginv \otimes Ominv)^{-1})
@@ -88,4 +88,4 @@ namespace BOOM{
     return ans;
   }
 
-}
+}  // namespace BOOM

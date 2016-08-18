@@ -20,7 +20,7 @@
 
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/VectorView.hpp>
-#include <LinAlg/Types.hpp>
+
 
 namespace BOOM{
 

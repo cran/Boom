@@ -18,7 +18,7 @@
 #ifndef BOOM_SPLINE_HPP
 #define BOOM_SPLINE_HPP
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <vector>
 #include <boost/shared_ptr.hpp>
 

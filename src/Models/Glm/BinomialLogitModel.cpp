@@ -22,9 +22,10 @@
 #include <cpputil/report_error.hpp>
 
 namespace BOOM{
-
-  typedef BinomialLogitModel BLM;
-  typedef BinomialRegressionData BRD;
+  namespace {
+    typedef BinomialLogitModel BLM;
+    typedef BinomialRegressionData BRD;
+  }  // namespace
 
   BLM::BinomialLogitModel(uint beta_dim, bool all)
       : ParamPolicy(new GlmCoefs(beta_dim, all)),

@@ -29,7 +29,7 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/CorrelationMatrix.hpp>  // for VectorData
-#include <LinAlg/Types.hpp>
+
 #include <cpputil/Ptr.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <boost/function.hpp>

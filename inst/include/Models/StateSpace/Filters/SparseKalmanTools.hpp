@@ -20,7 +20,7 @@
 #define BOOM_SPARSE_KALMAN_TOOLS_HPP
 
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <Models/StateSpace/Filters/SparseVector.hpp>
 #include <Models/StateSpace/Filters/SparseMatrix.hpp>
 

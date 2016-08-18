@@ -23,6 +23,7 @@
 #include <Models/Policies/ParamPolicy_2.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
+#include <Models/ZeroInflatedPoissonModel.hpp>
 
 namespace BOOM {
 
@@ -110,6 +111,21 @@ namespace BOOM {
 
     Ptr<GlmCoefs> logit_coefficient_ptr();
     const GlmCoefs &logit_coefficients() const;
+
+    // Simulates a single trial for the given vector of predictor variables.
+    double sim(const Vector &x, RNG &rng = BOOM::GlobalRng::rng) const;
+
+    // Simulates the specified number of trials for the given vector of
+    // predictor variables and returns a structure containing the aggregated
+    // results.
+    //
+    // Args:
+    //   x:  A vector of predictor variables.
+    //   n:  The number of trials to simulate.
+    // Returns:
+    //   Aggregated data for the all the requested observations.
+    ZeroInflatedPoissonSuf simulate_sufficient_statistics(const Vector &x,
+                                                          int64_t n) const;
   };
 
 } // namespace BOOM

@@ -36,6 +36,14 @@ namespace BOOM{
     SpdMatrix(const SpdMatrix &sm);  // reference semantics
 
     // Args:
+    //   v: The elements of the matrix.
+    //   minimal: If true then v just contains the upper diagonal
+    //     elements of the matrix, in column major order.  Otherwise v
+    //     contains all matrix elements, and by symmetry the order can
+    //     be either column- or row-major.
+    explicit SpdMatrix(const Vector &v, bool minimal = false);
+
+    // Args:
     //   m: A Matrix object that happens to be symmetric and positive
     //     definite.
     //   check: If true, then throw an exception if m is not
@@ -49,7 +57,7 @@ namespace BOOM{
     SpdMatrix & operator=(const SubMatrix &);
     SpdMatrix & operator=(const ConstSubMatrix &);
     SpdMatrix & operator=(double x);
-    bool operator==(const SpdMatrix &)const;
+    bool operator==(const SpdMatrix &) const;
 
     void  swap(SpdMatrix &rhs);
     // Fill entries with U(0,1) random variables, then multiply by
@@ -58,8 +66,8 @@ namespace BOOM{
     SpdMatrix & randomize() override;
 
     //-------- size and shape info ----------
-    virtual uint nelem()const;         // number of distinct elements
-    uint dim()const{return nrow();}
+    virtual uint nelem() const;         // number of distinct elements
+    uint dim() const {return nrow();}
 
     //--------- change size and shape ----------
     SpdMatrix & resize(uint n);
@@ -72,8 +80,8 @@ namespace BOOM{
     //      lower_triangular_Matrix chol() const;
     Matrix chol() const;
     Matrix chol(bool & ok) const;
-    SpdMatrix inv()const;
-    SpdMatrix inv(bool &ok)const;
+    SpdMatrix inv() const;
+    SpdMatrix inv(bool &ok) const;
     double det() const override;
     double logdet() const;
     double logdet(bool &ok) const;
@@ -123,23 +131,34 @@ namespace BOOM{
     SpdMatrix & add_outer2(const Vector &x, const Vector &y, double w = 1.0);
 
     //--------- Matrix multiplication ------------
-    Matrix & mult(const Matrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & Tmult(const Matrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & multT(const Matrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & mult(const Matrix &B, Matrix &ans,
+                  double scal=1.0) const override;
+    Matrix & Tmult(const Matrix &B, Matrix &ans,
+                   double scal=1.0) const override;
+    Matrix & multT(const Matrix &B, Matrix &ans,
+                   double scal=1.0) const override;
 
-    Matrix & mult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & Tmult(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & multT(const SpdMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & mult(const SpdMatrix &B, Matrix &ans,
+                  double scal=1.0) const override;
+    Matrix & Tmult(const SpdMatrix &B, Matrix &ans,
+                   double scal=1.0) const override;
+    Matrix & multT(const SpdMatrix &B, Matrix &ans,
+                   double scal=1.0) const override;
 
-    Matrix & mult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
-    Matrix & multT(const DiagonalMatrix &B, Matrix &ans, double scal=1.0)const override;
+    Matrix & mult(const DiagonalMatrix &B, Matrix &ans,
+                  double scal=1.0) const override;
+    Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans,
+                   double scal=1.0) const override;
+    Matrix & multT(const DiagonalMatrix &B, Matrix &ans,
+                   double scal=1.0) const override;
 
-    Vector & mult(const Vector &v, Vector &ans, double scal=1.0)const override;
-    Vector & Tmult(const Vector &v, Vector &ans, double scal=1.0)const override;
+    Vector & mult(const Vector &v, Vector &ans,
+                  double scal=1.0) const override;
+    Vector & Tmult(const Vector &v, Vector &ans,
+                   double scal=1.0) const override;
 
     //------------- input/output ---------------
-    virtual Vector vectorize(bool minimal=true)const;
+    virtual Vector vectorize(bool minimal=true) const;
     virtual void unvectorize(const Vector &v, bool minimal=true);
     Vector::const_iterator unvectorize(Vector::const_iterator &b,
       				 bool minimal=true);

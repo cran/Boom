@@ -19,7 +19,7 @@
 #ifndef BOOM_CPP_MATH_UTILS_H
 #define BOOM_CPP_MATH_UTILS_H
 
-#include <LinAlg/Types.hpp>
+
 #include <cmath>
 #include <cpputil/portable_math.hpp>
 

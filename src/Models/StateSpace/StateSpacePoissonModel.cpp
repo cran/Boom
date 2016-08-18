@@ -74,10 +74,11 @@ namespace BOOM {
                    "constructor");
     }
     for (int i = 0; i < counts.size(); ++i) {
-      NEW(APRD, dp)(counts[i],
-                    exposure[i],
+      bool missing = !(all_observed || observed[i]);
+      NEW(APRD, dp)(missing ? 0 : counts[i],
+                    missing ? 0 : exposure[i],
                     design.row(i));
-      if (!(all_observed || observed[i])) {
+      if (missing) {
         dp->set_missing_status(Data::missing_status::completely_missing);
       }
       add_data(dp);

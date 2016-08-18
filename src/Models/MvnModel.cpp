@@ -18,7 +18,7 @@
 #include <Models/MvnModel.hpp>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cmath>
 #include <distributions.hpp>
 

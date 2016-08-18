@@ -25,8 +25,6 @@
 #include <fstream>
 #include <uint.hpp>
 
-#include <cpputil/ThrowException.hpp>
-
 namespace BOOM{
   using std::string;
   using std::cout;
@@ -41,7 +39,6 @@ namespace BOOM{
   using std::istringstream;
   using std::ostringstream;
   using std::ios;
-
 }
 
 #endif //BOOM_HPP

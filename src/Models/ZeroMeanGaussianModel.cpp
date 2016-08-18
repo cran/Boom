@@ -56,22 +56,27 @@ namespace BOOM{
     else set_sigsq(1.0);
   }
 
-  double ZGM::Loglike(const Vector &sigsq_vec,
-                      Vector &g, Matrix &h, uint nd)const{
-    double sigsq = sigsq_vec[0];
+  double ZGM::log_likelihood(double sigsq, double *d1, double *d2) const {
     if(sigsq<0) return BOOM::negative_infinity();
-
     const double log2pi = 1.8378770664093453;
     double n = suf()->n();
     double sumsq = suf()->sumsq();
     double SS = sumsq;
     double ans = -0.5*(n*(log2pi + log(sigsq)) + SS/sigsq);
-
-    if(nd>0){
+    if(d1){
       double sigsq_sq = sigsq*sigsq;
-      g[0] = -0.5*n/sigsq + 0.5*SS/sigsq_sq;
-      if(nd>1) h(0,0) = (n/2 - SS/sigsq)/sigsq_sq;
+      *d1 = -0.5*n/sigsq + 0.5*SS/sigsq_sq;
+      if(d2) {
+        *d2 = (n/2 - SS/sigsq)/sigsq_sq;
+      }
     }
     return ans;
+  }
+
+  double ZGM::Loglike(const Vector &sigsq_vec,
+                      Vector &g, Matrix &h, uint nd)const{
+    return log_likelihood(sigsq_vec[0],
+                          nd > 0 ? &g[0] : nullptr,
+                          nd > 1 ? &h(0, 0) : nullptr);
   }
 } // namespace BOOM

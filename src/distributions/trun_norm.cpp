@@ -46,12 +46,12 @@
    }
    /*======================================================================*/
    double dtrun_norm(double x, double mu, double sig, double cut,
- 		    bool below, bool logscale){
+                    bool below, bool logscale){
 
      /*  if(below) this function returns p(x | x<cut), otherwise it
- 	returns p(x|x>cut), where x~N(mu, sig^2).  if(logscale) the
- 	answer is returned on the log scale, otherwise it is returned on
- 	the probability scale */
+        returns p(x|x>cut), where x~N(mu, sig^2).  if(logscale) the
+        answer is returned on the log scale, otherwise it is returned on
+        the probability scale */
      double ans;
      ans=dnorm(x, mu, sig, 1); /* on log scale */
      ans-= pnorm(cut, mu, sig, below, 1);
@@ -59,7 +59,7 @@
    }
    /*======================================================================*/
    double dtrun_norm_2(double x, double mu, double sig, double lo, double hi,
- 		      bool logscale){
+                      bool logscale){
      /* returns p(x | lo < x < hi) where x~N(mu, sig^2) */
      double ans, nc;
      if(hi<lo) ans = negative_infinity();
@@ -175,7 +175,8 @@
 
   // integral from [lo..hi] of exp(slope * x + intercept)
   inline double integral(double lo, double hi, double slope, double intercept){
-    return (1.0/slope)* (exp(intercept + slope * hi) - exp(intercept + slope*lo));
+    return (1.0 / slope)* (exp(intercept + slope * hi)
+                           - exp(intercept + slope * lo));
   }
 
   void TnSampler::update_cdf(){
@@ -241,42 +242,45 @@
     return sam.draw(rng);
   }
 
-
-  namespace {
-    // Compute either phi(alpha) / Phi(alpha) (if lower_tail is true),
-    // or phi(alpha) / (1 - Phi(alpha)) otherwise.  In either case the
-    // computation is done on the log scale and then exponentiated to
-    // facilitate cancellation.  Here phi() is the standard normal
-    // density, and Phi is the standard normal cumulative distribution
-    // function.
-    inline double lambda(double alpha, bool lower_tail) {
-      double numerator = dnorm(alpha, 0, 1, true);
-      double denominator = pnorm(alpha, 0, 1, lower_tail, true);
-      return exp(numerator - denominator);
-    }
-  }
-
   void trun_norm_moments(double mu, double sigma,
                          double cutpoint, bool positive_support,
                          double *mean, double *variance) {
     double sigsq = sigma * sigma;
-    double alpha = (cutpoint - mu) / sigma;
-    double lam = lambda(alpha, !positive_support);
     if (positive_support) {
-      double delta = lam * (lam - alpha);
-      *mean = mu + sigma * lam;
+      double alpha = (cutpoint - mu) / sigma;
+      // phi_ratio is phi(alpha) / (1 - Phi(alpha)).
+      double phi_ratio = exp(dnorm(alpha, 0, 1, true)
+                             - pnorm(alpha, 0, 1, false, true));
+      *mean = mu + sigma * phi_ratio;
+      double delta = phi_ratio * (phi_ratio - alpha);
       *variance = sigsq * (1 - delta);
+      if (*variance < 0) {
+        *variance = 0;
+      }
     } else {
-      *mean = mu - sigma * lam;
-      *variance = sigsq * (1 - alpha * lam - (lam * lam));
+      double beta = (cutpoint - mu) / sigma;
+      // phi_ratio is phi(beta) / Phi(beta)
+      double phi_ratio = exp(dnorm(beta, 0, 1, true)
+                             - pnorm(beta, 0, 1, true, true));
+      *mean = mu - sigma * phi_ratio;
+      *variance = sigsq * (1 - beta * phi_ratio - square(phi_ratio));
+      if (*variance < 0) {
+        *variance = 0;
+      }
     }
   }
 
   //======================================================================
 
-  double rtrun_norm_2_mt(RNG & rng, double mu, double sigma, double lo, double hi){
-    if(hi >= BOOM::infinity()) return rtrun_norm_mt(rng, mu, sigma, lo, true);
-    if(lo <= BOOM::negative_infinity()) return rtrun_norm_mt(rng, mu, sigma, hi, false);
+  double rtrun_norm_2_mt(RNG & rng, double mu, double sigma,
+                         double lo, double hi) {
+    if(hi >= BOOM::infinity()) {
+      return rtrun_norm_mt(rng, mu, sigma, lo, true);
+    }
+
+    if(lo <= BOOM::negative_infinity()) {
+      return rtrun_norm_mt(rng, mu, sigma, hi, false);
+    }
 
     if(lo < mu && hi > mu){
       if( (hi - lo)/sigma > .5){
@@ -314,7 +318,8 @@
       return y * sigma + mu;
     } catch (std::exception &e) {
       std::ostringstream err;
-      err << "rtrun_norm_2_mt caught an exception when called with arguments" << std::endl
+      err << "rtrun_norm_2_mt caught an exception when called with arguments"
+          << std::endl
           << "    mu = " << mu << std::endl
           << " sigma = " << sigma << std::endl
           << "    lo = " << lo << std::endl

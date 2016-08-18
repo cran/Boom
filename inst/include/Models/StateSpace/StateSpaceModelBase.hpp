@@ -25,7 +25,7 @@
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <boost/scoped_ptr.hpp>
 
 namespace BOOM{

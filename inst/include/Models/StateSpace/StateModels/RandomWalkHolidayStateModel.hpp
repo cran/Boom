@@ -61,23 +61,34 @@ namespace BOOM {
     RandomWalkHolidayStateModel(Holiday *holiday, const Date &time_zero);
     RandomWalkHolidayStateModel * clone() const override;
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
+                       const ConstVectorView now,
+                       int time_now) override;
 
-    uint state_dimension()const override;
-    void simulate_state_error(VectorView eta, int t)const override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {
+      return 1;
+    }
+    void simulate_state_error(VectorView eta, int t) const override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
-    SparseVector observation_matrix(int t)const override;
-    Vector initial_state_mean()const override;
-    SpdMatrix initial_state_variance()const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
+
+    SparseVector observation_matrix(int t) const override;
+    Vector initial_state_mean() const override;
+    SpdMatrix initial_state_variance() const override;
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
+    void set_sigsq(double sigsq) override;
 
     void set_initial_state_mean(const Vector &v);
     void set_initial_state_variance(const SpdMatrix &Sigma);
     void set_time_zero(const Date &time_zero);
 
-    void set_sigsq(double sigsq) override;
    private:
     // TODO(stevescott): Make this a unique_ptr once available.
     boost::shared_ptr<Holiday> holiday_;
@@ -86,7 +97,9 @@ namespace BOOM {
     SpdMatrix initial_state_variance_;
     Ptr<IdentityMatrix> identity_transition_matrix_;
     Ptr<ZeroMatrix> zero_state_variance_matrix_;
-    std::vector<Ptr<SingleSparseDiagonalElementMatrix> > active_state_variance_matrix_;
+
+    std::vector<Ptr<SingleSparseDiagonalElementMatrix> >
+    active_state_variance_matrix_;
   };
 
 }  // namespace BOOM

@@ -20,7 +20,6 @@
 
 #include <string>
 
-#include <LinAlg/Types.hpp>
 #include <LinAlg/Vector.hpp>
 #include <cpputil/Ptr.hpp>
 #include <cpputil/RefCounted.hpp>
@@ -40,9 +39,9 @@ namespace BOOM{
 
     virtual Vector vectorize(bool minimal=true)const=0;
     virtual Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true)=0;
+                                            bool minimal=true)=0;
     virtual Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true)=0;
+                                            bool minimal=true)=0;
     virtual std::ostream & print(std::ostream &)const = 0;
   private:
     RefCounted rc_;
@@ -131,7 +130,5 @@ namespace BOOM{
     }
   };
 
-
-
-}
+}  // namespace BOOM
 #endif// BOOM_SUFSTAT_TYPES_HPP

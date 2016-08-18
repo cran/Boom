@@ -18,11 +18,12 @@
 #ifndef BOOM_MARKOV_DIST_HPP
 #define BOOM_MARKOV_DIST_HPP
 
-#include <LinAlg/Types.hpp>
-#include <BOOM.hpp>
+#include <uint.hpp>
 #include <vector>
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Matrix.hpp>
 
-namespace BOOM{
+namespace BOOM {
   class Selector;
   using BOOM::uint;
 
@@ -46,6 +47,7 @@ namespace BOOM{
   // S-|abs| rows and |abs| columns.  Each row is a probability
   // distribution giving the conditional probability of being absorbed
   // into a particular state.
-  Matrix compute_conditional_absorption_probs(const Matrix &P, const Selector &abs);
-}
+  Matrix compute_conditional_absorption_probs(const Matrix &P,
+                                              const Selector &abs);
+}  // namespace BOOM
 #endif// BOOM_MARKOV_DIST_HPP

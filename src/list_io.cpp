@@ -485,12 +485,104 @@ namespace BOOM {
           << endl
           << "dimensions of buffer:    [" << dims[0] << ", " << dims[1] << ", "
           << dims[2] << "]." <<endl
-          << "dimensions of parameter: [" << value.nrow() << ", " << value.ncol()
-          << "].";
+          << "dimensions of parameter: [" << value.nrow() << ", "
+          << value.ncol() << "].";
       report_error(err.str().c_str());
     }
   }
 
+  //======================================================================
+  HierarchicalVectorListElement::HierarchicalVectorListElement(
+      const std::vector<Ptr<VectorParams>> &parameters,
+      const std::string &param_name)
+      : RealValuedRListIoElement(param_name),
+        array_view_(0, Array::index3(0, 0, 0))
+  {
+    for (int i = 0; i < parameters.size(); ++i) {
+      add_vector(parameters[i]);
+    }
+  }
+
+  HierarchicalVectorListElement::HierarchicalVectorListElement(
+      const std::string &param_name)
+      : RealValuedRListIoElement(param_name),
+        array_view_(0, Array::index3(0, 0, 0))
+  {}
+
+  void HierarchicalVectorListElement::add_vector(Ptr<VectorParams> v) {
+    if (!v) {
+      report_error("Null pointer passed to HierarchicalVectorListElement");
+    }
+    if (!parameters_.empty()) {
+      if (v->dim() != parameters_[0]->dim()) {
+        report_error(
+            "All parameters passed to HierarchicalVectorListElement "
+            "must be the same size");
+      }
+    }
+    parameters_.push_back(v);
+  }
+
+  SEXP HierarchicalVectorListElement::prepare_to_write(int niter) {
+    int number_of_groups = parameters_.size();
+    int dim = parameters_[0]->dim();
+    SEXP buffer;
+    PROTECT(buffer = Rf_alloc3DArray(REALSXP, niter, number_of_groups, dim));
+    StoreBuffer(buffer);
+    array_view_.reset(data(), Array::index3(niter, number_of_groups, dim));
+    UNPROTECT(1);
+    return buffer;
+  }
+
+  void HierarchicalVectorListElement::prepare_to_stream(SEXP object) {
+    RealValuedRListIoElement::prepare_to_stream(object);
+    SEXP r_array_dims;
+    PROTECT(r_array_dims = Rf_getAttrib(rbuffer(), R_DimSymbol));
+    int * array_dims = INTEGER(r_array_dims);
+    array_view_.reset(data(), std::vector<int>(array_dims, array_dims + 3));
+    UNPROTECT(1);
+  }
+
+  void HierarchicalVectorListElement::write() {
+    CheckSize();
+    int iteration = next_position();
+    int dimension = parameters_[0]->dim();
+    for (int i = 0; i < parameters_.size(); ++i) {
+      const Vector &value(parameters_[i]->value());
+      for (int j = 0; j < dimension; ++j) {
+        array_view_(iteration, i, j) = value[j];
+      }
+    }
+  }
+
+  void HierarchicalVectorListElement::stream() {
+    CheckSize();
+    int iteration = next_position();
+    int dimension = parameters_[0]->dim();
+    Vector values(dimension);
+    for (int i = 0; i < parameters_.size(); ++i) {
+      for (int j = 0; j < dimension; ++j) {
+        values[j] = array_view_(iteration, i, j);
+      }
+      parameters_[i]->set(values);
+    }
+  }
+
+  void HierarchicalVectorListElement::CheckSize() {
+    const std::vector<int> &dims(array_view_.dim());
+    if (dims[1] != parameters_.size() ||
+        dims[2] != parameters_[0]->dim()) {
+      std::ostringstream err;
+      err << "sizes do not match in HierarchicalVectorListElement::"
+          "stream/write..."
+          << endl
+          << "dimensions of buffer:    [" << dims[0] << ", " << dims[1] << ", "
+          << dims[2] << "]." <<endl
+          << "number of groups:    " << parameters_.size() << endl
+          << "parameter dimension: " << parameters_[0]->dim() << "." << endl;
+      report_error(err.str().c_str());
+    }
+  }
   //======================================================================
 
   SpdListElement::SpdListElement(Ptr<SpdParams> m,

@@ -114,7 +114,7 @@ namespace BOOM {
     }
     mh_sampler_.reset(new MetropolisHastings(
         target,
-        new MvtIndepProposal(log_alpha_beta, -Hessian, 3, rng())));
+        new MvtIndepProposal(log_alpha_beta, -Hessian, 3)));
     log_alpha_beta[0] = exp(log_alpha_beta[0]);
     model_->unvectorize_params(log_alpha_beta);
   }

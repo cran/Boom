@@ -19,10 +19,15 @@
 #include <Models/StateSpace/StateModels/StateModel.hpp>
 #include <Models/StateSpace/StateModels/LocalLevelStateModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
-  LocalLevelStateModel::LocalLevelStateModel(double sigma)
+  namespace {
+    typedef LocalLevelStateModel LLSM;
+  }
+
+  LLSM::LocalLevelStateModel(double sigma)
       : ZeroMeanGaussianModel(sigma),
         state_transition_matrix_(new IdentityMatrix(1)),
         state_variance_matrix_(new ConstantMatrix(1, sigma*sigma)),
@@ -30,7 +35,7 @@ namespace BOOM{
         initial_state_variance_(1)
   {}
 
-  LocalLevelStateModel::LocalLevelStateModel(const LocalLevelStateModel &rhs)
+  LLSM::LocalLevelStateModel(const LocalLevelStateModel &rhs)
       : Model(rhs),
         StateModel(rhs),
         state_transition_matrix_(rhs.state_transition_matrix_),
@@ -39,70 +44,97 @@ namespace BOOM{
         initial_state_variance_(rhs.initial_state_variance_)
   {}
 
-  LocalLevelStateModel * LocalLevelStateModel::clone()const{
+  LocalLevelStateModel * LLSM::clone() const {
     return new LocalLevelStateModel(*this);}
 
-  void LocalLevelStateModel::observe_state(const ConstVectorView then,
-                                           const ConstVectorView now,
-                                           int time_now){
+  void LLSM::observe_state(const ConstVectorView then,
+                           const ConstVectorView now,
+                           int time_now){
     double current_level = now[0];
     double previous_level = then[0];
     double diff = current_level - previous_level;
     suf()->update_raw(diff);
   }
 
-  uint LocalLevelStateModel::state_dimension()const{return 1;}
+  uint LLSM::state_dimension() const {return 1;}
 
-  void LocalLevelStateModel::simulate_state_error(VectorView eta, int)const{
+  void LLSM::simulate_state_error(VectorView eta, int) const {
     eta[0] = rnorm(0, sigma());
   }
 
-  void LocalLevelStateModel::simulate_initial_state(VectorView eta)const{
+  void LLSM::simulate_initial_state(VectorView eta) const {
     eta[0] = rnorm(initial_state_mean_[0],
                    sqrt(initial_state_variance_(0,0)));
   }
 
-  Ptr<SparseMatrixBlock> LocalLevelStateModel::state_transition_matrix(int)const{
+  Ptr<SparseMatrixBlock> LLSM::state_transition_matrix(int) const {
     return state_transition_matrix_;
   }
 
-  Ptr<SparseMatrixBlock> LocalLevelStateModel::state_variance_matrix(int)const{
+  Ptr<SparseMatrixBlock> LLSM::state_variance_matrix(int) const {
     return state_variance_matrix_;
   }
 
-  SparseVector LocalLevelStateModel::observation_matrix(int)const{
+  Ptr<SparseMatrixBlock> LLSM::state_error_expander(int t) const {
+    return state_transition_matrix(t);
+  }
+
+  Ptr<SparseMatrixBlock> LLSM::state_error_variance(
+      int t) const {
+    return state_variance_matrix(t);
+  }
+
+  SparseVector LLSM::observation_matrix(int) const {
     SparseVector ans(1);
     ans[0] = 1;
     return ans;
   }
 
-  Vector LocalLevelStateModel::initial_state_mean()const{
+  Vector LLSM::initial_state_mean() const {
     return initial_state_mean_;
   }
 
-  SpdMatrix LocalLevelStateModel::initial_state_variance()const{
+  SpdMatrix LLSM::initial_state_variance() const {
     return initial_state_variance_;
   }
 
-  void LocalLevelStateModel::set_initial_state_mean(const Vector &m){
+  void LLSM::set_initial_state_mean(const Vector &m){
     initial_state_mean_ = m;
   }
 
-  void LocalLevelStateModel::set_initial_state_mean(double m){
+  void LLSM::set_initial_state_mean(double m){
     initial_state_mean_[0] = m;
   }
 
-  void LocalLevelStateModel::set_initial_state_variance(const SpdMatrix &v){
+  void LLSM::set_initial_state_variance(const SpdMatrix &v){
     initial_state_variance_ = v;
   }
 
-  void LocalLevelStateModel::set_initial_state_variance(double v){
+  void LLSM::set_initial_state_variance(double v){
     initial_state_variance_(0,0) = v;
   }
 
-  void LocalLevelStateModel::set_sigsq(double sigsq){
+  void LLSM::set_sigsq(double sigsq){
     ZeroMeanGaussianModel::set_sigsq(sigsq);
     state_variance_matrix_->set_value(sigsq);
   }
 
-}
+  void LLSM::update_complete_data_sufficient_statistics(
+      int,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (state_error_mean.size() != 1
+        || state_error_variance.nrow() != 1
+        || state_error_variance.ncol() != 1) {
+      report_error("Wrong size argumetns to LocalLevelStateModel::"
+                   "update_complete_data_sufficient_statistics.");
+    }
+    double mean = state_error_mean[0];
+    double var = state_error_variance(0, 0);
+    suf()->update_expected_value(
+        1.0,
+        mean,
+        var + square(mean));
+  }
+
+}  // namespace BOOM

@@ -27,22 +27,39 @@ namespace BOOM{
        : public GaussianVarSampler
    {
     public:
-     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                 Ptr<GammaModelBase>,
+     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
+                                 Ptr<GammaModelBase> siginv_prior,
                                  RNG &seeding_rng = GlobalRng::rng);
-     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
+     ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
                                  double df, double sigma_guess,
                                  RNG &seeding_rng = GlobalRng::rng);
 
      ZeroMeanGaussianConjSampler * clone()const;
-     // The posterior mode is with respect to d sigsq, not d siginv.
+
+     // The posterior mode is with respect to sigma^2, not 1 / sigma^2.
      void find_posterior_mode(double epsilon = 1e-5) override;
      bool can_find_posterior_mode() const override {
        return true;
      }
 
+     // Returns the log posterior with respect to sigma^2, including
+     // derivatives with respect to sigma^2.
+     // Args:
+     //   sigsq:  The value of the variance parameter at which to evaluate the log density.
+     //   d1: Input value is not used.  If nd > 0 then on output d1
+     //     contains the first derivative of log density with respect
+     //     to sigma^2.
+     //   d2: Input value is not used.  If nd > 1 then on output d2
+     //     contains the second derivative of log density with respect
+     //     to sigma^2.
+     // Returns:
+     //   The un-normalized log posterior density (log likelihood +
+     //   log prior) evaluated at sigsq.
+     double log_posterior(double sigsq, double &d1, double &d2, uint nd) const;
+
     private:
-     ZeroMeanGaussianModel * mod;
+     ZeroMeanGaussianModel * model_;
    };
+
 }  // namespace BOOM
 #endif // BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_

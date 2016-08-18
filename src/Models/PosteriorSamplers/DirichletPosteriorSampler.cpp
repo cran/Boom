@@ -87,7 +87,8 @@ namespace BOOM{
       if (n > 1) {
         std::vector<std::shared_ptr<DirichletSampler::DirichletSamplerImpl>>
             other_implementations(impl);
-        other_implementations.erase(impl.begin() + which_sampler);
+        other_implementations.erase(other_implementations.begin()
+                                    + which_sampler);
         Vector other_weights = weights;
         other_weights.erase(other_weights.begin() + which_sampler);
         draw_impl(other_implementations, other_weights);

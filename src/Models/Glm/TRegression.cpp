@@ -21,7 +21,7 @@
 #include <Models/ScaledChisqModel.hpp>
 #include <Models/Glm/WeightedRegressionModel.hpp>
 
-#include <LinAlg/Types.hpp>
+
 #include <distributions.hpp>
 #include <numopt.hpp>
 

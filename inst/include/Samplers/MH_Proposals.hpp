@@ -21,7 +21,6 @@
 #include <Samplers/Sampler.hpp>
 #include <cpputil/Ptr.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
 
 namespace BOOM{
   // ======================================================================
@@ -29,19 +28,16 @@ namespace BOOM{
   // MetropolisHastings sampler
   class MH_Proposal : private RefCounted{
   public:
-    MH_Proposal(RNG &seeding_rng);
+    MH_Proposal();
     ~MH_Proposal() override{}
-    virtual Vector draw(const Vector &old)const=0;
-    virtual double logf(const Vector &x, const Vector &old)const=0;
-    virtual bool sym()const=0;  // logf(x|old)== logf(old|x)
+    virtual Vector draw(const Vector &old, RNG *rng) const = 0;
+    virtual double logf(const Vector &x, const Vector &old) const = 0;
+    virtual bool sym() const = 0;  // logf(x|old)== logf(old|x)
 
-    friend void intrusive_ptr_add_ref(MH_Proposal *s){s->up_count();}
-    friend void intrusive_ptr_release(MH_Proposal *s){
-      s->down_count(); if(s->ref_count()==0) delete s;}
+    friend void intrusive_ptr_add_ref(MH_Proposal *s) {s->up_count();}
+    friend void intrusive_ptr_release(MH_Proposal *s) {
+      s->down_count(); if(s->ref_count() == 0) delete s;}
 
-    RNG & rng()const{return rng_;}
-   private:
-    mutable RNG rng_;
   };
   // ======================================================================
   // Multivariate T proposal for Metropolis-Hastings samplers.  This
@@ -51,16 +47,15 @@ namespace BOOM{
   // infinity.
   class MvtMhProposal : public MH_Proposal{
    public:
-    MvtMhProposal(const SpdMatrix & Ivar, double nu,
-                  RNG & seeding_rng = GlobalRng::rng);
-    Vector draw(const Vector & old)const override;
-    double logf(const Vector & x, const Vector & old)const override;
-    virtual const Vector & mu(const Vector &old)const=0;
+    MvtMhProposal(const SpdMatrix & Ivar, double nu);
+    Vector draw(const Vector & old, RNG *rng) const override;
+    double logf(const Vector & x, const Vector & old) const override;
+    virtual const Vector & mu(const Vector &old) const = 0;
     void set_ivar(const SpdMatrix & Siginv);
     void set_var(const SpdMatrix & Sigma);
     void set_nu(double nu);
-    uint dim()const;
-    const SpdMatrix & ivar()const{return siginv_;}
+    uint dim() const;
+    const SpdMatrix & ivar() const {return siginv_;}
    private:
     SpdMatrix siginv_;
     double ldsi_;
@@ -72,23 +67,21 @@ namespace BOOM{
 
   class MvtIndepProposal : public MvtMhProposal{
    public:
-    MvtIndepProposal(const Vector & mu, const SpdMatrix & Ivar, double nu,
-                     RNG & seeding_rng = GlobalRng::rng);
-    bool sym()const override{return false;}
-    const Vector & mu(const Vector &)const override{return mu_;}
+    MvtIndepProposal(const Vector & mu, const SpdMatrix & Ivar, double nu);
+    bool sym() const override{return false;}
+    const Vector & mu(const Vector &) const override{return mu_;}
     void set_mu(const Vector & mu);
     // the name 'mode' is used because 'mu' is taken
-    const Vector & mode()const{return mu_;}
+    const Vector & mode() const {return mu_;}
    private:
     Vector mu_;
   };
 
   class MvtRwmProposal : public MvtMhProposal{
    public:
-    MvtRwmProposal(const SpdMatrix &Ivar, double nu,
-                   RNG & seeding_rng = GlobalRng::rng);
-    bool sym()const override{return true;}
-    const Vector & mu(const Vector & old)const override{return old;}
+    MvtRwmProposal(const SpdMatrix &Ivar, double nu);
+    bool sym() const override{return true;}
+    const Vector & mu(const Vector & old) const override{return old;}
    private:
   };
 
@@ -110,31 +103,26 @@ namespace BOOM{
   // scalar proposals for Metropolis-Hastings algorithms
   class MH_ScalarProposal : private RefCounted{
   public:
-    MH_ScalarProposal(RNG & seeding_rng = GlobalRng::rng);
-    ~MH_ScalarProposal() override{}
-    virtual double draw(double old)const=0;
-    virtual double logf(double x, double old)const=0;
-    virtual bool sym()const=0;
+    virtual ~MH_ScalarProposal() {}
+    virtual double draw(double old, RNG *rng) const = 0;
+    virtual double logf(double x, double old) const = 0;
+    virtual bool sym() const = 0;
 
-    friend void intrusive_ptr_add_ref(MH_ScalarProposal *s){s->up_count();}
-    friend void intrusive_ptr_release(MH_ScalarProposal *s){
-      s->down_count(); if(s->ref_count()==0) delete s;}
-    RNG & rng()const{return rng_;}
-   private:
-    mutable RNG rng_;
+    friend void intrusive_ptr_add_ref(MH_ScalarProposal *s) {s->up_count();}
+    friend void intrusive_ptr_release(MH_ScalarProposal *s) {
+      s->down_count(); if(s->ref_count() == 0) delete s;}
   };
   // ----------------------------------------------------------------------
   class TScalarMhProposal : public MH_ScalarProposal{
    public:
-    TScalarMhProposal(double sig, double nu,
-                      RNG & seeding_rng = GlobalRng::rng);
-    virtual double mu(double old)const=0;
-    double draw(double old)const override;
-    double logf(double x, double old)const override;
-    void set_sigma(double sig){sig_ = sig;}
-    void set_nu(double nu){nu_ = nu;}
-    double sigma()const{return sig_;}
-    double nu()const{return nu_;}
+    TScalarMhProposal(double sig, double nu);
+    virtual double mu(double old) const = 0;
+    double draw(double old, RNG *rng) const override;
+    double logf(double x, double old) const override;
+    void set_sigma(double sig) {sig_ = sig;}
+    void set_nu(double nu) {nu_ = nu;}
+    double sigma() const {return sig_;}
+    double nu() const {return nu_;}
    private:
     double sig_;
     double nu_;
@@ -142,39 +130,36 @@ namespace BOOM{
   // ----------------------------------------------------------------------
   class TScalarRwmProposal : public TScalarMhProposal{
    public:
-    TScalarRwmProposal(double sig, double nu,
-                       RNG & seeding_rng = GlobalRng::rng)
-        : TScalarMhProposal(sig, nu, seeding_rng)
+    TScalarRwmProposal(double sig, double nu)
+        : TScalarMhProposal(sig, nu)
     {}
-    double mu(double old)const override{return old;}
-    bool sym()const override{return true;}
+    double mu(double old) const override{return old;}
+    bool sym() const override{return true;}
   };
   // ----------------------------------------------------------------------
   class TScalarIndepProposal : public TScalarMhProposal{
    public:
-    TScalarIndepProposal(double mu, double sigma, double nu,
-                         RNG & seeding_rng = GlobalRng::rng)
-        : TScalarMhProposal(sigma,nu, seeding_rng),
+    TScalarIndepProposal(double mu, double sigma, double nu)
+        : TScalarMhProposal(sigma,nu),
           mu_(mu)
     {}
-    double mu(double)const override{return mu_;}
-    bool sym()const override{return false;}
+    double mu(double) const override{return mu_;}
+    bool sym() const override{return false;}
    private:
     double mu_;
   };
   // ----------------------------------------------------------------------
   class GaussianScalarRwmProposal : public TScalarRwmProposal{
    public:
-    GaussianScalarRwmProposal(double sigma, RNG & seeding_rng = GlobalRng::rng)
-        : TScalarRwmProposal(sigma, -1, seeding_rng)
+    GaussianScalarRwmProposal(double sigma)
+        : TScalarRwmProposal(sigma, -1)
     {}
   };
   // ----------------------------------------------------------------------
   class GaussianScalarIndepProposal : public TScalarIndepProposal{
    public:
-    GaussianScalarIndepProposal(double mu, double sigma,
-                                RNG & seeding_rng = GlobalRng::rng)
-        : TScalarIndepProposal(mu, sigma, -1, seeding_rng)
+    GaussianScalarIndepProposal(double mu, double sigma)
+        : TScalarIndepProposal(mu, sigma, -1)
     {}
   };
 

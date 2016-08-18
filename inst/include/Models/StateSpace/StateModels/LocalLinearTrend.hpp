@@ -36,29 +36,38 @@ namespace BOOM{
     LocalLinearTrendStateModel * clone() const override;
 
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
-    uint state_dimension()const override{return 2;}
+                       const ConstVectorView now,
+                       int time_now) override;
+    uint state_dimension() const override {return 2;}
+    uint state_error_dimension() const override {return 2;}
 
-    void simulate_state_error(VectorView eta, int t)const override;
+    void simulate_state_error(VectorView eta, int t) const override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
-    SparseVector observation_matrix(int t)const override;
+    SparseVector observation_matrix(int t) const override;
 
-    Vector initial_state_mean()const override;
+    Vector initial_state_mean() const override;
     void set_initial_state_mean(const Vector &v);
-    SpdMatrix initial_state_variance()const override;
+    SpdMatrix initial_state_variance() const override;
     void set_initial_state_variance(const SpdMatrix &V);
 
     void set_Sigma(const SpdMatrix &sigma) override;
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
    private:
     void check_dim(const ConstVectorView &)const;
 
     SparseVector observation_matrix_;
     Ptr<LocalLinearTrendMatrix> state_transition_matrix_;
     Ptr<DenseSpd> state_variance_matrix_;
+    Ptr<IdentityMatrix> state_error_expander_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
   };

@@ -18,7 +18,7 @@
 
 #include <Models/Glm/Glm.hpp>
 #include <distributions.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <sstream>
 #include <cpputil/report_error.hpp>
 

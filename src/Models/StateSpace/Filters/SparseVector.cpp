@@ -152,8 +152,8 @@ namespace BOOM{
     Matrix ans(x.size(), this->size(), 0.0);
     for (const auto &el : elements_) {
       int i = el.first;
-      double y = el.second;
-      ans.col(i) = x * y * scale;
+      ans.col(i) = x;
+      ans.col(i) *= (el.second * scale);
     }
     return ans;
   }

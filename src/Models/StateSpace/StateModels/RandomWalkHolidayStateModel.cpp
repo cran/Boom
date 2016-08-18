@@ -19,6 +19,8 @@
 #include <Models/StateSpace/StateModels/Holiday.hpp>
 #include <Models/StateSpace/StateModels/RandomWalkHolidayStateModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/report_error.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM {
   typedef RandomWalkHolidayStateModel RWHSM;
@@ -80,6 +82,14 @@ namespace BOOM {
     return zero_state_variance_matrix_;
   }
 
+  Ptr<SparseMatrixBlock> RWHSM::state_error_expander(int t) const {
+    return state_transition_matrix(t);
+  }
+
+  Ptr<SparseMatrixBlock> RWHSM::state_error_variance(int t) const {
+    return state_variance_matrix(t);
+  }
+
   SparseVector RWHSM::observation_matrix(int t)const{
     Date now = time_zero_ + t;
     SparseVector ans(state_dimension());
@@ -105,6 +115,22 @@ namespace BOOM {
   SpdMatrix RWHSM::initial_state_variance()const{
     return initial_state_variance_;
   }
+
+  void RWHSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (state_error_mean.size() != 1
+        || state_error_variance.nrow() != 1
+        || state_error_variance.ncol() != 1) {
+      report_error("Wrong size argument to RandomWalkHolidayStateModel::"
+                   "update_complete_data_sufficient_statistics");
+    }
+    double mean = state_error_mean[0];
+    double var = state_error_variance(0, 0);
+    suf()->update_expected_value(1.0, mean, var + square(mean));
+  }
+
 
   void RWHSM::set_initial_state_mean(const Vector &v){
     initial_state_mean_ = v;

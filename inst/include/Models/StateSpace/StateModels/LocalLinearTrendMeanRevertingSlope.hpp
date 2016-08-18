@@ -44,13 +44,14 @@ namespace BOOM{
     LocalLinearTrendMeanRevertingSlopeMatrix(
         const LocalLinearTrendMeanRevertingSlopeMatrix &rhs);
     LocalLinearTrendMeanRevertingSlopeMatrix * clone() const override;
-    int nrow()const override{return 3;}
-    int ncol()const override{return 3;}
-    void multiply(VectorView lhs, const ConstVectorView &rhs)const override;
-    void Tmult(VectorView lhs, const ConstVectorView &rhs)const override;
-    void multiply_inplace(VectorView x)const override;
-    void add_to(SubMatrix block)const override;
-    Matrix dense()const override;
+    int nrow() const override {return 3;}
+    int ncol() const override {return 3;}
+    void multiply(VectorView lhs, const ConstVectorView &rhs) const override;
+    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override;
+    void multiply_inplace(VectorView x) const override;
+    void add_to(SubMatrix block) const override;
+    Mat dense() const override;
+
    private:
     Ptr<UnivParams> phi_;
   };
@@ -62,6 +63,11 @@ namespace BOOM{
   //     alpha[t] = (mu[t], delta[t], D)
   // Here D is the time-invariant mean parameter of an AR1 model for
   // which phi is the AR1 coefficient.
+  //
+  // The error expander is
+  //   | 1 0 |
+  //   | 0 1 |
+  //   | 0 0 |
   class LocalLinearTrendMeanRevertingSlopeStateModel
       : public StateModel,
         public CompositeParamPolicy,
@@ -77,22 +83,30 @@ namespace BOOM{
     LocalLinearTrendMeanRevertingSlopeStateModel * clone() const override;
 
     void clear_data() override;
-
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
+                       const ConstVectorView now,
+                       int time_now) override;
     void observe_initial_state(const ConstVectorView &state) override;
-    uint state_dimension()const override{return 3;}
+    uint state_dimension() const override {return 3;}
+    uint state_error_dimension() const override {return 2;}
 
-    void simulate_state_error(VectorView eta, int t)const override;
+    // This model throws, because the AR1 state model for the slope
+    // cannot be part of an EM algorithm.
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    void simulate_state_error(VectorView eta, int t) const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
-    SparseVector observation_matrix(int t)const override;
+    SparseVector observation_matrix(int t) const override;
+    Vector initial_state_mean() const override;
+    SpdMatrix initial_state_variance() const override;
 
-    Vector initial_state_mean()const override;
-    SpdMatrix initial_state_variance()const override;
     void set_initial_level_mean(double level_mean);
     void set_initial_level_sd(double level_sd);
     void set_initial_slope_mean(double slope_mean);
@@ -101,7 +115,7 @@ namespace BOOM{
     void simulate_initial_state(VectorView state)const override;
 
    private:
-    void check_dim(const ConstVectorView &)const;
+    void check_dim(const ConstVectorView &) const;
     std::vector<Ptr<UnivParams> > get_variances();
     Ptr<ZeroMeanGaussianModel> level_;
     Ptr<NonzeroMeanAr1Model> slope_;
@@ -109,11 +123,12 @@ namespace BOOM{
     SparseVector observation_matrix_;
     Ptr<LocalLinearTrendMeanRevertingSlopeMatrix> state_transition_matrix_;
     Ptr<UpperLeftDiagonalMatrix> state_variance_matrix_;
+    Ptr<ZeroPaddedIdentityMatrix> state_error_expander_;
+    Ptr<UpperLeftDiagonalMatrix> state_error_variance_;
     double initial_level_mean_;
     double initial_slope_mean_;
     SpdMatrix initial_state_variance_;
   };
 
-
-}
-#endif // BOOM_LOCAL_LINEAR_TREND_MEAN_REVERTING_SLOPE_STATE_MODEL_HPP_
+}  // namespace BOOM
+#endif  // BOOM_LOCAL_LINEAR_TREND_MEAN_REVERTING_SLOPE_STATE_MODEL_HPP_

@@ -16,7 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <LinAlg/Types.hpp>
+
 #include <Models/ModelTypes.hpp>
 #include <Models/Sufstat.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>

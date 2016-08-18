@@ -16,7 +16,6 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Sufstat.hpp>
-#include <cpputil/ThrowException.hpp>
 
 namespace BOOM{
   void intrusive_ptr_add_ref(Sufstat *m){ m->up_count(); }

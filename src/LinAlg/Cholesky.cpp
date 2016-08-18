@@ -30,7 +30,8 @@ extern "C"{
    *  positive definite matrix A using the Cholesky factorization
    *  A = U**T*U or A = L*L**T computed by DPOTRF.
    */
-  void dpotrs_(const char *, int *, int *, const double *, int *, double *, int *, int*);
+  void dpotrs_(const char *, int *, int *, const double *, int *, double *,
+               int *, int*);
 
   /*  DPOTRI computes the inverse of a real symmetric positive definite
    *  matrix A using the Cholesky factorization A = U**T*U or A = L*L**T

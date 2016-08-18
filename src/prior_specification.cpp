@@ -56,7 +56,14 @@ namespace BOOM{
     NormalPrior::NormalPrior(SEXP prior)
         : mu_(Rf_asReal(getListElement(prior, "mu"))),
           sigma_(Rf_asReal(getListElement(prior, "sigma"))),
-          initial_value_(Rf_asReal(getListElement(prior, "initial.value"))) {}
+          initial_value_(Rf_asReal(getListElement(prior, "initial.value"))) {
+      int is_fixed = Rf_asLogical(getListElement(prior, "fixed"));
+      if (is_fixed == 1) fixed_ = true;
+      else if (is_fixed == 0) fixed_ = false;
+      else {
+        report_error("Strange value of 'fixed' in NormalPrior constructor.");
+      }
+    }
 
     std::ostream & NormalPrior::print(std::ostream &out)const{
       out << "mu =     " << mu_ << std::endl

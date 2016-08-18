@@ -24,6 +24,7 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Glm/GlmCoefs.hpp>
 #include <Models/Glm/Glm.hpp>
+#include <Models/Hierarchical/HierarchicalZeroInflatedGammaModel.hpp>
 
 namespace BOOM {
 
@@ -74,6 +75,9 @@ namespace BOOM {
     double zero_threshold() const { return zero_threshold_; }
 
     double sim(const Vector &x, RNG &rng = BOOM::GlobalRng::rng) const;
+
+    HierarchicalZeroInflatedGammaData simulate_sufficient_statistics(
+        const Vector &x, int64_t n, RNG &rng = BOOM::GlobalRng::rng) const;
 
    private:
     double zero_threshold_;

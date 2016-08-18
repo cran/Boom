@@ -19,7 +19,7 @@
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 
@@ -36,8 +36,8 @@ namespace BOOM{
     return std::isfinite(f) ? f : big;}
 
   inline bool keep_going(double ans, double ans2,
- 			 double abstol, double reltol,
- 			 int maxit, int fit){
+                         double abstol, double reltol,
+                         int maxit, int fit){
     if(fit>=maxit) return true;
     double da = ans2-ans;
     double abar = fabs(ans2+ans);
@@ -47,9 +47,9 @@ namespace BOOM{
   }
 
   double nelder_mead_driver(Vector & Bvec, Vector &X, Target target,
- 			    double abstol, double intol, double alpha,
- 			    double bet, double gamm,
- 			    bool trace, int &fncount, int maxit){
+                            double abstol, double intol, double alpha,
+                            double bet, double gamm,
+                            bool trace, int &fncount, int maxit){
     double ans, ans2;
     int restarts(0);
     int maxrestart(20);
@@ -59,13 +59,13 @@ namespace BOOM{
       if(restarts > maxrestart) report_error("too many restarts");
       fcount=0;
       ans = nelder_mead(Bvec, X, target, abstol, intol, alpha,
- 			bet, gamm, trace, fcount, maxit);
+                        bet, gamm, trace, fcount, maxit);
       Bvec = X;
       fncount+=fcount;
       X=0;
       fcount=0;
       ans2 = nelder_mead(Bvec, X, target, abstol, intol, alpha,
- 			 bet, gamm, trace, fcount, maxit);
+                         bet, gamm, trace, fcount, maxit);
       Bvec = X;
       fncount+=fcount;
     }while(keep_going(ans, ans2, abstol, intol, maxit, fcount));
@@ -74,9 +74,9 @@ namespace BOOM{
 
 
   double nelder_mead(Vector & Bvec, Vector &X, Target target,
- 		     double abstol, double intol, double alpha,
- 		     double bet, double gamm,
- 		     bool, int &fncount, int maxit) {
+                     double abstol, double intol, double alpha,
+                     double bet, double gamm,
+                     bool, int &fncount, int maxit) {
 
     int n = Bvec.size();
     char action[50];
@@ -118,154 +118,154 @@ namespace BOOM{
       C = n + 2;
       P(n1 - 1,0) = f;
       for (i = 0; i < n; i++)
- 	P(i,0) = Bvec[i];
+        P(i,0) = Bvec[i];
 
       L = 1;
       size = 0.0;
 
       step = 0.0;
       for (i = 0; i < n; i++) {
- 	if (0.1 * fabs(Bvec[i]) > step)
- 	  step = 0.1 * fabs(Bvec[i]);
+        if (0.1 * fabs(Bvec[i]) > step)
+          step = 0.1 * fabs(Bvec[i]);
       }
       if (step == 0.0) step = 0.1;
       //      if (trace) Rprintf("Stepsize computed as %f\n", step);
       for (j = 2; j <= n1; j++) {
- 	strcpy(action, "BUILD          ");
- 	for (i = 0; i < n; i++)
- 	  P(i,j-1) = Bvec[i];
+        strcpy(action, "BUILD          ");
+        for (i = 0; i < n; i++)
+          P(i,j-1) = Bvec[i];
 
- 	trystep = step;
- 	while (P(j - 2,j - 1) == Bvec[j - 2]) {
- 	  P(j - 2,j - 1) = Bvec[j - 2] + trystep;
- 	  trystep *= 10;
- 	}
- 	size += trystep;
+        trystep = step;
+        while (P(j - 2,j - 1) == Bvec[j - 2]) {
+          P(j - 2,j - 1) = Bvec[j - 2] + trystep;
+          trystep *= 10;
+        }
+        size += trystep;
       }
       oldsize = size;
       calcvert = true;
       shrinkfail = false;
       do {
- 	if (calcvert) {
- 	  for (j = 0; j < n1; j++) {
- 	    if (j + 1 != L) {
- 	      for (i = 0; i < n; i++)
- 		Bvec[i] = P(i,j);
- 	      //	      f = fminfn(n, Bvec, ex);
- 	      f = Myf(Bvec,target);
- 	      funcount++;
- 	      P(n1 - 1,j) = f;
- 	    }
- 	  }
- 	  calcvert = false;
- 	}
+        if (calcvert) {
+          for (j = 0; j < n1; j++) {
+            if (j + 1 != L) {
+              for (i = 0; i < n; i++)
+                Bvec[i] = P(i,j);
+              //              f = fminfn(n, Bvec, ex);
+              f = Myf(Bvec,target);
+              funcount++;
+              P(n1 - 1,j) = f;
+            }
+          }
+          calcvert = false;
+        }
 
- 	VL = P(n1 - 1,L - 1);
- 	VH = VL;
- 	H = L;
+        VL = P(n1 - 1,L - 1);
+        VH = VL;
+        H = L;
 
- 	for (j = 1; j <= n1; j++) {
- 	  if (j != L) {
- 	    f = P(n1 - 1,j - 1);
- 	    if (f < VL) {
- 	      L = j;
- 	      VL = f;
- 	    }
- 	    if (f > VH) {
- 	      H = j;
- 	      VH = f;
- 	    }
- 	  }
- 	}
+        for (j = 1; j <= n1; j++) {
+          if (j != L) {
+            f = P(n1 - 1,j - 1);
+            if (f < VL) {
+              L = j;
+              VL = f;
+            }
+            if (f > VH) {
+              H = j;
+              VH = f;
+            }
+          }
+        }
 
- 	if (VH > VL + convtol && VL > abstol) {
- 	  // sprintf(tstr, "%5d", funcount);
- 	  //	  if (trace) Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
+        if (VH > VL + convtol && VL > abstol) {
+          // sprintf(tstr, "%5d", funcount);
+          //      if (trace) Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
 
- 	  for (i = 0; i < n; i++) {
- 	    temp = -P(i,H - 1);
- 	    for (j = 0; j < n1; j++)
- 	      temp += P(i,j);
- 	    P(i,C - 1) = temp / n;
- 	  }
- 	  for (i = 0; i < n; i++)
- 	    Bvec[i] = (1.0 + alpha) * P(i,C - 1) - alpha * P(i,H - 1);
- 	  //	  f = fminfn(n, Bvec, ex);
- 	  //	  if (!R_FINITE(f)) f = big;
- 	  f = Myf(Bvec,target);
- 	  funcount++;
- 	  strcpy(action, "REFLECTION     ");
- 	  VR = f;
- 	  if (VR < VL) {
- 	    P(n1 - 1,C - 1) = f;
- 	    for (i = 0; i < n; i++) {
- 	      f = gamm * Bvec[i] + (1 - gamm) * P(i,C - 1);
- 	      P(i,C-1) = Bvec[i];
- 	      Bvec[i] = f;
- 	    }
- 	    f = Myf(Bvec,target);
-	    // 	    f = fminfn(n, Bvec, ex);
-	    // 	    if (!R_FINITE(f)) f = big;
- 	    funcount++;
- 	    if (f < VR) {
- 	      for (i = 0; i < n; i++)
- 		P(i,H-1) = Bvec[i];
- 	      P(n1 - 1,H - 1) = f;
- 	      strcpy(action, "EXTENSION      ");
- 	    } else {
- 	      for (i = 0; i < n; i++)
- 		P(i,H-1) = P(i,C-1);
- 	      P(n1 - 1,H - 1) = VR;
- 	    }
- 	  } else {
- 	    strcpy(action, "HI-REDUCTION   ");
- 	    if (VR < VH) {
- 	      for (i = 0; i < n; i++)
- 		P(i,H-1) = Bvec[i];
- 	      P(n1 - 1,H - 1) = VR;
- 	      strcpy(action, "LO-REDUCTION   ");
- 	    }
+          for (i = 0; i < n; i++) {
+            temp = -P(i,H - 1);
+            for (j = 0; j < n1; j++)
+              temp += P(i,j);
+            P(i,C - 1) = temp / n;
+          }
+          for (i = 0; i < n; i++)
+            Bvec[i] = (1.0 + alpha) * P(i,C - 1) - alpha * P(i,H - 1);
+          //      f = fminfn(n, Bvec, ex);
+          //      if (!R_FINITE(f)) f = big;
+          f = Myf(Bvec,target);
+          funcount++;
+          strcpy(action, "REFLECTION     ");
+          VR = f;
+          if (VR < VL) {
+            P(n1 - 1,C - 1) = f;
+            for (i = 0; i < n; i++) {
+              f = gamm * Bvec[i] + (1 - gamm) * P(i,C - 1);
+              P(i,C-1) = Bvec[i];
+              Bvec[i] = f;
+            }
+            f = Myf(Bvec,target);
+            //      f = fminfn(n, Bvec, ex);
+            //      if (!R_FINITE(f)) f = big;
+            funcount++;
+            if (f < VR) {
+              for (i = 0; i < n; i++)
+                P(i,H-1) = Bvec[i];
+              P(n1 - 1,H - 1) = f;
+              strcpy(action, "EXTENSION      ");
+            } else {
+              for (i = 0; i < n; i++)
+                P(i,H-1) = P(i,C-1);
+              P(n1 - 1,H - 1) = VR;
+            }
+          } else {
+            strcpy(action, "HI-REDUCTION   ");
+            if (VR < VH) {
+              for (i = 0; i < n; i++)
+                P(i,H-1) = Bvec[i];
+              P(n1 - 1,H - 1) = VR;
+              strcpy(action, "LO-REDUCTION   ");
+            }
 
- 	    for (i = 0; i < n; i++)
- 	      Bvec[i] = (1 - bet) * P(i,H-1) + bet * P(i,C-1);
- 	    f = Myf(Bvec,target);
-	    // 	    f = fminfn(n, Bvec, ex);
-	    // 	    if (!R_FINITE(f)) f = big;
- 	    funcount++;
+            for (i = 0; i < n; i++)
+              Bvec[i] = (1 - bet) * P(i,H-1) + bet * P(i,C-1);
+            f = Myf(Bvec,target);
+            //      f = fminfn(n, Bvec, ex);
+            //      if (!R_FINITE(f)) f = big;
+            funcount++;
 
- 	    if (f < P(n1 - 1,H - 1)) {
- 	      for (i = 0; i < n; i++)
- 		P(i,H-1) = Bvec[i];
- 	      P(n1 - 1,H - 1) = f;
- 	    } else {
- 	      if (VR >= VH) {
- 		strcpy(action, "SHRINK         ");
- 		calcvert = true;
- 		size = 0.0;
- 		for (j = 0; j < n1; j++) {
- 		  if (j + 1 != L) {
- 		    for (i = 0; i < n; i++) {
- 		      P(i,j) = bet * (P(i,j) - P(i,L - 1))
- 			+ P(i,L - 1);
- 		      size += fabs(P(i,j) - P(i,L - 1));
- 		    }
- 		  }
- 		}
- 		if (size < oldsize) {
- 		  shrinkfail = false;
- 		  oldsize = size;
- 		} else {
-		  // 		  if (trace)
-		  // 		    Rprintf("Polytope size measure not decreased in shrink\n");
- 		  shrinkfail = true;
- 		}
- 	      }
- 	    }
- 	  }
- 	}
+            if (f < P(n1 - 1,H - 1)) {
+              for (i = 0; i < n; i++)
+                P(i,H-1) = Bvec[i];
+              P(n1 - 1,H - 1) = f;
+            } else {
+              if (VR >= VH) {
+                strcpy(action, "SHRINK         ");
+                calcvert = true;
+                size = 0.0;
+                for (j = 0; j < n1; j++) {
+                  if (j + 1 != L) {
+                    for (i = 0; i < n; i++) {
+                      P(i,j) = bet * (P(i,j) - P(i,L - 1))
+                        + P(i,L - 1);
+                      size += fabs(P(i,j) - P(i,L - 1));
+                    }
+                  }
+                }
+                if (size < oldsize) {
+                  shrinkfail = false;
+                  oldsize = size;
+                } else {
+                  //              if (trace)
+                  //                Rprintf("Polytope size measure not decreased in shrink\n");
+                  shrinkfail = true;
+                }
+              }
+            }
+          }
+        }
 
       } while (!(VH <= VL + convtol || VL <= abstol ||
- 		 shrinkfail || funcount > maxit));
+                 shrinkfail || funcount > maxit));
 
     }
 
@@ -279,4 +279,4 @@ namespace BOOM{
     fncount = funcount;
     return Fmin;
   }
-}
+}  // namespace BOOM

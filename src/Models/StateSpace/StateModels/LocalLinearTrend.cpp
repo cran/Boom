@@ -28,6 +28,7 @@ namespace BOOM{
         observation_matrix_(2),
         state_transition_matrix_(new LocalLinearTrendMatrix),
         state_variance_matrix_(new DenseSpd(ZeroMeanMvnModel::Sigma())),
+        state_error_expander_(new IdentityMatrix(2)),
         initial_state_mean_(2, 0.0),
         initial_state_variance_(2)
   {
@@ -40,6 +41,7 @@ namespace BOOM{
         observation_matrix_(rhs.observation_matrix_),
         state_transition_matrix_(rhs.state_transition_matrix_),
         state_variance_matrix_(rhs.state_variance_matrix_->clone()),
+        state_error_expander_(rhs.state_error_expander_->clone()),
         initial_state_mean_(rhs.initial_state_mean_),
         initial_state_variance_(rhs.initial_state_variance_)
   {}
@@ -80,6 +82,12 @@ namespace BOOM{
   Ptr<SparseMatrixBlock> LLTSM::state_variance_matrix(int t)const{
     return state_variance_matrix_;}
 
+  Ptr<SparseMatrixBlock> LLTSM::state_error_expander(int t)const{
+    return state_error_expander_;}
+
+  Ptr<SparseMatrixBlock> LLTSM::state_error_variance(int t)const{
+    return state_variance_matrix(t);}
+
   SparseVector LLTSM::observation_matrix(int)const{
     return observation_matrix_; }
 
@@ -95,4 +103,17 @@ namespace BOOM{
     state_variance_matrix_->set_matrix(Sigma);
   }
 
-}
+  void LLTSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (state_error_mean.size() != 2
+        || state_error_variance.nrow() != 2
+        || state_error_variance.ncol() != 2) {
+      suf()->update_expected_value(
+          1.0,
+          state_error_mean,
+          state_error_variance + outer(state_error_mean));
+    }
+  }
+}  // namespace BOOM

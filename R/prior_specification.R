@@ -5,6 +5,25 @@ SdPrior <- function(sigma.guess,
                     upper.limit = Inf) {
   ## Generates an object of class SdPrior that can be used as an input
   ## to a Bayesian model for a standard deviation paramter.
+  ##
+  ## Args:
+  ##   sigma.guess: An a priori guess at the value of the standard
+  ##     deviation modeled by this distribution.
+  ##   sample.size: The number of observations worth of weight to give
+  ##     to sigma.guess.
+  ##   initial.value: The initial value to use (in an MCMC algorithm)
+  ##     for a deviate modeled by this distribution.
+  ##   fixed: Should the deviate modeled by this distribution be fixed
+  ##     at its initial value?  (Used for debugging by some code.  Not
+  ##     universal.)
+  ##   upper.limit: The largest acceptable value for the standard
+  ##     deviation modeled by this distribution.  May be Inf.
+  stopifnot(is.numeric(sigma.guess), length(sigma.guess) == 1, sigma.guess > 0)
+  stopifnot(is.numeric(sample.size), length(sample.size) == 1, sample.size > 0)
+  stopifnot(is.numeric(initial.value), length(initial.value) == 1,
+            initial.value > 0)
+  stopifnot(is.logical(fixed), length(fixed) == 1)
+  stopifnot(is.numeric(upper.limit), length(upper.limit) == 1)
   ans <- list(prior.guess = sigma.guess,
               prior.df = sample.size,
               initial.value = initial.value,
@@ -14,10 +33,26 @@ SdPrior <- function(sigma.guess,
   return(ans)
 }
 
-NormalPrior <- function(mu, sigma, initial.value = mu) {
+NormalPrior <- function(mu, sigma, initial.value = mu, fixed = FALSE) {
   ## Returns a list with the information needed to specify a Gaussian
   ## prior on a scalar parameter.
-  ans <- list(mu = mu, sigma = sigma, initial.value = initial.value)
+  ##
+  ## Args:
+  ##   mu:  Mean of the distribution.
+  ##   sigma:  Standard deviation.
+  ##   initial.value: The initial value of the deviate to be modeled
+  ##     by this distribution in an MCMC algorithm.
+  ##   fixed: Should the deviate modeled by this distribution be fixed
+  ##     at its initial value?  (Used for debugging by some code.  Not
+  ##     universal.)
+  stopifnot(is.numeric(mu), length(mu) == 1)
+  stopifnot(is.numeric(sigma), length(sigma) == 1, sigma >= 0)
+  stopifnot(is.numeric(initial.value), length(initial.value) == 1)
+  stopifnot(is.logical(fixed), length(fixed) == 1)
+  ans <- list(mu = mu,
+              sigma = sigma,
+              initial.value = initial.value,
+              fixed = fixed)
   class(ans) <- c("NormalPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }

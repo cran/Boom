@@ -18,7 +18,7 @@
 
 #include <cmath>
 #include <distributions.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/VectorView.hpp>
 
@@ -77,12 +77,24 @@ namespace BOOM{
     }
   }
 
-  uint rmulti_mt(RNG &rng, const Vector &prob){ return rmulti_mt_impl(rng, prob); }
-  uint rmulti_mt(RNG &rng, const VectorView &prob){ return rmulti_mt_impl(rng, prob); }
-  uint rmulti_mt(RNG &rng, const ConstVectorView &prob){ return rmulti_mt_impl(rng, prob); }
+  uint rmulti_mt(RNG &rng, const Vector &prob){
+    return rmulti_mt_impl(rng, prob);
+  }
+  uint rmulti_mt(RNG &rng, const VectorView &prob){
+    return rmulti_mt_impl(rng, prob);
+  }
+  uint rmulti_mt(RNG &rng, const ConstVectorView &prob){
+    return rmulti_mt_impl(rng, prob);
+  }
 
-  uint rmulti(const Vector &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
-  uint rmulti(const VectorView &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
-  uint rmulti(const ConstVectorView &prob){return rmulti_mt_impl(GlobalRng::rng, prob);}
+  uint rmulti(const Vector &prob){
+    return rmulti_mt_impl(GlobalRng::rng, prob);
+  }
+  uint rmulti(const VectorView &prob){
+    return rmulti_mt_impl(GlobalRng::rng, prob);
+  }
+  uint rmulti(const ConstVectorView &prob){
+    return rmulti_mt_impl(GlobalRng::rng, prob);
+  }
 
-}
+}  // namespace BOOM

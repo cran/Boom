@@ -60,7 +60,7 @@ namespace BOOM{
     Matrix & operator=(const ConstSubMatrix &);
     Matrix & operator=(const double &);
 
-    bool operator==(const Matrix &)const;
+    bool operator==(const Matrix &) const;
 
     template <class FwdIt>
     FwdIt assign(FwdIt begin, FwdIt end);
@@ -78,8 +78,8 @@ namespace BOOM{
 
     // ----------- size and shape info ------------------
     uint size() const;  // number of elements in the Matrix
-    uint nrow()const ;
-    uint ncol()const ;
+    uint nrow() const ;
+    uint ncol() const ;
     bool is_sym(double tol= 1.0e-9) const;
     bool same_dim(const Matrix &A) const;
     bool is_square() const;
@@ -93,24 +93,24 @@ namespace BOOM{
     Matrix & cbind(const Vector &v);
 
     double *data();   // for sending data to LAPACK, etc
-    const double *data()const;
+    const double *data() const;
 
     //-------- subscripting, range checking can be turned off
     //-------- by defining the macro NDEBUG
     double & operator()(uint r, uint c);
     const double & operator()(uint r, uint c) const;
     double & unchecked(uint r, uint c);
-    const double & unchecked(uint r, uint c)const;
+    const double & unchecked(uint r, uint c) const;
 
     // -------- row and column operations ----------
     VectorView row(uint i);
-    ConstVectorView row(uint i)const;
+    ConstVectorView row(uint i) const;
     void set_row(uint i, const Vector &v);
     void set_row(uint i, const double *v);
     void set_row(uint i, double x);
 
     VectorView col(uint j);
-    const VectorView col(uint j)const;
+    const VectorView col(uint j) const;
     void set_col(uint j, const Vector &v);
     void set_col(uint j, const double *v);
     void set_col(uint j, double x);
@@ -118,19 +118,19 @@ namespace BOOM{
     void set_rc(uint i,  double x);  // sets row and column i to x
 
     VectorView diag();
-    ConstVectorView diag()const;
+    ConstVectorView diag() const;
     VectorView subdiag(int i);
-    ConstVectorView subdiag(int i)const;
+    ConstVectorView subdiag(int i) const;
     VectorView superdiag(int i);
-    ConstVectorView superdiag(int i)const;
+    ConstVectorView superdiag(int i) const;
     VectorView first_row();
-    ConstVectorView first_row()const;
+    ConstVectorView first_row() const;
     VectorView last_row();
-    ConstVectorView last_row()const;
+    ConstVectorView last_row() const;
     VectorView first_col();
-    ConstVectorView first_col()const;
+    ConstVectorView first_col() const;
     VectorView last_col();
-    ConstVectorView last_col()const;
+    ConstVectorView last_col() const;
 
     Matrix & set_diag(double x, bool zero_offdiag=true);
     Matrix & set_diag(const Vector &v, bool zero_offdiag=true);
@@ -138,73 +138,73 @@ namespace BOOM{
     //------  STL iteration -------------
     dVector::iterator begin();
     dVector::iterator end();
-    dVector::const_iterator begin()const;
-    dVector::const_iterator end()const;
+    dVector::const_iterator begin() const;
+    dVector::const_iterator end() const;
 
     dVector::iterator col_begin(uint i);
     dVector::iterator col_end(uint i);
-    dVector::const_iterator col_begin(uint i)const;
-    dVector::const_iterator col_end(uint i)const;
+    dVector::const_iterator col_begin(uint i) const;
+    dVector::const_iterator col_end(uint i) const;
 
     VectorViewIterator dbegin();
     VectorViewIterator dend();
-    VectorViewConstIterator dbegin()const;
-    VectorViewConstIterator dend()const;
+    VectorViewConstIterator dbegin() const;
+    VectorViewConstIterator dend() const;
 
     VectorViewIterator row_begin(uint i);
     VectorViewIterator row_end(uint i);
-    VectorViewConstIterator row_begin(uint i)const;
-    VectorViewConstIterator row_end(uint i)const;
+    VectorViewConstIterator row_begin(uint i) const;
+    VectorViewConstIterator row_end(uint i) const;
 
     //------ linear algebra -----------------
 
-    bool can_mult(const Matrix &B, const Matrix &Ans)const;
-    bool can_Tmult(const Matrix &B, const Matrix &Ans)const;
-    bool can_multT(const Matrix &B, const Matrix &Ans)const;
+    bool can_mult(const Matrix &B, const Matrix &Ans) const;
+    bool can_Tmult(const Matrix &B, const Matrix &Ans) const;
+    bool can_multT(const Matrix &B, const Matrix &Ans) const;
 
     // scal * this * B
     virtual Matrix & mult(const Matrix &B, Matrix &ans,
-                          double scal=1.0)const;
+                          double scal=1.0) const;
     // scal *this^T * B
     virtual Matrix & Tmult(const Matrix &B, Matrix &ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
     // scal * this * B^T
     virtual Matrix & multT(const Matrix &B, Matrix &ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
 
     virtual Matrix & mult(const SpdMatrix &S, Matrix & ans,
-                          double scal=1.0)const;
+                          double scal=1.0) const;
     virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
     virtual Matrix & multT(const SpdMatrix &S, Matrix & ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
     // no BLAS support for this^T * S
-    // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans)const;
+    // virtual Matrix & Tmult(const SpdMatrix &S, Matrix & ans) const;
 
     // this * B
     virtual Matrix & mult(const DiagonalMatrix &B, Matrix &ans,
-                          double scal=1.0)const;
+                          double scal=1.0) const;
     // this^T * B
     virtual Matrix & Tmult(const DiagonalMatrix &B, Matrix &ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
     // this * B^T
     virtual Matrix & multT(const DiagonalMatrix &B, Matrix &ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
 
     // this * v
     virtual Vector & mult(const Vector &v, Vector &ans,
-                          double scal=1.0)const;
+                          double scal=1.0) const;
     // this^T * v
     virtual Vector & Tmult(const Vector &v, Vector &ans,
-                           double scal=1.0)const;
+                           double scal=1.0) const;
 
     // the following functions are non-virtual, but behave virtually
     // because they call the virtual functions listed above
-    Matrix mult(const Matrix &B)const;  // this * B
-    Matrix Tmult(const Matrix &B)const; // this^T * B
-    Matrix multT(const Matrix &B)const; // this * B^T
-    Vector mult(const Vector &v)const;
-    Vector Tmult(const Vector &v)const;
+    Matrix mult(const Matrix &B) const;  // this * B
+    Matrix Tmult(const Matrix &B) const; // this^T * B
+    Matrix multT(const Matrix &B) const; // this * B^T
+    Vector mult(const Vector &v) const;
+    Vector Tmult(const Vector &v) const;
 
     Matrix Id() const;
     Matrix t() const;       // SpdMatrix and DiagonalMatrix
@@ -217,21 +217,30 @@ namespace BOOM{
     virtual Vector solve(const Vector &v) const;
     double trace() const;
     virtual double det() const;
-    Vector singular_values()const; // sorted largest to smallest
+    Vector singular_values() const; // sorted largest to smallest
     uint rank(double prop=1e-12) const;
     // 'rank' is the number of singular values at least 'prop' times
     // the largest
-    virtual Vector real_evals()const;
+    virtual Vector real_evals() const;
 
-    Matrix & add_outer(const Vector &x, const Vector &y, double w = 1.0);
-    Matrix & add_outer(const Vector &x, const VectorView &y, double w = 1.0);
-    Matrix & add_outer(const Vector &x, const ConstVectorView &y, double w = 1.0);
-    Matrix & add_outer(const VectorView &x, const Vector &y, double w = 1.0);
-    Matrix & add_outer(const VectorView &x, const VectorView &y, double w = 1.0);
-    Matrix & add_outer(const VectorView &x, const ConstVectorView &y, double w = 1.0);
-    Matrix & add_outer(const ConstVectorView &x, const Vector &y, double w = 1.0);
-    Matrix & add_outer(const ConstVectorView &x, const VectorView &y, double w = 1.0);
-    Matrix & add_outer(const ConstVectorView &x, const ConstVectorView &y, double w = 1.0);
+    Matrix & add_outer(const Vector &x, const Vector &y,
+                       double w = 1.0);
+    Matrix & add_outer(const Vector &x, const VectorView &y,
+                       double w = 1.0);
+    Matrix & add_outer(const Vector &x, const ConstVectorView &y,
+                       double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const Vector &y,
+                       double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const VectorView &y,
+                       double w = 1.0);
+    Matrix & add_outer(const VectorView &x, const ConstVectorView &y,
+                       double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const Vector &y,
+                       double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const VectorView &y,
+                       double w = 1.0);
+    Matrix & add_outer(const ConstVectorView &x, const ConstVectorView &y,
+                       double w = 1.0);
     // *this += w*x*y^T
 
     //--------  Math
@@ -251,24 +260,24 @@ namespace BOOM{
     Matrix & exp();  // in place exponentiation
     Matrix & log();  // in place logarithm
 
-    virtual double sum()const;
-    virtual double abs_norm()const;
-    virtual double sumsq()const;
-    virtual double prod()const;
-    virtual double max()const;
-    virtual double min()const;
+    virtual double sum() const;
+    virtual double abs_norm() const;
+    virtual double sumsq() const;
+    virtual double prod() const;
+    virtual double max() const;
+    virtual double min() const;
     // The value of the entry with the largest absolute value.
-    double max_abs()const;
+    double max_abs() const;
 
-    virtual ostream & display(ostream &out, int precision = 5)const;
+    virtual ostream & display(ostream &out, int precision = 5) const;
     ostream & write(ostream &, bool nl=true) const;
     istream & read(istream &);
 
    protected:
     Vector V;
     uint nr_, nc_;
-    inline uint INDX(uint i, uint j)const;
-    inline bool inrange(uint i, uint j)const;
+    inline uint INDX(uint i, uint j) const;
+    inline bool inrange(uint i, uint j) const;
   };
 
   typedef Matrix Mat;
@@ -292,7 +301,7 @@ namespace BOOM{
       return col_names_;}
 
     ostream & display(ostream &out, int precision = 5) const override;
-    Matrix drop_labels()const;
+    Matrix drop_labels() const;
 
    private:
     std::vector<std::string> row_names_;
@@ -349,9 +358,9 @@ namespace BOOM{
     Matrix diag(const Vector &v);
     Matrix diag(const VectorView &v);
 
-    inline uint Matrix::INDX(uint i, uint j)const{
+    inline uint Matrix::INDX(uint i, uint j) const {
       return  j*nr_ + i; }
-    inline bool Matrix::inrange(uint i, uint j)const{
+    inline bool Matrix::inrange(uint i, uint j) const {
       return  i< nr_ &&  j< nc_; }
     ostream & operator<<(ostream & out, const Matrix &x);
 

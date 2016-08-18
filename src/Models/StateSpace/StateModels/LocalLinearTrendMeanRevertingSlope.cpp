@@ -33,9 +33,9 @@ namespace BOOM{
         phi_(rhs.phi_)
   {}
 
-  LMAT * LMAT::clone()const{return new LMAT(*this);}
+  LMAT * LMAT::clone() const {return new LMAT(*this);}
 
-  void LMAT::multiply(VectorView lhs, const ConstVectorView &rhs)const{
+  void LMAT::multiply(VectorView lhs, const ConstVectorView &rhs) const {
     if(lhs.size()!=3){
       report_error("lhs is the wrong size in LMAT::multiply");
     }
@@ -48,7 +48,7 @@ namespace BOOM{
     lhs[2] = rhs[2];
   }
 
-  void LMAT::Tmult(VectorView lhs, const ConstVectorView &rhs)const{
+  void LMAT::Tmult(VectorView lhs, const ConstVectorView &rhs) const {
     if(lhs.size()!=3){
       report_error("lhs is the wrong size in LMAT::Tmult");
     }
@@ -61,13 +61,13 @@ namespace BOOM{
     lhs[2] = (1-phi) * rhs[1] + rhs[2];
   }
 
-  void LMAT::multiply_inplace(VectorView x)const{
+  void LMAT::multiply_inplace(VectorView x) const {
     x[0] += x[1];
     double phi = phi_->value();
     x[1] = phi*x[1] + (1-phi)*x[2];
   }
 
-  void LMAT::add_to(SubMatrix block)const{
+  void LMAT::add_to(SubMatrix block) const {
     if(block.nrow() != 3 || block.ncol() !=3){
       report_error("block is the wrong size in LMAT::add_to");
     }
@@ -99,6 +99,10 @@ namespace BOOM{
         state_transition_matrix_(new LMAT(slope_->Phi_prm())),
         state_variance_matrix_(new UpperLeftDiagonalMatrix(
             get_variances(), 3)),
+        state_error_expander_(new ZeroPaddedIdentityMatrix(
+            3, 2)),
+        state_error_variance_(new UpperLeftDiagonalMatrix(
+            get_variances(), 2)),
         initial_level_mean_(0.0),
         initial_slope_mean_(0.0),
         initial_state_variance_(3, 1.0)
@@ -131,7 +135,7 @@ namespace BOOM{
     ParamPolicy::add_model(slope_);
   }
 
-  LMSM * LMSM::clone()const{return new LMSM(*this);}
+  LMSM * LMSM::clone() const {return new LMSM(*this);}
 
   void LMSM::clear_data(){
     level_->clear_data();
@@ -156,21 +160,37 @@ namespace BOOM{
     slope_->suf()->update_raw(state[1]);
   }
 
-  void LMSM::simulate_state_error(VectorView eta, int t)const{
+  void LMSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &,
+      const ConstSubMatrix &) {
+    report_error("LocalLinearTrendMeanRevertingSlopeStateModel cannot "
+                 "be part of an EM algorithm.");
+  }
+
+  void LMSM::simulate_state_error(VectorView eta, int t) const {
     eta[0] = rnorm(0, level_->sigma());
     eta[1] = rnorm(0, slope_->sigma());
     eta[2] = 0;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_transition_matrix(int)const{
+  Ptr<SparseMatrixBlock> LMSM::state_transition_matrix(int) const {
     return state_transition_matrix_;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_variance_matrix(int)const{
+  Ptr<SparseMatrixBlock> LMSM::state_variance_matrix(int) const {
     return state_variance_matrix_;
   }
 
-  SparseVector LMSM::observation_matrix(int)const{
+  Ptr<SparseMatrixBlock> LMSM::state_error_expander(int) const {
+    return state_error_expander_;
+  }
+
+  Ptr<SparseMatrixBlock> LMSM::state_error_variance(int) const {
+    return state_error_variance_;
+  }
+
+  SparseVector LMSM::observation_matrix(int) const {
     return observation_matrix_;}
 
   Vector LMSM::initial_state_mean()const{
@@ -193,7 +213,7 @@ namespace BOOM{
   void LMSM::set_initial_slope_sd(double sd){
     initial_state_variance_(1,1) = pow(sd, 2); }
 
-  void LMSM::check_dim(const ConstVectorView &v)const{
+  void LMSM::check_dim(const ConstVectorView &v) const {
     if(v.size() != 3){
       ostringstream err;
       err << "improper dimesion of ConstVectorView v = :"
@@ -205,14 +225,14 @@ namespace BOOM{
     }
   }
 
-  std::vector<Ptr<UnivParams> > LMSM::get_variances(){
+  std::vector<Ptr<UnivParams> > LMSM::get_variances() {
     std::vector<Ptr<UnivParams> > ans(2);
     ans[0] = level_->Sigsq_prm();
     ans[1] = slope_->Sigsq_prm();
     return ans;
   }
 
-  void LMSM::simulate_initial_state(VectorView state)const{
+  void LMSM::simulate_initial_state(VectorView state) const {
     check_dim(state);
     state[0] = rnorm(initial_level_mean_, sqrt(initial_state_variance_(0,0)));
     state[1] = rnorm(initial_slope_mean_, sqrt(initial_state_variance_(1,1)));

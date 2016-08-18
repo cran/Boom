@@ -19,13 +19,13 @@
 #ifndef TARGET_FUN_H
 #define TARGET_FUN_H
 
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <boost/function.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
 
-namespace BOOM{
+namespace BOOM {
   // A suite of function object which can be passed to optimization
   // routines.
   class TargetFun : private RefCounted{
@@ -184,5 +184,5 @@ namespace BOOM{
     uint position_;
   };
 
-}
-#endif // TARGET_FUN_H
+}  // namespace BOOM
+#endif  // TARGET_FUN_H

@@ -20,7 +20,7 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cpputil/seq.hpp>
 #include <cpputil/report_error.hpp>
 

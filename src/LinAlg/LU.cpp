@@ -22,8 +22,8 @@
 
 extern "C"{
   void dgetrf_(int *, int *, double *, int *, int *, int *);
-  void dgetrs_(const char *, int *, const double *, int *, int *, const int *, double *,
-	       int *, int *);
+  void dgetrs_(const char *, int *, const double *, int *, int *,
+               const int *, double *, int *, int *);
 }
 
 
@@ -82,7 +82,8 @@ namespace BOOM{
     int n = dcmp.ncol();
     int ncol_b = ans.ncol();
     int info=0;
-    dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
+    dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(),
+            &n, &info);
     if(info!=0) {
       report_error("LU::solve illegal argument to dgetrs_");
     }
@@ -95,7 +96,8 @@ namespace BOOM{
     int n = dcmp.ncol();
     int ncol_b = ans.ncol();
     int info=0;
-    dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
+    dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n,
+            &info);
     if(info!=0) {
       report_error("LU::solveT illegal argument to dgetrs_");
     }
@@ -108,7 +110,8 @@ namespace BOOM{
     int n = dcmp.ncol();
     int ncol_b = 1;
     int info=0;
-    dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
+    dgetrs_("N", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n,
+            &info);
     if(info!=0) {
       report_error("LU::solve illegal argument to dgetrs_");
     }
@@ -121,7 +124,8 @@ namespace BOOM{
     int n = dcmp.ncol();
     int ncol_b = 1;
     int info=0;
-    dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n, &info);
+    dgetrs_("T", &n, dcmp.data(), &n, &ncol_b, &pivots[0], ans.data(), &n,
+            &info);
     if(info!=0) {
       report_error("LU::solveT illegal argument to dgetrs_");
     }

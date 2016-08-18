@@ -36,6 +36,7 @@ namespace BOOM{
   class ConstArrayBase{
    public:
     ConstArrayBase();
+    ConstArrayBase(const ConstArrayBase &rhs);
     ConstArrayBase(const std::vector<int> &dims);
     ConstArrayBase(const std::vector<int> &dims,
                    const std::vector<int> &strides);
@@ -43,7 +44,7 @@ namespace BOOM{
 
     virtual const double *data()const=0;
 
-    double operator[](const std::vector<int> &index)const;
+    double operator[](const std::vector<int> &index) const;
 
     int ndim()const{return dims_.size();}
     int dim(int i)const{return dims_[i];}

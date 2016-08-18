@@ -29,6 +29,10 @@ namespace BOOM {
             new AutoRegressionTransitionMatrix(Phi_prm())),
         state_variance_matrix_(
             new UpperLeftCornerMatrix(number_of_lags, 1.0)),
+        state_error_expander_(
+            new FirstElementSingleColumnMatrix(number_of_lags)),
+        state_error_variance_matrix_(
+            new SingleSparseDiagonalElementMatrix(1, 1.0, 0)),
         state_variance_is_current_(false),
         observation_matrix_(number_of_lags),
         initial_state_mean_(number_of_lags, 0.0),
@@ -49,7 +53,7 @@ namespace BOOM {
         ArModel(rhs),
         state_transition_matrix_(new AutoRegressionTransitionMatrix(Phi_prm())),
         state_variance_matrix_(new UpperLeftCornerMatrix(
-            Phi_prm()->size(), 1.0)),
+            Phi_prm()->nvars_possible(), 1.0)),
         state_variance_is_current_(false),
         observation_matrix_(rhs.observation_matrix_),
         initial_state_mean_(rhs.initial_state_mean_),
@@ -77,7 +81,16 @@ namespace BOOM {
 
   //======================================================================
   uint ArStateModel::state_dimension()const{
-    return Phi_prm()->size();
+    return Phi_prm()->nvars_possible();
+  }
+
+  //======================================================================
+  void ArStateModel::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &,
+      const ConstSubMatrix &) {
+    report_error("The ArStateModel cannot be part "
+                 "of the EM algorithm.");
   }
 
   //======================================================================
@@ -92,11 +105,18 @@ namespace BOOM {
   }
 
   //======================================================================
-  Ptr<SparseMatrixBlock> ArStateModel::state_variance_matrix(int t)const{
-    if(!state_variance_is_current_){
-      state_variance_matrix_->set_value(sigsq());
-    }
+  Ptr<SparseMatrixBlock> ArStateModel::state_variance_matrix(int t) const {
+    update_variance();
     return state_variance_matrix_;
+  }
+  //======================================================================
+  Ptr<SparseMatrixBlock> ArStateModel::state_error_variance(int t) const {
+    update_variance();
+    return state_error_variance_matrix_;
+  }
+  //======================================================================
+  Ptr<SparseMatrixBlock> ArStateModel::state_error_expander(int t) const {
+    return state_error_expander_;
   }
 
   //======================================================================
@@ -149,4 +169,13 @@ namespace BOOM {
     initial_state_variance_ = Sigma;
   }
 
-}
+  //======================================================================
+  void ArStateModel::update_variance() const {
+    if (!state_variance_is_current_) {
+      state_variance_matrix_->set_value(sigsq());
+      state_error_variance_matrix_->set_value(sigsq());
+      state_variance_is_current_ = true;
+    }
+  }
+
+}  // namespace BOOM

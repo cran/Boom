@@ -267,8 +267,7 @@ namespace BOOM{
       tim_proposal_distribution_.reset(new MvtIndepProposal(
           gaussian_approx_parameters,
           -hessian,
-          1.0,
-          rng()));
+          1.0));
     } else {
       tim_proposal_distribution_->set_mu(gaussian_approx_parameters);
       tim_proposal_distribution_->set_ivar(-hessian);

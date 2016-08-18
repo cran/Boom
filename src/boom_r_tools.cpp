@@ -416,4 +416,36 @@ namespace BOOM{
     return ans;
   }
 
+  //======================================================================
+  RErrorReporter::~RErrorReporter() {
+    if (error_message_) {
+      // Build the error message in memory managed by R, which will be
+      // freed when Rf_error is called.
+      SEXP s_error_message = PROTECT(Rf_mkChar(error_message_->c_str()));
+      // Then free the memory we're holding for the error message.
+      delete error_message_;
+      Rf_error("%s", CHAR(s_error_message));
+    }
+  }
+
+  void RErrorReporter::SetError(const std::string &error) {
+    if (!error_message_) {
+      // If there are multple error messages, only the first is kept.
+      error_message_ = new std::string(error);
+    }
+  }
+
+  namespace {
+    // Wrapper for R_CheckUserInterrupt.
+    static void check_interrupt_func(void *dummy) {
+      R_CheckUserInterrupt();
+    }
+  }  // namespace
+
+  bool RCheckInterrupt() {
+    // Checking in this way will ensure that R_CheckUserInterrupt will not
+    // longjmp out of the current context, so C++ can clean up correctly.
+    return (!R_ToplevelExec(check_interrupt_func, NULL));
+  }
+
 }  // namespace BOOM;

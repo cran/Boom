@@ -69,42 +69,53 @@ namespace BOOM{
     DynamicRegressionStateModel * clone()const override;
 
     void set_xnames(const std::vector<string> &xnames);
-    const std::vector<string> & xnames()const;
+    const std::vector<string> & xnames() const;
 
     void clear_data() override;
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
+                       const ConstVectorView now,
+                       int time_now) override;
     void observe_initial_state(const ConstVectorView &state) override;
-    uint state_dimension()const override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {
+      return state_dimension();
+    }
 
-    void simulate_state_error(VectorView eta, int t)const override;
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    void simulate_state_error(VectorView eta, int t) const override;
 
-    SparseVector observation_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
+
+    // The observation matrix is row t of the desing matrix.
+    SparseVector observation_matrix(int t) const override;
 
     // The initial state is the value of the regression coefficients
     // at time 0.  Zero with a big variance is a good guess.
-    Vector initial_state_mean()const override;
+    Vector initial_state_mean() const override;
     void set_initial_state_mean(const Vector &mu);
 
-    SpdMatrix initial_state_variance()const override;
+    SpdMatrix initial_state_variance() const override;
     void set_initial_state_variance(const SpdMatrix &sigma);
 
-    const GaussianSuf * suf(int i)const;
-    double sigsq(int i)const;
+    const GaussianSuf * suf(int i) const;
+    double sigsq(int i) const;
     void set_sigsq(double sigsq, int i);
-    const Vector &predictor_variance()const;
+    const Vector &predictor_variance() const;
 
     Ptr<UnivParams> Sigsq_prm(int i);
-    const Ptr<UnivParams> Sigsq_prm(int i)const;
+    const Ptr<UnivParams> Sigsq_prm(int i) const;
 
     void add_forecast_data(const Matrix &predictors);
 
    private:
-    void check_size(int n)const;
+    void check_size(int n) const;
 
     uint xdim_;
     Vector initial_state_mean_;

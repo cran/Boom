@@ -19,7 +19,7 @@
 #ifndef IRT_MODEL_HPP
 #define IRT_MODEL_HPP
 
-#include <LinAlg/Types.hpp>
+
 #include <Models/IRT/IRT.hpp>
 #include <Models/ModelTypes.hpp>
 #include <Models/Policies/CompositeParamPolicy.hpp>

@@ -25,7 +25,7 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/SubMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 
 #include <Models/CategoricalData.hpp>
 
@@ -262,6 +262,39 @@ namespace BOOM{
    private:
     int protection_count_;
   };
+
+  // The job of an RErrorReporter is to reconcile the error handling
+  // mechanisms of C++ (exceptions) and R (Rf_error).  When C++
+  // exceptions are thrown, stack unwiding frees memory in objects
+  // held by smart pointers that go out of scope.  When Rf_error is
+  // called, the destructors that C++ relies on to do the right thing
+  // are never called, and so memory leaks.  The solution is to define
+  // an RErrorReporter on the first line of a function entered by
+  // .Call().  If an error is encountered that should be communicated
+  // back to R then write it using SetError, and then exit the
+  // function.  The RErrorReporter will be the last thing destroyed on
+  // function exit, and its destructor will call Rf_error with the
+  // specified error message.
+  class RErrorReporter {
+   public:
+    RErrorReporter() : error_message_(nullptr) {}
+    ~RErrorReporter();
+    // If multiple error messages are passed to the error reporter,
+    // only the first one is stored.
+    void SetError(const std::string &error_message);
+
+    // Returns true iff error_message_ has been set.
+    bool HasError() const { return error_message_; }
+
+   private:
+    // A pointer to a string is necessary here because we need to
+    // manually release the memory holding the string before calling
+    // Rf_error.
+    std::string *error_message_;
+  };
+
+  // Returns true if the user has requested an interrupt.
+  bool RCheckInterrupt();
 
 }  // namespace BOOM
 

@@ -28,23 +28,48 @@ namespace BOOM{
 
   class SliceSampler : public Sampler{
   public:
-    ~SliceSampler() override{}
     SliceSampler(Func F, bool unimodal=false);
     Vector draw(const Vector &x) override;
-    double logp(const Vector &x)const;
+
   private:
-    double lo, hi, plo, phi, pstar, scale;
-    Vector theta, z;
-    bool unimodal;
-    Func f;
+    // lo and hi, last_position_, and random_direction_ define slice boundaries.
+    // The "left" edge of the slice is last_position_ - lo_ * random_direction_.
+    // The "right " edge is last_position_ + hi * random_direction_;
+    //
+    // Both hi_ and lo_ are positive numbers.
+    double lo_, logplo_;
+    double hi_, logphi_;
+
+    // When the class is first constructed, scale_ is set to 1.  After
+    // the first call to draw(), scale_ remembers the distance from
+    // the argument to the returned value, which helps get things on
+    // the right scale the next time draw() is called.  Thus the first
+    // draw might be slightly inefficient.
+    double scale_;
+
+    // The height of the log density determining the slice.
+    double log_p_slice_;
+
+    // The argument to draw() is stored as last_position_, which is
+    // needed in several places throughout the call.
+    Vector last_position_;
+
+    // When draw() is called a random direction is chosen, and a
+    // univariate slice sample is taken along that direction.
+    Vector random_direction_;
+
+    bool unimodal_;
+    Func logp_;
     void doubling(bool);
     void contract(double lam, double p);
     void find_limits();
-    void random_direction();
+
+    // Point "random_direction_" in a uniformly chosen random direction.
+    void set_random_direction();
+
     void initialize();
   };
 
-
-}
+}  // namespace BOOM
 
 #endif// BOOM_SLICE_SAMPLER_HPP

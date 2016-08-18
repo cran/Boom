@@ -32,15 +32,18 @@ namespace BOOM{
     LocalLevelStateModel(const LocalLevelStateModel &rhs);
     LocalLevelStateModel * clone() const override;
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
+                       const ConstVectorView now,
+                       int time_now) override;
 
-    uint state_dimension()const override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {return 1;}
     void simulate_state_error(VectorView eta, int t)const override;
     void simulate_initial_state(VectorView eta)const override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
     SparseVector observation_matrix(int t)const override;
 
@@ -53,6 +56,12 @@ namespace BOOM{
     void set_initial_state_variance(double v);
 
     void set_sigsq(double sigsq) override;
+
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
    private:
     Ptr<IdentityMatrix> state_transition_matrix_;
     Ptr<ConstantMatrix> state_variance_matrix_;

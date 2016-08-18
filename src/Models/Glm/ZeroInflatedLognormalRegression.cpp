@@ -117,4 +117,21 @@ namespace {
     return exp(logy);
   }
 
+  HierarchicalZeroInflatedGammaData ZILRM::simulate_sufficient_statistics(
+      const Vector &x, int64_t n, RNG &rng) const {
+    double p = probability_zero(x);
+    double y_hat = regression_coefficients().predict(x);
+    int number_of_positives = rbinom(n, p);
+    int number_of_zeros = n - number_of_positives;
+    double sum = 0.0;
+    double sum_of_logs_of_positives = 0.0;
+    for (int i = 0; i < number_of_positives; ++i) {
+      double log_of_value = rnorm_mt(rng, y_hat, sigma());
+      sum += exp(log_of_value);
+      sum_of_logs_of_positives += log_of_value;
+    }
+    return HierarchicalZeroInflatedGammaData(
+        number_of_zeros, number_of_positives, sum, sum_of_logs_of_positives);
+  }
+
 }  // namespace BOOM

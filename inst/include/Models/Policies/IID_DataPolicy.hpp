@@ -17,21 +17,20 @@
 */
 #ifndef BOOM_DATA_POLICIES_HPP
 #define BOOM_DATA_POLICIES_HPP
+
 #include <Models/ModelTypes.hpp>
 #include <Models/Policies/DataInfoPolicy.hpp>
-#include <fstream>
-#include <list>
 #include <functional>
 
-namespace BOOM{
+namespace BOOM {
   template <class D>
-  class IID_DataPolicy : public DefaultDataInfoPolicy<D>{
+  class IID_DataPolicy : public DefaultDataInfoPolicy<D> {
    public:
     typedef D DataType;
     typedef IID_DataPolicy<D> DataPolicy;
     typedef std::vector<Ptr<DataType> > DatasetType;
     typedef DefaultDataInfoPolicy<D> Info;
-   public:
+
     IID_DataPolicy();
     IID_DataPolicy(const DatasetType &d);
     template <class FwdIt>
@@ -50,7 +49,7 @@ namespace BOOM{
     virtual void add_data(Ptr<Data> dp);
     virtual void add_data(Ptr<DataType> dp);
 
-    DatasetType & dat(){return dat_;}
+    DatasetType & dat() {return dat_;}
     const DatasetType & dat()const{return dat_;}
 
     template <class FwdIt>
@@ -64,8 +63,9 @@ namespace BOOM{
     void add_data_seq(FwdIt Beg, FwdIt End);
 
     template <class Cont>
-    void add_data_seq(const Cont &c){
-      this->add_data_seq(c.begin(), c.end());}
+    void add_data_seq(const Cont &c) {
+      this->add_data_seq(c.begin(), c.end());
+    }
 
     virtual void combine_data(const Model &mod, bool just_suf=true);
 
@@ -91,8 +91,7 @@ namespace BOOM{
   // constructor.
 
   template <class D>
-  IID_DataPolicy<D>::IID_DataPolicy(){
-  }
+  IID_DataPolicy<D>::IID_DataPolicy() {}
 
   template <class D>
   IID_DataPolicy<D>::IID_DataPolicy(const DatasetType &d)
@@ -113,31 +112,29 @@ namespace BOOM{
   {}
 
   template <class D>
-  IID_DataPolicy<D> & IID_DataPolicy<D>::operator=(const IID_DataPolicy &rhs){
-    if(&rhs!=this) set_data(rhs.dat_);
+  IID_DataPolicy<D> & IID_DataPolicy<D>::operator=(const IID_DataPolicy &rhs) {
+    if (&rhs != this) set_data(rhs.dat_);
     return *this;
   }
 
   template<class D>
-  void IID_DataPolicy<D>::clear_data(){
+  void IID_DataPolicy<D>::clear_data() {
     dat_.clear();
     signal();
   }
 
-  //------------------------------------------------------------
-
   template<class D>
-  void IID_DataPolicy<D>::set_data(const DatasetType & d){
+  void IID_DataPolicy<D>::set_data(const DatasetType & d) {
     clear_data();
-    uint n = d.size();
-    for(uint i=0; i<n; ++i) add_data(d[i]);
+    size_t n = d.size();
+    for (size_t i = 0; i < n; ++i) add_data(d[i]);
   }
 
   template<class D>
   template<class FwdIt>
-  void IID_DataPolicy<D>::set_data(FwdIt Beg, FwdIt End){
+  void IID_DataPolicy<D>::set_data(FwdIt Beg, FwdIt End) {
     clear_data();
-    while(Beg!=End){
+    while (Beg!=End) {
       add_data(*Beg);
       ++Beg;
     }
@@ -145,44 +142,40 @@ namespace BOOM{
 
   template<class D>
   template<class FwdIt>
-  void IID_DataPolicy<D>::add_data_seq(FwdIt Beg, FwdIt End){
-    while(Beg!=End){
+  void IID_DataPolicy<D>::add_data_seq(FwdIt Beg, FwdIt End) {
+    while (Beg!=End) {
       add_data(*Beg);
       ++Beg;
     }
   }
 
   template<class D>
-  void IID_DataPolicy<D>::combine_data(const Model &  other, bool){
+  void IID_DataPolicy<D>::combine_data(const Model &  other, bool) {
     const DataPolicy & d(dynamic_cast<const DataPolicy &>(other));
     //    const IID_DataPolicy<D> & d(dynamic_castother.dcast<IID_DataPolicy<D> >());
     add_data_seq(d.dat_.begin(), d.dat_.end());
   }
 
-
   template<class D>
   template<class FwdIt>
-  void IID_DataPolicy<D>::set_data_raw(FwdIt Beg, FwdIt End){
+  void IID_DataPolicy<D>::set_data_raw(FwdIt Beg, FwdIt End) {
     clear_data();
-    for(FwdIt it = Beg; it!=End; ++it){
+    for (FwdIt it = Beg; it != End; ++it) {
       NEW(DataType, dp)(*it);
-      add_data(dp);}}
+      add_data(dp);
+    }
+  }
 
-
-
-  //------------------------------------------------------------
   template<class D>
-  void IID_DataPolicy<D>::add_data(Ptr<DataType> d){
+  void IID_DataPolicy<D>::add_data(Ptr<DataType> d) {
     dat_.push_back(d);
     signal();
   }
 
   template<class D>
-  void IID_DataPolicy<D>::add_data(Ptr<Data> d){
+  void IID_DataPolicy<D>::add_data(Ptr<Data> d) {
     add_data(Info::DAT(d));
   }
 
-  //============================================================
-
-}
+}  // namespace BOOM
 #endif //BOOM_DATA_POLICIES_HPP

@@ -56,25 +56,40 @@ namespace BOOM{
     // should update an externally held pointer to reg_ each time a
     // state vector is observed.
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int time_now) override;
+                       const ConstVectorView now,
+                       int time_now) override;
 
-    uint state_dimension()const override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {
+      return 1;
+    }
 
-    void simulate_state_error(VectorView eta, int t)const override;
-    void simulate_initial_state(VectorView eta)const override;
+    // Implementation throws, because this model cannot be part of an
+    // EM algorithm.
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
-    SparseVector observation_matrix(int t)const override;
+    void simulate_state_error(VectorView eta, int t) const override;
+    void simulate_initial_state(VectorView eta) const override;
 
-    Vector initial_state_mean()const override;
-    SpdMatrix initial_state_variance()const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
+
+    SparseVector observation_matrix(int t) const override;
+
+    Vector initial_state_mean() const override;
+    SpdMatrix initial_state_variance() const override;
 
    private:
     Ptr<RegressionModel> reg_;
     Ptr<IdentityMatrix> transition_matrix_;
     Ptr<ZeroMatrix> error_variance_;
+    Ptr<EmptyMatrix> state_error_expander_;
+    Ptr<EmptyMatrix> state_error_variance_;
 
    protected:
     RegressionModel * regression() {return reg_.get();}

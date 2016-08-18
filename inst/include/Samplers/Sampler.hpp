@@ -17,11 +17,12 @@
 */
 #ifndef BOOM_SAMPLERS_HPP
 #define BOOM_SAMPLERS_HPP
-#include <cpputil/RefCounted.hpp>
-#include <LinAlg/Types.hpp>
-#include <distributions/rng.hpp>
 
-namespace BOOM{
+#include <cpputil/RefCounted.hpp>
+#include <distributions/rng.hpp>
+#include <LinAlg/Vector.hpp>
+
+namespace BOOM {
 
   /*============================================================
 
@@ -64,5 +65,5 @@ namespace BOOM{
     virtual double draw(double)=0;
   };
 
-}
+}  // namespace BOOM
 #endif // BOOM_SAMPLERS_HPP

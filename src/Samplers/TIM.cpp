@@ -35,8 +35,8 @@ namespace BOOM{
         df_(dlogf),
         d2f_(d2logf),
         cand_(1),
-        g_(1),
-        H_(1, 1),
+        dummy_gradient_(0),
+        dummy_Hessian_(0, 0),
         mode_is_fixed_(0),
         mode_has_been_found_(0)
   {}
@@ -52,13 +52,13 @@ namespace BOOM{
         prop_(0),
         nu_(nu),
         cand_(1),
-        g_(1),
-        H_(1, 1),
+        dummy_gradient_(0),
+        dummy_Hessian_(0, 0),
         mode_is_fixed_(0),
         mode_has_been_found_(0)
   {
-    f_ = boost::bind(logf, _1, g_, H_, 0);
-    df_ = boost::bind(logf, _1, _2, H_, 1);
+    f_ = boost::bind(logf, _1, dummy_gradient_, dummy_Hessian_, 0);
+    df_ = boost::bind(logf, _1, _2, dummy_Hessian_, 1);
     d2f_ = boost::bind(logf, _1, _2, _3, 2);
     MetropolisHastings::set_target(f_);
   }
@@ -67,20 +67,23 @@ namespace BOOM{
     check_proposal(old.size());
     if(!mode_has_been_found_ || !mode_is_fixed_){
       bool ok = locate_mode(old);
-      if(!ok) report_failure(old);
+      if(!ok) {
+        report_failure(old);
+      }
     }
     return MetropolisHastings::draw(old);
   }
 
   void TIM::report_failure(const Vector &old){
     ostringstream err;
-    double value = d2f_(old, g_, H_);
+    Vector gradient = old;
+    Matrix Hessian(old.size(), old.size());
+    double value = d2f_(old, gradient, Hessian);
     err << "failed attempt to find mode in BOOM::TIM" << endl
         << "current parameter value is " << endl << old << endl
         << "target function value at this parameter is " << value << endl
-        << "current gradient is " << g_ << endl
-        << "hessian matrix is " << endl << H_ << endl
-        ;
+        << "current gradient is " << gradient << endl
+        << "hessian matrix is " << endl << Hessian << endl;
     report_error(err.str());
   }
 
@@ -88,11 +91,11 @@ namespace BOOM{
 
   bool TIM::locate_mode(const Vector & old){
     cand_ = old;
-    g_ = old;
-    H_.resize(old.size(), old.size());
+    Vector gradient = old;
+    Matrix Hessian(old.size(), old.size());
     double max_value;
     string error_message;
-    bool ok = max_nd2_careful(cand_, g_, H_, max_value,
+    bool ok = max_nd2_careful(cand_, gradient, Hessian, max_value,
                               f_, df_, d2f_,
                               1e-5, error_message);
 
@@ -100,11 +103,11 @@ namespace BOOM{
       mode_has_been_found_ = false;
       return false;
     }
-    H_*= -1;
+    Hessian*= -1;
     mode_has_been_found_ = true;
     check_proposal(old.size());
     prop_->set_mu(cand_);
-    prop_->set_ivar(H_);
+    prop_->set_ivar(Hessian);
     return true;
   }
 
@@ -134,7 +137,7 @@ namespace BOOM{
     Vector mu(dim);
     SpdMatrix Sigma(dim);
     Sigma.set_diag(1.0);
-    return new MvtIndepProposal(mu, Sigma, nu, rng());
+    return new MvtIndepProposal(mu, Sigma, nu);
   }
 
   void TIM::check_proposal(int dim){

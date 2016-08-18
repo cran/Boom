@@ -58,7 +58,9 @@ namespace BOOM {
     double yty()const{return reg_suf_->yty();}
     Vector xty()const{return reg_suf_->xty();}
     SpdMatrix xtx()const{return reg_suf_->xtx();}
-
+    double relative_sse(const GlmCoefs &beta) {
+      return reg_suf_->relative_sse(beta);
+    }
    private:
     // lags must be in the same order as the AR coefficients
     Ptr<NeRegSuf> reg_suf_;
@@ -76,14 +78,19 @@ namespace BOOM {
   // The parameters of this model are the vector of autoregression
   // coefficients phi[1]...phi[p], and the innovation variance
   // sigma^2.
+  //
+  // NOTE: AR models aren't usually thought of as being GLM's, but
+  //   ArModel inherits from GlmModel so that it can take advantage of
+  //   tools for spike and slab sampling.
   class ArModel
-      : public ParamPolicy_2<VectorParams, UnivParams>,
+      : public GlmModel,
+        public ParamPolicy_2<GlmCoefs, UnivParams>,
         public SufstatDataPolicy<DoubleData, ArSuf>,
         public PriorPolicy
   {
    public:
     ArModel(int number_of_lags = 1);
-    ArModel(Ptr<VectorParams> autoregression_coefficients,
+    ArModel(Ptr<GlmCoefs> autoregression_coefficients,
             Ptr<UnivParams> innovation_variance);
     ArModel * clone()const override;
 
@@ -97,10 +104,15 @@ namespace BOOM {
     void set_sigsq(double sigsq);
     void set_phi(const Vector &phi);
 
-    Ptr<VectorParams> Phi_prm();
-    const Ptr<VectorParams> Phi_prm()const;
+    Ptr<GlmCoefs> Phi_prm();
+    const Ptr<GlmCoefs> Phi_prm()const;
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;
+
+    GlmCoefs &coef() override;
+    const GlmCoefs &coef() const override;
+    Ptr<GlmCoefs> coef_prm() override {return Phi_prm();}
+    const Ptr<GlmCoefs> coef_prm() const override {return Phi_prm();}
 
     // Returns a vector giving the autocovariance of the model for 0,
     // 1, 2, ..., number_of_lags lags.

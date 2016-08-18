@@ -25,14 +25,12 @@
 #include <BOOM.hpp>
 #include <Models/ModelTypes.hpp>
 #include <Models/CategoricalData.hpp>
-#include <LinAlg/Types.hpp>
 
 #include <LinAlg/Selector.hpp>
 
 namespace BOOM{
-  namespace IRT{
+  namespace IRT {
     typedef Selector Indicators;
-
 
     class Subject;
     class SubjectPrior;
@@ -57,14 +55,10 @@ namespace BOOM{
     typedef std::set<Ptr<Item>, ItemLess> ItemSet;
     typedef ItemSet::iterator ItemIt;
     typedef ItemSet::const_iterator ItemItC;
-
-
-
-
     typedef std::map<Ptr<Item>,Response, ItemLess> ItemResponseMap;
     typedef ItemResponseMap::iterator IrIter;
     typedef ItemResponseMap::const_iterator IrIterC;
 
-  }
-}
+  }  // namespace IRT
+}  // namespace BOOM
 #endif // BOOM_IRT_HDR_HPP

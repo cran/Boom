@@ -93,6 +93,13 @@ namespace BOOM{
     double Loglike(const Vector &ab, Vector &g, Matrix &H, uint nd)const override;
     double logp(int64_t n, int64_t y, double a, double b)const;
 
+    // Args:
+    //   n:  The number of trials for a particular observation.  All trials will
+    //     have the same success probability.
+    // Returns:
+    //   The number of successes for the observation in question.
+    int64_t sim(int64_t n)const;
+
     Ptr<UnivParams> SuccessPrm();
     Ptr<UnivParams> FailurePrm();
     const Ptr<UnivParams> SuccessPrm()const;

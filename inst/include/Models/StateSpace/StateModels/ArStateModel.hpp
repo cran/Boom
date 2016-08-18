@@ -59,28 +59,40 @@ namespace BOOM{
     ArStateModel * clone() const override;
 
     void observe_state(const ConstVectorView previous_state,
-                               const ConstVectorView current_state,
-                               int t) override;
+                       const ConstVectorView current_state,
+                       int t) override;
 
-    uint state_dimension()const override;
-    void simulate_state_error(VectorView eta, int t)const override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {return 1;}
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
+    // This throws, because an ArStateModel cannot be part of an EM algorithm.
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &error_mean,
+        const ConstSubMatrix &error_variance) override;
 
-    SparseVector observation_matrix(int t)const override;
+    void simulate_state_error(VectorView eta, int t) const override;
 
-    Vector initial_state_mean()const override;
-    SpdMatrix initial_state_variance()const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
+
+    SparseVector observation_matrix(int t) const override;
+
+    Vector initial_state_mean() const override;
+    SpdMatrix initial_state_variance() const override;
 
     void set_initial_state_mean(const Vector &mu);
     void set_initial_state_variance(const SpdMatrix &Sigma);
-    void use_stationary_distribution_as_initial_distribution();
 
    private:
     Ptr<AutoRegressionTransitionMatrix> state_transition_matrix_;
     Ptr<UpperLeftCornerMatrix> state_variance_matrix_;
-    bool state_variance_is_current_;
+    Ptr<FirstElementSingleColumnMatrix> state_error_expander_;
+    Ptr<SingleSparseDiagonalElementMatrix> state_error_variance_matrix_;
+
+    mutable bool state_variance_is_current_;
     SparseVector observation_matrix_;
 
     Vector initial_state_mean_;
@@ -90,6 +102,7 @@ namespace BOOM{
     void observe_residual_variance() {
       state_variance_is_current_ = false;
     }
+    void update_variance() const;
   };
 
 

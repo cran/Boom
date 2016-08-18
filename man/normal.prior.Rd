@@ -5,7 +5,7 @@
 \description{Specifies a scalar Gaussian prior distribution.}
 
 \usage{
-NormalPrior(mu, sigma, initial.value = mu)
+NormalPrior(mu, sigma, initial.value = mu, fixed = FALSE)
 }
 
 \arguments{
@@ -16,7 +16,11 @@ NormalPrior(mu, sigma, initial.value = mu)
   \item{initial.value}{The initial value of the parameter being modeled
     in the MCMC algorithm.}
 
-}
+  \item{fixed}{Should the deviate modeled by this distribution be fixed
+     at its initial value?  (Used for debugging in some code.  Not
+     universally respected.)}
+
+ }
 
 \references{
   Gelman, Carlin, Stern, Rubin (2003), "Bayesian Data Analysis", Chapman

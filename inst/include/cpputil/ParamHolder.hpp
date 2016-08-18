@@ -19,7 +19,7 @@
 #define BOOM_PARAM_HOLDER_HPP
 
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cpputil/Ptr.hpp>
 
 namespace BOOM{

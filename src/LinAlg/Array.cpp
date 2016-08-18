@@ -25,7 +25,12 @@
 
 namespace BOOM{
 
-  ConstArrayBase::ConstArrayBase(){}
+  ConstArrayBase::ConstArrayBase() {}
+
+  ConstArrayBase::ConstArrayBase(const ConstArrayBase &rhs)
+      : dims_(rhs.dims_),
+        strides_(rhs.strides_)
+  {}
 
   ConstArrayBase::ConstArrayBase(const std::vector<int> &dims)
       : dims_(dims)
@@ -39,7 +44,7 @@ namespace BOOM{
         strides_(strides)
   {}
 
-  void ConstArrayBase::compute_strides(){
+  void ConstArrayBase::compute_strides() {
     strides_.resize(dims_.size());
     int last_stride = 1;
     for(int i = 0; i < dims_.size(); ++i) {
@@ -72,8 +77,8 @@ namespace BOOM{
     // Returns the position in the column-major array
     inline int array_index(const std::vector<int> &index,
                            const std::vector<int> & dim,
-                           const std::vector<int> &strides){
-      if(index.size() != dim.size()){
+                           const std::vector<int> &strides) {
+      if(index.size() != dim.size()) {
         std::ostringstream err;
         err << "Wrong number of dimensions passed to "
             << "ConstArrayBase::operator[]."
@@ -82,9 +87,9 @@ namespace BOOM{
         report_error(err.str());
       }
       int pos = 0;
-      for(int i = 0; i < dim.size(); ++i){
+      for(int i = 0; i < dim.size(); ++i) {
         int ind = index[i];
-        if(ind < 0 || ind >= dim[i]){
+        if(ind < 0 || ind >= dim[i]) {
           std::ostringstream err;
           err << "Index " << i
               << " out of bounds in ConstArrayBase::operator[]."
@@ -109,14 +114,14 @@ namespace BOOM{
     }
 
     inline void check_slice_size(const std::vector<int> & index,
-                                 const std::vector<int> &dims){
+                                 const std::vector<int> &dims) {
       if(index.size() == dims.size()) return;
 
       std::ostringstream msg;
       msg << "Array::slice expects an argument of length " << dims.size()
           << " but was passed an argument of length " << index.size()
           << " : [";
-      for(int i = 0; i < index.size(); ++i){
+      for(int i = 0; i < index.size(); ++i) {
         msg << index[i];
         if(i+1 < index.size()) msg << ",";
       }
@@ -129,13 +134,13 @@ namespace BOOM{
         INPUT_TYPE host_data,
         const std::vector<int> &index,
         const std::vector<int> &host_dims,
-        const std::vector<int> &host_strides){
+        const std::vector<int> &host_strides) {
       check_slice_size(index, host_dims);
       std::vector<int> view_dims;
       std::vector<int> view_strides;
       std::vector<int> view_initial_position(index.size());
       for(int i = 0; i < index.size(); ++i) {
-        if(index[i] < 0){
+        if(index[i] < 0) {
           view_dims.push_back(host_dims[i]);
           view_strides.push_back(host_strides[i]);
           view_initial_position[i] = 0;
@@ -151,7 +156,7 @@ namespace BOOM{
     inline ArrayView slice_array(double *host_data,
                                  const std::vector<int> &index,
                                  const std::vector<int> &host_dims,
-                                 const std::vector<int> &host_strides){
+                                 const std::vector<int> &host_strides) {
       return template_slice_array<ArrayView, double *>(
           host_data, index, host_dims, host_strides);
     }
@@ -160,7 +165,7 @@ namespace BOOM{
         const double *host_data,
         const std::vector<int> &index,
         const std::vector<int> &host_dims,
-        const std::vector<int> &host_strides){
+        const std::vector<int> &host_strides) {
       return template_slice_array<ConstArrayView, const double*>(
           host_data, index, host_dims, host_strides);
     }
@@ -232,36 +237,36 @@ namespace BOOM{
 
   }  // namespace
 
-  double ConstArrayBase::operator[](const std::vector<int> &index)const{
+  double ConstArrayBase::operator[](const std::vector<int> &index) const {
     int pos = array_index(index, dims_, strides_);
     return data()[pos];
   }
 
-  int ConstArrayBase::size()const{
+  int ConstArrayBase::size() const {
     int ans = 1;
     for(int i = 0; i < dims_.size(); ++i) ans *= dims_[i];
     return ans;
   }
 
-  bool ConstArrayBase::operator==(const Vector &rhs)const{
+  bool ConstArrayBase::operator==(const Vector &rhs) const {
     return vector_compare(rhs, *this); }
-  bool ConstArrayBase::operator==(const VectorView &rhs)const{
+  bool ConstArrayBase::operator==(const VectorView &rhs) const {
     return vector_compare(rhs, *this); }
-  bool ConstArrayBase::operator==(const ConstVectorView &rhs)const{
+  bool ConstArrayBase::operator==(const ConstVectorView &rhs) const {
     return vector_compare(rhs, *this); }
-  bool ConstArrayBase::operator==(const Matrix &rhs)const{
+  bool ConstArrayBase::operator==(const Matrix &rhs) const {
     if(ndim() != 2 || dim(0) != rhs.nrow() || dim(1) != rhs.ncol())
       return false;
     const double *x(this->data());
     const double *y(rhs.data());
     int n = rhs.size();
-    for(int i = 0; i < n; ++i){
+    for(int i = 0; i < n; ++i) {
       if(x[i] != y[i]) return false;
     }
     return true;
   }
 
-  bool ConstArrayBase::operator==(const ConstArrayBase &rhs)const{
+  bool ConstArrayBase::operator==(const ConstArrayBase &rhs) const {
     if(&rhs == this) return true;
     if(dim() != rhs.dim()) return false;
     ConstArrayIterator left(this);
@@ -275,42 +280,42 @@ namespace BOOM{
     return true;
   }
 
-  void ConstArrayBase::reset_dims(const std::vector<int> & dims){dims_ = dims;}
-  void ConstArrayBase::reset_strides(const std::vector<int> & strides){
+  void ConstArrayBase::reset_dims(const std::vector<int> & dims) {dims_ = dims;}
+  void ConstArrayBase::reset_strides(const std::vector<int> & strides) {
     strides_ = strides;}
 
-  std::vector<int> ConstArrayBase::index1(int x1){
+  std::vector<int> ConstArrayBase::index1(int x1) {
     return std::vector<int>(1, x1); }
-  std::vector<int> ConstArrayBase::index2(int x1, int x2){
+  std::vector<int> ConstArrayBase::index2(int x1, int x2) {
     return create_index<2>(x1, x2);}
-  std::vector<int> ConstArrayBase::index3(int x1, int x2, int x3){
+  std::vector<int> ConstArrayBase::index3(int x1, int x2, int x3) {
     return create_index<3>(x1, x2, x3);}
-  std::vector<int> ConstArrayBase::index4(int x1, int x2, int x3, int x4){
+  std::vector<int> ConstArrayBase::index4(int x1, int x2, int x3, int x4) {
     return create_index<4>(x1, x2, x3, x4);}
   std::vector<int> ConstArrayBase::index5(
-      int x1, int x2, int x3, int x4, int x5){
+      int x1, int x2, int x3, int x4, int x5) {
     return create_index<5>(x1, x2, x3, x4, x5);}
   std::vector<int> ConstArrayBase::index6(
-      int x1, int x2, int x3, int x4, int x5, int x6){
+      int x1, int x2, int x3, int x4, int x5, int x6) {
     return create_index<6>(x1, x2, x3, x4, x5, x6);}
 
-  double ConstArrayBase::operator()(int x1)const{
+  double ConstArrayBase::operator()(int x1) const {
     return (*this)[index1(x1)]; }
-  double ConstArrayBase::operator()(int x1, int x2)const{
+  double ConstArrayBase::operator()(int x1, int x2) const {
     return (*this)[index2(x1, x2)]; }
-  double ConstArrayBase::operator()(int x1, int x2, int x3)const{
+  double ConstArrayBase::operator()(int x1, int x2, int x3) const {
     return (*this)[index3(x1, x2, x3)]; }
-  double ConstArrayBase::operator()(int x1, int x2, int x3, int x4)const{
+  double ConstArrayBase::operator()(int x1, int x2, int x3, int x4) const {
     return (*this)[index4(x1, x2, x3, x4)]; }
   double ConstArrayBase::operator()(
-      int x1, int x2, int x3, int x4, int x5)const{
+      int x1, int x2, int x3, int x4, int x5) const {
     return (*this)[index5(x1, x2, x3, x4, x5)]; }
   double ConstArrayBase::operator()(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return (*this)[index6(x1, x2, x3, x4, x5, x6)]; }
 
   //======================================================================
-  ArrayBase::ArrayBase(){}
+  ArrayBase::ArrayBase() {}
 
   ArrayBase::ArrayBase(const std::vector<int> &dims)
       : ConstArrayBase(dims) {}
@@ -320,23 +325,23 @@ namespace BOOM{
       : ConstArrayBase(dims, strides) {}
 
 
-  double & ArrayBase::operator[](const std::vector<int> &index){
+  double & ArrayBase::operator[](const std::vector<int> &index) {
     int pos = array_index(index, dim(), strides());
     return data()[pos];
   }
 
-  double & ArrayBase::operator()(int x1){
+  double & ArrayBase::operator()(int x1) {
     return (*this)[index1(x1)]; }
-  double & ArrayBase::operator()(int x1, int x2){
+  double & ArrayBase::operator()(int x1, int x2) {
     return (*this)[index2(x1, x2)]; }
-  double & ArrayBase::operator()(int x1, int x2, int x3){
+  double & ArrayBase::operator()(int x1, int x2, int x3) {
     return (*this)[index3(x1, x2, x3)]; }
-  double & ArrayBase::operator()(int x1, int x2, int x3, int x4){
+  double & ArrayBase::operator()(int x1, int x2, int x3, int x4) {
     return (*this)[index4(x1, x2, x3, x4)]; }
-  double & ArrayBase::operator()(int x1, int x2, int x3, int x4, int x5){
+  double & ArrayBase::operator()(int x1, int x2, int x3, int x4, int x5) {
     return (*this)[index5(x1, x2, x3, x4, x5)]; }
   double & ArrayBase::operator()(
-      int x1, int x2, int x3, int x4, int x5, int x6){
+      int x1, int x2, int x3, int x4, int x5, int x6) {
     return (*this)[index6(x1, x2, x3, x4, x5, x6)]; }
 
   //======================================================================
@@ -357,7 +362,7 @@ namespace BOOM{
         data_(data)
   {}
 
-  void ArrayView::reset(double *data, const std::vector<int> &dims){
+  void ArrayView::reset(double *data, const std::vector<int> &dims) {
     data_ = data;
     reset_dims(dims);
     compute_strides();
@@ -365,143 +370,141 @@ namespace BOOM{
 
   void ArrayView::reset(double *data,
                         const std::vector<int> &dims,
-                        const std::vector<int> &strides){
+                        const std::vector<int> &strides) {
     data_ = data;
     reset_dims(dims);
     reset_strides(strides);
   }
 
-  ArrayView ArrayView::slice(const std::vector<int> &index){
+  ArrayView ArrayView::slice(const std::vector<int> &index) {
     return slice_array(data(), index, dim(), strides());}
-  ConstArrayView ArrayView::slice(const std::vector<int> &index)const{
+  ConstArrayView ArrayView::slice(const std::vector<int> &index) const {
     return slice_const_array(data(), index, dim(), strides());}
-  ArrayView ArrayView::slice(int x1){
+  ArrayView ArrayView::slice(int x1) {
     return this->slice(index1(x1));}
-  ArrayView ArrayView::slice(int x1, int x2){
+  ArrayView ArrayView::slice(int x1, int x2) {
     return this->slice(index2(x1, x2));}
-  ArrayView ArrayView::slice(int x1, int x2, int x3){
+  ArrayView ArrayView::slice(int x1, int x2, int x3) {
     return this->slice(index3(x1, x2, x3));}
-  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4){
+  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4) {
     return this->slice(index4(x1, x2, x3, x4));}
-  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4, int x5){
+  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4, int x5) {
     return this->slice(index5(x1, x2, x3, x4, x5));}
-  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4, int x5, int x6){
+  ArrayView ArrayView::slice(int x1, int x2, int x3, int x4, int x5, int x6) {
     return this->slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ConstArrayView ArrayView::slice(int x1)const{
+  ConstArrayView ArrayView::slice(int x1) const {
     return this->slice(index1(x1));}
-  ConstArrayView ArrayView::slice(int x1, int x2)const{
+  ConstArrayView ArrayView::slice(int x1, int x2) const {
     return this->slice(index2(x1, x2));}
-  ConstArrayView ArrayView::slice(int x1, int x2, int x3)const{
+  ConstArrayView ArrayView::slice(int x1, int x2, int x3) const {
     return this->slice(index3(x1, x2, x3));}
-  ConstArrayView ArrayView::slice(int x1, int x2, int x3, int x4)const{
+  ConstArrayView ArrayView::slice(int x1, int x2, int x3, int x4) const {
     return this->slice(index4(x1, x2, x3, x4));}
-  ConstArrayView ArrayView::slice(int x1, int x2, int x3, int x4, int x5)const{
+  ConstArrayView ArrayView::slice(int x1, int x2, int x3, int x4,
+                                  int x5) const {
     return this->slice(index5(x1, x2, x3, x4, x5));}
   ConstArrayView ArrayView::slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ConstVectorView ArrayView::vector_slice(const std::vector<int> &index)const{
+  ConstVectorView ArrayView::vector_slice(const std::vector<int> &index) const {
     return vector_slice_const_array(data(), index, dim(), strides());}
-  ConstVectorView ArrayView::vector_slice(int x1)const{
+  ConstVectorView ArrayView::vector_slice(int x1) const {
     return this->vector_slice(index1(x1));}
-  ConstVectorView ArrayView::vector_slice(int x1, int x2)const{
+  ConstVectorView ArrayView::vector_slice(int x1, int x2) const {
     return this->vector_slice(index2(x1, x2));}
-  ConstVectorView ArrayView::vector_slice(int x1, int x2, int x3)const{
+  ConstVectorView ArrayView::vector_slice(int x1, int x2, int x3) const {
     return this->vector_slice(index3(x1, x2, x3));}
   ConstVectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4)const{
+      int x1, int x2, int x3, int x4) const {
     return this->vector_slice(index4(x1, x2, x3, x4));}
   ConstVectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5)const{
+      int x1, int x2, int x3, int x4, int x5) const {
     return this->vector_slice(index5(x1, x2, x3, x4, x5));}
   ConstVectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->vector_slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  VectorView ArrayView::vector_slice(const std::vector<int> &index){
+  VectorView ArrayView::vector_slice(const std::vector<int> &index) {
     return vector_slice_array(data(), index, dim(), strides());}
-  VectorView ArrayView::vector_slice(int x1){
+  VectorView ArrayView::vector_slice(int x1) {
     return this->vector_slice(index1(x1));}
-  VectorView ArrayView::vector_slice(int x1, int x2){
+  VectorView ArrayView::vector_slice(int x1, int x2) {
     return this->vector_slice(index2(x1, x2));}
-  VectorView ArrayView::vector_slice(int x1, int x2, int x3){
+  VectorView ArrayView::vector_slice(int x1, int x2, int x3) {
     return this->vector_slice(index3(x1, x2, x3));}
   VectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4){
+      int x1, int x2, int x3, int x4) {
     return this->vector_slice(index4(x1, x2, x3, x4));}
   VectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5){
+      int x1, int x2, int x3, int x4, int x5) {
     return this->vector_slice(index5(x1, x2, x3, x4, x5));}
   VectorView ArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5, int x6){
+      int x1, int x2, int x3, int x4, int x5, int x6) {
     return this->vector_slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ArrayIterator ArrayView::begin(){
+  ArrayIterator ArrayView::begin() {
     return ArrayIterator(this); }
-  ConstArrayIterator ArrayView::begin()const{
+  ConstArrayIterator ArrayView::begin() const {
     return ConstArrayIterator(this); }
 
-  ArrayIterator ArrayView::end(){
-    std::vector<int> fin(dim());
-    for(int i = 1; i < dim().size(); ++i) --fin[i];
-    // Now fin is one less than dims in all positions except the
-    // first.  It thus points one-past-the-end according to the
-    // iteration scheme in ArrayIterator.hpp.
-    return ArrayIterator(this, fin); }
-  ConstArrayIterator ArrayView::end()const{
-    std::vector<int> fin(dim());
-    for(int i = 1; i < dim().size(); ++i) --fin[i];
-    // Now fin is one less than dims in all positions except the
-    // first.  It thus points one-past-the-end according to the
-    // iteration scheme in ArrayIterator.hpp.
-    return ConstArrayIterator(this, fin); }
+  ArrayIterator ArrayView::end() {
+    ArrayIterator ans(this);
+    ans.set_to_end();
+    return ans;
+  }
 
-  ArrayView & ArrayView::operator=(const Array &a){
-    if(dim() != a.dim()){
+  ConstArrayIterator ArrayView::end() const {
+    ConstArrayIterator ans(this);
+    ans.set_to_end();
+    return ans;
+  }
+
+  ArrayView & ArrayView::operator=(const Array &a) {
+    if(dim() != a.dim()) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const ArrayView &a){
+  ArrayView & ArrayView::operator=(const ArrayView &a) {
     if(&a == this) return *this;
-    if(dim() != a.dim()){
+    if(dim() != a.dim()) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const ConstArrayView &a){
-    if(dim() != a.dim()){
+  ArrayView & ArrayView::operator=(const ConstArrayView &a) {
+    if(dim() != a.dim()) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const Matrix &a){
+  ArrayView & ArrayView::operator=(const Matrix &a) {
     if(ndim() != 2 || nrow(a) != dim(0) || ncol(a) != dim(1)) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const Vector &a){
+  ArrayView & ArrayView::operator=(const Vector &a) {
     if(ndim() != 1 || a.size() != dim(0)) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const VectorView &a){
+  ArrayView & ArrayView::operator=(const VectorView &a) {
     if(ndim() != 1 || a.size() != dim(0)) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
   }
-  ArrayView & ArrayView::operator=(const ConstVectorView &a){
+  ArrayView & ArrayView::operator=(const ConstVectorView &a) {
     if(ndim() != 1 || a.size() != dim(0)) {
       report_error("wrong size of Array supplied to ArrayView::operator= ");
     }
@@ -534,7 +537,7 @@ namespace BOOM{
   {}
 
   void ConstArrayView::reset(const double *data,
-                             const std::vector<int> &dims){
+                             const std::vector<int> &dims) {
     data_ = data;
     reset_dims(dims);
     compute_strides();
@@ -542,59 +545,59 @@ namespace BOOM{
 
   void ConstArrayView::reset(const double *data,
                              const std::vector<int> &dims,
-                             const std::vector<int> &strides){
+                             const std::vector<int> &strides) {
     data_ = data;
     reset_dims(dims);
     reset_strides(strides);
   }
 
-  ConstArrayView ConstArrayView::slice(const std::vector<int> &index)const{
+  ConstArrayView ConstArrayView::slice(const std::vector<int> &index) const {
     return slice_const_array(data(), index, dim(), strides());}
 
-  ConstArrayView ConstArrayView::slice(int x1)const{
+  ConstArrayView ConstArrayView::slice(int x1) const {
     return this->slice(index1(x1));}
-  ConstArrayView ConstArrayView::slice(int x1, int x2)const{
+  ConstArrayView ConstArrayView::slice(int x1, int x2) const {
     return this->slice(index2(x1, x2));}
-  ConstArrayView ConstArrayView::slice(int x1, int x2, int x3)const{
+  ConstArrayView ConstArrayView::slice(int x1, int x2, int x3) const {
     return this->slice(index3(x1, x2, x3));}
-  ConstArrayView ConstArrayView::slice(int x1, int x2, int x3, int x4)const{
+  ConstArrayView ConstArrayView::slice(int x1, int x2, int x3, int x4) const {
     return this->slice(index4(x1, x2, x3, x4));}
   ConstArrayView ConstArrayView::slice(
-      int x1, int x2, int x3, int x4, int x5)const{
+      int x1, int x2, int x3, int x4, int x5) const {
     return this->slice(index5(x1, x2, x3, x4, x5));}
   ConstArrayView ConstArrayView::slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->slice(index6(x1, x2, x3, x4, x5, x6));}
 
   ConstVectorView ConstArrayView::vector_slice(
-      const std::vector<int> &index)const{
+      const std::vector<int> &index) const {
     return vector_slice_const_array(data(), index, dim(), strides());
   }
-  ConstVectorView ConstArrayView::vector_slice(int x1)const{
+  ConstVectorView ConstArrayView::vector_slice(int x1) const {
     return this->vector_slice(index1(x1));}
-  ConstVectorView ConstArrayView::vector_slice(int x1, int x2)const{
+  ConstVectorView ConstArrayView::vector_slice(int x1, int x2) const {
     return this->vector_slice(index2(x1, x2));}
-  ConstVectorView ConstArrayView::vector_slice(int x1, int x2, int x3)const{
+  ConstVectorView ConstArrayView::vector_slice(int x1, int x2, int x3) const {
     return this->vector_slice(index3(x1, x2, x3));}
   ConstVectorView ConstArrayView::vector_slice(
-      int x1, int x2, int x3, int x4)const{
+      int x1, int x2, int x3, int x4) const {
     return this->vector_slice(index4(x1, x2, x3, x4));}
   ConstVectorView ConstArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5)const{
+      int x1, int x2, int x3, int x4, int x5) const {
     return this->vector_slice(index5(x1, x2, x3, x4, x5));}
   ConstVectorView ConstArrayView::vector_slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->vector_slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ConstArrayIterator ConstArrayView::begin()const{
-    return ConstArrayIterator(this); }
-  ConstArrayIterator ConstArrayView::end()const{
-    std::vector<int> fin(dim());
-    for(int i = 1; i < dim().size(); ++i) --fin[i];
-    // Now fin is one less than dims in all positions except the
-    // first.  It thus points one-past-the-end according to the
-    // iteration scheme in ArrayIterator.hpp.
-    return ConstArrayIterator(this, fin); }
+  ConstArrayIterator ConstArrayView::begin() const {
+    return ConstArrayIterator(this);
+  }
+
+  ConstArrayIterator ConstArrayView::end() const {
+    ConstArrayIterator ans(this);
+    ans.set_to_end();
+    return ans;
+  }
 
   //======================================================================
   Array::Array(const std::vector<int> &dims, double initial_value)
@@ -606,11 +609,11 @@ namespace BOOM{
       : ArrayBase(dims),
         data_(data)
   {
-    if(data_.size() != size()){
+    if(data_.size() != size()) {
       std::ostringstream err;
       err << "Wrong size data argument given to Array() constructor.  Expected "
           << size() << " elements, based on supplied dimensions: [ ";
-      for(int i = 0; i < dims.size(); ++i){
+      for(int i = 0; i < dims.size(); ++i) {
         err << dims[i] << " ";
       }
       err << "].  Got " << data.size() << ".";
@@ -618,7 +621,7 @@ namespace BOOM{
     }
   }
 
-  int ConstArrayBase::product(const std::vector<int> &dims){
+  int ConstArrayBase::product(const std::vector<int> &dims) {
     int ans = 1;
     for(int i = 0; i < dims.size(); ++i) {
       ans *= dims[i];
@@ -626,13 +629,13 @@ namespace BOOM{
     return ans;
   }
 
-  void Array::randomize(){
+  void Array::randomize() {
     for(iterator it = begin(); it != end(); ++it) {
       *it = runif();
     }
   }
 
-  Array & Array::operator=(const Array &rhs){
+  Array & Array::operator=(const Array &rhs) {
     if(&rhs == this) return *this;
     reset_dims(rhs.dim());
     reset_strides(rhs.strides());
@@ -640,39 +643,39 @@ namespace BOOM{
     return *this;
   }
 
-  ArrayView Array::slice(const std::vector<int> &index){
+  ArrayView Array::slice(const std::vector<int> &index) {
     return slice_array(data(), index, dim(), strides());}
-  ConstArrayView Array::slice(const std::vector<int> &index)const{
+  ConstArrayView Array::slice(const std::vector<int> &index) const {
     return slice_const_array(data(), index, dim(), strides());}
 
-  ArrayView Array::slice(int x1){
+  ArrayView Array::slice(int x1) {
     return this->slice(index1(x1));}
-  ArrayView Array::slice(int x1, int x2){
+  ArrayView Array::slice(int x1, int x2) {
     return this->slice(index2(x1, x2));}
-  ArrayView Array::slice(int x1, int x2, int x3){
+  ArrayView Array::slice(int x1, int x2, int x3) {
     return this->slice(index3(x1, x2, x3));}
-  ArrayView Array::slice(int x1, int x2, int x3, int x4){
+  ArrayView Array::slice(int x1, int x2, int x3, int x4) {
     return this->slice(index4(x1, x2, x3, x4));}
-  ArrayView Array::slice(int x1, int x2, int x3, int x4, int x5){
+  ArrayView Array::slice(int x1, int x2, int x3, int x4, int x5) {
     return this->slice(index5(x1, x2, x3, x4, x5));}
-  ArrayView Array::slice(int x1, int x2, int x3, int x4, int x5, int x6){
+  ArrayView Array::slice(int x1, int x2, int x3, int x4, int x5, int x6) {
     return this->slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ConstArrayView Array::slice(int x1)const{
+  ConstArrayView Array::slice(int x1) const {
     return this->slice(index1(x1));}
-  ConstArrayView Array::slice(int x1, int x2)const{
+  ConstArrayView Array::slice(int x1, int x2) const {
     return this->slice(index2(x1, x2));}
-  ConstArrayView Array::slice(int x1, int x2, int x3)const{
+  ConstArrayView Array::slice(int x1, int x2, int x3) const {
     return this->slice(index3(x1, x2, x3));}
-  ConstArrayView Array::slice(int x1, int x2, int x3, int x4)const{
+  ConstArrayView Array::slice(int x1, int x2, int x3, int x4) const {
     return this->slice(index4(x1, x2, x3, x4));}
-  ConstArrayView Array::slice(int x1, int x2, int x3, int x4, int x5)const{
+  ConstArrayView Array::slice(int x1, int x2, int x3, int x4, int x5) const {
     return this->slice(index5(x1, x2, x3, x4, x5));}
   ConstArrayView Array::slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->slice(index6(x1, x2, x3, x4, x5, x6));}
 
-  ConstVectorView Array::vector_slice(const std::vector<int> &index)const{
+  ConstVectorView Array::vector_slice(const std::vector<int> &index) const {
     ConstArrayView view(*this);
     return view.vector_slice(index);
   }
@@ -680,18 +683,18 @@ namespace BOOM{
     return this->vector_slice(index1(x1)); }
   ConstVectorView Array::vector_slice(int x1, int x2)const {
     return this->vector_slice(index2(x1, x2)); }
-  ConstVectorView Array::vector_slice(int x1, int x2, int x3)const{
+  ConstVectorView Array::vector_slice(int x1, int x2, int x3) const {
     return this->vector_slice(index3(x1, x2, x3)); }
-  ConstVectorView Array::vector_slice(int x1, int x2, int x3, int x4)const{
+  ConstVectorView Array::vector_slice(int x1, int x2, int x3, int x4) const {
     return this->vector_slice(index4(x1, x2, x3, x4)); }
   ConstVectorView Array::vector_slice(
-      int x1, int x2, int x3, int x4, int x5)const{
+      int x1, int x2, int x3, int x4, int x5) const {
     return this->vector_slice(index5(x1, x2, x3, x4, x5)); }
   ConstVectorView Array::vector_slice(
-      int x1, int x2, int x3, int x4, int x5, int x6)const{
+      int x1, int x2, int x3, int x4, int x5, int x6) const {
     return this->vector_slice(index6(x1, x2, x3, x4, x5, x6)); }
 
-  VectorView Array::vector_slice(const std::vector<int> &index){
+  VectorView Array::vector_slice(const std::vector<int> &index) {
     ArrayView view(*this);
     return view.vector_slice(index);
   }
@@ -699,17 +702,17 @@ namespace BOOM{
     return this->vector_slice(index1(x1)); }
   VectorView Array::vector_slice(int x1, int x2) {
     return this->vector_slice(index2(x1, x2)); }
-  VectorView Array::vector_slice(int x1, int x2, int x3){
+  VectorView Array::vector_slice(int x1, int x2, int x3) {
     return this->vector_slice(index3(x1, x2, x3)); }
-  VectorView Array::vector_slice(int x1, int x2, int x3, int x4){
+  VectorView Array::vector_slice(int x1, int x2, int x3, int x4) {
     return this->vector_slice(index4(x1, x2, x3, x4)); }
-  VectorView Array::vector_slice(int x1, int x2, int x3, int x4, int x5){
+  VectorView Array::vector_slice(int x1, int x2, int x3, int x4, int x5) {
     return this->vector_slice(index5(x1, x2, x3, x4, x5)); }
   VectorView Array::vector_slice(
-      int x1, int x2, int x3, int x4, int x5, int x6){
+      int x1, int x2, int x3, int x4, int x5, int x6) {
     return this->vector_slice(index6(x1, x2, x3, x4, x5, x6)); }
 
-  bool Array::operator==(const Array &rhs)const{
+  bool Array::operator==(const Array &rhs) const {
     return (dim() == rhs.dim()) && (data_ == rhs.data_);
   }
 

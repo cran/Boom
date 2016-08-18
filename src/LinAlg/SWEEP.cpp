@@ -1,143 +1,104 @@
 /*
-   Copyright (C) 2005 Steven L. Scott
+  Copyright (C) 2005 Steven L. Scott
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
 
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  */
 
 #include <LinAlg/SWEEP.hpp>
-#include <LinAlg/Types.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
   typedef SweptVarianceMatrix SVM;
 
-  SVM::SweptVarianceMatrix()
-      : S(), swept_(), nswept_(0) {}
-
-  SVM::SweptVarianceMatrix(uint d)
-      : S(d), swept_(d, false), nswept_(0){}
-
-  SVM::SweptVarianceMatrix(const SpdMatrix &m)
-      : S(m), swept_(m.nrow(), false), nswept_(0){}
-
-  SVM::SweptVarianceMatrix
-      (const SVM &rhs):
-      S(rhs.S),
-      swept_(rhs.swept_),
-      nswept_(rhs.nswept_)
-      {}
-
-  void SVM::SWP(const std::vector<bool> &inc){
-    uint p = inc.size();
-    assert(p==S.nrow());
-    for(uint i=0; i<p; ++i){
-      if(inc[i]) SWP(i);
-      else RSW(i);}}
-
-  void SVM::SWP(uint m){
-    if(swept_[m]) return;
-    ++nswept_;
-    swept_[m]=true;
-    double x = S(m,m);
-    uint d = S.dim();
-    for(uint i=0; i<d; ++i){
-      if(i!=m){
-        for(uint j = 0; j<d; ++j){
-          if(j!=m){
-            S(i,j) -= S(i,m)*S(m,j)/x; }}}}
-    S(m,m) = -1.0/x;
-    for(uint i = 0; i<d; ++i){
-      if(i!=m){
-        S(i,m)/=x;
-        S(m,i)/=x;}}
+  SVM::SweptVarianceMatrix(const SpdMatrix &m, bool inverse)
+      : S_(m),
+        swept_(m.nrow(), inverse)
+  {
+    if (inverse) S_ *= -1;
   }
 
-  void SVM::RSW(uint m){
-    if(!swept_[m]) return;
-    --nswept_;
-    swept_[m]=false;
-
-    double x = S(m,m);
-    uint d = S.dim();
-    for(uint i=0; i<d; ++i){
-      if(i!=m){
-        for(uint j = 0; j<d; ++j){
-          if(j!=m){
-            S(i,j) -=  S(i,m)*S(m,j)/x; }}}}
-
-    S(m,m) = -1.0/x;
-    for(uint i = 0; i<d; ++i){
-      if(i!=m){
-        S(i,m)/=x;
-        S(m,i)/=x;}}
+  void SVM::SWP(const Selector &to_sweep) {
+    uint p = to_sweep.nvars_possible();
+    assert(p == S_.nrow());
+    for (uint i = 0; i < p; ++i) {
+      if (to_sweep[i]) {
+        SWP(i);
+      } else {
+        RSW(i);
+      }
+    }
   }
 
-  uint SVM::xdim()const{ return nswept_; }
-  uint SVM::ydim()const{ return S.nrow()- nswept_; }
+  void SVM::SWP(uint sweep_index) {
+    if (swept_[sweep_index]) return;
+    swept_.add(sweep_index);
+    do_sweep(sweep_index);
+  }
+
+  void SVM::do_sweep(uint sweep_index) {
+    double x = S_(sweep_index, sweep_index);
+    if (!std::isfinite(1.0 / x)) {
+      report_error("Zero variance implied by SWEEP operation.  "
+                   "Matrix might be less than full rank.");
+    }
+    S_(sweep_index, sweep_index) = -1.0 / x;
+    uint dimension = S_.nrow();
+    for (uint i = 0; i < dimension; ++i) {
+      if (i != sweep_index) {
+        for (uint j = 0; j < dimension; ++j) {
+          if (j != sweep_index) {
+            S_(i, j) -= S_(i, sweep_index) * S_(sweep_index, j) / x;
+          }
+        }
+      }
+    }
+    for (uint i = 0; i < dimension; ++i) {
+      if (i != sweep_index) {
+        S_(i, sweep_index) /= x;
+        S_(sweep_index, i) /= x;
+      }
+    }
+  }
 
   //------------------------------------------------------------
+  void SVM::RSW(uint sweep_index) {
+    if (!swept_[sweep_index]) return;
+    swept_.drop(sweep_index);
+    do_sweep(sweep_index);
+  }
 
+  uint SVM::xdim() const { return swept_.nvars(); }
+  uint SVM::ydim() const { return swept_.nvars_excluded();}
 
-  Matrix SVM::Beta()const{   // E(y|x) = x*Beta
-    Matrix ans(xdim(), ydim());
-    uint ii=0;
-    for(uint i = 0; i<S.dim(); ++i){
-      if(swept_[i]==true){  // i is an 'x' dimension
-        uint jj=0;
-        for(uint j = 0; j<S.dim(); ++j){
-          if(swept_[j]==false)     // j is a 'y' dimension
-            ans(ii,jj++)=S(i,j);}
-        if(jj==ydim()) break;
-        ++ii;}
-      if(ii==xdim()) break; }
-    return ans; }
-
-  Vector SVM::E_y_given_x(const Vector &x, const Vector &mu){
-    assert(mu.size()==S.ncol());
-    assert(x.size() == nswept_);
-    std::vector<bool> isy(swept_);
-    isy.flip();
-    return x * Beta() + select(mu, isy);
+  //------------------------------------------------------------
+  Matrix SVM::Beta() const {   // E(y|x) = Beta * x
+    return swept_.complement().select_rows(swept_.select_cols(S_));
   }
   //------------------------------------------------------------
-
-  SpdMatrix SVM::V_y_given_x()const{
-    SpdMatrix ans(ydim());
-    uint ii=0;
-    uint d = S.dim();
-    for(uint i = 0; i<d; ++i){
-      if(swept_[i]==true){
-        uint jj=0;
-        for(uint j  = 0; j<=i; ++j){
-          if(swept_[j]==true){
-            ans(ii,jj) = ans(jj,ii) = S(i,j);
-            ++jj;}}
-        ++ii;}}
-    return ans;}
-
-  SpdMatrix SVM::ivar_x()const{
-    SpdMatrix ans(xdim());
-    uint ii=0;
-    uint d = S.dim();
-    for(uint i = 0; i<d; ++i){
-      if(swept_[i]==true){
-        uint jj=0;
-        for(uint j  = 0; j<=i; ++j){
-          if(swept_[j]==true){
-            ans(ii,jj) = ans(jj,ii) = -S(i,j);
-            ++jj;}}
-        ++ii;}}
-    return ans;}
+  Vector SVM::conditional_mean(const Vector &known_subset,
+                               const Vector &unconditional_mean) const {
+    return (known_subset - swept_.select(unconditional_mean)) * Beta()
+        + swept_.complement().select(unconditional_mean);
+  }
+  //------------------------------------------------------------
+  SpdMatrix SVM::residual_variance() const {
+    return swept_.complement().select(S_);
+  }
+  //------------------------------------------------------------
+  SpdMatrix SVM::precision_of_swept_elements() const {
+    return -1 * swept_.select(S_);
+  }
 
 } // ends namespace BOOM

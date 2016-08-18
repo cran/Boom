@@ -94,7 +94,8 @@ namespace BOOM{
 
   //======================================================================
   ArModel::ArModel(int number_of_lags)
-      : ParamPolicy(new VectorParams(number_of_lags, 0),
+      : ParamPolicy(new GlmCoefs(Vector(number_of_lags, 0.0),
+                                 true),
                     new UnivParams(1.0)),
         DataPolicy(new ArSuf(number_of_lags)),
         filter_coefficients_current_(false)
@@ -102,7 +103,7 @@ namespace BOOM{
     Phi_prm()->add_observer(boost::bind(&ArModel::observe_phi, this));
   }
 
-  ArModel::ArModel(Ptr<VectorParams> phi, Ptr<UnivParams> sigsq)
+  ArModel::ArModel(Ptr<GlmCoefs> phi, Ptr<UnivParams> sigsq)
       : ParamPolicy(phi, sigsq),
         DataPolicy(new ArSuf(phi->size())),
         filter_coefficients_current_(false)
@@ -143,10 +144,13 @@ namespace BOOM{
     Phi_prm()->set(phi);
   }
 
-  Ptr<VectorParams> ArModel::Phi_prm(){ return prm1(); }
-  const Ptr<VectorParams> ArModel::Phi_prm()const{ return prm1(); }
+  Ptr<GlmCoefs> ArModel::Phi_prm(){ return prm1(); }
+  const Ptr<GlmCoefs> ArModel::Phi_prm()const{ return prm1(); }
   Ptr<UnivParams> ArModel::Sigsq_prm(){ return prm2(); }
   const Ptr<UnivParams> ArModel::Sigsq_prm()const{ return prm2(); }
+
+  const GlmCoefs &ArModel::coef() const { return prm1_ref(); }
+  GlmCoefs &ArModel::coef() { return prm1_ref(); }
 
   bool ArModel::check_stationary(const Vector &phi){
     // The process is stationary if the roots of the polynomial
@@ -228,7 +232,6 @@ namespace BOOM{
     }
     return ans;
   }
-
 
   // Determine the MA filter coefficients from the AR coefficients by
   // equating coefficients in the polynomial phi(z)*psi(z) = 1.

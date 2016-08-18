@@ -17,6 +17,7 @@
 */
 
 #include <Models/Hierarchical/HierarchicalZeroInflatedPoissonModel.hpp>
+#include <distributions.hpp>
 #include <cpputil/report_error.hpp>
 
 namespace BOOM {
@@ -190,6 +191,16 @@ namespace BOOM {
 
   double HZIP::zero_probability_prior_sample_size() const {
     return prior_for_zero_probability_->sample_size();
+  }
+
+  ZeroInflatedPoissonData HZIP::sim(int64_t n) const {
+    const double lambda = prior_for_lambda_->sim();
+    const double zero_probability = prior_for_zero_probability_->sim();
+    double number_of_zero_trials = rbinom(n, zero_probability);
+    double number_of_positive_trials = n - number_of_zero_trials;
+    double number_of_events = rpois(number_of_positive_trials * lambda);
+    return ZeroInflatedPoissonData(
+        number_of_zero_trials, number_of_positive_trials, number_of_events);
   }
 
   void HZIP::initialize() {

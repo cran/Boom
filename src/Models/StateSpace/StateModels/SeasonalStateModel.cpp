@@ -18,6 +18,7 @@
 
 #include <Models/StateSpace/StateModels/SeasonalStateModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
@@ -29,8 +30,13 @@ namespace BOOM{
         time_of_first_observation_(0),
         T0_(new SeasonalStateSpaceMatrix(nseasons)),
         RQR0_(new UpperLeftCornerMatrix(state_dimension(), 1.0)),
+        state_error_variance_at_new_season_(
+            new UpperLeftCornerMatrix(1, 1.0)),
         T1_(new IdentityMatrix(state_dimension())),
         RQR1_(new ZeroMatrix(state_dimension())),
+        state_error_variance_in_season_interior_(new ZeroMatrix(1)),
+        state_error_expander_(new FirstElementSingleColumnMatrix(
+            state_dimension())),
         initial_state_mean_(state_dimension(), 0.0),
         initial_state_variance_(0)
   {
@@ -53,8 +59,14 @@ namespace BOOM{
         time_of_first_observation_(rhs.time_of_first_observation_),
         T0_(rhs.T0_),
         RQR0_(rhs.RQR0_->clone()),
+        state_error_variance_at_new_season_(
+            rhs.state_error_variance_at_new_season_->clone()),
         T1_(rhs.T1_),
         RQR1_(rhs.RQR1_),
+        state_error_variance_in_season_interior_(
+            rhs.state_error_variance_in_season_interior_->clone()),
+        state_error_expander_(
+            new FirstElementSingleColumnMatrix(state_dimension())),
         initial_state_mean_(rhs.initial_state_mean_),
         initial_state_variance_(rhs.initial_state_variance_)
   {
@@ -98,6 +110,18 @@ namespace BOOM{
     return RQR1_;
   }
 
+  Ptr<SparseMatrixBlock> SSM::state_error_expander(int t) const {
+    return state_error_expander_;
+  }
+
+  Ptr<SparseMatrixBlock> SSM::state_error_variance(int t) const {
+    if (new_season(t + 1)) {
+      return state_error_variance_at_new_season_;
+    } else {
+      return state_error_variance_in_season_interior_;
+    }
+  }
+
   uint SSM::state_dimension()const{
     return nseasons_ - 1;
   }
@@ -132,6 +156,7 @@ namespace BOOM{
   void SSM::set_sigsq(double sigsq){
     ZeroMeanGaussianModel::set_sigsq(sigsq);
     RQR0_->set_value(sigsq);
+    state_error_variance_at_new_season_->set_value(sigsq);
   }
 
   void SSM::set_time_of_first_observation(int t){
@@ -183,6 +208,23 @@ namespace BOOM{
   void SSM::set_initial_state_variance(double sigsq){
     SpdMatrix v(state_dimension(), sigsq);
     initial_state_variance_ = v;}
+
+  void SSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (state_error_mean.size() != 1
+        || state_error_variance.nrow() != 1
+        || state_error_variance.ncol() != 1) {
+      report_error("Wrong size argument passed to SeasonalStateModel::"
+                   "update_complete_data_sufficient_statistics");
+    }
+    if (new_season(t)) {
+      double mean = state_error_mean[0];
+      double var = state_error_variance(0, 0);
+      suf()->update_expected_value(1.0, mean, var + square(mean));
+    }
+  }
 
 
 }

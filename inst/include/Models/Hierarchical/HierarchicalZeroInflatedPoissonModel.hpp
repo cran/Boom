@@ -162,6 +162,12 @@ namespace BOOM {
     double zero_probability_prior_mean()const;
     double zero_probability_prior_sample_size()const;
 
+    // Args:
+    //   n:  The number of trials for a particular observation.  All trials will
+    //     use the same zero probability and reward value distribution.
+    // Returns:
+    //   Aggregated data for the all the requested observations.
+    ZeroInflatedPoissonData sim(int64_t n) const;
    private:
     void initialize();
     Ptr<GammaModel> prior_for_lambda_;

@@ -36,7 +36,7 @@ namespace BOOM{
     //    CorrTF * clone()const;
     double operator()(const Vector &x)const override;
   private:
-    mutable Corr R, R2;
+    mutable CorrelationMatrix R, R2;
     mutable Ptr<SpdParams> spd;
     mutable Ptr<LoglikeModel> mod;
     mutable Vector wsp;

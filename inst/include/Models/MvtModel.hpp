@@ -18,7 +18,7 @@
 
 #ifndef MVT_MODEL_H
 #define MVT_MODEL_H
-#include <LinAlg/Types.hpp>
+
 #include <Models/ModelTypes.hpp>
 #include <Models/VectorModel.hpp>
 #include <Models/SpdParams.hpp>

@@ -54,6 +54,12 @@ namespace BOOM {
                        int time_now) override;
 
     uint state_dimension() const override {return 2 * frequencies_.size();}
+    uint state_error_dimension() const override {return state_dimension();}
+
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
 
     void simulate_state_error(VectorView eta, int t) const override;
 
@@ -64,6 +70,14 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override {
       refresh_variance();
       return state_variance_matrix_;
+    }
+
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override {
+      return state_transition_matrix(t);
+    }
+
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override {
+      return state_variance_matrix(t);
     }
 
     SparseVector observation_matrix(int t)const override;

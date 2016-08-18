@@ -62,7 +62,7 @@ namespace BOOM {
       gradient.resize(1);
       gradient[0] = n / z0;
       if (nd > 1) {
-        Hessian.resize(0, 0);
+        Hessian.resize(1, 1);
         Hessian(0, 0) = -n / (z0 * z0);
       }
     }

@@ -107,8 +107,10 @@ Matrix SVD::inv()const{
       && left_.nrow() == right_.nrow();
   if(!invertible){
     std::ostringstream err;
-    err << "error in SVD::inv(), only square matrices can be inverted" << std::endl
-        << "original matrix = " << std::endl << original_matrix() << std::endl;
+    err << "error in SVD::inv(), only square matrices can be inverted"
+        << std::endl
+        << "original matrix = " << std::endl << original_matrix()
+        << std::endl;
     report_error(err.str());
   }
   return solve(left_.Id());

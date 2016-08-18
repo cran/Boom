@@ -93,6 +93,15 @@ namespace BOOM {
     double pdf(const Data * dp, bool logscale)const override;
     double logp(int y)const;
     double sim()const;
+
+    // Simulates the specified number of trials and returns a structure
+    // containing the a summary of the results.
+    //
+    // Args:
+    //   n:  The number of trials to simulate.
+    // Returns:
+    //   Aggregated data for the all the requested observations.
+    ZeroInflatedPoissonSuf sim(int64_t n)const;
    private:
     mutable double log_zero_prob_;
     mutable double log_poisson_prob_;

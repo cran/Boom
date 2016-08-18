@@ -22,6 +22,14 @@
 
 namespace BOOM{
 
+  void StateModel::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    report_error("update_complete_data_sufficient_statistics does not work "
+                 "for this StateModel subclass.");
+  }
+
   void StateModel::simulate_initial_state(VectorView eta)const{
     if(eta.size() != state_dimension()){
       std::ostringstream err;
@@ -34,5 +42,4 @@ namespace BOOM{
   }
 
   void StateModel::observe_initial_state(const ConstVectorView &state){}
-
 }

@@ -22,7 +22,7 @@
 #include <cpputil/report_error.hpp>
 #include <stats/Design.hpp>
 #include <TargetFun/TargetFun.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 
 #include <cmath>

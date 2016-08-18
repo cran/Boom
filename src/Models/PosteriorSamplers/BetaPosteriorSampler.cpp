@@ -133,7 +133,7 @@ namespace BOOM {
     ostringstream err;
     err << "The slice sampler generated an exception when drawing "
         << thing_being_drawn << " for the beta distribution.  " << endl
-        << "Current parameter values are:  "
+        << "Current parameter values are:  " << endl
         << "      a = " << model_->a() << endl
         << "      b = " << model_->b() << endl
         << "  a/a+b = " << model_->mean() << endl

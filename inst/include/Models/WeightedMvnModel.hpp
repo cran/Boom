@@ -18,7 +18,7 @@
 #ifndef BOOM_WEIGHTED_MVN_MODEL_HPP
 #define BOOM_WEIGHTED_MVN_MODEL_HPP
 
-#include <LinAlg/Types.hpp>
+
 #include <Models/ModelTypes.hpp>
 #include <Models/SpdParams.hpp>
 #include <Models/Sufstat.hpp>
@@ -56,9 +56,9 @@ namespace BOOM{
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     ostream &print(ostream &out)const override;
   private:
     Vector sum_;
@@ -100,5 +100,5 @@ namespace BOOM{
     double pdf(Ptr<Data>, bool logscale)const;
     double pdf(Ptr<DataType>, bool logscale)const;
   };
-}
+}  // namespace BOOM
 #endif// BOOM_WEIGHTED_MVN_MODEL_HPP

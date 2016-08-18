@@ -54,6 +54,9 @@ namespace BOOM{
     virtual void reweight(const Matrix &X, const Vector &y, const Vector &w);
     virtual void reweight(const dsetPtr &dat);
 
+    void set_xtwx(const SpdMatrix &xtwx);
+    void set_xtwy(const Vector &xtwy);
+
     //    virtual void Update(const RegressionData &);
     void Update(const WeightedRegressionData &) override;
     void add_data(const Vector &x, double y, double w);

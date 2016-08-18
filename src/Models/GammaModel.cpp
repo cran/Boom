@@ -17,6 +17,7 @@
 */
 #include <Models/GammaModel.hpp>
 #include <cmath>
+#include <limits>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
@@ -44,6 +45,31 @@ namespace BOOM{
   GS *GS::clone() const{return new GS(*this);}
 
   void GS::set(double sum, double sumlog, double n){
+    // Check for impossible values.
+    if (n > 0) {
+      if (sum <= 0.0) {
+        report_error("GammaSuf cannot have a negative sum if "
+                     "it has a positive sample size");
+      }
+      // There is no minimum value that sumlog can achieve, because
+      // any individual observation might be arbitrarily close to
+      // zero, driving the sum of logs close to negative infinity.
+      //
+      // The sum of logs is maximized if each observation is the same
+      // size.
+      double ybar = sum / n;
+      if (sumlog > n * log(ybar)) {
+        report_error("GammaSuf was set with an impossibly large value "
+                     "of sumlog.");
+      }
+    } else if (n < 0) {
+      report_error("GammaSuf set to have a negative sample size.");
+    } else {
+      if (std::fabs(sum) > std::numeric_limits<double>::epsilon()
+          || std::fabs(sumlog) > std::numeric_limits<double>::epsilon()) {
+        report_error("All elements of GammaSuf must be zero if n == 0.");
+      }
+    }
     sum_ = sum;
     sumlog_ = sumlog;
     n_ = n;

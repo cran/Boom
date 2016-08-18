@@ -718,11 +718,9 @@ namespace BOOM{
       }
       state_model->set_method(sampler);
 
-      std::string component_name = prefix + "";
-
       std::ostringstream phi_parameter_name;
       phi_parameter_name << prefix << "AR" << number_of_lags << ".phi";
-      io_manager_->add_list_element(new VectorListElement(
+      io_manager_->add_list_element(new GlmCoefsListElement(
           state_model->Phi_prm(),
           phi_parameter_name.str()));
 
@@ -733,6 +731,40 @@ namespace BOOM{
           sigma_parameter_name.str()));
       return state_model;
     }
+    //======================================================================
+    // ArStateModel * StateModelFactory::CreateAutoArStateModel(
+    //     SEXP list_arg, const std::string & prefix) {
+    //   int number_of_lags = Rf_asInteger(getListElement(list_arg, "lags"));
+    //   ArStateModel *state_model(new ArStateModel(number_of_lags));
+
+    //   ArSpikeSlabPrior phi_prior_spec(getListElement(list_arg, "prior"));
+
+    //   NEW(ArSpikeSlabSampler, sampler)(state_model,
+    //                                    phi_prior_spec.slab(),
+    //                                    phi_prior_spec.spike(),
+    //                                    phi_prior_spec.siginv_prior(),
+    //                                    phi_prior_spec.truncate());
+    //   if (phi_prior_spec.max_flips() > 0) {
+    //     sampler->limit_model_selection(phi_prior_spec.max_flips());
+    //   }
+
+    //   if (phi_prior_spec.sigma_upper_limit() > 0) {
+    //     sampler->set_sigma_upper_limit(phi_prior_spec.sigma_upper_limit());
+    //   }
+
+    //   std::ostringstream phi_parameter_name;
+    //   phi_parameter_name << prefix << "AR" << number_of_lags << ".phi";
+    //   io_manager_->add_list_element(new GlmCoefsListElement(
+    //       state_model->Phi_prm(),
+    //       phi_parameter_name.str()));
+
+    //   std::ostringstream sigma_parameter_name;
+    //   sigma_parameter_name << prefix << "AR" << number_of_lags << ".sigma";
+    //   io_manager_->add_list_element(new StandardDeviationListElement(
+    //       state_model->Sigsq_prm(),
+    //       sigma_parameter_name.str()));
+
+    // }
 
     //======================================================================
     // This is a callback designed to be used with a

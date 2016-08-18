@@ -20,7 +20,7 @@
 #include <cmath>
 
 #include <LinAlg/Matrix.hpp>
-#include <LinAlg/Types.hpp>
+
 
 #include <numopt.hpp>
 

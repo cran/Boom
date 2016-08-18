@@ -17,13 +17,15 @@
 */
 #ifndef BOOM_HMM_TOOLS_HPP
 #define BOOM_HMM_TOOLS_HPP
-#include <LinAlg/Types.hpp>
+
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Matrix.hpp>
 
 namespace BOOM{
 
     double fwd_1(Vector &pi, Matrix &P, const Matrix &logQ, const Vector &logd,
-		 const Vector &one);
+                 const Vector &one);
     void bkwd_1(Vector &pi, Matrix &P, Vector & wsp, const Vector &one);
 
-}
+}  // namespace
 #endif// BOOM_HMM_TOOLS_HPP

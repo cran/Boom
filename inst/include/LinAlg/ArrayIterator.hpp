@@ -24,12 +24,36 @@
 
 namespace BOOM{
 
-using std::cout;
-using std::endl;
-
   class ArrayBase;
   class ConstArrayBase;
 
+  class ArrayPositionManager {
+   public:
+    ArrayPositionManager(const std::vector<int> &dims);
+    void operator++();
+
+    // Move the position back to the beginning.
+    void reset();
+
+    // Move the position to one past the end.
+    void set_to_end();
+
+    // Check whether position is one past the end.
+    bool at_end() const {return at_end_;}
+
+    bool operator==(const ArrayPositionManager &rhs) const;
+    bool operator!=(const ArrayPositionManager &rhs) const;
+
+    const std::vector<int> &position() const {return position_;}
+    void set_position(const std::vector<int> &position);
+
+   private:
+    const std::vector<int> &dims_;
+    std::vector<int> position_;
+    bool at_end_;
+  };
+
+  //======================================================================
   class ArrayIterator
       : public std::iterator<std::forward_iterator_tag, double>
   {
@@ -38,33 +62,34 @@ using std::endl;
                   const std::vector<int> &starting_position);
     ArrayIterator(ArrayBase *host);
 
-    double & operator*()const;
+    double &operator*();
 
-    bool operator==(const ArrayIterator &rhs)const{
-      return (host_ == rhs.host_
-              && dims_ == rhs.dims_
-              && pos_ == rhs.pos_);}
+    bool operator==(const ArrayIterator &rhs) const {
+      return (host_ == rhs.host_) && (position_ == rhs.position_);
+    }
 
-    bool operator!=(const ArrayIterator &rhs)const{
+    bool operator!=(const ArrayIterator &rhs) const {
       return !(*this == rhs); }
 
-    ArrayIterator & operator++(){
-      for(int d = 0; d < dims_.size(); ++d){
-        ++pos_[d];
-        if(pos_[d] < dims_[d]) return *this;
-        pos_[d] = 0;
-      }
-      pos_ = dims_;
-      for(int i = 1; i < dims_.size(); ++i) --pos_[i];
+    ArrayIterator &operator++() {
+      ++position_;
       return *this;
     }
 
-    const std::vector<int> & pos()const{return pos_;}
+    const std::vector<int> &position() const {return position_.position();}
+
+    void set_position(const std::vector<int> &position) {
+      position_.set_position(position);
+    }
+
+    ArrayIterator &set_to_end() {
+      position_.set_to_end();
+      return *this;
+    }
 
    private:
-    ArrayBase * host_;
-    const std::vector<int> &dims_;
-    std::vector<int> pos_;
+    ArrayBase *host_;
+    ArrayPositionManager position_;
   };
 
   //======================================================================
@@ -72,35 +97,43 @@ using std::endl;
       : public std::iterator<std::forward_iterator_tag, double>
   {
    public:
-    ConstArrayIterator(const ConstArrayBase *host,
-                  const std::vector<int> &starting_position);
+    // Iterator begins at the beginning of the array.
     ConstArrayIterator(const ConstArrayBase *host);
 
-    double operator*()const;
+    // Begins at a specific position.
+    ConstArrayIterator(const ConstArrayBase *host,
+                       const std::vector<int> &starting_position);
 
-    bool operator==(const ConstArrayIterator &rhs)const{
-      return (host_ == rhs.host_
-              && dims_ == rhs.dims_
-              && pos_ == rhs.pos_);}
+    double operator*() const;
 
-    bool operator!=(const ConstArrayIterator &rhs)const{
+    bool operator==(const ConstArrayIterator &rhs) const {
+      return (host_ == rhs.host_) && (position_ == rhs.position_);
+    }
+
+    bool operator!=(const ConstArrayIterator &rhs) const {
       return !(*this == rhs); }
 
-    ConstArrayIterator & operator++(){
-      for(int d = 0; d < dims_.size(); ++d){
-        ++pos_[d];
-        if(pos_[d] < dims_[d]) return *this;
-        pos_[d] = 0;
-      }
+    ConstArrayIterator &operator++() {
+      ++position_;
       return *this;
     }
 
-    const std::vector<int> & pos()const{return pos_;}
+    const std::vector<int> &position() const {
+      return position_.position();
+    }
+
+    void set_position(const std::vector<int> &position) {
+      position_.set_position(position);
+    }
+
+    ConstArrayIterator &set_to_end() {
+      position_.set_to_end();
+      return *this;
+    }
 
    private:
     const ConstArrayBase * host_;
-    const std::vector<int> &dims_;
-    std::vector<int> pos_;
+    ArrayPositionManager position_;
   };
 
 }

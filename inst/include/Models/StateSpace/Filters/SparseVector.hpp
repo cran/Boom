@@ -24,7 +24,7 @@
 
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/SubMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 
 #include <Models/ParamTypes.hpp>
 

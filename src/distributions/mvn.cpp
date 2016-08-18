@@ -20,7 +20,7 @@
 
 #include <distributions.hpp>
 
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
@@ -111,7 +111,7 @@ namespace BOOM{
 
   //======================================================================
   double dmvn(const Vector &y, const Vector &mu,
- 	      const SpdMatrix &Siginv, double ldsi, bool logscale){
+              const SpdMatrix &Siginv, double ldsi, bool logscale){
 
     /*---------------------------------------------------------------
       Evaluates the multivariate normal distribution with mean mu and
@@ -125,7 +125,7 @@ namespace BOOM{
   }
 
   double dmvn_zero_mean(const Vector &y, const SpdMatrix &Siginv,
-			double ldsi, bool logscale){
+                        double ldsi, bool logscale){
     const double log2pi = 1.83787706641;
     double n = y.size();
     double ans = 0.5*(ldsi - Siginv.Mdist(y) -n*log2pi);

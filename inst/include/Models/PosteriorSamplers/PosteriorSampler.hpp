@@ -19,7 +19,7 @@
 #ifndef BOOM_SAMPLING_METHOD_HPP
 #define BOOM_SAMPLING_METHOD_HPP
 
-#include <LinAlg/Types.hpp>
+
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
 #include <LinAlg/Vector.hpp>

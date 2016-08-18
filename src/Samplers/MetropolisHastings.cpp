@@ -36,7 +36,7 @@ namespace BOOM{
   void MH::set_target(Target f){ f_ = f;}
 
   Vector MH::draw(const Vector & old){
-    cand_ = prop_->draw(old);
+    cand_ = prop_->draw(old, &rng());
     double logp_cand = logp(cand_);
     double logp_old = logp(old);
     if (!std::isfinite(logp_cand)) {
@@ -91,7 +91,7 @@ namespace BOOM{
   {}
 
   double SMH::draw(double old){
-    double cand = prop_->draw(old);
+    double cand = prop_->draw(old, &rng());
     double logp_cand = f_(cand);
     double logp_old = f_(old);
     if (!std::isfinite(logp_cand)) {

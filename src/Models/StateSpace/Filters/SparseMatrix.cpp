@@ -187,15 +187,13 @@ namespace BOOM{
   }
   //======================================================================
   AutoRegressionTransitionMatrix::AutoRegressionTransitionMatrix(
-      Ptr<VectorParams> rho)
-      : autoregression_params_(rho)
+      Ptr<GlmCoefs> rho) : autoregression_params_(rho)
   {}
 
   AutoRegressionTransitionMatrix::AutoRegressionTransitionMatrix(
       const AutoRegressionTransitionMatrix &rhs)
       : SparseMatrixBlock(rhs),
-        autoregression_params_(new VectorParams(
-            rhs.autoregression_params_->value()))
+        autoregression_params_(rhs.autoregression_params_->clone())
   {}
 
   AutoRegressionTransitionMatrix *
@@ -204,11 +202,11 @@ namespace BOOM{
   }
 
   int AutoRegressionTransitionMatrix::nrow() const {
-    return autoregression_params_->size();
+    return autoregression_params_->nvars_possible();
   }
 
   int AutoRegressionTransitionMatrix::ncol() const {
-    return autoregression_params_->size();
+    return autoregression_params_->nvars_possible();
   }
 
   void AutoRegressionTransitionMatrix::multiply(

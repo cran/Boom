@@ -22,9 +22,8 @@
 #include <cpputil/report_error.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-// #include <LinAlg/Types.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   void intrusive_ptr_add_ref(TargetFun *s){
     s->up_count();}
@@ -127,4 +126,4 @@ namespace BOOM{
     (*x_)[position_] = x_arg;
     return f_->scalar_derivative(*x_, derivative, position_);
   }
-}
+}  // namespace BOOM

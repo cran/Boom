@@ -377,14 +377,21 @@ namespace BOOM{
 
   typedef ConstVectorView CVV;
 
-  CVV::const_iterator CVV::begin()const{return const_iterator(V, V, stride()); }
-  CVV::const_iterator CVV::end()const{return const_iterator(V+size()*stride(), V, stride()); }
+  CVV::const_iterator CVV::begin()const{
+    return const_iterator(V, V, stride());
+  }
+
+  CVV::const_iterator CVV::end()const{
+    return const_iterator(V+size()*stride(), V, stride());
+  }
 
   CVV::const_reverse_iterator CVV::rbegin()const{
-    return std::reverse_iterator<const_iterator>(begin());}
-  CVV::const_reverse_iterator CVV::rend()const{
-    return std::reverse_iterator<const_iterator>(end());}
+    return std::reverse_iterator<const_iterator>(begin());
+  }
 
+  CVV::const_reverse_iterator CVV::rend()const{
+    return std::reverse_iterator<const_iterator>(end());
+  }
 
   CVV::ConstVectorView(const double *first, uint n, int s)
       : V(first),

@@ -17,7 +17,7 @@
 */
 #include <Samplers/Sampler.hpp>
 #include <cpputil/Ptr.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <numopt.hpp>
 

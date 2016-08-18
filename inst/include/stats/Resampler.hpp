@@ -2,7 +2,7 @@
 #define BOOM_RESAMPLER_HPP
 #include <BOOM.hpp>
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <vector>
 #include <map>
 #include <algorithm>

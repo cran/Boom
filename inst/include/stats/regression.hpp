@@ -20,7 +20,7 @@
 
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 
 namespace BOOM{
 

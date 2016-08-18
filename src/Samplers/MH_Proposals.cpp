@@ -21,25 +21,23 @@
 namespace BOOM{
 
 
-  MH_Proposal::MH_Proposal(RNG & seeding_rng)
-      : rng_(seed_rng(seeding_rng))
-  {}
+  MH_Proposal::MH_Proposal() {}
 
   typedef MvtMhProposal MVTP;
 
-  MVTP::MvtMhProposal(const SpdMatrix & Ivar, double nu, RNG & seeding_rng)
-      : MH_Proposal(seeding_rng), nu_(nu)
+  MVTP::MvtMhProposal(const SpdMatrix & Ivar, double nu)
+      : nu_(nu)
   {
     set_ivar(Ivar);
   }
 
-  Vector MVTP::draw(const Vector & old)const{
+  Vector MVTP::draw(const Vector & old, RNG *rng) const {
     int n = old.size();
     Vector ans(n);
-    for(int i = 0; i < n; ++i) ans[i] = rnorm_mt(rng(), 0,1);
+    for(int i = 0; i < n; ++i) ans[i] = rnorm_mt(*rng, 0,1);
     ans = chol_ * ans;
     if(std::isfinite(nu_) && nu_ > 0){
-      double w = rgamma_mt(rng(), nu_/2.0, nu_/2.0);
+      double w = rgamma_mt(*rng, nu_/2.0, nu_/2.0);
       ans /= sqrt(w);
     }
     ans += mu(old);
@@ -74,37 +72,30 @@ namespace BOOM{
 
 
   typedef MvtRwmProposal MVTR;
-  MVTR::MvtRwmProposal(const SpdMatrix &Ivar, double nu, RNG &seeding_rng)
-      : MVTP(Ivar, nu, seeding_rng)
+  MVTR::MvtRwmProposal(const SpdMatrix &Ivar, double nu)
+      : MVTP(Ivar, nu)
   {}
 
   typedef MvtIndepProposal MVTI;
-  MVTI::MvtIndepProposal(const Vector & mu, const SpdMatrix & Ivar, double nu,
-                         RNG &seeding_rng)
-      : MVTP(Ivar, nu, seeding_rng),
+  MVTI::MvtIndepProposal(const Vector & mu, const SpdMatrix & Ivar, double nu)
+      : MVTP(Ivar, nu),
         mu_(mu)
   {}
 
   void MVTI::set_mu(const Vector & mu){ mu_ = mu; }
 
   //======================================================================
-  MH_ScalarProposal::MH_ScalarProposal(RNG & seeding_rng)
-      : rng_(seed_rng(seeding_rng))
-  {}
-
-  //======================================================================
   typedef TScalarMhProposal TSP;
 
-  TSP::TScalarMhProposal(double Sd, double Df, RNG & seeding_rng)
-    : MH_ScalarProposal(seeding_rng),
-      sig_(Sd),
+  TSP::TScalarMhProposal(double Sd, double Df)
+    : sig_(Sd),
       nu_(Df)
   {}
 
-  double TSP::draw(double old)const{
+  double TSP::draw(double old, RNG *rng)const{
     if(std::isfinite(nu_) && nu_ > 0)
-      return rstudent_mt(rng(), mu(old), sig_, nu_);
-    return rnorm_mt(rng(), mu(old), sig_);
+      return rstudent_mt(*rng, mu(old), sig_, nu_);
+    return rnorm_mt(*rng, mu(old), sig_);
   }
 
   double TSP::logf(double x, double old)const{

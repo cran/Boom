@@ -37,9 +37,9 @@ namespace BOOM{
     MarginallyUniformCorrelationModel * clone() const override;
 
     virtual double pdf(Ptr<Data>, bool logscale)const;
-    double logp(const Corr &)const override;
+    double logp(const CorrelationMatrix &)const override;
     uint dim()const;
-    Corr sim()const;
+    CorrelationMatrix sim()const;
    private:
     uint dim_;
   };

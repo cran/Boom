@@ -119,4 +119,19 @@ namespace BOOM {
     return prm2_ref();
   }
 
+  double ZIPRM::sim(const Vector &x, RNG &rng) const {
+    if (runif_mt(rng) < probability_forced_to_zero(x)) {
+      return 0.0;
+    }
+    return rpois(poisson_mean(x));
+  }
+
+  ZeroInflatedPoissonSuf ZIPRM::simulate_sufficient_statistics(
+      const Vector &x, int64_t n) const {
+    double number_of_zeros = rbinom(n, probability_forced_to_zero(x));
+    double number_of_positives = n - number_of_zeros;
+    double sum_of_positives = rpois(number_of_positives * poisson_mean(x));
+    return ZeroInflatedPoissonSuf(
+        number_of_zeros, number_of_positives, sum_of_positives);
+  }
 }

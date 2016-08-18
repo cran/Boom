@@ -17,14 +17,13 @@
 */
 
 #include <Models/Glm/RegressionModel.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/GammaModel.hpp>
 #include <Models/Glm/MvnGivenXandSigma.hpp>
 #include <sstream>
 #include <cmath>
 #include <distributions.hpp>
-#include <cpputil/ThrowException.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 
 namespace BOOM{

@@ -64,6 +64,9 @@ namespace BOOM {
     const std::vector<Ptr<AugmentedData> > &data(model_->dat());
     for (int t = 0; t < data.size(); ++t) {
       Ptr<AugmentedData> dp = data[t];
+      if (dp->missing()) {
+        continue;
+      }
       double state_contribution =
           model_->observation_matrix(t).dot(model_->state(t));
       double regression_contribution =

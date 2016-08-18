@@ -20,12 +20,11 @@
 #include <cpputil/report_error.hpp>
 #include <cpputil/math_utils.hpp>
 #include <Bmath/Bmath.hpp>
+#include <distributions.hpp>
 #include <stats/moments.hpp>
 
 namespace BOOM {
   using Rmath::lgammafn;
-  using Rmath::trigamma;
-  using Rmath::digamma;
 
   BinomialData::BinomialData(int64_t n, int64_t y)
       : trials_(n), successes_(y)
@@ -238,6 +237,11 @@ namespace BOOM {
       ans -= lgammafn(n+a+b) - lgammafn(a+y) - lgammafn(b+n-y);
     }
     return ans;
+  }
+
+  int64_t BetaBinomialModel::sim(int64_t n)const{
+    double rate = rbeta(a(), b());
+    return rbinom(n, rate);
   }
 
   // Set a/(a+b) and a+b using a very rough method of moments

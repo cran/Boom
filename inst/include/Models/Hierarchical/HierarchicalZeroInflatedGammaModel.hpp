@@ -164,6 +164,13 @@ namespace BOOM {
     // positive_probability_prior_mean() times the
     // mean_parameter_prior_mean().
     double prior_mean()const;
+
+    // Args:
+    //   n:  The number of trials for a particular observation.  All trials will
+    //     use the same positive probability and reward value distribution.
+    // Returns:
+    //   Aggregated data for the all the requested observations.
+    HierarchicalZeroInflatedGammaData sim(int64_t n)const;
    private:
     void setup();
     Ptr<GammaModel> prior_for_mean_parameters_;

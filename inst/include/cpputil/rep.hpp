@@ -19,7 +19,7 @@
 #ifndef BOOM_REP_HPP
 #define BOOM_REP_HPP
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 
 namespace BOOM{
   Vector rep(const Vector & x, uint n);

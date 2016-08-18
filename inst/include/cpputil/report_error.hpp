@@ -19,8 +19,25 @@
 #define BOOM_REPORT_ERROR_HPP_
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 namespace BOOM{
+
+  // Code that calls report_error typically also includes
+  // ostringstream to build the error message and uses iomanipulators
+  // like setw and endl, so it makes sense to add these into the BOOM
+  // namespace here.
+
+  using std::endl;
+  using std::ifstream;
+  using std::ios;
+  using std::iostream;
+  using std::istream;
+  using std::istringstream;
+  using std::ofstream;
+  using std::ostream;
+  using std::ostringstream;
+  using std::setw;
 
   // The usual method of reporting an error is to throw a
   // std::runtime_error with the given msg as its payload.

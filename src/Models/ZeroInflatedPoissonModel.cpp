@@ -226,6 +226,14 @@ namespace BOOM {
     return rpois(lambda());
   }
 
+  ZeroInflatedPoissonSuf ZeroInflatedPoissonModel::sim(int64_t n)const {
+    double number_of_zeros = rbinom(n, zero_probability());
+    double number_of_positives = n - number_of_zeros;
+    double sum_of_positives = rpois(number_of_positives * lambda());
+    return ZeroInflatedPoissonSuf(
+        number_of_zeros, number_of_positives, sum_of_positives);
+  }
+
   void ZeroInflatedPoissonModel::check_log_probabilities()const{
     if(log_zero_prob_current_) return;
     double p = zero_probability();

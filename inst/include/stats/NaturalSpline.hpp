@@ -20,7 +20,7 @@
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/QR.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
@@ -78,8 +78,5 @@ namespace BOOM{
   Matrix ns(const Vector &x, uint df);    // equally spaced knots.
   Matrix ns(const Vector &x, const Vector & InteriorKnots, double lo, double hi);
 
-
-
-
-}
+}  // namespace BOOM
 #endif// BOOM_NATURAL_SPLINE_HPP

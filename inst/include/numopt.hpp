@@ -21,7 +21,7 @@
 
 #include <string>
 #include <LinAlg/SpdMatrix.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <BOOM.hpp>
 #include <boost/function.hpp>
 #include <cpputil/report_error.hpp>

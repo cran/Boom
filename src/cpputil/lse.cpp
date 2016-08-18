@@ -16,7 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <LinAlg/Vector.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <cmath>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>

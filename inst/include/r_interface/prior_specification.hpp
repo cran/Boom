@@ -68,11 +68,12 @@ namespace BOOM{
       double mu()const {return mu_;}
       double sigma()const {return sigma_;}
       double initial_value()const {return initial_value_;}
-
+      bool fixed() const {return fixed_;}
      private:
       double mu_;
       double sigma_;
       double initial_value_;
+      bool fixed_;
     };
 
     //----------------------------------------------------------------------

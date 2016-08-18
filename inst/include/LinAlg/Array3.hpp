@@ -56,7 +56,8 @@ namespace BOOM{
     };
 
     template <class Fwd>
-    DeprecatedArray3::DeprecatedArray3(uint d1, uint d2, uint d3, Fwd Beg, Fwd End)
+    DeprecatedArray3::DeprecatedArray3(
+        uint d1, uint d2, uint d3, Fwd Beg, Fwd End)
       : n1(d1),n2(d2),n3(d3),V(d1, Matrix(d2,d3))
     {
       uint d = std::distance(Beg,End);
@@ -73,8 +74,8 @@ namespace BOOM{
     inline double & DeprecatedArray3::operator()(uint i, uint j, uint k){
       return V[i](j,k);}
 
-    inline const double & DeprecatedArray3::operator()(uint i, uint j, uint k)const{
-      return V[i](j,k);}
+    inline const double & DeprecatedArray3::operator()(
+        uint i, uint j, uint k) const {return V[i](j,k);}
 
 }
 #endif// BOOM_NEWLA_ARRAY3_HPP

@@ -47,14 +47,17 @@ namespace BOOM{
     SeasonalStateModel * clone() const override;
 
     void observe_state(const ConstVectorView then,
-                               const ConstVectorView now,
-                               int t) override;
-    uint state_dimension()const override;
-    void simulate_state_error(VectorView eta, int t)const override;
+                       const ConstVectorView now,
+                       int t) override;
+    uint state_dimension() const override;
+    uint state_error_dimension() const override {return 1;}
+    void simulate_state_error(VectorView eta, int t) const override;
 
-    Ptr<SparseMatrixBlock> state_transition_matrix(int t)const override;
-    Ptr<SparseMatrixBlock> state_variance_matrix(int t)const override;
-    SparseVector observation_matrix(int t)const override;
+    Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
+    Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
+    SparseVector observation_matrix(int t) const override;
 
     void set_sigsq(double sigsq) override; // also resets model matrices
 
@@ -62,16 +65,22 @@ namespace BOOM{
     // time of the first observation with this function.
     void set_time_of_first_observation(int t0);
 
-    Vector initial_state_mean()const override;
+    Vector initial_state_mean() const override;
     void set_initial_state_mean(const Vector &mu);
-    SpdMatrix initial_state_variance()const override;
+    SpdMatrix initial_state_variance() const override;
     void set_initial_state_variance(const SpdMatrix &Sigma);
+
     // Sets all diagonal elements of Sigma to sigsq and all
     // off-diagaonal elements to zero.
     void set_initial_state_variance(double sigsq);
 
     // returns true if t is the start of a new season.
     bool new_season(int t)const;
+
+    void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
 
    private:
     uint nseasons_;
@@ -84,10 +93,15 @@ namespace BOOM{
     Ptr<UpperLeftCornerMatrix> RQR0_;  // sigsq() is in the upper left
                                       // corner.  other elements are
                                       // zero.
+    Ptr<UpperLeftCornerMatrix> state_error_variance_at_new_season_;
+
 
     // Model matrices in the interior of a season, when nothing changes
     Ptr<IdentityMatrix> T1_;    //
     Ptr<ZeroMatrix> RQR1_;      // dimension = state dimension
+    Ptr<ZeroMatrix> state_error_variance_in_season_interior_;
+
+    Ptr<FirstElementSingleColumnMatrix> state_error_expander_;
 
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;

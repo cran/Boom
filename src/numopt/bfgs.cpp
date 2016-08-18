@@ -18,7 +18,7 @@
 
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 
@@ -41,8 +41,9 @@ namespace BOOM{
       in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
       converted by p2c then re-crafted by B.D. Ripley */
 
-  double bfgs(Vector &b, Target target, dTarget dtarget, int maxit, double abstol,
-              double reltol, int &fncount, int & grcount, bool & fail,
+  double bfgs(Vector &b, Target target, dTarget dtarget, int maxit,
+              double abstol, double reltol,
+              int &fncount, int & grcount, bool & fail,
               int trace_frequency){
     bool trace = trace_frequency>0;
     int nREPORT = trace_frequency;
@@ -203,4 +204,4 @@ namespace BOOM{
     return Fmin;
   }
 
-}
+}  // namespace BOOM

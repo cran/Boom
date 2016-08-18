@@ -99,8 +99,8 @@ namespace BOOM{
     BOOM::dTarget df_;
     BOOM::d2Target d2f_;
     Vector cand_;
-    Vector g_;
-    Matrix H_;
+    Vector dummy_gradient_;
+    Matrix dummy_Hessian_;
     bool mode_is_fixed_;
     bool mode_has_been_found_;
   };

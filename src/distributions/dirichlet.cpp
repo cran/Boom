@@ -17,7 +17,7 @@
 */
 
 #include <distributions.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
 #include <cpputil/math_utils.hpp>
@@ -34,10 +34,10 @@ namespace BOOM{
   using std::endl;
 
   inline void illegal_parameter_value(const Vector &n, const string &fname,
-				      const string & prm_name){
+                                      const string & prm_name){
     ostringstream msg;
     msg << "illegal_parameter_value in " << fname << endl
-	<< prm_name << " = " << n << endl;
+        << prm_name << " = " << n << endl;
     report_error(msg.str());
   }
 
@@ -167,20 +167,20 @@ namespace BOOM{
   }
 
   double dirichlet_loglike(const Vector &nu, Vector *g, Matrix *h,
-			   const Vector & sumlogpi, double nobs){
+                           const Vector & sumlogpi, double nobs){
     uint n = nu.size();
     double sum=0;
     bool flag=false;
     for(uint i=0; i<n; ++i){  /* check for illegal parameter values */
       sum+=nu(i);
       if(nu(i)<=0){
- 	flag=true;
- 	break;}}
+        flag=true;
+        break;}}
     if(flag){
       for(uint i=0; i<n; ++i){
- 	if(g){
- 	  (*g)(i)= -nu(i);
- 	  if(h) for(uint j=0; j<n; ++j) (*h)(i,j)= (i==j)?1:0;}}
+        if(g){
+          (*g)(i)= -nu(i);
+          if(h) for(uint j=0; j<n; ++j) (*h)(i,j)= (i==j)?1:0;}}
       return BOOM::negative_infinity();}
 
     double ans= nobs*lgamma(sum);
@@ -191,10 +191,10 @@ namespace BOOM{
     for(uint i=0; i<n; ++i){
       ans+= (nu(i)-1)*sumlogpi(i)-nobs*lgamma(nu(i));
       if(g){
- 	(*g)(i)= tmp + sumlogpi(i)-nobs*digamma(nu(i));
- 	if(h){
- 	  for(uint j=0; j<n; ++j){
- 	    (*h)(i,j) =tmp1- (i==j? nobs*trigamma(nu(i)):0); }}}}
+        (*g)(i)= tmp + sumlogpi(i)-nobs*digamma(nu(i));
+        if(h){
+          for(uint j=0; j<n; ++j){
+            (*h)(i,j) =tmp1- (i==j? nobs*trigamma(nu(i)):0); }}}}
 
     return ans;
   }

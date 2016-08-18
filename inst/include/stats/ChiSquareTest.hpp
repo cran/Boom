@@ -21,7 +21,7 @@
 #include <iostream>
 #include <LinAlg/Vector.hpp>
 #include <LinAlg/Matrix.hpp>
-#include <LinAlg/Types.hpp>
+
 
 namespace BOOM{
 class OneWayChiSquareTest{

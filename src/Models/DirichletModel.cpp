@@ -18,7 +18,7 @@
 
 #include <Models/DirichletModel.hpp>
 #include <cpputil/math_utils.hpp>
-#include <LinAlg/Types.hpp>
+
 #include <stdexcept>
 #include <sstream>
 #include <distributions.hpp>  // for rgamma, lgamma, digamma, etc.

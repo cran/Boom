@@ -21,7 +21,11 @@
 
 namespace BOOM {
 
-  StudentLocalLinearTrendStateModel::StudentLocalLinearTrendStateModel(
+  namespace {
+    typedef StudentLocalLinearTrendStateModel SLLTSM;
+  }  // namespace
+
+  SLLTSM::StudentLocalLinearTrendStateModel(
       double sigma_level,
       double nu_level,
       double sigma_slope,
@@ -33,6 +37,7 @@ namespace BOOM {
         observation_matrix_(2),
         state_transition_matrix_(new LocalLinearTrendMatrix),
         state_variance_matrix_(new DiagonalMatrixBlock(2)),
+        state_error_expander_(new IdentityMatrix(2)),
         initial_state_mean_(2, 0.0),
         initial_state_variance_(2),
         behavior_(MIXTURE)
@@ -43,7 +48,7 @@ namespace BOOM {
     // observe_time_dimension is called.
   }
 
-  StudentLocalLinearTrendStateModel::StudentLocalLinearTrendStateModel(
+  SLLTSM::StudentLocalLinearTrendStateModel(
       const StudentLocalLinearTrendStateModel &rhs)
       : Model(rhs),
         ParamPolicy(rhs),
@@ -53,6 +58,7 @@ namespace BOOM {
         observation_matrix_(rhs.observation_matrix_),
         state_transition_matrix_(rhs.state_transition_matrix_),
         state_variance_matrix_(rhs.state_variance_matrix_->clone()),
+        state_error_expander_(rhs.state_error_expander_),
         initial_state_mean_(rhs.initial_state_mean_),
         initial_state_variance_(rhs.initial_state_variance_),
         latent_level_scale_factors_(rhs.latent_level_scale_factors_),
@@ -69,10 +75,10 @@ namespace BOOM {
   {}
 
   StudentLocalLinearTrendStateModel *
-  StudentLocalLinearTrendStateModel::clone()const{
+  SLLTSM::clone() const {
     return new StudentLocalLinearTrendStateModel(*this);}
 
-  void StudentLocalLinearTrendStateModel::observe_time_dimension(int max_time){
+  void SLLTSM::observe_time_dimension(int max_time){
     if (latent_level_scale_factors_.size() < max_time) {
       int old_size = latent_level_scale_factors_.size();
       latent_level_scale_factors_.resize(max_time);
@@ -84,7 +90,7 @@ namespace BOOM {
     }
   }
 
-  void StudentLocalLinearTrendStateModel::observe_state(
+  void SLLTSM::observe_state(
       const ConstVectorView then,
       const ConstVectorView now,
       int time_now){
@@ -121,8 +127,16 @@ namespace BOOM {
         latent_slope_scale_factors_[time_now - 1]);
   }
 
-  void StudentLocalLinearTrendStateModel::simulate_state_error(
-      VectorView eta, int t)const{
+  void SLLTSM::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &,
+      const ConstSubMatrix &) {
+    report_error("The StudentLocalLinearTrendStateModel cannot be part "
+                 "of the EM algorithm.");
+  }
+
+  void SLLTSM::simulate_state_error(
+      VectorView eta, int t) const {
     switch (behavior_) {
       case MIXTURE:
         simulate_conditional_state_error(eta, t);
@@ -133,34 +147,31 @@ namespace BOOM {
       default:
         ostringstream err;
         err << "Cannot handle unknown enumerator: " << behavior_
-            << " in StudentLocalLinearTrendStateModel::simulate_state_error."
+            << " in SLLTSM::simulate_state_error."
             << endl;
         report_error(err.str());
     }
   }
 
-  void StudentLocalLinearTrendStateModel::simulate_marginal_state_error(
-      VectorView eta, int t)const{
+  void SLLTSM::simulate_marginal_state_error(
+      VectorView eta, int t) const {
     eta[0] = rt(nu_level()) * sigma_level();
     eta[1] = rt(nu_slope()) * sigma_slope();
   };
 
-  void StudentLocalLinearTrendStateModel::simulate_conditional_state_error(
-      VectorView eta, int t)const{
+  void SLLTSM::simulate_conditional_state_error(
+      VectorView eta, int t) const {
     double level_weight = latent_level_scale_factors_[t];
     double slope_weight = latent_slope_scale_factors_[t];
     eta[0] = rnorm(0, sigma_level() / sqrt(level_weight));
     eta[1] = rnorm(0, sigma_slope() / sqrt(slope_weight));
   };
 
-
-  Ptr<SparseMatrixBlock>
-  StudentLocalLinearTrendStateModel::state_transition_matrix(int t)const{
+  Ptr<SparseMatrixBlock> SLLTSM::state_transition_matrix(int t) const {
     return state_transition_matrix_;
   }
 
-  Ptr<SparseMatrixBlock>
-  StudentLocalLinearTrendStateModel::state_variance_matrix(int t)const{
+  Ptr<SparseMatrixBlock> SLLTSM::state_variance_matrix(int t) const {
     switch (behavior_) {
       case MIXTURE:
         return conditional_state_variance_matrix(t);
@@ -169,15 +180,15 @@ namespace BOOM {
       default:
         ostringstream err;
         err << "Cannot handle unknown enumerator: " << behavior_
-            << " in StudentLocalLinearTrendStateModel::state_variance_matrix."
+            << " in SLLTSM::state_variance_matrix."
             << endl;
         report_error(err.str());
         return Ptr<SparseMatrixBlock>(NULL);
     }
   }
 
-  Ptr<SparseMatrixBlock>
-  StudentLocalLinearTrendStateModel::conditional_state_variance_matrix(int t)const{
+  Ptr<SparseMatrixBlock> SLLTSM::conditional_state_variance_matrix(
+      int t) const {
     (*state_variance_matrix_)[0] =
         sigsq_level() / latent_level_scale_factors_[t];
     (*state_variance_matrix_)[1] =
@@ -185,107 +196,113 @@ namespace BOOM {
     return state_variance_matrix_;
   }
 
-  Ptr<SparseMatrixBlock>
-  StudentLocalLinearTrendStateModel::marginal_state_variance_matrix(int t)const{
+  Ptr<SparseMatrixBlock> SLLTSM::marginal_state_variance_matrix(int t) const {
     (*state_variance_matrix_)[0] = sigsq_level();
     (*state_variance_matrix_)[1] = sigsq_slope();
     return state_variance_matrix_;
   }
 
-  SparseVector
-  StudentLocalLinearTrendStateModel::observation_matrix(int t)const{
+  Ptr<SparseMatrixBlock> SLLTSM::state_error_expander(int t) const {
+    return state_error_expander_;
+  }
+
+  Ptr<SparseMatrixBlock> SLLTSM::state_error_variance(int t) const {
+    return state_variance_matrix(t);
+  }
+
+  SparseVector SLLTSM::observation_matrix(int t) const {
     return observation_matrix_;
   }
 
-  Vector StudentLocalLinearTrendStateModel::initial_state_mean()const{
+  Vector StudentLocalLinearTrendStateModel::initial_state_mean() const {
     return initial_state_mean_;
   }
 
-  void StudentLocalLinearTrendStateModel::set_initial_state_mean(const Vector &v){
+  void StudentLocalLinearTrendStateModel::set_initial_state_mean(const Vector &v) {
     initial_state_mean_ = v;
   }
 
-  SpdMatrix StudentLocalLinearTrendStateModel::initial_state_variance()const{
+  SpdMatrix StudentLocalLinearTrendStateModel::initial_state_variance() const {
     return initial_state_variance_;
   }
 
-  void StudentLocalLinearTrendStateModel::set_initial_state_variance(
+  void SLLTSM::set_initial_state_variance(
       const SpdMatrix &V){
     initial_state_variance_ = V;
   }
 
   //----------------------------------------------------------------------
   // Accessors for parameter storage
-  Ptr<UnivParams> StudentLocalLinearTrendStateModel::SigsqLevel_prm(){
+  Ptr<UnivParams> SLLTSM::SigsqLevel_prm(){
     return ParamPolicy::prm1();
   }
-  const Ptr<UnivParams> StudentLocalLinearTrendStateModel::SigsqLevel_prm()const{
+  const Ptr<UnivParams> SLLTSM::SigsqLevel_prm() const {
     return ParamPolicy::prm1();
   }
-  Ptr<UnivParams> StudentLocalLinearTrendStateModel::NuLevel_prm(){
+  Ptr<UnivParams> SLLTSM::NuLevel_prm(){
     return ParamPolicy::prm2();
   }
-  const Ptr<UnivParams> StudentLocalLinearTrendStateModel::NuLevel_prm()const{
+  const Ptr<UnivParams> SLLTSM::NuLevel_prm() const {
     return ParamPolicy::prm2();
   }
-  Ptr<UnivParams> StudentLocalLinearTrendStateModel::SigsqSlope_prm(){
+  Ptr<UnivParams> SLLTSM::SigsqSlope_prm(){
     return ParamPolicy::prm3();
   }
-  const Ptr<UnivParams> StudentLocalLinearTrendStateModel::SigsqSlope_prm()const{
+  const Ptr<UnivParams> SLLTSM::SigsqSlope_prm() const {
     return ParamPolicy::prm3();
   }
-  Ptr<UnivParams> StudentLocalLinearTrendStateModel::NuSlope_prm(){
+  Ptr<UnivParams> SLLTSM::NuSlope_prm(){
     return ParamPolicy::prm4();
   }
-  const Ptr<UnivParams> StudentLocalLinearTrendStateModel::NuSlope_prm()const{
+  const Ptr<UnivParams> SLLTSM::NuSlope_prm() const {
     return ParamPolicy::prm4();
   }
 
   //----------------------------------------------------------------------
   // Accessors for paramter values
-  double StudentLocalLinearTrendStateModel::sigma_level()const{
+  double SLLTSM::sigma_level() const {
     return sqrt(sigsq_level());
   }
-  double StudentLocalLinearTrendStateModel::sigsq_level()const{
+  double SLLTSM::sigsq_level() const {
     return ParamPolicy::prm1_ref().value();
   }
-  double StudentLocalLinearTrendStateModel::nu_level()const{
+  double SLLTSM::nu_level() const {
     return ParamPolicy::prm2_ref().value();
   }
 
-  double StudentLocalLinearTrendStateModel::sigma_slope()const{
+  double SLLTSM::sigma_slope() const {
     return sqrt(sigsq_slope());
   }
-  double StudentLocalLinearTrendStateModel::sigsq_slope()const{
+  double SLLTSM::sigsq_slope() const {
     return ParamPolicy::prm3_ref().value();
   }
-  double StudentLocalLinearTrendStateModel::nu_slope()const{
+  double SLLTSM::nu_slope() const {
     return ParamPolicy::prm4_ref().value();
   }
 
   //----------------------------------------------------------------------
   // Setters for paramter values
-  void StudentLocalLinearTrendStateModel::set_sigma_level(double sigma){
+  void SLLTSM::set_sigma_level(double sigma){
     set_sigsq_level(sigma * sigma);
   }
-  void StudentLocalLinearTrendStateModel::set_sigsq_level(double sigsq){
+  void SLLTSM::set_sigsq_level(double sigsq){
     prm1_ref().set(sigsq);
   }
-  void StudentLocalLinearTrendStateModel::set_nu_level(double nu){
+  void SLLTSM::set_nu_level(double nu){
     prm2_ref().set(nu);
   }
 
-  void StudentLocalLinearTrendStateModel::set_sigma_slope(double sigma){
+  void SLLTSM::set_sigma_slope(double sigma){
     set_sigsq_slope(sigma * sigma);
   }
-  void StudentLocalLinearTrendStateModel::set_sigsq_slope(double sigsq){
+  void SLLTSM::set_sigsq_slope(double sigsq){
     prm3_ref().set(sigsq);
   }
-  void StudentLocalLinearTrendStateModel::set_nu_slope(double nu){
+  void SLLTSM::set_nu_slope(double nu){
     prm4_ref().set(nu);
   }
 
-  void StudentLocalLinearTrendStateModel::clear_data(){
+  void SLLTSM::clear_data(){
     DataPolicy::clear_data();
     level_complete_data_sufficient_statistics_.clear();
     level_weight_sufficient_statistics_.clear();
@@ -294,34 +311,31 @@ namespace BOOM {
   }
 
   const WeightedGaussianSuf &
-  StudentLocalLinearTrendStateModel::sigma_level_complete_data_suf()const{
+  SLLTSM::sigma_level_complete_data_suf() const {
     return level_complete_data_sufficient_statistics_;
   }
 
-  const WeightedGaussianSuf &
-  StudentLocalLinearTrendStateModel::sigma_slope_complete_data_suf()const{
+  const WeightedGaussianSuf & SLLTSM::sigma_slope_complete_data_suf() const {
     return slope_complete_data_sufficient_statistics_;
   }
 
-  const GammaSuf &
-  StudentLocalLinearTrendStateModel::nu_level_complete_data_suf()const{
+  const GammaSuf & SLLTSM::nu_level_complete_data_suf() const {
     return level_weight_sufficient_statistics_;
   }
 
-  const GammaSuf &
-  StudentLocalLinearTrendStateModel::nu_slope_complete_data_suf()const{
+  const GammaSuf & SLLTSM::nu_slope_complete_data_suf() const {
     return slope_weight_sufficient_statistics_;
   }
 
-  const Vector & StudentLocalLinearTrendStateModel::latent_level_weights()const{
+  const Vector & SLLTSM::latent_level_weights() const {
     return latent_level_scale_factors_;
   }
 
-  const Vector & StudentLocalLinearTrendStateModel::latent_slope_weights()const{
+  const Vector & StudentLocalLinearTrendStateModel::latent_slope_weights() const {
     return latent_slope_scale_factors_;
   }
 
-  void StudentLocalLinearTrendStateModel::set_behavior(
+  void SLLTSM::set_behavior(
       StateModel::Behavior behavior){
     behavior_ = behavior;
   }

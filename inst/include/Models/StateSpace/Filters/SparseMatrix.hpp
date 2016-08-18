@@ -26,16 +26,15 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/SubMatrix.hpp>
-#include <LinAlg/Types.hpp>
 
 #include <Models/ParamTypes.hpp>
 
-#include <cpputil/ThrowException.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
 #include <cpputil/report_error.hpp>
 
 #include <Models/StateSpace/Filters/SparseVector.hpp>
+#include <Models/Glm/GlmCoefs.hpp>
 
 namespace BOOM{
   //======================================================================
@@ -232,7 +231,7 @@ namespace BOOM{
   // 0's.
   class AutoRegressionTransitionMatrix : public SparseMatrixBlock{
    public:
-    AutoRegressionTransitionMatrix(Ptr<VectorParams> rho);
+    AutoRegressionTransitionMatrix(Ptr<GlmCoefs> rho);
     AutoRegressionTransitionMatrix(const AutoRegressionTransitionMatrix &rhs);
     AutoRegressionTransitionMatrix * clone() const override;
 
@@ -247,7 +246,7 @@ namespace BOOM{
     // virtual void matrix_transpose_premultiply_inplace(SubMatrix m) const;
     Matrix dense() const override;
    private:
-    Ptr<VectorParams> autoregression_params_;
+    Ptr<GlmCoefs> autoregression_params_;
   };
 
   //======================================================================

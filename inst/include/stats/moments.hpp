@@ -19,9 +19,9 @@
 #ifndef BOOM_MOMENTS_HPP
 #define BOOM_MOMENTS_HPP
 
-#include <BOOM.hpp>
 #include <vector>
-#include <LinAlg/Types.hpp>
+#include <LinAlg/Vector.hpp>
+#include <LinAlg/Matrix.hpp>
 
 namespace BOOM{
 

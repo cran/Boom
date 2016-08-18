@@ -23,7 +23,9 @@ namespace BOOM{
   RegressionStateModel::RegressionStateModel(Ptr<RegressionModel> rm)
       : reg_(rm),
         transition_matrix_(new IdentityMatrix(1)),
-        error_variance_(new ZeroMatrix(1))
+        error_variance_(new ZeroMatrix(1)),
+        state_error_expander_(new EmptyMatrix),
+        state_error_variance_(new EmptyMatrix)
   {}
 
   // The copy constructor copies pointers to private data.  Only reg_
@@ -33,49 +35,70 @@ namespace BOOM{
       : StateModel(rhs),
         reg_(rhs.reg_),
         transition_matrix_(rhs.transition_matrix_),
-        error_variance_(rhs.error_variance_)
+        error_variance_(rhs.error_variance_),
+        state_error_expander_(rhs.state_error_expander_),
+        state_error_variance_(rhs.state_error_variance_)
   {}
 
-  RegressionStateModel * RegressionStateModel::clone()const{
-    return new RegressionStateModel(*this);}
+  RegressionStateModel * RegressionStateModel::clone() const {
+    return new RegressionStateModel(*this);
+  }
 
   void RegressionStateModel::clear_data(){
-    reg_->suf()->clear(); }
+    reg_->suf()->clear();
+  }
 
   // This function is a no-op.  The responsibility for observing state
   // lies with the state space model that owns it.
   void RegressionStateModel::observe_state(const ConstVectorView then,
                                            const ConstVectorView now,
-                                           int time_now){}
+                                           int time_now) {}
 
-  uint RegressionStateModel::state_dimension()const{return 1;}
+  uint RegressionStateModel::state_dimension() const {return 1;}
 
-  void RegressionStateModel::simulate_state_error(VectorView eta, int t)const{
+  void RegressionStateModel::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    report_error("RegressionStateModel cannot be part of an EM algorithm.");
+  }
+
+  void RegressionStateModel::simulate_state_error(VectorView eta, int t) const {
     eta[0] = 0; }
 
-  void RegressionStateModel::simulate_initial_state(VectorView eta)const{
+  void RegressionStateModel::simulate_initial_state(VectorView eta) const {
     eta[0] = 1;}
 
-  Ptr<SparseMatrixBlock> RegressionStateModel::state_transition_matrix(int t)const{
+  Ptr<SparseMatrixBlock>
+      RegressionStateModel::state_transition_matrix(int t) const {
     return transition_matrix_;
   }
 
-  Ptr<SparseMatrixBlock> RegressionStateModel::state_variance_matrix(int)const{
+  Ptr<SparseMatrixBlock>
+      RegressionStateModel::state_variance_matrix(int) const {
     return error_variance_;
   }
 
-  SparseVector RegressionStateModel::observation_matrix(int t)const{
+  Ptr<SparseMatrixBlock> RegressionStateModel::state_error_expander(int) const {
+    return state_error_expander_;
+  }
+
+  Ptr<SparseMatrixBlock> RegressionStateModel::state_error_variance(int) const {
+    return state_error_variance_;
+  }
+
+  SparseVector RegressionStateModel::observation_matrix(int t) const {
     double eta = reg_->predict(reg_->dat()[t]->x());
     SparseVector ans(1);
     ans[0] = eta;
     return ans;
   }
 
-  Vector RegressionStateModel::initial_state_mean()const{
+  Vector RegressionStateModel::initial_state_mean() const {
     return Vector(1, 1.0);
   }
 
-  SpdMatrix RegressionStateModel::initial_state_variance()const{
+  SpdMatrix RegressionStateModel::initial_state_variance() const{
     return SpdMatrix(1, 0.0);
   }
 }

@@ -31,7 +31,8 @@ namespace BOOM {
         variance_is_current_(false)
   {
     if (frequencies_.empty()) {
-      report_error("At least one frequency needed to initialize TrigStateModel.");
+      report_error("At least one frequency needed to "
+                   "initialize TrigStateModel.");
     }
     for (int i = 0; i < frequencies_.size(); ++i) {
       frequencies_[i] = 2 * Constants::pi * frequencies_[i] / period_;
@@ -47,6 +48,16 @@ namespace BOOM {
                                      const ConstVectorView now,
                                      int time_now) {
     suf()->update_raw(now - then);
+  }
+
+  void TrigStateModel::update_complete_data_sufficient_statistics(
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    suf()->update_expected_value(
+        1.0,
+        state_error_mean,
+        state_error_variance.diag() + pow(state_error_mean, 2));
   }
 
   void TrigStateModel::simulate_state_error(VectorView eta, int t) const {
