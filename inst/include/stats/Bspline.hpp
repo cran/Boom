@@ -20,6 +20,7 @@
 #define BOOM_STATS_BSPLINE_HPP_
 
 #include <LinAlg/Vector.hpp>
+#include <stats/Spline.hpp>
 
 namespace BOOM {
 
@@ -38,12 +39,15 @@ namespace BOOM {
   // positions.  This class follows an established convention of
   // adding the fake knots at the first and last elements of the knot
   // vector.
-  class Bspline {
+  class Bspline : public SplineBase {
    public:
     // Args:
     //   knots: The set of knots for the spline.  In between pairs of
     //     knots, the spline is a piecewise polynomial whose degree is
-    //     given by the second argument.
+    //     given by the second argument.  The first and last knots
+    //     define the interval over which the spline is defined.
+    //     These knots are implicitly replicated an infinite number of
+    //     times.
     //   degree: The degree of the piecewise polynomial in between
     //     pairs of interior knots.
     Bspline(const Vector &knots, int degree = 3);
@@ -53,7 +57,7 @@ namespace BOOM {
     // are zero.
     //
     // If there are fewer than 2 knots then the return value is empty.
-    Vector basis(double x) const;
+    Vector basis(double x) const override;
 
     // The dimension of the spline basis, which is one for every
     // distinct interval covered by knots(), plus one for every degree
@@ -61,36 +65,13 @@ namespace BOOM {
     // - 1 + degree, though it can be less if knots() contains
     // duplicate elements.  If knots().size <= 1 then the
     // basis_dimension is 0.
-    int basis_dimension() const {return basis_dimension_;}
+    int basis_dimension() const override {return basis_dimension_;}
 
     // The order of the piecewise polynomial connecting the knots.
     int order() const {return order_;}
 
     // The degree of the piecewise polynomial connecting the knots.
     int degree() const {return order_ - 1;}
-
-    // Adds a knot at the given location.  If knot_location lies
-    // before the first or after the last current knot, then the
-    // domain of the Bspline is extended to cover knot_location.
-    void add_knot(double knot_location);
-
-    // Remove the specified knot.  An exception will be thrown if
-    // which_knot is outside the range of knots_.  If which_knot == 0
-    // or which_knot == number_of_knots() - 1 then the domain of the
-    // spline basis will be reduced.
-    void remove_knot(int which_knot);
-
-    // The vector of knots.  Implicit boundary knots are not included.
-    const Vector &knots() const {return knots_;}
-    int number_of_knots() const {return knots_.size();}
-
-    // If the argument is in the interior of the knots vector, return
-    // knots_[i].  If it is off the end to the left return knots_[0].
-    // If it is off the end to the right then include knots_.back().
-    // The implicit assumption is that we have an infinite set of
-    // knots piled up on the beginning and end of the actual knot
-    // sequence.
-    double knot(int i) const;
 
     // Compute the coefficient C for combining two splines of order degree-1
     // into a spline of order degree.  The recursion is
@@ -101,15 +82,15 @@ namespace BOOM {
     double compute_coefficient(double x, int knot_span, int degree) const;
 
    private:
-    // The vector of knots defining the spline.
-    Vector knots_;
-
     // The order (1 + degree) of the piecewise polynomial connecting
     // the knots.
     int order_;
 
     // The dimension of the spline basis expansion.
     int basis_dimension_;
+
+    void increment_basis_dimension() override {++basis_dimension_;}
+    void decrement_basis_dimension() override {--basis_dimension_;}
   };
 
 } // namespace BOOM

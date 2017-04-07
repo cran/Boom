@@ -31,14 +31,13 @@ namespace BOOM{
 
     NullParamPolicy();
     NullParamPolicy(const NullParamPolicy &rhs);
-    NullParamPolicy * clone()const override =0;
+    NullParamPolicy * clone()const override = 0;
     NullParamPolicy & operator=(const NullParamPolicy &);
 
     // over-rides for abstract base Model
-    ParamVector t() override;
-    const ParamVector t()const override;
+    ParamVector parameter_vector() override;
+    const ParamVector parameter_vector() const override;
   };
-  //------------------------------------------------------------
 
-}
-#endif // BOOM_PARAM_POLICY_1_HPP
+}  // namespace BOOM
+#endif // BOOM_NULL_PARAM_POLICY_HPP

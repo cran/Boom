@@ -26,7 +26,7 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>
 
-namespace BOOM{
+namespace BOOM {
   class BetaSuf: public SufstatDetails<DoubleData>{
   public:
     BetaSuf();
@@ -39,15 +39,15 @@ namespace BOOM{
     double sumlog()const{return sumlog_;}
     double sumlogc()const{return sumlogc_;}
     BetaSuf * abstract_combine(Sufstat *s) override;
-    void combine(Ptr<BetaSuf> s);
+    void combine(const Ptr<BetaSuf> &s);
     void combine(const BetaSuf & s);
     ostream &print(ostream &out)const override;
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                       bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                       bool minimal=true) override;
    private:
     double n_, sumlog_, sumlogc_;
   };
@@ -57,7 +57,8 @@ namespace BOOM{
       public SufstatDataPolicy<DoubleData,BetaSuf>,
       public PriorPolicy,
       public NumOptModel,
-      public DiffDoubleModel
+      public DiffDoubleModel,
+      public LocationScaleDoubleModel
   {
   public:
     // Initialize with the prior number of "successes" (a) and
@@ -88,14 +89,18 @@ namespace BOOM{
     // An alternative parameterization:
     //        mean = a/(a+b)
     // sample_size = (a+b)
-    double mean()const;         // a/(a+b)
-    double sample_size()const;  // a+b
-    void set_sample_size(double a_plus_b);
+    double mean() const override;
     void set_mean(double a_over_a_plus_b);
+    double variance() const override;
+    double sample_size()const;
+    void set_sample_size(double a_plus_b);
 
     // probability calculations
-    double Loglike(const Vector &ab, Vector &g, Matrix &h, uint nd) const override;
+    double Loglike(const Vector &ab, Vector &g, Matrix &h,
+                   uint nd) const override;
     double log_likelihood(double a, double b)const;
+    using LoglikeModel::log_likelihood;
+
     double Logp(double x, double &d1, double &d2, uint nd) const override ;
     double sim() const override;
   private:
@@ -103,6 +108,7 @@ namespace BOOM{
   };
 
   double beta_log_likelihood(double a, double b, const BetaSuf &);
-}
+
+}  // namespace BOOM
 
 #endif// BOOM_BETA_MODEL_HPP

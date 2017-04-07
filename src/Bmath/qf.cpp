@@ -65,7 +65,7 @@ double qf(double p, double n1, double n2, int lower_tail, int log_p)
         return 1/qchisq(p, n2, !lower_tail, log_p) * n2;
 
     p = (1. / qbeta(R_DT_CIv(p), n2/2, n1/2, true, false) - 1.) * (n2 / n1);
-    return ML_VALID(p) ? p : numeric_limits<double>::quiet_NaN();
+    return ML_VALID(p) ? p : std::numeric_limits<double>::quiet_NaN();
 }
 }
 

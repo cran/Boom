@@ -20,6 +20,7 @@
 #define BOOM_BOUNDED_POISSON_PROCESS_SIMULATOR_HPP_
 
 #include <Models/PointProcess/PoissonProcess.hpp>
+#include <functional>
 
 namespace BOOM {
   // A class to help concrete PoissonProcess models implement the
@@ -33,7 +34,7 @@ namespace BOOM {
     PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator()) const;
+        std::function<Data*()> mark_generator = NullDataGenerator()) const;
    private:
     const PoissonProcess *process_;
     double max_event_rate_;

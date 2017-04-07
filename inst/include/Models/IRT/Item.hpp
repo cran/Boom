@@ -112,12 +112,15 @@ namespace BOOM{
       ostream & display_item_params(ostream &out, bool=true)const override{
         return out;}
       const Vector & beta()const override{ return b;}
-      double response_prob(Response, const Vector &, bool)const override{return 0.0;}
-      double response_prob(uint, const Vector &, bool)const override{return 0.0;}
+      double response_prob(Response, const Vector &, bool)const override{
+        return 0.0;}
+      double response_prob(uint, const Vector &, bool)const override{
+        return 0.0;}
       double pdf(Ptr<Data>, bool)const override{return 0.0;}
       double pdf(Ptr<Subject>, bool)const override{return 0.0;}
-      ParamVector t() override{return ParamVector() ;}
-      const ParamVector t()const override{return ParamVector() ;}
+      ParamVector parameter_vector() override{return ParamVector() ;}
+      const ParamVector parameter_vector()const override{
+        return ParamVector() ;}
       void initialize_params(){}
       void add_data(Ptr<Data>) override{}
       void add_data(Ptr<Subject>) override{}

@@ -107,7 +107,7 @@ namespace BOOM {
       double total_prediction_sd,
       double prior_tree_depth_alpha,
       double prior_tree_depth_beta,
-      boost::function<double(int)> log_prior_on_number_of_trees,
+      std::function<double(int)> log_prior_on_number_of_trees,
       RNG &seeding_rng)
       : BartPosteriorSamplerBase(
             model,
@@ -314,7 +314,7 @@ moves, and thus a minimal log integrated likelihood is
   LogitBartPosteriorSampler::create_and_store_residual(int i) {
     Ptr<BinomialRegressionData> data_point(model_->dat()[i]);
     double original_prediction = model_->predict(data_point->x());
-    boost::shared_ptr<Bart::LogitResidualData> residual(
+    std::shared_ptr<Bart::LogitResidualData> residual(
         new Bart::LogitResidualData(data_point, original_prediction));
     residuals_.push_back(residual);
     return residual.get();

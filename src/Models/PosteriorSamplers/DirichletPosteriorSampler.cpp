@@ -16,9 +16,10 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/PosteriorSamplers/DirichletPosteriorSampler.hpp>
-#include <distributions.hpp>
 #include <Samplers/ScalarSliceSampler.hpp>
 #include <cpputil/math_utils.hpp>
+#include <distributions.hpp>
+#include <utility>
 
 namespace BOOM{
   typedef DirichletPosteriorSampler DPS;
@@ -57,7 +58,7 @@ namespace BOOM{
       double weight) {
     sampler_implementations_.clear();
     weights_.clear();
-    add_method(method, weight);
+    add_method(std::move(method), weight);
   }
 
   void DPS::add_method(
@@ -207,7 +208,6 @@ namespace BOOM{
         : DirichletSamplerImpl(model, phi_prior, alpha_prior, rng),
           phi_logpost_(MultinomialLogitLogPosterior(model, phi_prior)),
           phi_sampler_(phi_logpost_,
-                       model->nu().size() - 1,
                        1.0,
                        true,
                        rng),

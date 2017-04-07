@@ -20,7 +20,7 @@
  namespace BOOM{
    using std::string;
 
-   string strip(const string &s, string bad){
+   string strip(const string& s, const string& bad) {
      //     string bad_stuff="\r\n\t";
      string ans(s);
      string::size_type n = ans.find_first_of(bad);

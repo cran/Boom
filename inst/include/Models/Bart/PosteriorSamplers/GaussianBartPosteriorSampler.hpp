@@ -105,7 +105,7 @@ namespace BOOM {
         double prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees,
+        std::function<double(int)> log_prior_on_number_of_trees,
         RNG &seeding_rng = GlobalRng::rng);
     //----------------------------------------------------------------------
     // Virtual function over-rides....
@@ -125,7 +125,7 @@ namespace BOOM {
 
     void clear_residuals() override;
     int residual_size() const override;
-    
+
     Bart::GaussianResidualRegressionData * create_and_store_residual(int i) override;
     Bart::GaussianResidualRegressionData * residual(int i) override;
 
@@ -154,7 +154,7 @@ namespace BOOM {
     // be locally adjusted before they are used.  This makes the
     // algorithm thread-unsafe.
     std::vector<
-      boost::shared_ptr<
+      std::shared_ptr<
         Bart::GaussianResidualRegressionData> > residuals_;
   };
 

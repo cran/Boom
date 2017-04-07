@@ -75,6 +75,7 @@ namespace BOOM{
   class GaussianModelBase
       : public SufstatDataPolicy<DoubleData, GaussianSuf>,
         public DiffDoubleModel,    // promises  Logp(x,g,h,nd);
+        public LocationScaleDoubleModel,  // mean and variance.
         public NumOptModel,        // promises Loglike(g,h,nd), and mle();
         public EmMixtureComponent  // promises add_mixture_data
   {
@@ -85,6 +86,9 @@ namespace BOOM{
     virtual double mu()const=0;
     virtual double sigsq()const=0;
     virtual double sigma()const;
+
+    double mean() const override {return mu();}
+    double variance() const override {return sigsq();}
 
     virtual void set_sigsq(double sigsq)=0;
     double pdf(Ptr<Data> dp, bool logscale)const override;

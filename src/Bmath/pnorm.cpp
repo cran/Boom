@@ -93,7 +93,8 @@ double pnorm(double x, double mu, double sigma, int lower_tail, int log_p)
 
     x = (x - mu) / sigma;
     if(!R_FINITE(x)) {
-        if(ISNAN(x)) /* e.g. x=mu=Inf */ return(numeric_limits<double>::quiet_NaN());
+        if(ISNAN(x)) /* e.g. x=mu=Inf */
+          return (std::numeric_limits<double>::quiet_NaN());
         if(x < 0) return R_DT_0;
         else return R_DT_1;
     }
@@ -172,7 +173,7 @@ void pnorm_both(double x, double *cum, double *ccum, int i_tail, int log_p)
 #endif
 
     /* Consider changing these : */
-    eps = numeric_limits<double>::epsilon() * 0.5;
+    eps = std::numeric_limits<double>::epsilon() * 0.5;
 
     /* i_tail in {0,1,2} =^= {lower, upper, both} */
     lower = i_tail != 1;

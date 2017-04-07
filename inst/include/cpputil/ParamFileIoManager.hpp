@@ -22,7 +22,7 @@
 #include <deque>
 #include <string>
 #include <Models/ParamTypes.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace BOOM {
 
@@ -101,7 +101,7 @@ namespace BOOM {
     ParamFileIoManager();
 
     // Adds a parameter to the set of parameters being managed.
-    void add_parameter(Ptr<Params> parameter,
+    void add_parameter(const Ptr<Params> &parameter,
                        const std::string &filename);
 
     // Sets the size of the input/output buffer to the specified
@@ -135,7 +135,7 @@ namespace BOOM {
    private:
     // There is one element in io_ for each parameter added to the
     // IoManager.
-    std::vector<boost::shared_ptr<
+    std::vector<std::shared_ptr<
                   ParameterFileIO::SingleParameterIoManager> > io_;
     int buffer_size_in_iterations_;
   };

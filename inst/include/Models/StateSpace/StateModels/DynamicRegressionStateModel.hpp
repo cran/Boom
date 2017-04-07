@@ -114,6 +114,12 @@ namespace BOOM{
 
     void add_forecast_data(const Matrix &predictors);
 
+    void increment_expected_gradient(
+        VectorView gradient,
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
    private:
     void check_size(int n) const;
 

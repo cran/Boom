@@ -30,7 +30,7 @@ namespace BOOM{
   LLSM::LocalLevelStateModel(double sigma)
       : ZeroMeanGaussianModel(sigma),
         state_transition_matrix_(new IdentityMatrix(1)),
-        state_variance_matrix_(new ConstantMatrix(1, sigma*sigma)),
+        state_variance_matrix_(new ConstantMatrixParamView(1, Sigsq_prm())),
         initial_state_mean_(1),
         initial_state_variance_(1)
   {}
@@ -39,7 +39,8 @@ namespace BOOM{
       : Model(rhs),
         StateModel(rhs),
         state_transition_matrix_(rhs.state_transition_matrix_),
-        state_variance_matrix_(new ConstantMatrix(1, sigsq())),
+        state_variance_matrix_(
+            new ConstantMatrixParamView(1, Sigsq_prm())),
         initial_state_mean_(rhs.initial_state_mean_),
         initial_state_variance_(rhs.initial_state_variance_)
   {}
@@ -116,7 +117,6 @@ namespace BOOM{
 
   void LLSM::set_sigsq(double sigsq){
     ZeroMeanGaussianModel::set_sigsq(sigsq);
-    state_variance_matrix_->set_value(sigsq);
   }
 
   void LLSM::update_complete_data_sufficient_statistics(
@@ -126,7 +126,7 @@ namespace BOOM{
     if (state_error_mean.size() != 1
         || state_error_variance.nrow() != 1
         || state_error_variance.ncol() != 1) {
-      report_error("Wrong size argumetns to LocalLevelStateModel::"
+      report_error("Wrong size arguments to LocalLevelStateModel::"
                    "update_complete_data_sufficient_statistics.");
     }
     double mean = state_error_mean[0];
@@ -135,6 +135,24 @@ namespace BOOM{
         1.0,
         mean,
         var + square(mean));
+  }
+
+  void LLSM::increment_expected_gradient(
+      VectorView gradient,
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (gradient.size() != 1
+        || state_error_mean.size() != 1
+        || state_error_variance.nrow() != 1
+        || state_error_variance.ncol() != 1) {
+      report_error("Wrong size arguments to LocalLevelStateModel::"
+                   "increment_expected_gradient.");
+    }
+    double mean = state_error_mean[0];
+    double var = state_error_variance(0, 0);
+    double sigsq = ZeroMeanGaussianModel::sigsq();
+    gradient[0] += (-.5 /sigsq) + .5 * (var + mean * mean) / (sigsq * sigsq);
   }
 
 }  // namespace BOOM

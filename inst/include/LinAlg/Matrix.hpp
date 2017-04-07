@@ -45,16 +45,23 @@ namespace BOOM{
     typedef std::vector<double> dVector;
 
     Matrix();
+    Matrix(const Matrix &rhs) = default;
+    Matrix(Matrix &&rhs) = default;
+
     Matrix(uint nr, uint nc, double x=0.0);
     Matrix(uint nr, uint nc, const double *m, bool byrow=false);
     Matrix(uint nr, uint nc, const std::vector<double> &v, bool byrow=false);
     Matrix(const std::string &s, std::string row_delim = "|");
+
 
     template <class FwdIt>
     Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
 
     explicit Matrix(const SubMatrix &rhs);
     explicit Matrix(const ConstSubMatrix &rhs);
+
+    Matrix & operator=(const Matrix &rhs) = default;
+    Matrix & operator=(Matrix &&rhs) = default;
 
     Matrix & operator=(const SubMatrix &);
     Matrix & operator=(const ConstSubMatrix &);

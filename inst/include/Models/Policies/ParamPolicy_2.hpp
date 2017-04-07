@@ -44,8 +44,8 @@ namespace BOOM{
     const P2 & prm2_ref()const{return *prm2_;}
 
     // over-rides for abstract base Model
-    ParamVector t() override {return t_;}
-    const ParamVector t()const override {return t_;}
+    ParamVector parameter_vector() override {return t_;}
+    const ParamVector parameter_vector()const override {return t_;}
 
   private:
     Ptr<P1> prm1_;

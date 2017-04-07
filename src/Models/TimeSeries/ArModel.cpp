@@ -17,12 +17,12 @@
 */
 
 #include <Models/TimeSeries/ArModel.hpp>
-#include <cpputil/report_error.hpp>
-#include <LinAlg/Eigen.hpp>
 #include <complex>
+#include <functional>
+#include <LinAlg/Eigen.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 #include <cpputil/Polynomial.hpp>
-#include <boost/bind.hpp>
+#include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 
 namespace BOOM{
@@ -100,7 +100,7 @@ namespace BOOM{
         DataPolicy(new ArSuf(number_of_lags)),
         filter_coefficients_current_(false)
   {
-    Phi_prm()->add_observer(boost::bind(&ArModel::observe_phi, this));
+    Phi_prm()->add_observer([this](){this->observe_phi();});
   }
 
   ArModel::ArModel(Ptr<GlmCoefs> phi, Ptr<UnivParams> sigsq)
@@ -113,7 +113,7 @@ namespace BOOM{
       report_error("Attempt to initialize ArModel with an illegal value "
                    "of the autoregression coefficients.");
     }
-    Phi_prm()->add_observer(boost::bind(&ArModel::observe_phi, this));
+    Phi_prm()->add_observer([this](){this->observe_phi();});
   }
 
   ArModel * ArModel::clone()const{return new ArModel(*this);}

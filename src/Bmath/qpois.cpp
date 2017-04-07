@@ -81,7 +81,8 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
         if (p == 1.) return BOOM::infinity();
     }
     /* temporary hack --- FIXME --- */
-    if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity();
+    if (p + 1.01 * std::numeric_limits<double>::epsilon() >= 1.)
+      return BOOM::infinity();
 
     /* y := approx.value (Cornish-Fisher expansion) :  */
     z = qnorm(p, 0., 1., /*lower_tail*/true, /*log_p*/false);
@@ -90,7 +91,7 @@ double qpois(double p, double lambda, int lower_tail, int log_p)
     z = ppois(y, lambda, /*lower_tail*/true, /*log_p*/false);
 
     /* fuzz to ensure left continuity; 1 - 1e-7 may lose too much : */
-    p *= 1 - 64*numeric_limits<double>::epsilon();
+    p *= 1 - 64*std::numeric_limits<double>::epsilon();
 
 /*-- Fixme, here y can be way off --
   should use interval search instead of primitive stepping down or up */

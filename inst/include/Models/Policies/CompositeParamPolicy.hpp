@@ -40,7 +40,10 @@ namespace BOOM{
     CompositeParamPolicy(FwdIt b, FwdIt e);
 
     CompositeParamPolicy(const CompositeParamPolicy &rhs);  // components not copied
+    CompositeParamPolicy(CompositeParamPolicy &&rhs) = default;
+
     CompositeParamPolicy & operator=(const CompositeParamPolicy &);
+    CompositeParamPolicy & operator=(CompositeParamPolicy &&) = default;
 
     void add_model(Ptr<Model>);
     void drop_model(Ptr<Model>);
@@ -49,8 +52,8 @@ namespace BOOM{
     template<class Fwd>
     void set_models(Fwd b, Fwd e);
 
-    ParamVector t() override;
-    const ParamVector t()const override;
+    ParamVector parameter_vector() override;
+    const ParamVector parameter_vector()const override;
 
     void add_params(Ptr<Params>);
 
@@ -65,8 +68,8 @@ namespace BOOM{
     models_.clear();
     std::copy(b,e, back_inserter(models_));
     t_.clear();
-    for(uint i =0; i<models_.size(); ++i){
-      ParamVector tmp(models_[i]->t());
+    for(uint i = 0; i < models_.size(); ++i) {
+      ParamVector tmp(models_[i]->parameter_vector());
       std::copy(tmp.begin(), tmp.end(), back_inserter(t_));}}
 
 

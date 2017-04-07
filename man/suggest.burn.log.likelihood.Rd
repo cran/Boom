@@ -7,7 +7,7 @@
   chain.  }
 
 \usage{
-  SuggestBurnLogLikelihood(log.likelihood, fraction = .25)
+  SuggestBurnLogLikelihood(log.likelihood, fraction = .10, quantile = .9)
 }
 
 \arguments{
@@ -20,6 +20,9 @@
     in the final 25\% of the MCMC run.  Must be an number less than 1.
     If \code{fraction <= 0} then a 0 burn-in is returned.}
 
+  \item{quantile}{The quantile of the values in the final fraction that
+    must be exceeded before the burn-in period is declared over.}
+
 }
 
 \value{Returns a suggested number of iterations to discard.  This can be
@@ -27,8 +30,9 @@
   is desired.}
 
 \details{ Looks at the last \code{fraction} of the \code{log.likelihood}
-  sequence and finds the minimum value.  Return the first iteration
-  where \code{log.likelihood} exceeds this value.  }
+  sequence and finds a specified quantile to use as a threshold.
+  Returns the first iteration where \code{log.likelihood} exceeds this
+  threshold.  }
 
 \author{
   Steven L. Scott \email{stevescott@google.com}

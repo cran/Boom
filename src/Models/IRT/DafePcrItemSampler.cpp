@@ -25,7 +25,8 @@
 #include <Models/IRT/Subject.hpp>
 #include <Samplers/MetropolisHastings.hpp>
 #include <TargetFun/TargetFun.hpp>
-#include <boost/bind.hpp>
+
+#include <functional>
 #include <iomanip>
 
 namespace BOOM{
@@ -48,7 +49,7 @@ namespace BOOM{
       // evaluates posterior probability of a vector b
     public:
       ItemDafeTF(Ptr<PCR> it, Ptr<MvnModel> pri, Ptr<IMP> Imp)
-    : mod(it), prior(pri), imp(Imp), t(it->t()) {}
+    : mod(it), prior(pri), imp(Imp), t(it->parameter_vector()) {}
       double operator()(const Vector &b)const;
       ItemDafeTF * clone()const{return new ItemDafeTF(*this);}
     private:
@@ -59,9 +60,9 @@ namespace BOOM{
       mutable Vector tmpbeta;
       mutable double ans;
       ParamVector t;
-      void logp_sub(Ptr<Subject> s)const;
+      void logp_sub(const Ptr<Subject> &s) const;
     };
-    void ItemDafeTF::logp_sub(Ptr<Subject> s)const{
+    void ItemDafeTF::logp_sub(const Ptr<Subject> &s) const {
       Response r = s->response(mod);
       const Vector & u(imp->get_u(r, true));
       const Vector & Theta(s->Theta());
@@ -72,10 +73,10 @@ namespace BOOM{
     double ItemDafeTF::operator()(const Vector &b)const{
       PcrBetaHolder ph(b, mod, tmpbeta);
       if( mod->a() <=0) return BOOM::negative_infinity();
-      const SubjectSet & subjects(mod->subjects());
       ans=0.0;
-      for_each(subjects.begin(), subjects.end(),
-           boost::bind(&ItemDafeTF::logp_sub, this, _1));
+      for (auto &subject : mod->subjects()) {
+        logp_sub(subject);
+      }
       return ans;
     }
     //======================================================================
@@ -114,9 +115,9 @@ namespace BOOM{
     void ISAM::get_moments(){
       xtx=0.0;
       xtu = 0.0;
-      const SubjectSet & s(mod->subjects());
-      for_each(s.begin(), s.end(),
-           boost::bind(&ISAM::accumulate_moments, this, _1));
+      for (auto &subject : mod->subjects()) {
+        accumulate_moments(subject);
+      }
       ivar= as_symmetric(xtx)/sigsq+ prior->siginv();
       mean = ivar.solve(prior->siginv()*prior->mu() + xtu/sigsq);
     }

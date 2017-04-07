@@ -21,7 +21,7 @@
 
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/unordered_map.hpp>
 
 #include <Models/PointProcess/PointProcess.hpp>
@@ -571,7 +571,7 @@ namespace BOOM{
 
     // The process_info_ object is created during a call to
     // make_hmm_states().
-    boost::shared_ptr<ProcessInfo> process_info_;
+    std::shared_ptr<ProcessInfo> process_info_;
 
     // Keeps track of the set of potential sources associated with
     // data from a supervised or semi-supervised training problem.

@@ -1297,7 +1297,7 @@ namespace BOOM {
   }
 
   //----------------------------------------------------------------------
-  void BartModelBase::add_tree(boost::shared_ptr<Bart::Tree> tree) {
+  void BartModelBase::add_tree(std::shared_ptr<Bart::Tree> tree) {
     trees_.push_back(tree);
   }
 
@@ -1383,7 +1383,7 @@ namespace BOOM {
                                     double mean) {
     trees_.reserve(trees_.size() + number_of_additional_trees);
     for (int i = 0; i < number_of_additional_trees; ++i) {
-      boost::shared_ptr<Bart::Tree> tree(new Bart::Tree(mean));
+      std::shared_ptr<Bart::Tree> tree(new Bart::Tree(mean));
       trees_.push_back(tree);
     }
   }

@@ -21,6 +21,7 @@
 #include <Samplers/Sampler.hpp>
 #include <Samplers/MetropolisHastings.hpp>
 #include <numopt.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -50,7 +51,7 @@ namespace BOOM{
     //     logf returns the log of the un-normalized target distribution
     //     at theta.
     //   nu:  The degrees of freedom parameter to use for the
-    TIM(boost::function<double(const Vector &, Vector &, Matrix &, int)> logf,
+    TIM(std::function<double(const Vector &, Vector &, Matrix &, int)> logf,
         double nu = 3, RNG *rng = 0);
 
     TIM(const BOOM::Target & logf,

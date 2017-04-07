@@ -452,9 +452,6 @@ namespace BOOM{
   int PoissonClusterProcess::draw_previous_state(
       RNG &rng, int t, int current_state){
     return rmulti_mt(rng, filter_[t].col(current_state));
-    wsp_ = filter_[t].col(current_state);
-    wsp_.normalize_prob();
-    return rmulti_mt(rng, wsp_);
   }
 
   //----------------------------------------------------------------------
@@ -668,8 +665,8 @@ namespace BOOM{
   //----------------------------------------------------------------------
   PointProcess PoissonClusterProcess::simulate(
       const DateTime &t0, const DateTime &t1,
-      boost::function<Data*()> primary_event_simulator,
-      boost::function<Data*()> secondary_event_simulator)const{
+      std::function<Data*()> primary_event_simulator,
+      std::function<Data*()> secondary_event_simulator)const{
     std::vector<PoissonProcess *> all_processes;
     all_processes.push_back(background_.get());
     all_processes.push_back(primary_birth_.get());
@@ -692,7 +689,7 @@ namespace BOOM{
 
     for(int p = 0; p < all_processes.size(); ++p){
       PoissonProcess *process = all_processes[p];
-      boost::function<Data*()>* mark_generator = &secondary_event_simulator;
+      std::function<Data*()>* mark_generator = &secondary_event_simulator;
       if(primary(process)) mark_generator = &primary_event_simulator;
       PointProcess data = process->simulate(t0, t1, *mark_generator);
 

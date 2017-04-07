@@ -53,7 +53,7 @@ namespace BOOM {
     const Vector &sigsq(model_->sigsq());
     double ans = 0;
     for (int i = 0; i < sigsq.size(); ++i) {
-      ans += priors_[i]->logp(1.0 / sigsq[i]);
+      ans += samplers_[i].log_prior(sigsq[i]);
     }
     return ans;
   }

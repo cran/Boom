@@ -52,7 +52,8 @@ namespace BOOM {
    public:
     void record_acceptance(const std::string &move_type);
     void record_rejection(const std::string &move_type);
-    void record_special(const std::string &move_type, const std::string &special_case);
+    void record_special(const std::string &move_type,
+                        const std::string &special_case);
 
     // Rows in the matrix correspond to move types.  Column names
     // correspond to acceptances, failures, and special cases.  The
@@ -65,6 +66,13 @@ namespace BOOM {
     std::vector<std::string> compute_move_types()const;
     std::vector<std::string> compute_outcome_type_names()const;
 
+    // Returns the ratio of "accept" counts to "accept" + "reject"
+    // counts for the specified move type.  If the total number of
+    // counts is zero then zero is returned.  The total number of
+    // counts is returned in the second argument.
+    double acceptance_ratio(const std::string &move_type,
+                            int &number_of_trials);
+
     // To time code, use eithr of the the following idioms:
     // When entering a code that is entirely devoted to an MCMC move:
     //    MoveTimer timer = this->start_time("MyMoveType");
@@ -76,11 +84,27 @@ namespace BOOM {
     // double time_in_seconds = this->stop_time("MyMoveType", start_time);
     MoveTimer start_time(const std::string &move_type);
     double stop_time(const std::string &move_type, clock_t start);
+
    private:
+    // counts_ is essentially a matrix indexed by strings instead of
+    // integers.  The "row" index is called a "move type".  It is
+    // designed to keep track of different types of sampling
+    // algorithms.  The "column" index is the "outcome type".
+    // Standard outcome types are "accept", and "reject".  Other
+    // outcome types can be passed in by the user through calls to
+    // "record_special".
+    //
+    // Example: counts_["MH"]["accept"] contains the number of times a
+    // move type "MH" was accepted.  counts_["MH"]["reject"] is the
+    // number of times a move from "MH" was rejected.
     std::map<std::string, std::map<std::string, int> > counts_;
+
+    // time_in_seconds_ stores the amount of time each move type has
+    // consumed.  An entry for a move type (e.g. "MH") is created (if
+    // it doesn't already exist) or incremented (if it does) by
+    // calling start_time("MH").
     std::map<std::string, double> time_in_seconds_;
   };
-
 
 }  // namespace BOOM
 #endif //  BOOM_MOVE_ACCOUNTING_HPP_

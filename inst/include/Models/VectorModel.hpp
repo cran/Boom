@@ -20,56 +20,59 @@
 #define BOOM_VECTOR_MODEL_HPP
 #include <Models/ModelTypes.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   // Mix-in model classes that supply logp(Vec);
 
-  class VectorModel
-    : virtual public Model{
-  public:
-    virtual double logp(const Vector &x)const =0;
-    VectorModel *clone()const override =0;
-    virtual Vector sim()const=0;
+  class VectorModel : virtual public Model {
+   public:
+    virtual double logp(const Vector &x) const = 0;
+    VectorModel *clone() const override = 0;
+    virtual Vector sim() const = 0;
   };
 
-  class LocationScaleVectorModel
-    : virtual public VectorModel{
-  public:
-    virtual void set_mu(const Vector &)=0;
-    virtual void set_Sigma(const SpdMatrix &)=0;
-    virtual void set_siginv(const SpdMatrix &)=0;
-    virtual void set_S_Rchol(const Vector &sd, const Matrix &L)=0;
-
-    virtual const Vector & mu() const=0;
-    virtual const SpdMatrix & Sigma()const=0;
-    virtual const SpdMatrix & siginv() const=0;
-    virtual double ldsi()const=0;
+  class LocationScaleVectorModel : virtual public VectorModel {
+   public:
+    virtual const Vector & mu() const = 0;
+    virtual const SpdMatrix & Sigma() const = 0;
+    virtual const SpdMatrix & siginv() const = 0;
+    virtual double ldsi() const = 0;
   };
 
-  class dVectorModel
-    : virtual public VectorModel{
-  public:
-    virtual double dlogp(const Vector &x, Vector &g)const =0;
-    dVectorModel *clone()const override =0;
+  class dVectorModel : virtual public VectorModel {
+   public:
+    virtual double dlogp(const Vector &x, Vector &g) const = 0;
+    dVectorModel *clone() const override = 0;
   };
 
-  class d2VectorModel
-    : public dVectorModel{
-  public:
-    virtual double d2logp(const Vector &x, Vector &g, Matrix &h)const =0;
-    d2VectorModel *clone()const override =0;
+  class d2VectorModel : public dVectorModel {
+   public:
+    virtual double d2logp(const Vector &x, Vector &g, Matrix &h) const = 0;
+    d2VectorModel *clone() const override = 0;
   };
 
-  class DiffVectorModel
-    : public d2VectorModel{
-  public:
-    double logp(const Vector &x)const override;
-    double dlogp(const Vector &x, Vector &g)const override;
-    double d2logp(const Vector &x, Vector &g, Matrix &h)const override;
-    virtual double Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const=0;
-    DiffVectorModel *clone()const override =0;
+  class DiffVectorModel : public d2VectorModel {
+   public:
+    DiffVectorModel *clone() const override = 0;
+    double logp(const Vector &x) const override;
+    double dlogp(const Vector &x, Vector &g) const override;
+    double d2logp(const Vector &x, Vector &g, Matrix &h) const override;
+
+    // Args:
+    //   x: The location where the density is to be evaluated.
+    //   g: Gradient of the density at x.
+    //   h: Hessian of the density at x.
+    //   nd:  Number of derivatives desired.
+    // Returns:
+    //  The log density at x.  If nd > 0 then 'g' is filled with the
+    //  gradient at x.  If nd > 1 then 'h' is filled with the Hessian
+    //  at x.  Neither g nor h is used if nd is below the relevant
+    //  threshold.
+    virtual double Logp(const Vector &x, Vector &g, Matrix &h,
+                        uint nd) const = 0;
+
   };
 
+}  // namespace BOOM
 
-}
-#endif// BOOM_VECTOR_MODEL_HPP
+#endif  // BOOM_VECTOR_MODEL_HPP

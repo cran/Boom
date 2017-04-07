@@ -21,6 +21,7 @@
 #include <Models/ModelTypes.hpp>
 #include <cpputil/DateTime.hpp>
 #include <Models/PointProcess/PointProcess.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -54,7 +55,7 @@ namespace BOOM{
     virtual PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator()) const = 0;
+        std::function<Data*()> mark_generator = NullDataGenerator()) const = 0;
   };
 
 }

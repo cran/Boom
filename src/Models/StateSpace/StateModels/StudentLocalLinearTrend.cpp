@@ -189,16 +189,16 @@ namespace BOOM {
 
   Ptr<SparseMatrixBlock> SLLTSM::conditional_state_variance_matrix(
       int t) const {
-    (*state_variance_matrix_)[0] =
+    state_variance_matrix_->mutable_element(0) =
         sigsq_level() / latent_level_scale_factors_[t];
-    (*state_variance_matrix_)[1] =
+    state_variance_matrix_->mutable_element(1) =
         sigsq_slope() / latent_slope_scale_factors_[t];
     return state_variance_matrix_;
   }
 
   Ptr<SparseMatrixBlock> SLLTSM::marginal_state_variance_matrix(int t) const {
-    (*state_variance_matrix_)[0] = sigsq_level();
-    (*state_variance_matrix_)[1] = sigsq_slope();
+    state_variance_matrix_->mutable_element(0) = sigsq_level();
+    state_variance_matrix_->mutable_element(1) = sigsq_slope();
     return state_variance_matrix_;
   }
 

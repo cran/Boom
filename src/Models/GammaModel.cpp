@@ -23,28 +23,17 @@
 #include <cpputil/math_utils.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
-  typedef GammaSuf GS;
-  typedef GammaModelBase GMB;
-
-  GS::GammaSuf()
+  GammaSuf::GammaSuf()
       : sum_(0),
         sumlog_(0),
         n_(0)
   {}
 
-  GS::GammaSuf(const GammaSuf &rhs)
-    : Sufstat(rhs),
-      SufstatDetails<DataType>(rhs),
-      sum_(rhs.sum_),
-      sumlog_(rhs.sumlog_),
-      n_(rhs.n_)
-  {}
+  GammaSuf *GammaSuf::clone() const {return new GammaSuf(*this);}
 
-  GS *GS::clone() const{return new GS(*this);}
-
-  void GS::set(double sum, double sumlog, double n){
+  void GammaSuf::set(double sum, double sumlog, double n) {
     // Check for impossible values.
     if (n > 0) {
       if (sum <= 0.0) {
@@ -75,58 +64,59 @@ namespace BOOM{
     n_ = n;
   }
 
-  void GS::clear(){sum_ = sumlog_ = n_=0;}
+  void GammaSuf::clear() {sum_ = sumlog_ = n_ = 0;}
 
-  void GS::Update(const DoubleData &dat){
+  void GammaSuf::Update(const DoubleData &dat) {
     double x = dat.value();
     update_raw(x);
   }
 
-  void GS::update_raw(double x){
+  void GammaSuf::update_raw(double x) {
     ++n_;
     sum_ += x;
     sumlog_ += log(x);
   }
 
-  void GS::increment(double n, double sum, double sumlog) {
+  void GammaSuf::increment(double n, double sum, double sumlog) {
     n_ += n;
     sum_ += sum;
     sumlog_ += sumlog;
   }
 
-  void GS::add_mixture_data(double y, double prob){
+  void GammaSuf::add_mixture_data(double y, double prob) {
     n_ += prob;
     sum_ += prob * y;
     sumlog_ += prob * log(y);
   }
 
-  double GS::sum()const{return sum_;}
-  double GS::sumlog()const{return sumlog_;}
-  double GS::n()const{return n_;}
-  ostream & GS::display(ostream &out)const{
+  double GammaSuf::sum() const {return sum_;}
+  double GammaSuf::sumlog() const {return sumlog_;}
+  double GammaSuf::n() const {return n_;}
+  ostream & GammaSuf::display(ostream &out) const {
     out << "gamma::sum    = " << sum_ << endl
-	<< "gamma::sumlog = " << sumlog_ <<  endl
-	<< "gamma::n      = " << n_ << endl;
+        << "gamma::sumlog = " << sumlog_ <<  endl
+        << "gamma::n      = " << n_ << endl;
     return out;
   }
 
 
-  void GS::combine(Ptr<GS> s){
+  void GammaSuf::combine(Ptr<GammaSuf> s) {
     sum_ += s->sum_;
     sumlog_ += s->sumlog_;
     n_ += s->n_;
   }
 
-  void GS::combine(const GS & s){
+  void GammaSuf::combine(const GammaSuf &s) {
     sum_ += s.sum_;
     sumlog_ += s.sumlog_;
     n_ += s.n_;
   }
 
-  GammaSuf * GS::abstract_combine(Sufstat *s){
-    return abstract_combine_impl(this,s);    }
+  GammaSuf * GammaSuf::abstract_combine(Sufstat *s) {
+    return abstract_combine_impl(this, s);
+  }
 
-  Vector GS::vectorize(bool)const{
+  Vector GammaSuf::vectorize(bool) const {
     Vector ans(3);
     ans[0] = sum_;
     ans[1] = sumlog_;
@@ -134,54 +124,57 @@ namespace BOOM{
     return ans;
   }
 
-  Vector::const_iterator GS::unvectorize(Vector::const_iterator &v, bool){
+  Vector::const_iterator GammaSuf::unvectorize(Vector::const_iterator &v,
+                                               bool) {
     sum_ = *v;    ++v;
     sumlog_ = *v; ++v;
     n_ = *v;      ++v;
     return v;
   }
 
-  Vector::const_iterator GS::unvectorize(const Vector &v, bool minimal){
+  Vector::const_iterator GammaSuf::unvectorize(const Vector &v, bool minimal) {
     Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
-  ostream & GS::print(ostream &out)const{
+  ostream & GammaSuf::print(ostream &out) const {
     return out << n_ << " " << sum_ << " " << sumlog_;
   }
   //======================================================================
-  GMB::GammaModelBase()
+  GammaModelBase::GammaModelBase()
     : DataPolicy(new GammaSuf())
   {}
 
-  GMB::GammaModelBase(const GMB &rhs)
-    : Model(rhs),
-      DataPolicy(rhs),
-      DiffDoubleModel(rhs),
-      NumOptModel(rhs),
-      EmMixtureComponent(rhs)
-  {}
+  double GammaModelBase::mean() const {
+    return alpha() / beta();
+  }
 
-  double GMB::pdf(Ptr<Data> dp, bool logscale)const{
+  double GammaModelBase::variance() const {
+    return alpha() / square(beta());
+  }
+
+  double GammaModelBase::pdf(Ptr<Data> dp, bool logscale) const {
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);}
 
-  double GMB::pdf(const Data * dp, bool logscale)const{
+  double GammaModelBase::pdf(const Data * dp, bool logscale) const {
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);}
 
-  double GMB::Logp(double x, double &g, double &h, uint nd) const{
+  double GammaModelBase::Logp(double x, double &g, double &h, uint nd) const {
      double a = alpha();
      double b = beta();
-     double ans = dgamma(x, a,b,true);
-     if(nd>0) g = (a-1)/x-b;
-     if(nd>1) h = -(a-1)/(x*x);
+     double ans = dgamma(x, a, b, true);
+     if (nd > 0) g = (a - 1) / x - b;
+     if (nd > 1) h = -(a - 1) / square(x);
      return ans;
   }
-  double GMB::sim() const{
-    return rgamma(alpha(), beta());}
 
-  void GMB::add_mixture_data(Ptr<Data> dp, double prob){
+  double GammaModelBase::sim() const {
+    return rgamma(alpha(), beta());
+  }
+
+  void GammaModelBase::add_mixture_data(Ptr<Data> dp, double prob) {
     double y = DAT(dp)->value();
     suf()->add_mixture_data(y, prob);
   }
@@ -189,7 +182,7 @@ namespace BOOM{
   //======================================================================
 
   GammaModel::GammaModel(double a, double b)
-    : GMB(),
+    : GammaModelBase(),
       ParamPolicy(new UnivParams(a), new UnivParams(b)),
       PriorPolicy()
   {
@@ -200,7 +193,7 @@ namespace BOOM{
   }
 
   GammaModel::GammaModel(double shape, double mean, int)
-      : GMB(),
+      : GammaModelBase(),
         ParamPolicy(new UnivParams(shape), new UnivParams(shape / mean)),
         PriorPolicy()
   {
@@ -210,42 +203,35 @@ namespace BOOM{
     }
   }
 
-  GammaModel::GammaModel(const GammaModel &rhs)
-    : Model(rhs),
-      GMB(rhs),
-      ParamPolicy(rhs),
-      PriorPolicy(rhs)
-  {}
+  GammaModel * GammaModel::clone() const {
+    return new GammaModel(*this);
+  }
 
-  GammaModel * GammaModel::clone()const{
-    return new GammaModel(*this);}
-
-
-  Ptr<UnivParams> GammaModel::Alpha_prm(){
+  Ptr<UnivParams> GammaModel::Alpha_prm() {
     return ParamPolicy::prm1();
   }
 
-  Ptr<UnivParams> GammaModel::Beta_prm(){
+  Ptr<UnivParams> GammaModel::Beta_prm() {
     return ParamPolicy::prm2();
   }
 
-  const Ptr<UnivParams> GammaModel::Alpha_prm()const{
+  const Ptr<UnivParams> GammaModel::Alpha_prm() const {
     return ParamPolicy::prm1();
   }
 
-  const Ptr<UnivParams> GammaModel::Beta_prm()const{
+  const Ptr<UnivParams> GammaModel::Beta_prm() const {
     return ParamPolicy::prm2();
   }
 
-  double GammaModel::alpha()const{
+  double GammaModel::alpha() const {
     return ParamPolicy::prm1_ref().value();
   }
 
-  double GammaModel::beta()const{
+  double GammaModel::beta() const {
     return ParamPolicy::prm2_ref().value();
   }
 
-  void GammaModel::set_alpha(double a){
+  void GammaModel::set_alpha(double a) {
     if (a <= 0) {
       ostringstream err;
       err << "The 'a' parameter must be positive in GammaModel::set_alpha()."
@@ -256,7 +242,7 @@ namespace BOOM{
     ParamPolicy::prm1_ref().set(a);
   }
 
-  void GammaModel::set_beta(double b){
+  void GammaModel::set_beta(double b) {
     if (b <= 0) {
       ostringstream err;
       err << "The 'b' parameter must be positive in GammaModel::set_beta()."
@@ -267,27 +253,27 @@ namespace BOOM{
     ParamPolicy::prm2_ref().set(b);
   }
 
-  void GammaModel::set_params(double a, double b){
+  void GammaModel::set_shape_and_scale(double a, double b) {
     set_alpha(a);
-    set_beta(b);}
+    set_beta(b);
+  }
 
-  double GammaModel::mean()const{
+  void GammaModel::set_shape_and_mean(double a, double mean) {
+    set_shape_and_scale(a, a / mean);
+  }
+
+  void GammaModel::set_mean_and_scale(double mean, double b) {
+    set_shape_and_scale(mean * b, b);
+  }
+
+  double GammaModel::mean() const {
     return alpha() / beta();
   }
 
-  inline double bad_gamma_loglike(double a,double b, Vector &g, Matrix &h, uint nd){
-    if(nd>0){
-      g[0] = (a <=0) ? -(a+1) : 0;
-      g[1] = (b <= 0) ? -(b+1) : 0;
-      if(nd>1) h.set_diag(-1);
-    }
-    return BOOM::negative_infinity();
-  }
-
-  inline double bad_gamma_loglike(double a, double b, Vector *g, Matrix *h){
+  inline double bad_gamma_loglike(double a, double b, Vector *g, Matrix *h) {
     if (g) {
-      (*g)[0] = (a <=0) ? -(a+1) : 0;
-      (*g)[1] = (b <= 0) ? -(b+1) : 0;
+      (*g)[0] = (a <= 0) ? -(a + 1) : 0;
+      (*g)[1] = (b <= 0) ? -(b + 1) : 0;
     }
     if (h) {
       h->set_diag(-1);
@@ -295,103 +281,89 @@ namespace BOOM{
     return negative_infinity();
   }
 
-  double GammaModel::Loglike(const Vector &ab, Vector &g, Matrix &h, uint nd) const{
+  double GammaModel::Loglike(const Vector &shape_scale,
+                             Vector &gradient,
+                             Matrix &hessian,
+                             uint number_of_derivatives) const {
+    return loglikelihood(shape_scale,
+                         number_of_derivatives > 0 ? &gradient : nullptr,
+                         number_of_derivatives > 1 ? &hessian : nullptr);
+  }
+
+  double GammaModel::loglikelihood(double shape, double scale) const {
+    return loglikelihood({shape, scale}, nullptr, nullptr);
+  }
+
+  double GammaModel::loglikelihood(const Vector &ab,
+                                   Vector *gradient,
+                                   Matrix *hessian) const {
     if (ab.size() != 2) {
-      report_error("Wrong size argument.");
-    }
-    double n = suf()->n();
-    double sum =suf()->sum();
-    double sumlog = suf()->sumlog();
-    double a = ab[0];
-    double b = ab[1];
-    if(a<=0 || b<=0) return bad_gamma_loglike(a, b,g,h,nd);
-
-    double logb = log(b);
-    double ans = n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
-
-    if(nd>0){
-      g[0] = n*( logb -digamma(a) ) + sumlog;
-      g[1] = n*a/b -sum;
-      if(nd>1){
- 	h(0,0) = -n*trigamma(a);
- 	h(1,0) = h(0,1) = n/b;
- 	h(1,1) = -n*a/(b*b);}}
-    return ans;
-  }
-
-  double GammaModel::loglikelihood(double a, double b)const{
-    if(a<=0 || b<=0) return negative_infinity();
-    double n = suf()->n();
-    double sum =suf()->sum();
-    double sumlog = suf()->sumlog();
-    double logb = log(b);
-    return n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
-  }
-
-  double GammaModel::loglikelihood_full(const Vector &ab, Vector *g, Matrix *h)const{
-    if (length(ab) != 2) {
       report_error("GammaModel::loglikelihood expects an argument of length 2");
     }
     double a = ab[0];
     double b = ab[1];
-    if(a<=0 || b<=0) return bad_gamma_loglike(a, b, g, h);
+    if (a <= 0 || b <= 0) {
+      return bad_gamma_loglike(a, b, gradient, hessian);
+    }
 
     double n = suf()->n();
-    double sum =suf()->sum();
+    double sum = suf()->sum();
     double sumlog = suf()->sumlog();
     double logb = log(b);
-    double ans = n*(a*logb -lgamma(a))  + (a-1)*sumlog - b*sum;
+    double ans = n * (a * logb -lgamma(a))  + (a - 1) * sumlog - b * sum;
 
-    if (g) {
-      if (length(*g) != 2) {
+    if (gradient) {
+      if (gradient->size() != 2) {
         report_error("GammaModel::loglikelihood expects a gradient vector "
                      "of length 2");
       }
-      (*g)[0] = n*( logb -digamma(a) ) + sumlog;
-      (*g)[1] = n*a/b -sum;
+      (*gradient)[0] = n * (logb - digamma(a)) + sumlog;
+      (*gradient)[1] = n * a / b - sum;
 
-      if (h) {
-        if (nrow(*h) != 2 || ncol(*h) != 2) {
+      if (hessian) {
+        if (hessian->nrow() != 2 || hessian->ncol() != 2) {
           report_error("GammaModel::loglikelihood expects a 2 x 2 "
                        "Hessian matrix");
         }
+        (*hessian)(0, 0) = -n * trigamma(a);
+        (*hessian)(1, 0) = (*hessian)(0, 1) = n / b;
+        (*hessian)(1, 1) = -n * a / square(b);
       }
     }
     return ans;
   }
 
-  void GammaModel::mle(){
+  void GammaModel::mle() {
     // can get good starting values;
     double n = suf()->n();
-    double sum= suf()->sum();
+    double sum = suf()->sum();
     double sumlog = suf()->sumlog();
 
-    double ybar = sum/n;        // arithmetic mean
-    double gm = exp(sumlog/n);  // geometric mean
-    double ss=0;
-    for(uint i=0; i<dat().size(); ++i)
-      ss+= pow(dat()[i]->value()-ybar, 2);
-    if ( (ss > 0) && (n > 1) ) {
-      double v = ss/(n-1);
+    double ybar = sum / n;        // arithmetic mean
+    double geometric_mean = exp(sumlog / n);
+    double sum_of_squares = 0;
+    for (uint i = 0; i < dat().size(); ++i) {
+      sum_of_squares += pow(dat()[i]->value() - ybar, 2);
+    }
+    if ((sum_of_squares > 0) && (n > 1)) {
+      double sample_variance = sum_of_squares / (n - 1);
 
       // method of moments estimates
-      double b = ybar/v;
-      double a = ybar*b;
+      double b = ybar / sample_variance;
+      double a = ybar * b;
 
       // one step newton refinement:
-      // a = ybar *b;
-      // b - exp(psi(ybar*b))/gm = 0
-      double tmp = exp(digamma(ybar*b))/gm;
+      // a = ybar * b;
+      // b - exp(psi(ybar*b)) / geometric_mean = 0
+      double tmp = exp(digamma(ybar * b)) / geometric_mean;
       double f =  b - tmp;
-      double g = 1 - tmp*trigamma(ybar*b) * ybar;
+      double g = 1 - tmp * trigamma(ybar * b) * ybar;
 
-      b-= f/g;
-      a = b*ybar;
-      set_params(a,b);
+      b -= f / g;
+      a = b * ybar;
+      set_shape_and_scale(a, b);
     }
     NumOptModel::mle();
   }
 
-  //======================================================================
-
-}
+}  // namespace BOOM

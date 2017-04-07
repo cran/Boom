@@ -28,12 +28,10 @@
 #include <Models/Policies/ParamPolicy_1.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 
-
-//======================================================================
-namespace BOOM{
-  class ExpSuf: public SufstatDetails<DoubleData>{
+namespace BOOM {
+  class ExpSuf: public SufstatDetails<DoubleData> {
     double sum_, n_;
-  public:
+   public:
     ExpSuf();
     ExpSuf(const ExpSuf &);
     ExpSuf *clone() const override;
@@ -48,9 +46,9 @@ namespace BOOM{
     ExpSuf * abstract_combine(Sufstat *s) override;
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                       bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                       bool minimal=true) override;
     ostream &print(ostream &out)const override;
   };
   //======================================================================
@@ -62,10 +60,11 @@ namespace BOOM{
     public SufstatDataPolicy<DoubleData,ExpSuf>,
     public PriorPolicy,
     public DiffDoubleModel,
+    public LocationScaleDoubleModel,
     public NumOptModel,
     public EmMixtureComponent
   {
-  public:
+   public:
     ExponentialModel();
     ExponentialModel(double lam);
     ExponentialModel(const ExponentialModel &m);
@@ -75,6 +74,15 @@ namespace BOOM{
     const Ptr<UnivParams> Lam_prm()const;
     const double& lam() const;
     void set_lam(double);
+
+    double mean() const override {
+      return 1.0 / lam();
+    }
+
+    double variance() const override {
+      double m = mean();
+      return m * m;
+    }
 
     void set_conjugate_prior(double a, double b);
     void set_conjugate_prior(Ptr<GammaModel>);
@@ -91,8 +99,5 @@ namespace BOOM{
     double sim() const override;
     void add_mixture_data(Ptr<Data>, double prob) override;
   };
-
-
-
-}
+}  // namespace BOOM
 #endif  // EXPONENTIALMODEL_H

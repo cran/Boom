@@ -22,6 +22,7 @@
 #include <cpputil/Ptr.hpp>
 #include <TargetFun/Loglike.hpp>
 #include <numopt.hpp>
+#include <functional>
 
 namespace BOOM{
   class VectorModel;
@@ -54,7 +55,7 @@ namespace BOOM{
   public:
     d2LogPostTF(d2LoglikeTF Loglike, Ptr<d2VectorModel> dp);
     d2LogPostTF(Target Loglike, dTarget dLoglike, d2Target d2Loglike,
-		Ptr<d2VectorModel> dp);
+                Ptr<d2VectorModel> dp);
 
     double operator()(const Vector &z)const{
       return LogPostTF::operator()(z);}
@@ -62,7 +63,7 @@ namespace BOOM{
       return dLogPostTF::operator()(z,g);}
     double operator()(const Vector &z, Vector &g, Matrix &h)const;
   private:
-    boost::function<double(const Vector &x, Vector &g, Mat&h)> d2loglike;
+    std::function<double(const Vector &x, Vector &g, Mat&h)> d2loglike;
     Ptr<d2VectorModel> d2pri;
   };
 

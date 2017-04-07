@@ -29,6 +29,38 @@ namespace BOOM{
     void draw() override;
     double logpri() const override;
 
+    // Set the model parameters equal to the posterior mode.  Note
+    // that some state models are not amenable to this method, such as
+    // regression models with a spike and slab prior.  If the model
+    // contains such a state model then an exception will be thrown.
+    //
+    // Args:
+    //   epsilon: Convergence for optimization algorithm will be
+    //     declared when consecutive values of (log_likelihood +
+    //     log_prior) are observed with a difference of less than
+    //     epsilon.
+    //
+    void find_posterior_mode(double epsilon = 1e-5) override;
+
+    // Returns the log posterior density evaluated at the vector of
+    // parameters.
+    // Args:
+    //   parameters: A vector of model parameters, in the order
+    //     returned by model_->vectorize_params(true).
+    double log_prior_density(const ConstVectorView &parameters) const override;
+
+    // Args:
+    //   parameters: A vector of model parameters, in the order
+    //     returned by model_->vectorize_params(true).
+    //   gradient: A vector of the same size as parameters.  The
+    //     elements of the vector will be incremented by the gradient
+    //     of the log prior density with respect to the parameters.
+    //
+    // Returns:
+    //   The log prior density evaluated at the specified parameters.
+    double increment_log_prior_gradient(const ConstVectorView &parameters,
+                                        VectorView gradient) const override;
+
    protected:
     // Samplers for models with observation equations that are
     // conditionally normal can override this function to impute the
@@ -37,7 +69,17 @@ namespace BOOM{
     virtual void impute_nonstate_latent_data() {}
 
    private:
-    StateSpaceModelBase *m_;
+    // The M step in an EM algorithm for finding the posterior mode.
+    // The Estep is provided by the model.  The Mstep is kept here
+    // because it needs access to the prior.
+    void Mstep();
+
+    // Specific mode finding methods used to implement
+    // find_posterior_mode.
+    void find_posterior_mode_using_em(double epsilon, int max_steps);
+    void find_posterior_mode_numerically(double epsilon);
+
+    StateSpaceModelBase *model_;
     bool latent_data_initialized_;
   };
 }

@@ -71,11 +71,10 @@ namespace BOOM{
 
     template <class FwdIt> Vector(FwdIt begin, FwdIt end);
 
-    Vector(const Vector &);              // value semantics
+    Vector(const Vector &rhs) = default;
+    Vector(Vector &&rhs) = default;
     Vector(const VectorView &);
     Vector(const ConstVectorView &);
-
-    Vector(Vector &&v) = default;
 
     // This constructors works with arbitrary STL containers.
     template <typename NUMERIC, template <typename ELEM,
@@ -85,8 +84,9 @@ namespace BOOM{
          : dVector(rhs.begin(), rhs.end())
     {}
 
-    Vector & operator=(const Vector &);  // value semantics
-    Vector & operator=(double);  // value semantics
+    Vector & operator=(const Vector &rhs) = default;
+    Vector & operator=(Vector &&rhs) = default;
+    Vector & operator=(double);
     Vector & operator=(const VectorView &);
     Vector & operator=(const ConstVectorView &);
 
@@ -186,9 +186,11 @@ namespace BOOM{
     double max_abs()const;  // returns -1 if empty.
     double prod() const;
 
+    // Sort the elements of this vector (smallest to largest).  Return *this.
     Vector & sort();
+
     // apply fun to each element of *this, and return *this.
-    Vector & transform(std::function<double(double)> fun);
+    Vector & transform(const std::function<double(double)> &fun);
    private:
     bool inrange(uint n)const{return n< size();}
   };

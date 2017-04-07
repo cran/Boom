@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2008 Steven L. Scott
+  Copyright (C) 2008-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,5 +53,6 @@ namespace BOOM{
     ScalarKalmanStorage() : LightKalmanStorage() {}
     ScalarKalmanStorage(int dim) : LightKalmanStorage(dim), a(dim), P(dim) {}
   };
-}
+}  // namespace BOOM
+
 #endif// BOOM_SCALAR_KALMAN_STORAGE_HPP

@@ -23,13 +23,12 @@
 #include <cpputil/report_error.hpp>
 #include <cpputil/math_utils.hpp>
 #include <Models/PosteriorSamplers/ZeroInflatedGammaPosteriorSampler.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
-
-namespace BOOM{
+namespace BOOM {
   namespace {
     typedef ZeroInflatedGammaModel ZIGM;
-  }
+  }  // namespace
 
   ZIGM::ZeroInflatedGammaModel()
       : gamma_(new GammaModel),
@@ -86,9 +85,9 @@ namespace BOOM{
   }
 
   ZIGM::ZeroInflatedGammaModel(const ZeroInflatedGammaModel &rhs)
-      : ParamPolicy(rhs),
+      : DoubleModel(rhs),
+        ParamPolicy(rhs),
         PriorPolicy(rhs),
-        DoubleModel(rhs),
         gamma_(rhs.gamma_->clone()),
         binomial_(rhs.binomial_->clone()),
         zero_threshold_(rhs.zero_threshold_),
@@ -97,45 +96,45 @@ namespace BOOM{
     setup();
   }
 
-  ZeroInflatedGammaModel * ZIGM::clone()const{
+  ZeroInflatedGammaModel * ZIGM::clone() const {
     return new ZeroInflatedGammaModel(*this);}
 
-  double ZIGM::pdf(Ptr<Data> dp, bool logscale)const{
+  double ZIGM::pdf(Ptr<Data> dp, bool logscale) const {
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);
   }
 
-  double ZIGM::pdf(const Data * dp, bool logscale)const{
+  double ZIGM::pdf(const Data * dp, bool logscale) const {
     double ans = logp(dynamic_cast<const DoubleData *>(dp)->value());
     return logscale ? ans : exp(ans);
   }
 
-  double ZIGM::logp(double x)const{
+  double ZIGM::logp(double x) const {
     check_log_probabilities();
-    if(x < zero_threshold_) return log_probability_of_zero_;
+    if (x < zero_threshold_) return log_probability_of_zero_;
     return log_probability_of_positive_ + gamma_->logp(x);
   }
 
-  double ZIGM::sim()const{
-    if(runif() < positive_probability()){
+  double ZIGM::sim() const {
+    if (runif() < positive_probability()) {
       return gamma_->sim();
     }
     return 0;
   }
 
-  void ZIGM::add_data(Ptr<Data> dp){
-    if(dp->missing()) return;
+  void ZIGM::add_data(Ptr<Data> dp) {
+    if (dp->missing()) return;
     Ptr<DoubleData> d = DAT(dp);
     double y = d->value();
     add_data_raw(y);
   }
 
-  void ZIGM::add_data_raw(double y){
-    if(y < zero_threshold_){
+  void ZIGM::add_data_raw(double y) {
+    if (y < zero_threshold_) {
       // The binomial "success" is a positive value, so this is a
       // failure.
       binomial_->suf()->update_raw(0.0);
-    }else{
+    } else {
       // The binomial "success" is a positive value, so this is a
       // success.
       binomial_->suf()->update_raw(1.0);
@@ -143,31 +142,24 @@ namespace BOOM{
     }
   }
 
-  void ZIGM::add_mixture_data(Ptr<Data> dp, double prob){
-    if(dp->missing()) return;
-    double y = DAT(dp)->value();
-    add_mixture_data_raw(y, prob);
-  }
-
-  void ZIGM::add_mixture_data_raw(double y, double prob){
-    if(y < zero_threshold_){
+  void ZIGM::add_mixture_data_raw(double y, double prob) {
+    if (y < zero_threshold_) {
       binomial_->suf()->add_mixture_data(0, prob);
-    }else{
+    } else {
       binomial_->suf()->add_mixture_data(1.0, prob);
       gamma_->suf()->add_mixture_data(y, prob);
     }
   }
 
-  void ZIGM::clear_data(){
+  void ZIGM::clear_data() {
     gamma_->clear_data();
     binomial_->clear_data();
   }
 
-  void ZIGM::combine_data(
-      const Model &rhs, bool just_suf){
+  void ZIGM::combine_data(const Model &rhs, bool just_suf) {
     const ZeroInflatedGammaModel * rhsp =
         dynamic_cast<const ZeroInflatedGammaModel *>(&rhs);
-    if(!rhsp){
+    if (!rhsp) {
       ostringstream err;
       err << "ZIGM::combine_data was called "
           << "with an argument "
@@ -179,78 +171,75 @@ namespace BOOM{
     binomial_->combine_data( *(rhsp->binomial_), true);
   }
 
-  void ZIGM::mle(){
+  void ZIGM::mle() {
     gamma_->mle();
     binomial_->mle();
   }
 
-  double ZIGM::positive_probability()const{
+  double ZIGM::positive_probability() const {
     return binomial_->prob();}
 
-  void ZIGM::set_positive_probability(double prob){
+  void ZIGM::set_positive_probability(double prob) {
     binomial_->set_prob(prob);
     log_probability_of_positive_ = log(prob);
     log_probability_of_zero_ = log(1 - prob);
     log_probabilities_are_current_ = true;
   }
 
-  double ZIGM::mean_parameter()const{
+  double ZIGM::mean_parameter() const {
     return gamma_->mean();
   }
 
-  void ZIGM::set_mean_parameter(double mu){
-    double a = gamma_->alpha();
-    double b = a / mu;
-    gamma_-> set_params(a, b);
+  void ZIGM::set_mean_parameter(double mu) {
+    gamma_-> set_shape_and_mean(gamma_->alpha(), mu);
   }
 
-  double ZIGM::shape_parameter()const{
+  double ZIGM::shape_parameter() const {
     return gamma_->alpha();
   }
 
-  void ZIGM::set_shape_parameter(double a){
+  void ZIGM::set_shape_parameter(double a) {
     gamma_->set_alpha(a);
   }
 
-  double ZIGM::scale_parameter()const{
+  double ZIGM::scale_parameter() const {
     return gamma_->beta();
   }
 
-  double ZIGM::mean()const{
+  double ZIGM::mean() const {
     return positive_probability() * mean_parameter();
   }
 
-  double ZIGM::variance()const{
+  double ZIGM::variance() const {
     double p = positive_probability();
     return p * square(mean_parameter()) * (1 - p + (1 / shape_parameter()));
   }
 
-  double ZIGM::sd()const{
+  double ZIGM::sd() const {
     return sqrt(variance());
   }
 
-  Ptr<GammaModel> ZIGM::Gamma_model(){
+  Ptr<GammaModel> ZIGM::Gamma_model() {
     return gamma_;}
 
-  Ptr<BinomialModel> ZIGM::Binomial_model(){
+  Ptr<BinomialModel> ZIGM::Binomial_model() {
     return binomial_;}
 
-  Ptr<DoubleData> ZIGM::DAT(Ptr<Data> dp)const{
+  Ptr<DoubleData> ZIGM::DAT(const Ptr<Data> &dp) const {
     if (!dp) return Ptr<DoubleData>();
     return dp.dcast<DoubleData>();
   }
 
-  boost::function<void(void)>
-      ZIGM::create_binomial_observer(){
-    return boost::bind(&ZIGM::observe_binomial_probability, this);
+  std::function<void(void)> ZIGM::create_binomial_observer() {
+    return [this]() {this->observe_binomial_probability();};
   }
 
-  void ZIGM::observe_binomial_probability(){
+  void ZIGM::observe_binomial_probability() {
     log_probabilities_are_current_ = false;
   }
 
-  void ZIGM::check_log_probabilities()const{
-    if(log_probabilities_are_current_) return;
+  void ZIGM::check_log_probabilities() const {
+    if (log_probabilities_are_current_) return;
     log_probability_of_positive_ = log(positive_probability());
     log_probability_of_zero_ = log(1 - positive_probability());
     log_probabilities_are_current_ = true;
@@ -261,4 +250,4 @@ namespace BOOM{
     ParamPolicy::add_model(binomial_);
     binomial_->Prob_prm()->add_observer(create_binomial_observer());
   }
-}
+}  // namespace BOOM

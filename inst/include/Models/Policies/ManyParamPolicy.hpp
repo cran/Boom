@@ -50,8 +50,8 @@ namespace BOOM{
     void add_params(Ptr<Params> p);
     void clear();
 
-    ParamVector t() override;
-    const ParamVector t()const override;
+    ParamVector parameter_vector() override;
+    const ParamVector parameter_vector()const override;
 
   protected:
     virtual void setup_params()=0;  // to be called during construction

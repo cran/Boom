@@ -132,7 +132,7 @@ namespace BOOM {
     const std::vector<Ptr<BinomialRegressionData> > & logit_data(
         logit_->dat());
     for (int i = 0; i < data.size(); ++i) {
-      int total_number_of_zeros = lround(data[i]->number_of_zero_trials());
+      int64_t total_number_of_zeros = lround(data[i]->number_of_zero_trials());
       if (total_number_of_zeros > 0) {
         // pbinomial will eventually be the probability that this zero
         // is a forced zero.
@@ -147,7 +147,7 @@ namespace BOOM {
         double pforced_given_0 =
             pforced / (pforced + pfree * dpois(0, lambda));
         if (stochastic) {
-          int number_of_binomial_zeros = rbinom_mt(
+          int64_t number_of_binomial_zeros = rbinom_mt(
               rng(), total_number_of_zeros, pforced_given_0);
 
           // The number of trials for the logit data is the total number
@@ -158,7 +158,7 @@ namespace BOOM {
           // The notion of 'success' for the binomial model is an
           // observation that is not forced to zero.  Note that the
           // nonzero trials contribute to the binomial nonzeros too.
-          int number_of_poisson_observations =
+          int64_t number_of_poisson_observations =
               data[i]->total_number_of_trials() - number_of_binomial_zeros;
           logit_data[i]->set_y(number_of_poisson_observations);
 
@@ -192,7 +192,7 @@ namespace BOOM {
   }
 
   void ZIPRS::ensure_latent_data() {
-    int number_of_observations = model_->dat().size();
+    int64_t number_of_observations = model_->dat().size();
     bool okay = true;
     if (number_of_observations != poisson_->dat().size()
         || number_of_observations != logit_->dat().size()) {
@@ -240,7 +240,7 @@ namespace BOOM {
       // case, we know there are no constrained observations, so the
       // number_of_unconstrained_trials is equal to the total number
       // of trials.
-      int number_of_unconstrained_trials =
+      int64_t number_of_unconstrained_trials =
           data_point->total_number_of_trials();
       NEW(BinomialRegressionData, logit_data)(
           number_of_unconstrained_trials,
@@ -248,6 +248,8 @@ namespace BOOM {
           data_point->Xptr());
       logit_->add_data(logit_data);
     }
+    poisson_sampler_->assign_data_to_workers();
+    logit_sampler_->assign_data_to_workers();
   }
 
 }  // namespace BOOM

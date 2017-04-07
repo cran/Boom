@@ -28,8 +28,6 @@
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <Models/PosteriorSamplers/MvnConjSampler.hpp>
 
-#include <boost/bind.hpp>
-
 namespace BOOM{
 
   double MvnModel::loglike(const Vector &mu_siginv)const{

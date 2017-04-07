@@ -23,13 +23,67 @@
 #include <cpputil/math_utils.hpp>
 
 namespace BOOM{
+  namespace {
+    typedef StateSpaceModel SSM;
+    typedef StateSpace::MultiplexedDoubleData MDD;
+  }  // namespace
 
-  typedef StateSpaceModel SSM;
+  MDD::MultiplexedDoubleData() {}
 
+  MDD::MultiplexedDoubleData(double y)
+      : data_(1, new DoubleData(y))
+  {}
+
+  MDD * MDD::clone() const { return new MDD(*this); }
+
+  std::ostream & MDD::display(std::ostream &out) const {
+    for (int i = 0; i < data_.size(); ++i) {
+      data_[i]->display(out) << std::endl;
+    }
+    return out;
+  }
+
+  void MDD::add_data(const Ptr<DoubleData> &data_point) {
+    data_.push_back(data_point);
+  }
+
+  double MDD::adjusted_observation() const {
+    if (data_.empty()) {
+      return negative_infinity();
+    }
+    double ans = 0;
+    for (int i = 0; i < data_.size(); ++i) {
+      ans += data_[i]->value();
+    }
+    return ans / data_.size();
+  }
+
+  int MDD::sample_size() const {
+    return data_.size();
+  }
+
+  const DoubleData & MDD::double_data(int i) const {
+    return *(data_[i]);
+  }
+
+  void MDD::set_value(double value, int i) {
+    data_[i]->set(value);
+  }
+
+  bool MDD::all_missing() const {
+    if (data_.empty()) return true;
+    for (int i = 0; i < data_.size(); ++i) {
+      if (data_[i]->missing() != Data::completely_missing) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  //======================================================================
   void SSM::setup() {
     observe(observation_model_->Sigsq_prm());
     observation_model_->only_keep_sufstats();
-    ParamPolicy::add_model(observation_model_);
   }
 
   SSM::StateSpaceModel()
@@ -44,7 +98,7 @@ namespace BOOM{
   {
     setup();
     for(int i = 0; i < y.size(); ++i) {
-      NEW(DoubleData, dp)(y[i]);
+      NEW(MDD, dp)(y[i]);
       if(!y_is_observed.empty() && !y_is_observed[i]) {
         dp->set_missing_status(Data::completely_missing);
       }
@@ -66,11 +120,22 @@ namespace BOOM{
 
   int SSM::time_dimension() const {return dat().size();}
 
-  double SSM::observation_variance(int) const {
-    return observation_model_->sigsq();}
+  double SSM::observation_variance(int t) const {
+    double sigsq = observation_model_->sigsq();
+    if (t >= dat().size()) {
+      return sigsq;
+    }
+    const Ptr<MDD> &data_point(dat()[t]);
+    if (is_missing_observation(t) || data_point->sample_size() <= 1) {
+      return sigsq;
+    } else {
+      return sigsq / data_point->sample_size();
+    }
+  }
 
   double SSM::adjusted_observation(int t) const {
-    return dat()[t]->value(); }
+    return dat()[t]->adjusted_observation();
+  }
 
   bool SSM::is_missing_observation(int t) const {
     return dat()[t]->missing() != Data::observed;
@@ -86,10 +151,13 @@ namespace BOOM{
 
   void SSM::observe_data_given_state(int t) {
     // Assuming ignorable missing data.
-    if(!is_missing_observation(t)) {
+    if (!is_missing_observation(t)) {
+      const Ptr<MDD> &data_point(dat()[t]);
       double mu = observation_matrix(t).dot(state(t));
-      double y = adjusted_observation(t) - mu;
-      observation_model_->suf()->update_raw(y);
+      for (int j = 0; j < data_point->sample_size(); ++j) {
+        double residual = data_point->double_data(j).value() - mu;
+        observation_model_->suf()->update_raw(residual);
+      }
     }
   }
 
@@ -183,8 +251,7 @@ namespace BOOM{
       const Vector &newY,
       const Vector &final_state) const {
     Vector ans(length(newY));
-    const std::vector<Ptr<DoubleData> > &data(dat());
-    int t0 = data.size();
+    int t0 = time_dimension();
     ScalarKalmanStorage ks(state_dimension());
     ks.a = *state_transition_matrix(t0 - 1) * final_state;
     ks.P = SpdMatrix(state_variance_matrix(t0-1)->dense());
@@ -204,6 +271,27 @@ namespace BOOM{
       ans[t] = ks.v;
     }
     return ans;
+  }
+
+  void SSM::update_observation_model_complete_data_sufficient_statistics(
+      int t,
+      double observation_error_mean,
+      double observation_error_variance) {
+    observation_model()->suf()->update_expected_value(
+        1.0,
+        observation_error_mean,
+        observation_error_variance + square(observation_error_mean));
+  }
+
+  void SSM::update_observation_model_gradient(
+      VectorView gradient,
+      int t,
+      double observation_error_mean,
+      double observation_error_variance) {
+    double sigsq = observation_model()->sigsq();
+    gradient[0] += (-.5 / sigsq)
+        + .5 * (observation_error_variance + square(observation_error_mean))
+        / square(sigsq);
   }
 
 }  // namespace BOOM

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005-2015 Steven L. Scott
+  Copyright (C) 2005-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -31,57 +31,97 @@ namespace BOOM {
 
   namespace StateSpace {
 
-    // BinomialRegressionData, augmented with a pair of latent
-    // variables.
+    // Gaussian mixture representation of BinomialRegressionData.
+    //
+    // Let y_t denote the number of successes out of n_t trials, where
+    // n_t is taken as a known constant.  The observation equation is
+    //
+    //         y_t ~ Binomial(n_t, p_t), where
+    //  logit(p_t) = Z_t^T \alpha_t + \beta * x_t
+    //             = mu_t.
+    //
+    // Observation y_t is the sum of n_t Bernoulli random variables, each of
+    // which is associated with a pair of variables z_it, v_it where z_it \sim
+    // N(mu_t, v_it), and y_t = sum_i I(z_it > 0).
+    //
+    // The latent continuous value of point t is the precision weighted average
+    // of z_it.
+    //
+    //                sum_i z_{it} / v_{it}
+    //      zbar_t =  ------------------    .
+    //                 sum_i  1 / v_{it}
+    //
+    // It is a complete data sufficient statistic for observation t.  It is
+    // zbar_t that gets imputed, along with its variance
+    //
+    //       V_t = 1.0 / sum_i(1.0 / v_{it}).
+    //
+    // In the case of multiplexed data each binomial observation y_jt gets
+    // imputed as above, with a corresponding zbar_jt and V_jt.
     class AugmentedBinomialRegressionData
-        : public BinomialRegressionData {
+        : public Data {
      public:
+      // Constructs an empty data point.  Observations can be added later using
+      // add_data().
+      AugmentedBinomialRegressionData();
+
+      // A constructor for the usual case where there is only one data point per
+      // time period.
+      AugmentedBinomialRegressionData(double y, double n, const Vector &x);
+
+      // A constructor for the multiplexed case, where there are multiple
+      // observations at each time point.
       AugmentedBinomialRegressionData(
-          double y, double n, const Vector &x);
-      void set_latent_data(double value, double variance);
-      double latent_data_variance() const {return variance_;}
-      double latent_data_value() const {return latent_continuous_value_;}
-      void set_offset(double offset);
-      double offset() const {return offset_;}
+          const std::vector<Ptr<BinomialRegressionData>> &binomial_data);
+
+      AugmentedBinomialRegressionData * clone() const override;
+      std::ostream & display(std::ostream &out) const override;
+
+      void add_data(const Ptr<BinomialRegressionData> &binomial_data);
+
+      // Set the latent data and precision for the specific observation owned by
+      // this data object.
+      //
+      // Args:
+      //   value:  The value of zbar_t as described in the class comments.
+      //   precision: The precision 1.0 / V_t, as described in the class
+      //     comments.
+      //   observation: The observation number.  This will be zero except in the
+      //     case of multiplexed data.
+      void set_latent_data(double value, double precision, int observation);
+
+      double latent_data_variance(int observation) const;
+      double latent_data_value(int observation) const;
+      double adjusted_observation(const GlmCoefs &coefficients) const;
+      double latent_data_overall_variance() const;
+
+      void set_state_model_offset(double offset);
+      double state_model_offset() const {return state_model_offset_;}
+
+      const BinomialRegressionData &binomial_data(int observation) const {
+        return *(binomial_data_[observation]);
+      }
+
+      int sample_size() const {return binomial_data_.size();}
 
      private:
-      // The precision weighted mean of the underlying Gaussian
-      // observations.
-      double latent_continuous_value_;
+      std::vector<Ptr<BinomialRegressionData>> binomial_data_;
 
-      // The inverse of the sum of the precisions of the underlying
-      // latent Gaussians.
-      double variance_;
+      // The precision weighted mean of the underlying Gaussian observations
+      // associated with each binomial observation.
+      Vector latent_continuous_values_;
 
-      // The offset stores the state contribution to
-      // latent_continuous_value_.
-      double offset_;
+      // The sum of the precisions of the underlying latent Gaussians associated
+      // with each binomial observation.
+      Vector precisions_;
+
+      // The state contribution (minus the static regression effect) to the mean
+      // of latent_continuous_values_.
+      double state_model_offset_;
     };
 
   }  // namespace StateSpace
 
-  // Let y_t denote the number of successes out of n_t trials, where
-  // n_t is taken as a known constant.  The observation equation is
-  //
-  //         y_t ~ Binomial(n_t, p_t), where
-  //  logit(p_t) = Z_t^T \alpha_t + \beta * x_t
-  //             = mu_t.
-  //
-  // Observation y_t is associated with a pair of vectors of random
-  // variables z_t, v_t, each of dimension n_t, where z_{it} \sim
-  // N(mu_t, v_{it}), and y_t = sum_i I(z_{it} > 0).
-  //
-  // The weighted average of z_{it}
-  //
-  //                sum_i z_{it} / v_{it}
-  //      zbar_t =  ------------------
-  //                 sum_i  1 / v_{it}
-  //
-  // is a complete data sufficient statistic observation t.  It is Z_t
-  // that gets imputed, along with its variance
-  //
-  //       V_t = 1.0 / sum_i(1.0 / v_{it}).
-  //
   class StateSpaceLogitModel
       : public StateSpaceNormalMixture,
         public IID_DataPolicy<StateSpace::AugmentedBinomialRegressionData>,
@@ -98,9 +138,8 @@ namespace BOOM {
     StateSpaceLogitModel(const StateSpaceLogitModel &rhs);
     StateSpaceLogitModel * clone() const override;
 
-    const StateSpace::AugmentedBinomialRegressionData &
-    data(int t) const override {
-      return *(dat()[t]);
+    const BinomialRegressionData & data(int t, int observation) const override {
+      return dat()[t]->binomial_data(observation);
     }
 
     int time_dimension() const override;

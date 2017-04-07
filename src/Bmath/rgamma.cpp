@@ -69,9 +69,13 @@
 #include <stdexcept>
 #include <sstream>
 
+namespace BOOM {
+  double rloggamma_small_alpha(RNG &rng, double alpha);
+}
+
 namespace Rmath{
 
-#define repeat for(;;)
+#define repeat for (;;)
 
 double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
   /* Constants : */
@@ -110,14 +114,16 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
   if (!R_FINITE(a) || !R_FINITE(scale))
     ML_ERR_return_NAN;
 
-  if (a < 1.) { /* GS algorithm for parameters a < 1 */
+  if (a <=0 || scale <=0 ) {
+    std::ostringstream err;
+    err << "illegal parameter values passed to rgamma:  a = " << a
+        << " scale = " << scale << std::endl;
+    report_error(err.str());
+  }
 
-    if(a <=0 || scale <=0 ){
-      std::ostringstream err;
-      err << "illegal parameter values passed to rgamma:  a = " << a
-          << " scale = " << scale << std::endl;
-      report_error(err.str());
-    }
+  if (a < .3) {
+    return exp(BOOM::rloggamma_small_alpha(rng, a) + log(scale));
+  } else if (a < 1.) { /* GS algorithm for parameters a < 1 */
 
     e = 1.0 + exp_m1 * a;
     repeat {
@@ -132,7 +138,7 @@ double rgamma_mt(BOOM::RNG & rng, double a, double scale) {
           break;
       }
     }
-    if(x>0) return scale * x;
+    if (x>0) return scale * x;
     else return rgamma_mt(rng, a, scale);
   }
 

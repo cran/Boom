@@ -18,7 +18,7 @@
 #ifndef BOOM_PROGRAM_OPTIONS_HPP
 #define BOOM_PROGRAM_OPTIONS_HPP
 #include <boost/program_options.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <map>
 #include <vector>
 #include <cpputil/string_utils.hpp>
@@ -76,7 +76,8 @@ class ProgramOptions{
   T get_required_option(const string & name)const{
     if(vm.count(name)==0){
       ostringstream err;
-      err << "Error!!  Required option " << name << " was not supplied." << endl;
+      err << "Error!!  Required option " << name
+          << " was not supplied." << endl;
       error(err.str());
     }
     return vm[name].as<T>();
@@ -87,7 +88,7 @@ class ProgramOptions{
   VM vm;
   OD od_;
 
-  std::map<string, boost::shared_ptr<OD> > option_families_;
+  std::map<string, std::shared_ptr<OD> > option_families_;
   std::vector<string> option_family_names_;
   bool processed_;
 

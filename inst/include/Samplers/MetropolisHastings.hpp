@@ -19,13 +19,13 @@
 #define BOOM_METROPOLIS_HASTINGS_HPP_
 #include <Samplers/Sampler.hpp>
 #include <Samplers/MH_Proposals.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM{
 
   class MetropolisHastings : public Sampler{
    public:
-    typedef boost::function<double(const Vector &)> Target;
+    typedef std::function<double(const Vector &)> Target;
     MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop,
                        RNG *rng = 0);
     Vector draw(const Vector & old) override;
@@ -43,7 +43,7 @@ namespace BOOM{
 
   class ScalarMetropolisHastings : public ScalarSampler{
    public:
-    typedef boost::function<double(double)> ScalarTarget;
+    typedef std::function<double(double)> ScalarTarget;
     ScalarMetropolisHastings(const ScalarTarget &f,
                              Ptr<MH_ScalarProposal> prop,
                              RNG *rng = 0);

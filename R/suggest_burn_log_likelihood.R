@@ -1,4 +1,6 @@
-SuggestBurnLogLikelihood <- function(log.likelihood, fraction = .25) {
+SuggestBurnLogLikelihood <- function(log.likelihood,
+                                     fraction = .10,
+                                     quantile = .9) {
   ## Suggests a burn-in period for an MCMC chain based on the log
   ## likelihood values simulated on the last leg of the chain.
   ## Args:
@@ -6,6 +8,8 @@ SuggestBurnLogLikelihood <- function(log.likelihood, fraction = .25) {
   ##     model.
   ##   fraction: The fraction of the chain that should be used to
   ##     determine the log likelihood lower bound.
+  ##   quantile: The quantile of the values in the final fraction that
+  ##     must be exceeded before the burn-in period is declared over.
   ##
   ## Returns:
   ##   An iteration number to be used as a burn-in.  This can be 0 if
@@ -14,8 +18,9 @@ SuggestBurnLogLikelihood <- function(log.likelihood, fraction = .25) {
   ##
   ## Details:
   ##   Look at the last 'fraction' of the log.likelihood sequence and
-  ##   find the minimum value.  Then return the first iteration where
-  ##   log.likelihood exceeds this value.
+  ##   find a specified quantile to use as a threshold.  Then return
+  ##   the first iteration where log.likelihood exceeds this
+  ##   threshold.
   if (fraction < 0) {
     return(0)
   }
@@ -30,7 +35,7 @@ SuggestBurnLogLikelihood <- function(log.likelihood, fraction = .25) {
   }
   cutpoint <- round(fraction * length(log.likelihood))
   stopifnot(cutpoint >= 1)
-  min.log.likelihood <- min(tail(log.likelihood, cutpoint))
+  min.log.likelihood <- quantile(tail(log.likelihood, cutpoint), quantile)
   burn <- FindFirst(log.likelihood >= min.log.likelihood) - 1
   if (burn < 0) {
     burn <- 0

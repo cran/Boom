@@ -16,8 +16,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#ifndef BOOM_LOCAL_LINEAR_TREND_MEAN_REVERTING_SLOPE_STATE_MODEL_HPP_
-#define BOOM_LOCAL_LINEAR_TREND_MEAN_REVERTING_SLOPE_STATE_MODEL_HPP_
+#ifndef BOOM_SEMILOCAL_LINEAR_TREND_STATE_MODEL_HPP_
+#define BOOM_SEMILOCAL_LINEAR_TREND_STATE_MODEL_HPP_
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
@@ -30,20 +30,20 @@
 namespace BOOM{
 
   // The state transition matrix for the
-  // LocalLinearTrendMeanRevertingSlopeMatrix is
+  // SemilocalLinearTrendMatrix is
   //  1   1   0
   //  0  phi (1-phi)
   //  0   0   1
-  class LocalLinearTrendMeanRevertingSlopeMatrix
+  class SemilocalLinearTrendMatrix
       : public SparseMatrixBlock {
    public:
-    LocalLinearTrendMeanRevertingSlopeMatrix(Ptr<UnivParams> phi);
+    SemilocalLinearTrendMatrix(Ptr<UnivParams> phi);
 
     // Can safely copy with pointer semantics, becasue nothing in this
     // class can change the value of the pointer.
-    LocalLinearTrendMeanRevertingSlopeMatrix(
-        const LocalLinearTrendMeanRevertingSlopeMatrix &rhs);
-    LocalLinearTrendMeanRevertingSlopeMatrix * clone() const override;
+    SemilocalLinearTrendMatrix(
+        const SemilocalLinearTrendMatrix &rhs);
+    SemilocalLinearTrendMatrix * clone() const override;
     int nrow() const override {return 3;}
     int ncol() const override {return 3;}
     void multiply(VectorView lhs, const ConstVectorView &rhs) const override;
@@ -68,19 +68,19 @@ namespace BOOM{
   //   | 1 0 |
   //   | 0 1 |
   //   | 0 0 |
-  class LocalLinearTrendMeanRevertingSlopeStateModel
+  class SemilocalLinearTrendStateModel
       : public StateModel,
         public CompositeParamPolicy,
         public IID_DataPolicy<VectorData>,
         public PriorPolicy
   {
    public:
-    LocalLinearTrendMeanRevertingSlopeStateModel(
+    SemilocalLinearTrendStateModel(
         Ptr<ZeroMeanGaussianModel> level,
         Ptr<NonzeroMeanAr1Model> slope);
-    LocalLinearTrendMeanRevertingSlopeStateModel(
-        const LocalLinearTrendMeanRevertingSlopeStateModel &rhs);
-    LocalLinearTrendMeanRevertingSlopeStateModel * clone() const override;
+    SemilocalLinearTrendStateModel(
+        const SemilocalLinearTrendStateModel &rhs);
+    SemilocalLinearTrendStateModel * clone() const override;
 
     void clear_data() override;
     void observe_state(const ConstVectorView then,
@@ -121,7 +121,7 @@ namespace BOOM{
     Ptr<NonzeroMeanAr1Model> slope_;
 
     SparseVector observation_matrix_;
-    Ptr<LocalLinearTrendMeanRevertingSlopeMatrix> state_transition_matrix_;
+    Ptr<SemilocalLinearTrendMatrix> state_transition_matrix_;
     Ptr<UpperLeftDiagonalMatrix> state_variance_matrix_;
     Ptr<ZeroPaddedIdentityMatrix> state_error_expander_;
     Ptr<UpperLeftDiagonalMatrix> state_error_variance_;
@@ -131,4 +131,4 @@ namespace BOOM{
   };
 
 }  // namespace BOOM
-#endif  // BOOM_LOCAL_LINEAR_TREND_MEAN_REVERTING_SLOPE_STATE_MODEL_HPP_
+#endif  // BOOM_SEMILOCAL_LINEAR_TREND_STATE_MODEL_HPP_

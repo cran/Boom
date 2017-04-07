@@ -112,7 +112,7 @@ namespace BOOM {
 
   double TRegressionSampler::logpri() const {
     double ans = nu_prior_->logp(model_->nu());
-    ans += siginv_prior_->logp(1.0 / model_->sigsq());
+    ans += sigsq_sampler_.log_prior(model_->sigsq());
     ans += coefficient_prior_->logp(model_->Beta());
     return ans;
   }

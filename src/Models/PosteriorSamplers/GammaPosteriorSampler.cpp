@@ -149,14 +149,14 @@ namespace BOOM{
   }
 
   void GammaPosteriorSampler::draw(){
-    double alpha = alpha_sampler_.draw(model_->alpha());
+    // Draw alpha with the mean fixed.
     double mean = model_->mean();
-    double beta = alpha / mean;
-    model_->set_params(alpha, beta);
+    double alpha = alpha_sampler_.draw(model_->alpha());
+    model_->set_shape_and_mean(alpha, mean);
 
+    // Then draw the mean with alpha fixed.
     mean = mean_sampler_.draw(mean);
-    beta = alpha / mean;
-    model_->set_params(alpha, beta);
+    model_->set_shape_and_mean(alpha, mean);
   }
 
   double GammaPosteriorSampler::logpri()const{
@@ -183,14 +183,14 @@ namespace BOOM{
   {}
 
   void GammaPosteriorSamplerBeta::draw(){
-    double beta = beta_sampler_.draw(model_->beta());
+    // Draw beta given mean.
     double mean = model_->mean();
-    double alpha = beta * mean;
-    model_->set_params(alpha, beta);
+    double beta = beta_sampler_.draw(model_->beta());
+    model_->set_mean_and_scale(mean, beta);
 
+    // Draw mean given beta.
     mean = mean_sampler_.draw(mean);
-    alpha = beta * mean;
-    model_->set_params(alpha, beta);
+    model_->set_mean_and_scale(mean, beta);
   }
 
   double GammaPosteriorSamplerBeta::logpri()const{

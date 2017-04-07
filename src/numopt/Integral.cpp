@@ -24,14 +24,14 @@
 // 1) integr_fcn replaced with a functor class to allow reentrance,
 
 // 2) target function taking a pointer to void was replaced by a
-//    boost::function so that it can accept a functor class that
+//    std::function so that it can accept a functor class that
 //    contains supplemental arguments internally instead of exposing
 //    the pointer to void.  Pointer to void semantics were kept in the
 //    implementation to avoid accidental syntax errors, but the
 //    pointer is never used anywhere.
 
 #include <numopt/Integral.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <cpputil/report_error.hpp>
 #include <stdexcept>
 #include <cfloat>
@@ -41,7 +41,7 @@
 /* This is *the* ``integr_fn f'' used when called from R : */
 class integr_fn{
  public:
-  typedef boost::function<double(double)> Fun;
+  typedef std::function<double(double)> Fun;
   integr_fn(const Fun & F, bool throw_on_error = true)
       : f_(F)
   {}

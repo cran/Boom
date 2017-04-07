@@ -21,7 +21,7 @@
 #include <cpputil/math_utils.hpp>
 #include <numopt.hpp>
 #include <TargetFun/TargetFun.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
 namespace BOOM {
 
@@ -65,11 +65,23 @@ namespace BOOM {
   void PRSS::find_posterior_mode(double) {
     log_posterior_at_mode_ = negative_infinity();
     const Selector &included(model_->inc());
+    MvnBase *slab = slab_prior_.get();
     d2TargetFunPointerAdapter logpost(
-        boost::bind(&PoissonRegressionModel::log_likelihood, model_,
-                    _1, _2, _3, _4),
-        boost::bind(&MvnBase::logp_given_inclusion, slab_prior_.get(),
-                    _1, _2, _3, included, _4));
+        [this](const Vector &beta,
+                 Vector *gradient,
+                 Matrix *hessian,
+                 bool reset)->double {
+          return this->model_->log_likelihood(
+              beta, gradient, hessian, reset);},
+        [slab, included](
+            const Vector &beta,
+            Vector *gradient,
+            Matrix *hessian,
+            bool reset)->double {
+          return slab->logp_given_inclusion(
+              beta, gradient, hessian, included, reset);
+        });
+
     Vector beta = model_->included_coefficients();
     int dim = beta.size();
     if (dim == 0) {

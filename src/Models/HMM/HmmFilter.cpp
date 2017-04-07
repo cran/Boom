@@ -28,20 +28,22 @@
 
 namespace BOOM{
 
-  void hmm_recursion_error(const Matrix &p, const Vector &Marg, const Matrix &Tmat,
-                           const Vector &Wsp, uint i, Ptr<Data>);
-  void hmm_recursion_error(const Matrix &P, const Vector &marg, const Matrix &tmat,
-                           const Vector &wsp, uint i, Ptr<Data> dp){
-    string str;
-    ostringstream s(str);
-    s << "error in HMM recursion at step "<< i<< ":" << endl;
-    s << "marg:" << endl << marg << endl;
-    s << "P: " << endl << P << endl;
-    s << "hmm.cpp:  Q = " << endl << tmat << endl;
-    s << "hmm.cpp: p(data|state) = " << wsp << endl;
-    s << "here is the observed data that caused the error: " << endl
-      << *dp << endl;
-    report_error(s.str());
+void hmm_recursion_error(const Matrix &p, const Vector &Marg,
+                         const Matrix &Tmat, const Vector &Wsp, uint i,
+                         const Ptr<Data> &);
+void hmm_recursion_error(const Matrix &P, const Vector &marg,
+                         const Matrix &tmat, const Vector &wsp, uint i,
+                         const Ptr<Data> &dp) {
+  string str;
+  ostringstream s(str);
+  s << "error in HMM recursion at step " << i << ":" << endl;
+  s << "marg:" << endl << marg << endl;
+  s << "P: " << endl << P << endl;
+  s << "hmm.cpp:  Q = " << endl << tmat << endl;
+  s << "hmm.cpp: p(data|state) = " << wsp << endl;
+  s << "here is the observed data that caused the error: " << endl
+    << *dp << endl;
+  report_error(s.str());
   }
 
   HmmFilter::HmmFilter(std::vector<Ptr<MixtureComponent> > mv,
@@ -165,7 +167,7 @@ namespace BOOM{
   void HmmSavePiFilter::allocate(Ptr<Data> dp, uint h){
     models_[h]->add_data(dp);
     Vector & v(pi_hist_[dp]);
-    if(v.size()==0) v.resize(pi.size());
+    if(v.empty()) v.resize(pi.size());
     v += pi;
   }
 

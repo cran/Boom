@@ -24,6 +24,7 @@
 #include <Models/Policies/ParamPolicy_4.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -43,9 +44,9 @@ namespace BOOM{
 
     Vector vectorize(bool minimal = true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-                                            bool minimal = true) override;
+                                       bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-                                            bool minimal = true) override;
+                                       bool minimal = true) override;
     ostream & print(ostream &out)const override;
 
     Vector daily_event_count()const;
@@ -126,7 +127,8 @@ namespace BOOM{
     PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator())const override;
+        std::function<Data*()> mark_generator
+           = NullDataGenerator())const override;
 
     Ptr<UnivParams> average_daily_event_rate_prm();
     const Ptr<UnivParams> average_daily_event_rate_prm()const;
@@ -147,6 +149,6 @@ namespace BOOM{
     void maximize_hourly_pattern();
   };
 
+}  // namespace BOOM
 
-}
 #endif  // BOOM_WEEKLY_CYCLE_POISSON_PROCESS_HPP_

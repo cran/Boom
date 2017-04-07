@@ -29,16 +29,7 @@ namespace BOOM{
   class WeightedRegSuf
     : public SufstatDetails<WeightedRegressionData>
   {
-  private:
-    mutable SpdMatrix xtwx_;
-    Vector xtwy_;
-    double n_;  // xtx_(0,0) is the sum of the weights,
-    double yt_w_y_;
-    double sumlogw_;
-    mutable bool sym_;
-    void setup_mat(uint p);
-    void make_symmetric()const;
-  public:
+   public:
     typedef WeightedRegressionData data_type;
     typedef std::vector<Ptr<WeightedRegressionData> > dataset_type;
     typedef Ptr<dataset_type, false> dsetPtr;
@@ -60,6 +51,7 @@ namespace BOOM{
     //    virtual void Update(const RegressionData &);
     void Update(const WeightedRegressionData &) override;
     void add_data(const Vector &x, double y, double w);
+
     void clear() override;
     virtual uint size()const;  // dimension of beta
     virtual double yty()const;              // Y^t W Y
@@ -82,9 +74,19 @@ namespace BOOM{
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-                                            bool minimal=true) override;
+                                       bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-                                            bool minimal=true) override;
+                                       bool minimal = true) override;
+   private:
+    mutable SpdMatrix xtwx_;
+    Vector xtwy_;
+    double n_;  // xtx_(0,0) is the sum of the weights,
+    double yt_w_y_;
+    double sumlogw_;
+    mutable bool sym_;
+
+    void setup_mat(uint p);
+    void make_symmetric()const;
   };
 
   inline ostream & operator<<(ostream & out, const WeightedRegSuf &s){

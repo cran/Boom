@@ -97,7 +97,7 @@ double private_rint(double x)
 #endif
 
 double fround(double x, double digits) {
-#define MAX_DIGITS numeric_limits<double>::max_exponent10
+#define MAX_DIGITS std::numeric_limits<double>::max_exponent10
     /* = 308 (IEEE); was till R 0.99: (DBL_DIG - 1) */
     /* Note that large digits make sense for very small numbers */
     double pow10, sgn, intx;

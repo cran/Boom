@@ -16,8 +16,9 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Samplers/MetropolisHastings.hpp>
-#include <distributions.hpp>
 #include <cpputil/report_error.hpp>
+#include <distributions.hpp>
+#include <utility>
 
 namespace BOOM{
   typedef MetropolisHastings MH;
@@ -33,7 +34,7 @@ namespace BOOM{
     prop_ = p;
   }
 
-  void MH::set_target(Target f){ f_ = f;}
+  void MH::set_target(Target f) { f_ = std::move(f); }
 
   Vector MH::draw(const Vector & old){
     cand_ = prop_->draw(old, &rng());

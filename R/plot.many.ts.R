@@ -13,7 +13,10 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
   ##   thin: Plot every thin'th observation.  This can reduce the
   ##     amount of time it takes to make the plot if there are many long
   ##     time series.
-  ##   labs:  A character vector to use as labels for individual plots.
+  ##   labs: A character vector to use as labels for individual plots.
+  ##     If labs is missing then column names or dimnames will be used
+  ##     to label the plots.  If labs is NULL then no labels will be
+  ##     used.
   ##   same.scale: Logical.  If TRUE then all plots are shown on the
   ##     same verical scale, and vertical axes are drawn.  If FALSE
   ##     then each plot gets its own scale.
@@ -47,6 +50,14 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
   if (length(dx) == 3) {
     nr <- dx[2]
     nc <- dx[3]
+    if (missing(labs)) {
+      labs <- dimnames(x)
+      if (!is.null(labs)) {
+        if (!is.null(labs[[2]]) && !is.null(labs[[3]])) {
+          labs <- outer(labs[[2]], labs[[3]], paste, sep = ":")
+        }
+      }
+    }
     x <- matrix(aperm(x, c(1, 3, 2)), nrow = dx[1])
     nx <- ncol(x)
   }
@@ -93,7 +104,7 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
         }
         plot(indx, x[, m], axes = FALSE, type = type,
              ylim = ylim, col = color[m], ...)
-        if (!missing(labs))
+        if (!missing(labs) && !is.null(labs))
           text(min(indx), max(ylim), labs[m], pos = 4)
         if (use.truth)
           abline(h = truth[m], lwd = 2)

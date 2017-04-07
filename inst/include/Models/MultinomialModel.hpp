@@ -93,6 +93,9 @@ namespace BOOM{
     void set_pi(const Vector &probs);
 
     double loglike(const Vector &probs)const override;
+    double log_likelihood() const override {
+      return loglike(pi());
+    }
     void mle() override;
     double pdf(const Data * dp, bool logscale) const override;
     double pdf(Ptr<Data> dp, bool logscale) const;

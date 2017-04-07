@@ -326,7 +326,7 @@ namespace BOOM{
     if (ans <= BOOM::negative_infinity()) return ans;
 
     double sigsq = m_->sigsq();
-    ans += spri_->logp(1.0/sigsq);               // p(1/sigsq)
+    ans += sigsq_sampler_.log_prior(sigsq);
 
     if (g.nvars() > 0) {
       ans += dmvn(g.select(m_->Beta()),

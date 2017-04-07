@@ -53,7 +53,7 @@ namespace BOOM {
   double DynamicRegressionPosteriorSampler::logpri()const{
     double ans = 0;
     for (int i = 0; i < model_->state_dimension(); ++i) {
-      ans += siginv_prior_->logp(1.0 / model_->sigsq(i));
+      sigsq_sampler_.log_prior(model_->sigsq(i));
     }
     if (!handle_siginv_prior_separately_) {
       ans += siginv_prior_->logpri();

@@ -50,8 +50,10 @@ namespace BOOM{
     // probability calculations
     double Loglike(const Vector &nu, Vector &g, Matrix &h, uint nd) const override;
     double log_likelihood(double nu) const;
+    double log_likelihood() const override {
+      return log_likelihood(nu());
+    }
     void mle() override {d2LoglikeModel::mle();}
-
   };
 
 

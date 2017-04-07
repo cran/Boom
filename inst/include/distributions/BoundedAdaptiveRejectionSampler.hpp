@@ -18,7 +18,7 @@
 #ifndef BOOM_BOUNDED_ADAPTIVE_REJECTION_SAMPLER_HPP
 #define BOOM_BOUNDED_ADAPTIVE_REJECTION_SAMPLER_HPP
 
-#include <boost/function.hpp>
+#include <functional>
 #include <distributions.hpp>
 #include <vector>
 
@@ -27,7 +27,7 @@ namespace BOOM{
 // for sampling from a log-concave strictly decreasing function
   class BoundedAdaptiveRejectionSampler{
    public:
-    typedef boost::function<double(double)> Fun;
+    typedef std::function<double(double)> Fun;
 
     // logf must be a concave function( e.g -x^2) with derivative
     // given by dlogf.  lower_bound must be to the right of the mode

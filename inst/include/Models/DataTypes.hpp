@@ -32,7 +32,7 @@
 
 #include <cpputil/Ptr.hpp>
 #include <cpputil/RefCounted.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 
 namespace BOOM{
@@ -50,7 +50,7 @@ namespace BOOM{
       partly_missing};
   private:
     missing_status missing_flag;
-    mutable std::vector<boost::function<void(void)> > signals_;
+    mutable std::vector<std::function<void(void)> > signals_;
   public:
     Data() : missing_flag(observed){}
     Data(const Data &rhs)
@@ -65,7 +65,17 @@ namespace BOOM{
       uint n = signals_.size();
       for(uint i=0; i<n; ++i) signals_[i]();
     }
-    void add_observer(boost::function<void(void)> f){
+    // TODO(stevescott): This implementation of the observer pattern
+    // is broken by assignment.  When an object is created from an old
+    // object by assignment, it should eliminate any observers it has
+    // placed on other objects.  This will require the observing
+    // object to keep a collection of handles to the observers and
+    // mark them as inactive.  The observed objects should check that
+    // the observer is active when calling, and remove inactive
+    // observers from the set of signals.  This fix will require
+    // making changes to all the classes that use the current observer
+    // scheme.
+    void add_observer(std::function<void(void)> f){
       signals_.push_back(f); }
     friend void intrusive_ptr_add_ref(Data *d);
     friend void intrusive_ptr_release(Data *d);

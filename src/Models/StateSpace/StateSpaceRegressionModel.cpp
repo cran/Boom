@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005-2010 Steven L. Scott
+  Copyright (C) 2005-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,18 +20,66 @@
 #include <Models/StateSpace/Filters/SparseKalmanTools.hpp>
 #include <Models/DataTypes.hpp>
 #include <distributions.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 
 namespace BOOM{
+  namespace {
+    typedef StateSpaceRegressionModel SSRM;
+    typedef StateSpace::MultiplexedRegressionData MRD;
+  }  // namespace
 
-  typedef StateSpaceRegressionModel SSRM;
+  MRD::MultiplexedRegressionData()
+      : state_model_offset_(0)
+  {}
+  MRD::MultiplexedRegressionData(double y, const Vector &x)
+      : state_model_offset_(0)
+  {
+    NEW(RegressionData, data_point)(y, x);
+    add_data(data_point);
+  }
 
+  MRD::MultiplexedRegressionData(const std::vector<Ptr<RegressionData>> &data)
+      : state_model_offset_(0)
+  {
+    for (const auto &d : data) {
+      add_data(d);
+    }
+  }
+
+  MRD * MRD::clone() const { return new MRD(*this); }
+
+  std::ostream & MRD::display(std::ostream &out) const {
+    out << "state model offset: " << state_model_offset_ << std::endl
+        << std::setw(10) << " response "
+        << " predictors " << std::endl;
+    for (int i = 0; i < regression_data_.size(); ++i) {
+      out << std::setw(10) << regression_data_[i]->y()
+          << " " << regression_data_[i]->x() << std::endl;
+    }
+    return out;
+  }
+
+  double MRD::adjusted_observation(const GlmCoefs &coefficients) const {
+    double ans = 0;
+    for (int i = 0; i < regression_data_.size(); ++i) {
+      const RegressionData &observation(regression_data(i));
+      ans += observation.y() - coefficients.predict(observation.x());
+    }
+    return ans / sample_size();
+  }
+
+  const RegressionData &MRD::regression_data(int i) const {
+    return *(regression_data_[i]);
+  }
+
+  Ptr<RegressionData> MRD::regression_data_ptr(int i) {
+    return regression_data_[i];
+  }
+
+  //======================================================================
   void SSRM::setup() {
     observe(regression_->coef_prm());
     observe(regression_->Sigsq_prm());
     regression_->only_keep_sufstats(true);
-    ParamPolicy::add_model(regression_);
   }
 
   SSRM::StateSpaceRegressionModel(int xdim)
@@ -84,20 +132,49 @@ namespace BOOM{
 
   SSRM * SSRM::clone() const {return new SSRM(*this);}
 
-  void SSRM::add_data(Ptr<Data> dp) { add_data(DAT(dp)); }
+  void SSRM::add_data(Ptr<Data> dp) {
+    Ptr<RegressionData> regression_data = dp.dcast<RegressionData>();
+    if (!!regression_data) {
+      add_data(regression_data);
+      return;
+    }
 
-  void SSRM::add_data(Ptr<RegressionData> dp) {
-    DataPolicy::add_data(dp);
-    regression_->add_data(dp);
+    Ptr<MRD> multiplexed_data = dp.dcast<MRD>();
+    if (!!multiplexed_data) {
+      add_data(multiplexed_data);
+      return;
+    }
+    report_error("Could not cast to an appropriate data type.");
   }
 
-  double SSRM::observation_variance(int) const {
-    return regression_->sigsq();
+  void SSRM::add_data(Ptr<RegressionData> dp) {
+    NEW(MRD, multiplexed_data)();
+    multiplexed_data->add_data(dp);
+    multiplexed_data->set_missing_status(dp->missing());
+    add_data(multiplexed_data);
+  }
+
+  void SSRM::add_data(Ptr<MRD> dp) {
+    DataPolicy::add_data(dp);
+    for (int i = 0; i < dp->sample_size(); ++i) {
+      regression_model()->add_data(dp->regression_data_ptr(i));
+    }
+  }
+
+  double SSRM::observation_variance(int t) const {
+    const std::vector<Ptr<MRD>> &data(dat());
+    double sigsq = regression_->sigsq();
+    if (t >= data.size()) {
+      return sigsq;
+    } else {
+      int n = data[t]->sample_size();
+      if (n == 0) ++n;
+      return sigsq / n;
+    }
   }
 
   double SSRM::adjusted_observation(int t) const {
-    Ptr<RegressionData> dp = dat()[t];
-    return dp->y() - regression_->predict(dp->x());
+    return dat()[t]->adjusted_observation(regression_->coef());
   }
 
   bool SSRM::is_missing_observation(int t) const {
@@ -106,17 +183,20 @@ namespace BOOM{
 
   void SSRM::observe_data_given_state(int t) {
     if (!is_missing_observation(t)) {
-      Ptr<RegressionData> dp(dat()[t]);
+      Ptr<MRD> dp(dat()[t]);
       double state_mean = observation_matrix(t).dot(state(t));
-      regression_->suf()->add_mixture_data(
-          dp->y() - state_mean, dp->x(), 1.0);
+      for (int i = 0; i < dp->sample_size(); ++i) {
+        const RegressionData &observation(dp->regression_data(i));
+        regression_->suf()->add_mixture_data(
+            observation.y() - state_mean, observation.x(), 1.0);
+      }
     }
   }
 
   Matrix SSRM::forecast(const Matrix &newX) const {
     ScalarKalmanStorage ks = filter();
     Matrix ans(nrow(newX), 2);
-    int t0 = dat().size();
+    int t0 = time_dimension();
     for (int t = 0; t < nrow(ans); ++t) {
       ans(t,0) = regression_->predict(newX.row(t))
           + observation_matrix(t + t0).dot(ks.a);
@@ -141,8 +221,7 @@ namespace BOOM{
                                  const Vector &final_state) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vector ans(nrow(newX));
-    const std::vector<Ptr<RegressionData> > &data(dat());
-    int t0 = data.size();
+    int t0 = time_dimension();
     Vector state = final_state;
     for (int t = 0; t < ans.size(); ++t) {
       state = simulate_next_state(state, t + t0);
@@ -173,8 +252,7 @@ namespace BOOM{
     }
 
     Vector ans(nrow(newX));
-    const std::vector<Ptr<RegressionData> > &data(dat());
-    int t0 = data.size();
+    int t0 = time_dimension();
     ScalarKalmanStorage ks(state_dimension());
     ks.a = *state_transition_matrix(t0-1) * final_state;
     ks.P = SpdMatrix(state_variance_matrix(t0-1)->dense());
@@ -199,10 +277,16 @@ namespace BOOM{
   }
 
   Vector SSRM::regression_contribution() const {
-    Vector ans(time_dimension());
-    const std::vector<Ptr<RegressionData> > &data(dat());
-    for (int i = 0; i < data.size(); ++i) {
-      ans[i] = regression_model()->predict(data[i]->x());
+    const std::vector<Ptr<MRD>> &data(dat());
+    Vector ans(data.size());
+    for (int time = 0; time < data.size(); ++time) {
+      Ptr<MRD> dp = data[time];
+      double average_contribution = 0;
+      for (int j = 0; j < data[time]->sample_size(); ++j) {
+        average_contribution +=
+            regression_model()->predict(dp->regression_data(j).x());
+      }
+      ans[time] = average_contribution /= dp->sample_size();
     }
     return ans;
   }

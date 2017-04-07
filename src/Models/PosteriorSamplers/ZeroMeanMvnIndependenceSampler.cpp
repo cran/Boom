@@ -65,7 +65,7 @@ namespace BOOM{
   double ZMMI::logpri()const{
     int i = which_variable_;
     double siginv = m_->siginv()(i, i);
-    return prior_->logp(siginv);
+    return sampler_.log_prior(1.0 / siginv);
   }
 
   //======================================================================
@@ -128,7 +128,7 @@ namespace BOOM{
     double ans = 0;
     for (int i = 0; i < Sigma.nrow(); ++i) {
       if (samplers_[i].sigma_max() > 0) {
-        ans += priors_[i]->logp(1.0 / Sigma(i, i));
+        ans += samplers_[i].log_prior(Sigma(i, i));
       }
     }
     return ans;

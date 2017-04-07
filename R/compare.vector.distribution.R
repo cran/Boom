@@ -2,7 +2,7 @@
 # Author: stevescott@google.com (Steve Scott)
 
 CompareVectorBoxplots <- function(draws, main = NULL, colors = NULL,
-                                  burn = 0) {
+                                  burn = 0, ...) {
   ## Creates a boxplot comparing the distributions of several vector
   ## valued parameters.
   ## Args:
@@ -13,6 +13,7 @@ CompareVectorBoxplots <- function(draws, main = NULL, colors = NULL,
   ##   colors:  Colors to use for the boxplots.  This should either be
   ##   burn: The number of initial MCMC iterations to discard before
   ##     making the plot.
+  ##   ...: Extra arguments passed to 'boxplot'.
   stopifnot(is.list(draws))
   stopifnot(all(sapply(draws, is.matrix)))
   dimension <- ncol(draws[[1]])
@@ -35,7 +36,7 @@ CompareVectorBoxplots <- function(draws, main = NULL, colors = NULL,
   if(!is.null(colors)) {
     stopifnot(length(colors) == number.of.components)
   }
-  boxplot(y, col = colors, main = main, axes = FALSE)
+  boxplot(y, col = colors, main = main, axes = FALSE, ...)
   axis(2)
   box()
   split.positions <- number.of.components * (1:(dimension-1)) + .5

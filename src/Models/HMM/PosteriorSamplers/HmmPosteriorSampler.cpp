@@ -80,7 +80,7 @@ typedef HmmPosteriorSampler HS;
     uint S = mix.size();
     workers_.clear();
     for(uint s=0; s<S; ++s){
-      boost::shared_ptr<MixtureComponentSampler>
+      std::shared_ptr<MixtureComponentSampler>
           worker(new MixtureComponentSampler(mix[s].get()));
       workers_.push_back(worker);
     }

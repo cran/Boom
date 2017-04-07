@@ -120,18 +120,32 @@ namespace BOOM {
     return ans;
   }
 
+  double MoveAccounting::acceptance_ratio(const std::string &move_type,
+                                          int &number_of_trials) {
+    int accepts = counts_[move_type]["accept"];
+    int rejects = counts_[move_type]["reject"];
+    number_of_trials = accepts + rejects;
+    double ans = accepts;
+    if (number_of_trials > 0) {
+      ans /= number_of_trials;
+    }
+    return ans;
+  }
+
   MoveTimer MoveAccounting::start_time(const std::string &move_type) {
     return MoveTimer(move_type, this);
   }
 
-  double MoveAccounting::stop_time(const std::string &move_type, clock_t start) {
+  double MoveAccounting::stop_time(const std::string &move_type,
+                                   clock_t start) {
     double dt = clock() - start;
     double seconds = dt / CLOCKS_PER_SEC;
     time_in_seconds_[move_type] += seconds;
     return seconds;
   }
 
-  MoveTimer::MoveTimer(const std::string &move_type, MoveAccounting *accounting)
+  MoveTimer::MoveTimer(const std::string &move_type,
+                       MoveAccounting *accounting)
       : move_type_(move_type),
         accounting_(accounting),
         time_(clock()),
@@ -149,4 +163,4 @@ namespace BOOM {
     }
   }
 
-}
+}  // namespace BOOM

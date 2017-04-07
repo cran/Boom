@@ -435,7 +435,7 @@ double digamma(double x)
     dpsifn(x, 0, 1, 1, &ans, &nz, &ierr);
     if(ierr != 0) {
         errno = EDOM;
-        return -numeric_limits<double>::max();
+        return -std::numeric_limits<double>::max();
     }
     return -ans;
 }
@@ -448,7 +448,7 @@ double trigamma(double x)
     dpsifn(x, 1, 1, 1, &ans, &nz, &ierr);
     if(ierr != 0) {
         errno = EDOM;
-        return -numeric_limits<double>::max();
+        return -std::numeric_limits<double>::max();
     }
     return ans;
 }
@@ -461,7 +461,7 @@ double tetragamma(double x)
     dpsifn(x, 2, 1, 1, &ans, &nz, &ierr);
     if(ierr != 0) {
         errno = EDOM;
-        return -numeric_limits<double>::max();
+        return -std::numeric_limits<double>::max();
     }
     return -2.0 * ans;
 }
@@ -474,7 +474,7 @@ double pentagamma(double x)
     dpsifn(x, 3, 1, 1, &ans, &nz, &ierr);
     if(ierr != 0) {
         errno = EDOM;
-        return -numeric_limits<double>::max();
+        return -std::numeric_limits<double>::max();
     }
     return 6.0 * ans;
 }

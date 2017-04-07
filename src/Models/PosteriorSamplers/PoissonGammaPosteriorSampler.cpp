@@ -16,9 +16,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
 #include <Models/PosteriorSamplers/PoissonGammaPosteriorSampler.hpp>
+#include <functional>
 
 namespace BOOM {
 
@@ -32,16 +31,14 @@ namespace BOOM {
         prior_mean_prior_distribution_(mean_prior_distribution),
         prior_sample_size_prior_distribution_(sample_size_prior),
         prior_mean_sampler_(
-            boost::bind(&PoissonGammaPosteriorSampler::logp,
-                        this,
-                        _1,
-                        model_->prior_sample_size()),
+            [this](double mean) {
+              return this->logp(mean,
+                                this->model_->prior_sample_size());},
             false),
         prior_sample_size_sampler_(
-            boost::bind(&PoissonGammaPosteriorSampler::logp,
-                        this,
-                        model_->prior_mean(),
-                        _1),
+            [this](double sample_size) {
+              return this->logp(this->model_->prior_mean(),
+                                sample_size);},
             false)
   {
     prior_mean_sampler_.set_lower_limit(0.0);
@@ -51,7 +48,8 @@ namespace BOOM {
   void PoissonGammaPosteriorSampler::draw(){
     double prior_sample_size =
         prior_sample_size_sampler_.draw(model_->prior_sample_size());
-    model_->set_b(prior_sample_size);
+    model_->set_prior_mean_and_sample_size(
+        model_->prior_mean(), prior_sample_size);
     double prior_mean = prior_mean_sampler_.draw(model_->prior_mean());
     model_->set_prior_mean_and_sample_size(prior_mean, prior_sample_size);
   }

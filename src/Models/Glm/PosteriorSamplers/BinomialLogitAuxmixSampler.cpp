@@ -23,46 +23,96 @@
 namespace BOOM {
   namespace {
     typedef BinomialLogitAuxmixSampler BLAMS;
-    typedef BinomialLogisticRegressionDataImputer BLRDI;
   }  // namespace
 
-  BLAMS::SufficientStatistics::SufficientStatistics(int dim)
-      : xtx_(dim),
-        xty_(dim),
-        sym_(false)
-  {}
+  namespace BinomialLogit {
+    SufficientStatistics::SufficientStatistics(int dim)
+        : xtx_(dim),
+          xty_(dim),
+          sym_(false),
+          sample_size_(0)
+    {}
 
-  const SpdMatrix & BLAMS::SufficientStatistics::xtx() const {
-    if (!sym_) {
-      xtx_.reflect();
-      sym_ = true;
+    SufficientStatistics * SufficientStatistics::clone() const {
+      return new SufficientStatistics(*this);
     }
-    return xtx_;
-  }
 
-  const Vector & BLAMS::SufficientStatistics::xty() const {
-    return xty_;
-  }
+    void SufficientStatistics::clear() {
+      xtx_ = 0;
+      xty_ = 0;
+      sym_ = false;
+      sample_size_ = 0;
+    }
 
-  void BLAMS::SufficientStatistics::update(
-      const Vector &x, double weighted_value, double weight) {
-    sym_ = false;
-    xtx_.add_outer(x, weight, false);
-    xty_.axpy(x, weighted_value);
-  }
+    void SufficientStatistics::combine(const SufficientStatistics &rhs) {
+      xtx_ += rhs.xtx_;
+      xty_ += rhs.xty_;
+      sym_ = sym_ && rhs.sym_;
+      sample_size_ += rhs.sample_size_;
+    }
 
-  void BLAMS::SufficientStatistics::clear() {
-    xtx_ = 0;
-    xty_ = 0;
-    sym_ = false;
-  }
+    const SpdMatrix & SufficientStatistics::xtx() const {
+      if (!sym_) {
+        xtx_.reflect();
+        sym_ = true;
+      }
+      return xtx_;
+    }
 
-  void BLAMS::SufficientStatistics::combine(
-      const BLAMS::SufficientStatistics &rhs) {
-    xtx_ += rhs.xtx_;
-    xty_ += rhs.xty_;
-    sym_ = sym_ && rhs.sym_;
-  }
+    const Vector & SufficientStatistics::xty() const {
+      return xty_;
+    }
+
+    void SufficientStatistics::update(
+        const Vector &x, double weighted_value, double weight) {
+      sym_ = false;
+      xtx_.add_outer(x, weight, false);
+      xty_.axpy(x, weighted_value);
+      ++sample_size_;
+    }
+
+    ImputeWorker::ImputeWorker(SufficientStatistics &global_suf,
+                               std::mutex &global_suf_mutex,
+                               int clt_threshold,
+                               const GlmCoefs *coef,
+                               RNG *rng,
+                               RNG &seeding_rng)
+        : SufstatImputeWorker<BinomialRegressionData, SufficientStatistics>(
+              global_suf, global_suf_mutex, rng, seeding_rng),
+          binomial_data_imputer_(clt_threshold),
+          coefficients_(coef)
+    {}
+
+    void ImputeWorker::impute_latent_data_point(
+        const BinomialRegressionData &observation,
+        SufficientStatistics *suf,
+        RNG &rng) {
+      const Vector &x(observation.x());
+      double eta = coefficients_->predict(x);
+      double sum, weight;
+      try {
+        std::pair<double, double> imputed = binomial_data_imputer_.impute(
+            rng,
+            observation.n(),
+            observation.y(),
+            eta);
+        sum = imputed.first;
+        weight = imputed.second;
+        suf->update(x, sum, weight);
+      } catch(std::exception &e) {
+        ostringstream err;
+        err << "caught an exception "
+            << "with the following message:"
+            << e.what() << endl
+            << "n   = " << observation.n() << endl
+            << "y   = " << observation.y() << endl
+            << "eta = " << eta << endl;
+        report_error(err.str());
+      }
+    }
+  }  // namespace BinomialLogit
+
+  using namespace BinomialLogit;
 
   BLAMS::BinomialLogitAuxmixSampler(BinomialLogitModel *model,
                                     Ptr<MvnBase> prior,
@@ -72,9 +122,7 @@ namespace BOOM {
         model_(model),
         prior_(prior),
         suf_(model->xdim()),
-        clt_threshold_(clt_threshold),
-        parallel_data_imputer_(suf_, model_),
-        latent_data_fixed_(false)
+        clt_threshold_(clt_threshold)
   {
     set_number_of_workers(1);
   }
@@ -88,26 +136,15 @@ namespace BOOM {
     draw_params();
   }
 
-  void BLAMS::impute_latent_data() {
-    if (!latent_data_fixed_) {
-      suf_ = parallel_data_imputer_.impute();
-    }
+  Ptr<ImputeWorker> BLAMS::create_worker(std::mutex &suf_mutex) {
+    return new ImputeWorker(suf_,
+                            suf_mutex,
+                            clt_threshold_,
+                            model_->coef_prm().get(),
+                            nullptr,
+                            rng());
   }
 
-  void BLAMS::set_number_of_workers(int n) {
-    if (n < 1) {
-      report_error("At least one data impute worker is needed.");
-    }
-    parallel_data_imputer_.clear_workers();
-    for (int i = 0; i < n; ++i) {
-      parallel_data_imputer_.add_worker(
-          new BinomialLogisticRegressionDataImputer(
-              clt_threshold_,
-              model_->coef_prm().get()),
-          rng());
-    }
-    parallel_data_imputer_.assign_data();
-  }
 
   void BLAMS::draw_params() {
     SpdMatrix ivar = prior_->siginv() + suf_.xtx();
@@ -116,10 +153,9 @@ namespace BOOM {
     model_->set_Beta(draw);
   }
 
-  void BLAMS::fix_latent_data(bool fixed) {
-    latent_data_fixed_ = fixed;
+  void BLAMS::clear_latent_data() {
+    suf_.clear();
   }
-
   void BLAMS::clear_complete_data_sufficient_statistics() {
     suf_.clear();
   }
@@ -131,41 +167,8 @@ namespace BOOM {
     suf_.update(x, precision_weighted_sum, total_precision);
   }
 
-  //======================================================================
-
-  BLRDI::BinomialLogisticRegressionDataImputer(int clt_threshold,
-                                               const GlmCoefs *coef)
-      : latent_data_imputer_(clt_threshold),
-        coefficients_(coef)
-  {}
-
-  void BLRDI::impute_latent_data(
-      const BinomialRegressionData &observation,
-      Suf *suf,
-      RNG &rng) const {
-    const Vector &x(observation.x());
-    double eta = coefficients_->predict(x);
-    double sum, weight;
-    try {
-      std::pair<double, double> imputed = latent_data_imputer_.impute(
-          rng,
-          observation.n(),
-          observation.y(),
-          eta);
-      sum = imputed.first;
-      weight = imputed.second;
-      suf->update(x, sum, weight);
-    } catch(std::exception &e) {
-      ostringstream err;
-      err << "caught an exception "
-          << "with the following message:"
-          << e.what() << endl
-          << "n   = " << observation.n() << endl
-          << "y   = " << observation.y() << endl
-          << "eta = " << eta << endl;
-      report_error(err.str());
-    }
+  void BLAMS::assign_data_to_workers() {
+    BOOM::assign_data_to_workers(model_->dat(), workers());
   }
-
 
 }  // namespace BOOM

@@ -87,6 +87,15 @@ namespace BOOM {
                               const Vector &mu,
                               const SpdMatrix &Siginv);
 
+    // Returns the log likelihood of the data under the current set of
+    // mixture components.
+    double log_likelihood() const;
+
+    // Returns:
+    //   A vector of length equal to the number of mixture components.
+    //   Elements give the number of observations in each component.
+    Vector allocation_counts() const;
+
    private:
     // Clears the ParamPolicy and re-registers all models with it.
     // This should be called by all constructors.

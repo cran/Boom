@@ -19,6 +19,8 @@
 #include <Models/Mixtures/DirichletProcessMvnModel.hpp>
 #include <distributions.hpp>
 #include <cpputil/report_error.hpp>
+#include <cpputil/math_utils.hpp>
+#include <cpputil/lse.hpp>
 
 namespace BOOM {
 
@@ -107,6 +109,43 @@ namespace BOOM {
     Ptr<MvnModel> mvn = mixture_components_[cluster];
     mvn->set_mu(mu);
     mvn->set_siginv(Siginv);
+  }
+
+  double DPMM::log_likelihood() const {
+    int number_of_components = mixture_components_.size();
+    double ans = 0;
+    if (number_of_components == 1) {
+      for (const auto &data_point : dat()) {
+        ans += mixture_components_[0]->logp(data_point->value());
+      }
+      return ans;
+    }
+    Vector counts = allocation_counts();
+    // The Dirichlet process is the limit of finite mixture models
+    // with symmetric Dirichlet priors (with total mass alpha) on the
+    // mixing weights.
+    Vector probs(number_of_components,
+                 alpha() / number_of_components);
+    probs += counts;
+    probs /= sum(probs);  // Posterior mode of mixing weights.
+
+    Vector log_probs = log(probs);
+    for (const auto &data_point : dat()) {
+      Vector wsp = log_probs;
+      for (int i = 0; i < number_of_components; ++i) {
+        wsp[i] += mixture_components_[i]->logp(data_point->value());
+      }
+      ans += lse(wsp);
+    }
+    return ans;
+  }
+
+  Vector DPMM::allocation_counts() const {
+    Vector counts(mixture_components_.size());
+    for (int i = 0; i < mixture_components_.size(); ++i) {
+      counts[i] = mixture_components_[i]->suf()->n();
+    }
+    return counts;
   }
 
   void DPMM::register_models() {

@@ -18,8 +18,9 @@
 
 #include <Models/FiniteMixtureModel.hpp>
 #include <cpputil/lse.hpp>
-#include <boost/bind.hpp>
 #include <distributions.hpp>
+
+#include <functional>
 #include <stdexcept>
 
 namespace BOOM{
@@ -33,7 +34,7 @@ namespace BOOM{
       mixing_dist_(new MultinomialModel(S))
   {
     mixture_components_.reserve(S);
-    for(uint s=0; s<S; ++s){
+    for (uint s=0; s<S; ++s) {
       Ptr<MixtureComponent> mod = mcomp->clone();
       mixture_components_.push_back(mod);
     }
@@ -45,7 +46,7 @@ namespace BOOM{
       mixing_dist_(pi)
   {
     uint S = pi->dim();
-    for(uint s=0; s<S; ++s){
+    for (uint s=0; s<S; ++s) {
       Ptr<MixtureComponent> mp = mcomp->clone();
       mixture_components_.push_back(mp);
     }
@@ -61,20 +62,20 @@ namespace BOOM{
       mixing_dist_(rhs.mixing_dist_->clone())
   {
     uint S = number_of_mixture_components();
-    for(uint s =0; s<S; ++s)
+    for (uint s =0; s<S; ++s)
       mixture_components_[s] = rhs.mixture_components_[s]->clone();
     set_observers();
   }
 
-  FMM * FMM::clone()const{return new FMM(*this);}
+  FMM * FMM::clone() const {return new FMM(*this);}
 
-  void FMM::clear_component_data(){
+  void FMM::clear_component_data() {
     mixing_dist_->clear_data();
     uint S = number_of_mixture_components();
-    for(uint s=0; s<S; ++s) mixture_components_[s]->clear_data();
+    for (uint s=0; s<S; ++s) mixture_components_[s]->clear_data();
   }
 
-  void FMM::impute_latent_data(RNG &rng){
+  void FMM::impute_latent_data(RNG &rng) {
     const std::vector<Ptr<Data> >  &d(dat());
     std::vector<Ptr<CategoricalData> > hvec(latent_data());
 
@@ -88,12 +89,12 @@ namespace BOOM{
     const std::vector<Ptr<MixtureComponent> > &mod(mixture_components_);
     Ptr<MultinomialModel> mix(mixing_dist_);
     clear_component_data();
-    for(uint i=0; i<n; ++i){
+    for (uint i=0; i<n; ++i) {
       dPtr dp = d[i];
       Ptr<CategoricalData> cd = hvec[i];
-      if(dp->missing()){
+      if (dp->missing()) {
         wsp_ = logpi_;
-      }else if(which_mixture_component(i) > 0){
+      } else if (which_mixture_component(i) > 0) {
         int source = which_mixture_component(i);
         last_loglike_ += mod[source]->pdf(dp.get(), true);
         class_membership_probabilities_.row(i) = 0;
@@ -102,8 +103,8 @@ namespace BOOM{
         mix->add_data(cd);
         mod[source]->add_data(dp);
         continue;
-      }else{
-        for(uint s=0; s<S; ++s){
+      } else {
+        for (uint s=0; s<S; ++s) {
           wsp_[s] = logpi_[s] + mod[s]->pdf(dp.get(), true);
         }
       }
@@ -117,88 +118,88 @@ namespace BOOM{
     }
   }
 
-  void FMM::class_membership_probability(Ptr<Data> dp, Vector &ans)const{
+  void FMM::class_membership_probability(Ptr<Data> dp, Vector &ans) const {
     int S = number_of_mixture_components();
     ans.resize(S);
     const Vector & log_pi(logpi());
-    for(int s = 0; s < S; ++s){
+    for (int s = 0; s < S; ++s) {
       ans[s] = log_pi[s] + mixture_component(s)->pdf(dp.get(), true);
     }
     ans.normalize_logprob();
   }
 
-  double FMM::last_loglike()const{
+  double FMM::last_loglike() const {
     return last_loglike_;}
 
-  void FMM::set_observers(){
-    mixing_dist_->Pi_prm()->add_observer(boost::bind(&FMM::observe_pi, this));
+  void FMM::set_observers() {
+    mixing_dist_->Pi_prm()->add_observer([this]() {this->observe_pi();});
     logpi_current_ = false;
     ParamPolicy::set_models(mixture_components_.begin(),
 			    mixture_components_.end());
     ParamPolicy::add_model(mixing_dist_);
   }
 
-  void FMM::set_logpi()const{
-    if(!logpi_current_){
+  void FMM::set_logpi() const {
+    if (!logpi_current_) {
       logpi_ = log(pi());
       logpi_current_ = true;
     }
   }
 
-  double FMM::pdf(dPtr dp, bool logscale)const{
-    if(!logpi_current_) logpi_ = log(pi());
+  double FMM::pdf(dPtr dp, bool logscale) const {
+    if (!logpi_current_) logpi_ = log(pi());
     uint S = number_of_mixture_components();
     wsp_.resize(S);
-    for(uint s=0; s<S; ++s){
+    for (uint s=0; s<S; ++s) {
       wsp_[s] = logpi_[s] + mixture_components_[s]->pdf(dp.get(), true);
     }
-    if(logscale) return lse(wsp_);
+    if (logscale) return lse(wsp_);
     return sum(exp(wsp_));
   }
 
-  uint FMM::number_of_mixture_components()const{
+  uint FMM::number_of_mixture_components() const {
     return mixture_components_.size();}
 
-  const Vector & FMM::pi()const{ return mixing_dist_->pi();}
-  const Vector & FMM::logpi()const{
+  const Vector & FMM::pi() const { return mixing_dist_->pi();}
+  const Vector & FMM::logpi() const {
     set_logpi();
     return logpi_;}
 
-  Ptr<MultinomialModel> FMM::mixing_distribution(){
+  Ptr<MultinomialModel> FMM::mixing_distribution() {
     return mixing_dist_;
   }
 
-  const MultinomialModel * FMM::mixing_distribution()const{
+  const MultinomialModel * FMM::mixing_distribution() const {
     return mixing_dist_.get();
   }
 
 
-  Ptr<MixtureComponent> FMM::mixture_component(int s){
+  Ptr<MixtureComponent> FMM::mixture_component(int s) {
     return mixture_components_[s];
   }
 
-  const MixtureComponent *FMM::mixture_component(int s)const{
+  const MixtureComponent *FMM::mixture_component(int s) const {
     return mixture_components_[s].get();
   }
 
-  const Matrix & FMM::class_membership_probability()const{
+  const Matrix & FMM::class_membership_probability() const {
     return class_membership_probabilities_;
   }
 
-  Vector FMM::class_assignment()const{
+  Vector FMM::class_assignment() const {
     std::vector<Ptr<CategoricalData> > hvec(latent_data());
     int n = hvec.size();
     Vector ans(n);
-    for(int i = 0; i < n; ++i) ans[i] = hvec[i]->value();
+    for (int i = 0; i < n; ++i) ans[i] = hvec[i]->value();
     return ans;
   }
 
-  std::vector<Ptr<MixtureComponent> > FMM::models(){
+  std::vector<Ptr<MixtureComponent> > FMM::models() {
     return mixture_components_;}
-  const std::vector<Ptr<MixtureComponent> > FMM::models()const{
+  const std::vector<Ptr<MixtureComponent> > FMM::models() const {
     return mixture_components_;}
 
-  void FMM::observe_pi()const{ logpi_current_ = false; }
+  void FMM::observe_pi() const { logpi_current_ = false; }
 
   //======================================================================
 
@@ -226,17 +227,17 @@ namespace BOOM{
     populate_em_mixture_components();
   }
 
-  EmFiniteMixtureModel * EmFiniteMixtureModel::clone()const{
+  EmFiniteMixtureModel * EmFiniteMixtureModel::clone() const {
     return new EmFiniteMixtureModel(*this);}
 
-  void EmFiniteMixtureModel::populate_em_mixture_components(){
-    for(int s = 0; s < mixing_distribution()->dim(); ++s){
+  void EmFiniteMixtureModel::populate_em_mixture_components() {
+    for (int s = 0; s < mixing_distribution()->dim(); ++s) {
       em_mixture_components_.push_back(
           mixture_component(s).dcast<EmMixtureComponent>());
     }
   }
 
-  double EmFiniteMixtureModel::loglike()const{
+  double EmFiniteMixtureModel::loglike() const {
     const std::vector<Ptr<Data> >  &d(dat());
     uint n = d.size();
     uint S = number_of_mixture_components();
@@ -245,8 +246,8 @@ namespace BOOM{
     Vector wsp(S);
     double ans = 0;
 
-    for(uint i=0; i<n; ++i){
-      for(uint s=0; s<S; ++s){
+    for (uint i=0; i<n; ++i) {
+      for (uint s=0; s<S; ++s) {
 	wsp[s] = log_pi[s] + mixture_component(s)->pdf(d[i].get(), true);
       }
       ans += lse(wsp);
@@ -254,11 +255,11 @@ namespace BOOM{
     return ans;
   }
 
-  void EmFiniteMixtureModel::mle(){
+  void EmFiniteMixtureModel::mle() {
     double eps = 1e-5;
     double old_loglike = EStep();
     double crit = 1+eps;
-    while(crit > eps){
+    while (crit > eps) {
       MStep(false);
       double loglike = EStep();
       crit = loglike - old_loglike;
@@ -266,25 +267,25 @@ namespace BOOM{
     }
   }
 
-  double EmFiniteMixtureModel::EStep(){
+  double EmFiniteMixtureModel::EStep() {
     clear_component_data();
     Vector &wsp(wsp_);
     wsp.resize(number_of_mixture_components());
     const std::vector<Ptr<Data> > &data(dat());
     double ans = 0;
     const Vector &log_pi(logpi());
-    for(int i = 0; i < data.size(); ++i){
-      for(int s = 0; s < number_of_mixture_components(); ++s){
+    for (int i = 0; i < data.size(); ++i) {
+      for (int s = 0; s < number_of_mixture_components(); ++s) {
         wsp[s] = log_pi[s] + mixture_component(s)->pdf(data[i].get(), true);
       }
       double total = lse(wsp);
       ans += total;
       double normalizing_constant = 0;
-      for(int s = 0; s < number_of_mixture_components(); ++s){
+      for (int s = 0; s < number_of_mixture_components(); ++s) {
         wsp[s] = exp(wsp[s] - total);
         normalizing_constant += wsp[s];
       }
-      for(int s = 0; s < number_of_mixture_components(); ++s){
+      for (int s = 0; s < number_of_mixture_components(); ++s) {
         em_mixture_components_[s]->add_mixture_data(
             data[i], wsp[s] / normalizing_constant);
       }
@@ -294,21 +295,21 @@ namespace BOOM{
     return ans;
   }
 
-  void EmFiniteMixtureModel::MStep(bool posterior_mode){
-    for(int s = 0; s < number_of_mixture_components(); ++s){
-      if(posterior_mode) em_mixture_component(s)->find_posterior_mode();
+  void EmFiniteMixtureModel::MStep(bool posterior_mode) {
+    for (int s = 0; s < number_of_mixture_components(); ++s) {
+      if (posterior_mode) em_mixture_component(s)->find_posterior_mode();
       else em_mixture_component(s)->mle();
     }
     mixing_distribution()->mle();
   }
 
   Ptr<EmMixtureComponent>
-  EmFiniteMixtureModel::em_mixture_component(int s){
+  EmFiniteMixtureModel::em_mixture_component(int s) {
     return em_mixture_components_[s];
   }
 
   const EmMixtureComponent *
-  EmFiniteMixtureModel::em_mixture_component(int s)const{
+  EmFiniteMixtureModel::em_mixture_component(int s) const {
     return em_mixture_components_[s].get();
   }
 

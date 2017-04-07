@@ -10,7 +10,7 @@
 
 #include <cpputil/report_error.hpp>
 #include <r_interface/boom_r_tools.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <R_ext/Arith.h>
 
 namespace BOOM {
@@ -142,7 +142,7 @@ namespace BOOM {
         return(ans);
       }
 
-      void check_missing(Ptr<Data> dp) const {
+      void check_missing(const Ptr<Data> &dp) const {
         Ptr<VectorData> data(dp.dcast<VectorData>());
         const Vector &y(data->value());
         int number_missing = count_missing(y);
@@ -172,7 +172,7 @@ namespace BOOM {
         return ans;
       }
 
-      void check_missing(Ptr<Data> d) const {
+      void check_missing(const Ptr<Data> &d) const {
         Ptr<RegressionData> dp = d.dcast<RegressionData>();
         bool missing_response = R_IsNA(dp->y());
         const Vector &x(dp->x());
@@ -259,7 +259,7 @@ namespace BOOM {
       ans.reserve(number_of_subjects);
       std::string data_type = GetStringFromList(
           rmixture_composite, "data.type").c_str();
-      boost::scoped_ptr<DataExtractor> data_extractor(
+      std::unique_ptr<DataExtractor> data_extractor(
           DataExtractor::Create(data_type));
       for (int subject = 0; subject < number_of_subjects; ++subject) {
         ans.push_back(data_extractor->Extract(VECTOR_ELT(data, subject)));

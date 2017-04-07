@@ -25,7 +25,7 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Glm/RegressionModel.hpp>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 namespace BOOM {
   namespace Agreg {
@@ -203,7 +203,6 @@ namespace BOOM {
     // Create an appropriate transformation for use in the constructor.
     static Agreg::Transformation *create_transformation(const string &transformation);
 
-
     // Returns the index (in groups_) of the group with the given name and
     // value.  If not present, a new group with these values is added.
     int find_group(const string & group_name, double group_value);
@@ -214,7 +213,7 @@ namespace BOOM {
 
 
     // The model assumes that f(y) ~ Normal(X * beta, sigma^2)
-    boost::scoped_ptr<Agreg::Transformation> f_;
+    std::unique_ptr<Agreg::Transformation> f_;
     const Agreg::Transformation &f;
 
     // The model is implemented in terms of a RegressionModel

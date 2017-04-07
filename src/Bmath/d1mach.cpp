@@ -51,8 +51,8 @@ namespace Rmath{
 double d1mach(int i)
 {
     switch(i) {
-    case 1: return numeric_limits<double>::min();
-    case 2: return numeric_limits<double>::max();
+    case 1: return std::numeric_limits<double>::min();
+    case 2: return std::numeric_limits<double>::max();
 
     case 3: /* = FLT_RADIX  ^ - DBL_MANT_DIG
               for IEEE:  = 2^-53 = 1.110223e-16 = .5*numeric_limits<double>::epsilon() */

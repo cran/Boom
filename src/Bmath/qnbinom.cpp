@@ -88,7 +88,8 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
         if (p == R_DT_1) return BOOM::infinity();
     }
     /* temporary hack --- FIXME --- */
-    if (p + 1.01*numeric_limits<double>::epsilon() >= 1.) return BOOM::infinity();
+    if (p + 1.01 * std::numeric_limits<double>::epsilon() >= 1.)
+      return BOOM::infinity();
 
     /* y := approx.value (Cornish-Fisher expansion) :  */
     z = qnorm(p, 0., 1., /*lower_tail*/true, /*log_p*/false);
@@ -97,7 +98,7 @@ double qnbinom(double p, double n, double pr, int lower_tail, int log_p)
     z = pnbinom(y, n, pr, /*lower_tail*/true, /*log_p*/false);
 
     /* fuzz to ensure left continuity: */
-    p *= 1 - 64*numeric_limits<double>::epsilon();
+    p *= 1 - 64*std::numeric_limits<double>::epsilon();
 
 /*-- Fixme, here y can be way off --
   should use interval search instead of primitive stepping down or up */

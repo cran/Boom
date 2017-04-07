@@ -34,7 +34,8 @@ namespace BOOM {
     identity_transition_matrix_ = new IdentityMatrix(dim);
     zero_state_variance_matrix_ = new ZeroMatrix(dim);
     for(int i = 0; i < dim; ++i){
-      NEW(SingleSparseDiagonalElementMatrix, variance_matrix)(dim, 1.0, i);
+      NEW(SingleSparseDiagonalElementMatrixParamView, variance_matrix)(
+          dim, Sigsq_prm(), i);
       active_state_variance_matrix_.push_back(variance_matrix);
     }
   }
@@ -99,13 +100,6 @@ namespace BOOM {
       ans[position] = 1.0;
     }
     return ans;
-  }
-
-  void RWHSM::set_sigsq(double sigsq){
-    ZeroMeanGaussianModel::set_sigsq(sigsq);
-    for(int i = 0; i < active_state_variance_matrix_.size(); ++i){
-      active_state_variance_matrix_[i]->set_value(sigsq);
-    }
   }
 
   Vector RWHSM::initial_state_mean()const{

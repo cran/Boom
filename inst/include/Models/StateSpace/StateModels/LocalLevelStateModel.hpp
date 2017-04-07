@@ -62,9 +62,15 @@ namespace BOOM{
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
 
+    void increment_expected_gradient(
+        VectorView gradient,
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
    private:
     Ptr<IdentityMatrix> state_transition_matrix_;
-    Ptr<ConstantMatrix> state_variance_matrix_;
+    Ptr<ConstantMatrixParamView> state_variance_matrix_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
   };

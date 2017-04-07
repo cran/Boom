@@ -21,11 +21,28 @@
 
 namespace BOOM{
 
+  // Functions to evaluate the density and the CDF of the inverse
+  // Gaussian distribution, and to take random draws from the
+  // distribution.
+  //
+  // The inverse Gaussian distribution for a random variable x with
+  // parameters lambda and mu has density function
+  //
+  //   f(x) =  (lambda / 2 \pi x^3)^{1/2}
+  //               * exp( -lambda (x - mu)^2 / 2 mu^2 x)
+  //
+  // The mean of this distribution is mu.  The mean of a reciprocal
+  // deviate is (1/mu) + (1/lambda).
+  //
+  // The variance of this distribution is mu^3 / lambda. The variance
+  // of a reciprocal deviate is (1 / mu * lambda) + (2 / lambda^2).
+
   double dig(double x, double mu, double lambda, bool logscale);
   double pig(double x, double mu, double lambda, bool logscale);
   double rig_mt(RNG & rng, double mu, double lambda);
   inline double rig(double mu, double lambda){
-    return rig_mt(GlobalRng::rng, mu, lambda);}
+    return rig_mt(GlobalRng::rng, mu, lambda);
+  }
 
 }
 #endif // BOOM_INVERSE_GAUSSIAN_HPP_

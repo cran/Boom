@@ -17,10 +17,10 @@
 */
 
 #include <Models/ZeroInflatedPoissonModel.hpp>
+#include <functional>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 #include <distributions.hpp>
 #include <cpputil/lse.hpp>
-#include <boost/bind.hpp>
 
 namespace BOOM {
   ZeroInflatedPoissonSuf::ZeroInflatedPoissonSuf()
@@ -36,19 +36,19 @@ namespace BOOM {
       sum_of_positives_(sum_of_positives)
       {}
 
-  ZeroInflatedPoissonSuf * ZeroInflatedPoissonSuf::clone()const{
+  ZeroInflatedPoissonSuf * ZeroInflatedPoissonSuf::clone() const {
     return new ZeroInflatedPoissonSuf(*this);
   }
 
-  void ZeroInflatedPoissonSuf::clear(){
+  void ZeroInflatedPoissonSuf::clear() {
     number_of_zeros_ = 0;
     number_of_positives_ = 0;
     sum_of_positives_ = 0;
   }
 
-  void ZeroInflatedPoissonSuf::Update(const IntData &data){
+  void ZeroInflatedPoissonSuf::Update(const IntData &data) {
     int y = data.value();
-    if(y == 0){
+    if(y == 0) {
       ++number_of_zeros_;
     }else{
       ++number_of_positives_;
@@ -56,7 +56,7 @@ namespace BOOM {
     }
   }
 
-  void ZeroInflatedPoissonSuf::add_mixture_data(double y, double prob){
+  void ZeroInflatedPoissonSuf::add_mixture_data(double y, double prob) {
     if(lround(y) == 0) {
       number_of_zeros_ += prob;
     } else {
@@ -65,20 +65,22 @@ namespace BOOM {
     }
   }
 
-  ZeroInflatedPoissonSuf * ZeroInflatedPoissonSuf::abstract_combine(Sufstat *s){
+  ZeroInflatedPoissonSuf *
+  ZeroInflatedPoissonSuf::abstract_combine(Sufstat *s) {
     return abstract_combine_impl(this, s);
   }
 
-  void ZeroInflatedPoissonSuf::combine(const ZeroInflatedPoissonSuf &rhs){
+  void ZeroInflatedPoissonSuf::combine(const ZeroInflatedPoissonSuf &rhs) {
     number_of_zeros_ += rhs.number_of_zeros_;
     number_of_positives_ += rhs.number_of_positives_;
     sum_of_positives_ += rhs.sum_of_positives_;
   }
 
-  void ZeroInflatedPoissonSuf::combine(Ptr<ZeroInflatedPoissonSuf> rhs){
-    combine(*rhs); }
+  void ZeroInflatedPoissonSuf::combine(Ptr<ZeroInflatedPoissonSuf> rhs) {
+    combine(*rhs);
+  }
 
-  Vector ZeroInflatedPoissonSuf::vectorize(bool)const{
+  Vector ZeroInflatedPoissonSuf::vectorize(bool) const {
     Vector ans(3);
     ans[0] = number_of_zeros_;
     ans[1] = number_of_positives_;
@@ -87,7 +89,7 @@ namespace BOOM {
   }
 
   Vector::const_iterator ZeroInflatedPoissonSuf::unvectorize(
-      Vector::const_iterator &v, bool){
+      Vector::const_iterator &v, bool) {
     number_of_zeros_ = *v;     ++v;
     number_of_positives_ = *v; ++v;
     sum_of_positives_ = *v;    ++v;
@@ -95,38 +97,38 @@ namespace BOOM {
   }
 
   Vector::const_iterator ZeroInflatedPoissonSuf::unvectorize(const Vector &v,
-                                                          bool minimal){
+                                                             bool minimal) {
     Vector::const_iterator it = v.begin();
     return unvectorize(it, minimal);
   }
 
-  ostream & ZeroInflatedPoissonSuf::print(ostream &out)const{
+  ostream & ZeroInflatedPoissonSuf::print(ostream &out) const {
     out << "number of zeros:     " << number_of_zeros_ << endl
         << "number of positives: " << number_of_positives_ << endl
         << "sum of positives:    " << sum_of_positives_ << endl;
     return out;
   }
 
-  double ZeroInflatedPoissonSuf::number_of_zeros()const{
+  double ZeroInflatedPoissonSuf::number_of_zeros() const {
     return number_of_zeros_;}
-  double ZeroInflatedPoissonSuf::number_of_positives()const{
+  double ZeroInflatedPoissonSuf::number_of_positives() const {
     return number_of_positives_;}
-  double ZeroInflatedPoissonSuf::sum_of_positives()const{
+  double ZeroInflatedPoissonSuf::sum_of_positives() const {
     return sum_of_positives_;}
-  double ZeroInflatedPoissonSuf::mean_of_positives()const{
+  double ZeroInflatedPoissonSuf::mean_of_positives() const {
     if(number_of_positives_ == 0) return 0.0;
     return sum_of_positives_ * 1.0 / number_of_positives_;
   }
 
   void ZeroInflatedPoissonSuf::set_values(
-      double nzero, double npos, double sum){
+      double nzero, double npos, double sum) {
     number_of_zeros_ = nzero;
     number_of_positives_ = npos;
     sum_of_positives_ = sum;
   }
 
   void ZeroInflatedPoissonSuf::add_values(
-      double nzero, double npos, double sum){
+      double nzero, double npos, double sum) {
     number_of_zeros_ += nzero;
     number_of_positives_ += npos;
     sum_of_positives_ += sum;
@@ -161,59 +163,59 @@ namespace BOOM {
         log_zero_prob_current_(false)
       {}
 
-  ZeroInflatedPoissonModel * ZeroInflatedPoissonModel::clone()const{
+  ZeroInflatedPoissonModel * ZeroInflatedPoissonModel::clone() const {
     return new ZeroInflatedPoissonModel(*this);}
 
-  Ptr<UnivParams> ZeroInflatedPoissonModel::Lambda_prm(){
+  Ptr<UnivParams> ZeroInflatedPoissonModel::Lambda_prm() {
     return prm1();
   }
 
-  const UnivParams * ZeroInflatedPoissonModel::Lambda_prm()const{
+  const UnivParams * ZeroInflatedPoissonModel::Lambda_prm() const {
     return prm1().get();
   }
 
-  double ZeroInflatedPoissonModel::lambda()const{
+  double ZeroInflatedPoissonModel::lambda() const {
     return Lambda_prm()->value();
   }
 
-  void ZeroInflatedPoissonModel::set_lambda(double lambda){
+  void ZeroInflatedPoissonModel::set_lambda(double lambda) {
     Lambda_prm()->set(lambda);
   }
 
 
-  Ptr<UnivParams> ZeroInflatedPoissonModel::ZeroProbability_prm(){
+  Ptr<UnivParams> ZeroInflatedPoissonModel::ZeroProbability_prm() {
     return prm2();
   }
 
-  const UnivParams * ZeroInflatedPoissonModel::ZeroProbability_prm()const{
+  const UnivParams * ZeroInflatedPoissonModel::ZeroProbability_prm() const {
     return prm2().get();
   }
 
-  double ZeroInflatedPoissonModel::zero_probability()const{
+  double ZeroInflatedPoissonModel::zero_probability() const {
     return ZeroProbability_prm()->value();
   }
 
-  void ZeroInflatedPoissonModel::set_zero_probability(double zp){
+  void ZeroInflatedPoissonModel::set_zero_probability(double zp) {
     ZeroProbability_prm()->set(zp);
   }
 
   void ZeroInflatedPoissonModel::set_sufficient_statistics(
-      const ZeroInflatedPoissonSuf &s){
+      const ZeroInflatedPoissonSuf &s) {
     clear_data();
     suf()->combine(s);
   }
 
-  double ZeroInflatedPoissonModel::pdf(Ptr<Data> dp, bool logscale)const{
+  double ZeroInflatedPoissonModel::pdf(Ptr<Data> dp, bool logscale) const {
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);
   }
 
-  double ZeroInflatedPoissonModel::pdf(const Data * dp, bool logscale)const{
+  double ZeroInflatedPoissonModel::pdf(const Data * dp, bool logscale) const {
     double ans = logp(DAT(dp)->value());
     return logscale ? ans : exp(ans);
   }
 
-  double ZeroInflatedPoissonModel::logp(int y)const{
+  double ZeroInflatedPoissonModel::logp(int y) const {
     check_log_probabilities();
     double logp1 = log_poisson_prob_ + dpois(y, lambda(), true);
     return y == 0 ? lse2(log_zero_prob_, logp1) : logp1;
@@ -226,7 +228,7 @@ namespace BOOM {
     return rpois(lambda());
   }
 
-  ZeroInflatedPoissonSuf ZeroInflatedPoissonModel::sim(int64_t n)const {
+  ZeroInflatedPoissonSuf ZeroInflatedPoissonModel::sim(int64_t n) const {
     double number_of_zeros = rbinom(n, zero_probability());
     double number_of_positives = n - number_of_zeros;
     double sum_of_positives = rpois(number_of_positives * lambda());
@@ -234,7 +236,7 @@ namespace BOOM {
         number_of_zeros, number_of_positives, sum_of_positives);
   }
 
-  void ZeroInflatedPoissonModel::check_log_probabilities()const{
+  void ZeroInflatedPoissonModel::check_log_probabilities() const {
     if(log_zero_prob_current_) return;
     double p = zero_probability();
     log_zero_prob_ = log(p);
@@ -242,13 +244,13 @@ namespace BOOM {
     log_zero_prob_current_ = true;
   }
 
-  void ZeroInflatedPoissonModel::observe_zero_probability(){
+  void ZeroInflatedPoissonModel::observe_zero_probability() {
     log_zero_prob_current_ = false;
   }
 
-  boost::function<void(void)>
-  ZeroInflatedPoissonModel::create_zero_probability_observer(){
-    return boost::bind(&ZeroInflatedPoissonModel::observe_zero_probability,
-                       this);
+  std::function<void(void)>
+  ZeroInflatedPoissonModel::create_zero_probability_observer() {
+    return [this](){this->observe_zero_probability();};
   }
-}
+
+}  // namespace BOOM

@@ -120,8 +120,8 @@ namespace BOOM{
     double prob(uint i)const;
     void set_probs(const Vector & pi);
     void set_prob(double prob, uint i);
-    ParamVector t() override;
-    const ParamVector t()const override;
+    ParamVector parameter_vector() override;
+    const ParamVector parameter_vector() const override;
     void unvectorize_params(const Vector &v, bool minimal=true) override;
 
     ostream & print(ostream & out)const;

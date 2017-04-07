@@ -18,8 +18,7 @@
 #include <Samplers/TIM.hpp>
 #include <Samplers/MH_Proposals.hpp>
 #include <cpputil/report_error.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -43,7 +42,7 @@ namespace BOOM{
 
   inline double TIM_empty_target(const Vector &){ return 1.0; }
 
-  typedef boost::function<double(const Vector &,Vector &, Matrix &,int)> FullTarget;
+  typedef std::function<double(const Vector &,Vector &, Matrix &,int)> FullTarget;
 
   TIM::TIM(FullTarget logf,
            double nu,
@@ -57,9 +56,15 @@ namespace BOOM{
         mode_is_fixed_(0),
         mode_has_been_found_(0)
   {
-    f_ = boost::bind(logf, _1, dummy_gradient_, dummy_Hessian_, 0);
-    df_ = boost::bind(logf, _1, _2, dummy_Hessian_, 1);
-    d2f_ = boost::bind(logf, _1, _2, _3, 2);
+    f_ = [logf, this](const Vector &x) {
+      return logf(x, this->dummy_gradient_, this->dummy_Hessian_, 0);
+    };
+    df_ = [logf, this](const Vector &x, Vector &gradient)->double {
+      return logf(x, gradient, this->dummy_Hessian_, 1);
+    };
+    d2f_ = [logf](const Vector &x, Vector &gradient, Matrix &Hessian)->double {
+      return logf(x, gradient, Hessian, 2);
+    };
     MetropolisHastings::set_target(f_);
   }
 
@@ -76,7 +81,7 @@ namespace BOOM{
 
   void TIM::report_failure(const Vector &old){
     ostringstream err;
-    Vector gradient = old;
+    Vector gradient(old.size());
     Matrix Hessian(old.size(), old.size());
     double value = d2f_(old, gradient, Hessian);
     err << "failed attempt to find mode in BOOM::TIM" << endl

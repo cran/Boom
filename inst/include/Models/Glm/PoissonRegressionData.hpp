@@ -29,7 +29,7 @@ namespace BOOM {
     //   exposure: The opportunity to generate events.  In some
     //     applications this is an interval of time.  In others it is
     //     a number of trials.
-    PoissonRegressionData(int y, const Vector &x, double exposure = 1.0);
+    PoissonRegressionData(int64_t y, const Vector &x, double exposure = 1.0);
 
     // Args:
     //   y:  The number of successes / events.
@@ -38,7 +38,7 @@ namespace BOOM {
     //   exposure: The opportunity to generate events.  In some
     //     applications this is an interval of time.  In others it is
     //     a number of trials.
-    PoissonRegressionData(int y, Ptr<VectorData> x, double exposure);
+    PoissonRegressionData(int64_t y, Ptr<VectorData> x, double exposure);
 
     PoissonRegressionData * clone() const override;
     ostream & display(ostream &out)const override;

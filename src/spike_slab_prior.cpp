@@ -112,6 +112,13 @@ namespace BOOM {
       siginv_prior_.reset(new ChisqModel(prior_df, sigma_guess));
     }
 
+    ArSpikeSlabPrior::ArSpikeSlabPrior(SEXP r_prior)
+        : RegressionNonconjugateSpikeSlabPrior(r_prior),
+          truncate_(false)
+    {
+      truncate_ = Rf_asLogical(getListElement(r_prior, "truncate"));
+    }
+
     SRNSSP::StudentRegressionNonconjugateSpikeSlabPrior(SEXP r_prior)
         : RegressionNonconjugateSpikeSlabPrior(r_prior),
           df_prior_(create_double_model(getListElement(

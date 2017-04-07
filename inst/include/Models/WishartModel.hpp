@@ -58,9 +58,9 @@ namespace BOOM{
   // The density for the Wishart model with prior sum of squares S,
   // dimension d, and prior degrees of freedom nu is
   //
-  // p(Siginv) =  2^{nu * d / 2} * mgamma(nu / 2, d) * |S|^{nu/2}
-  //               * |Siginv|^{(nu - d - 1) / 2}
-  //               * exp( -(1/2) * tr(Siginv S^{-1}))
+  // p(Siginv) =  K * |Siginv|^{(nu - d - 1) / 2}
+  //                * exp( -(1/2) * tr(Siginv S^{-1}))
+  // K^{-1} = 2^{nu * d / 2} * mgamma(nu / 2, d) * |S|^{nu/2}
   //
   // Where mgamma(x, d) = pi^{d * (d-1) / 4}
   //                      * \prod_{i = 1}^d Gamma(x + (1 - i) / 2)
@@ -125,8 +125,8 @@ namespace BOOM{
     // Experimental code for finding the MLE of the Wishart density.
     // mle0 finds the mode using no derivatives via the Nelder Mead
     // method.  mle1 uses first derivatives via bfgs.
-    void mle0();
-    void mle1();
+    void mle_no_derivatives();
+    void mle_first_derivatives();
 
     double logp(const SpdMatrix &W) const override;
 

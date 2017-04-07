@@ -63,7 +63,7 @@ namespace BOOM{
   double sd(const Vector &x){return sqrt(var(x));}
 
   double mean(const std::vector<double> &x){
-    if(x.size()==0) return 0.0;
+    if (x.empty()) return 0.0;
     double ans = 0;
     for(uint i=0; i<x.size(); ++i) ans+= x[i];
     return ans/x.size();
@@ -115,7 +115,7 @@ namespace BOOM{
   }
 
   double mean(const std::vector<double> &x, double missing){
-    if(x.size() == 0) return 0.0;
+    if (x.empty()) return 0.0;
     double total = 0;
     int count = 0;
     for(int i = 0; i < x.size(); ++i) {
@@ -149,7 +149,7 @@ namespace BOOM{
 
   double mean(const std::vector<double> &x, const std::vector<bool> &observed){
     if(observed.empty()) return mean(x);
-    if(x.size() == 0) return 0.0;
+    if(x.empty()) return 0.0;
     if(x.size() != observed.size()){
       ostringstream err;
       err << "error in mean():  x.size() = " << x.size()

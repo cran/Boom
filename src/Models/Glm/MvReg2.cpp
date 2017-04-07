@@ -16,7 +16,6 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Glm/MvReg2.hpp>
-#include <boost/bind.hpp>
 #include <distributions.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 

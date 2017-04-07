@@ -24,14 +24,14 @@
 namespace BOOM{
 
   Bspline::Bspline(const Vector &knots, int degree)
-      : knots_(knots),
+      : SplineBase(knots),
         order_(degree + 1)
   {
-    knots_.sort();
+    const Vector &sorted_knots(SplineBase::knots());
     if (degree < 0) {
       report_error("Spline degree must be non-negative.");
     }
-    if (knots_.size() <= 1) {
+    if (sorted_knots.size() <= 1) {
       // If the knot vector contains 0 or 1 knots then the "spline
       // basis expansion" of x is just the empty vector.
       basis_dimension_ = 0;
@@ -40,11 +40,11 @@ namespace BOOM{
       // basis function.  Each degree of the spline adds one more
       // basis element, from the basis functions corresponding to the
       // additional fake knots at knots[0].
-      basis_dimension_ = knots_.size() - 1 + degree;
+      basis_dimension_ = sorted_knots.size() - 1 + degree;
     }
-    for (int i = 1; i < knots_.size(); ++i) {
+    for (int i = 1; i < sorted_knots.size(); ++i) {
       // Any duplicate knots reduce the number of distinct knot spans.
-      if (knots_[i] == knots_[i-1]) {
+      if (sorted_knots[i] == sorted_knots[i-1]) {
         --basis_dimension_;
       }
     }
@@ -60,22 +60,24 @@ namespace BOOM{
 
     // Each basis function looks forward 'degree' knots to include x.
     Vector ans(basis_dimension(), 0.0);
-    if (x < knots_[0] || x > knots_.back()) {
+    if (x < knot(0) || x > final_knot()) {
       return ans;
     }
 
-    // To find the knot in the left endpoint of the knot span, we first find the
+    const Vector &sorted_knots(SplineBase::knots());
+    // To find the knot in the left endpoint of the knot span, we
+    // first find the first knot larger than x, then back up one spot.
     Vector::const_iterator terminal_knot_position = std::upper_bound(
-        knots_.begin(), knots_.end(), x);
-    int terminal_knot = terminal_knot_position - knots_.begin();
+        sorted_knots.begin(), sorted_knots.end(), x);
+    int terminal_knot = terminal_knot_position - sorted_knots.begin();
     int knot_span_for_x = terminal_knot - 1;
 
     // Each row of the basis_function_table corresponds to one knot
-    // span.  Row zero corresponds to [knots_[0], knots_[1]), row 1 to
-    // [knots_[1], knots_[2]), etc.  The columns correspond to the
-    // degree of the spline.  We first compute the zero-degree bases.
-    // We can use the zero-degree bases to get the first degree bases,
-    // etc.
+    // span.  Row zero corresponds to [sorted_knots[0],
+    // sorted_knots[1]), row 1 to [sorted_knots[1], sorted_knots[2]),
+    // etc.  The columns correspond to the degree of the spline.  We
+    // first compute the zero-degree bases.  We can use the
+    // zero-degree bases to get the first degree bases, etc.
     //
     // The zero-degree basis is 1 in exactly one position (the knot
     // span containing x).  The linear basis is nonzero in two
@@ -90,9 +92,9 @@ namespace BOOM{
     //      +R(x, knot, degree) * basis(knot + 1, degree - 1)
     // The left coefficient L is
     //
-    //                        (x - knots_[knot])
+    //                        (x - knots[knot])
     // L(x, knot, degree) =   ---------------------
-    //                  knots_[knot + degree] - knots_[knot]
+    //                  knots[knot + degree] - knots[knot]
     //
     // if the denominator is zero (because of knot multiplicity) then
     // the value of L is arbitrary, so we set it to zero.
@@ -140,35 +142,6 @@ namespace BOOM{
     return(ans);
   }
 
-  void Bspline::add_knot(double knot_location) {
-    knots_.insert(std::lower_bound(knots_.begin(),
-                                   knots_.end(),
-                                   knot_location),
-                  knot_location);
-    ++basis_dimension_;
-  }
-
-  void Bspline::remove_knot(int which_knot) {
-    if (which_knot < 0 || which_knot >= number_of_knots()) {
-      report_error("Requested knot is not in range.");
-    }
-    knots_.erase(knots_.begin() + which_knot);
-    --basis_dimension_;
-  }
-
-  double Bspline::knot(int i) const {
-    if (knots_.empty()) {
-      return negative_infinity();
-    } else {
-      if (i <= 0) {
-        return knots_[0];
-      } else if (i >= knots_.size()) {
-        return knots_.back();
-      } else {
-        return knots_[i];
-      }
-    }
-  }
 
   double Bspline::compute_coefficient(
       double x, int knot_span, int degree) const {

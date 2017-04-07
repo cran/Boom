@@ -76,6 +76,23 @@ namespace BOOM {
                 double *external_mu,
                 double *external_weight);
 
+    // Fills the mixture_table_ with all values that could possibly be
+    // required by unmix_poisson_augmented_data, so that usage of this
+    // class is thread-safe afterwards.  Saturating the table might
+    // take a long time, however.
+    static void saturate_mixture_table();
+
+    // Save the values in the mixture table to a Vector that can be
+    // used to restore the table later.
+    static Vector serialize_mixture_table() {
+      return mixture_table_.serialize();
+    }
+
+    // Restore the table to a state that was saved earlier.
+    static void deserialize_mixture_table(const Vector &serialized_state) {
+      mixture_table_.deserialize(serialized_state);
+    }
+
    private:
     // The NormalMixtureApproximationTable is really big.  It is
     // static so that multiple samplers (e.g. in a hierarchical model)

@@ -1,7 +1,7 @@
 #ifndef BOOM_STATE_SPACE_STATE_MODEL_HPP
 #define BOOM_STATE_SPACE_STATE_MODEL_HPP
 /*
-  Copyright (C) 2008-2011 Steven L. Scott
+  Copyright (C) 2008-2016 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -84,6 +84,25 @@ namespace BOOM{
         int t,
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) = 0;
+
+    // Add the expected value of the derivative of log likelihood to
+    // the gradient.  Child classes can choose to implement this
+    // method by throwing an exception.
+    //
+    // Args:
+    //   gradient: Subset of the gradient vector corresponding to this
+    //     state model.
+    //   t: The time index of the state innovation, which is for the
+    //     t -> t+1 transition.
+    //   state_error_mean: Subset of the state error mean for time t
+    //     corresponding to this state model.
+    //   state_error_variance: Subset of the state error variance for
+    //     time t corresponding to this state model.
+    virtual void increment_expected_gradient(
+        VectorView gradient,
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance);
 
     // Simulates the state eror at time t, for moving to time t+1.
     virtual void simulate_state_error(VectorView eta, int t) const = 0;

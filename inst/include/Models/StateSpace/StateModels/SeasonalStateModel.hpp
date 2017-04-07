@@ -59,8 +59,6 @@ namespace BOOM{
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
     SparseVector observation_matrix(int t) const override;
 
-    void set_sigsq(double sigsq) override; // also resets model matrices
-
     // If the time series does not start at t0 then you establish the
     // time of the first observation with this function.
     void set_time_of_first_observation(int t0);
@@ -82,6 +80,12 @@ namespace BOOM{
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
 
+    void increment_expected_gradient(
+        VectorView gradient,
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+
    private:
     uint nseasons_;
     uint duration_;
@@ -90,11 +94,10 @@ namespace BOOM{
     // Model matrices at the start of a new season
     Ptr<SeasonalStateSpaceMatrix> T0_;
 
-    Ptr<UpperLeftCornerMatrix> RQR0_;  // sigsq() is in the upper left
-                                      // corner.  other elements are
-                                      // zero.
-    Ptr<UpperLeftCornerMatrix> state_error_variance_at_new_season_;
-
+    // RQR0_ has sigsq() is in the upper left corner.  Other elements
+    // are zero.
+    Ptr<UpperLeftCornerMatrixParamView> RQR0_;
+    Ptr<UpperLeftCornerMatrixParamView> state_error_variance_at_new_season_;
 
     // Model matrices in the interior of a season, when nothing changes
     Ptr<IdentityMatrix> T1_;    //

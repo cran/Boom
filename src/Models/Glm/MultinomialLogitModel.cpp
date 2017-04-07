@@ -17,7 +17,7 @@
 #include <Models/Glm/MultinomialLogitModel.hpp>
 
 #include <cmath>
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <LinAlg/VectorView.hpp>
 #include <Models/Glm/PosteriorSamplers/MLVS.hpp>
@@ -390,12 +390,12 @@ namespace BOOM{
   void MLM::setup_observers() {
     GlmCoefs & b(coef());
     try{
-      b.add_observer(boost::bind(&MLM::watch_beta, this));
+      b.add_observer([this](){this->watch_beta();});
     } catch(const std::exception &e) {
       report_error(e.what());
     }catch(...) {
       report_error(
-          "unknown exception (from boost::bind) caught by "
+          "unknown exception caught by "
           "MultinomialLogitModel::setup_observer");
     }
   }

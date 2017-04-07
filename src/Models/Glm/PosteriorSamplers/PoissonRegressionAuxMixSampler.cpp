@@ -24,11 +24,18 @@ namespace BOOM {
 
   namespace {
     typedef PoissonRegressionAuxMixSampler PRAMS;
+    typedef LatentDataSampler<PoissonRegressionDataImputer> Parent;
   }
 
   PoissonRegressionDataImputer::PoissonRegressionDataImputer(
-      const GlmCoefs *coefficients)
-      : coefficients_(coefficients),
+      WeightedRegSuf &global_suf,
+      std::mutex &global_suf_mutex,
+      const GlmCoefs *coefficients,
+      RNG *rng,
+      RNG &seeding_rng)
+      : SufstatImputeWorker<PoissonRegressionData, WeightedRegSuf>(
+            global_suf, global_suf_mutex, rng, seeding_rng),
+        coefficients_(coefficients),
         imputer_(new PoissonDataImputer)
   {}
 
@@ -51,10 +58,10 @@ namespace BOOM {
   // the interval.  The terminal event kappa[i] is marginally
   // exponential, and conditionally truncated exponential with support
   // above 1 - tau[i].
-  void PoissonRegressionDataImputer::impute_latent_data(
+  void PoissonRegressionDataImputer::impute_latent_data_point(
       const PoissonRegressionData &dp,
       WeightedRegSuf *complete_data_suf,
-      RNG &rng) const {
+      RNG &rng) {
     const Vector &x(dp.x());
     double eta = coefficients_->predict(x);
     int y = dp.y();
@@ -88,16 +95,15 @@ namespace BOOM {
   PRAMS::PoissonRegressionAuxMixSampler(
       PoissonRegressionModel *model,
       Ptr<MvnBase> prior,
-      int number_of_threads,
+      int number_of_imputation_workers,
       RNG &seeding_rng)
       : PosteriorSampler(seeding_rng),
         model_(model),
         prior_(prior),
         complete_data_suf_(model_->xdim()),
-        parallel_data_imputer_(complete_data_suf_, model_),
-        latent_data_fixed_(false)
+        first_pass_through_data_(true)
   {
-    set_number_of_workers(number_of_threads);
+    set_number_of_workers(number_of_imputation_workers);
   }
 
   double PRAMS::logpri()const{
@@ -110,8 +116,12 @@ namespace BOOM {
   }
 
   void PRAMS::impute_latent_data() {
-    if (!latent_data_fixed_) {
-      complete_data_suf_ = parallel_data_imputer_.impute();
+    Parent::impute_latent_data();
+    if (first_pass_through_data_) {
+      first_pass_through_data_ = false;
+      if (desired_number_of_workers_ > 1) {
+        set_number_of_workers(desired_number_of_workers_);
+      }
     }
   }
 
@@ -126,21 +136,25 @@ namespace BOOM {
     return complete_data_suf_;
   }
 
-  void PRAMS::set_number_of_workers(int n) {
-    if (n < 1) {
-      report_error("You need at least one worker.");
-    }
-    parallel_data_imputer_.clear_workers();
-    GlmCoefs *coefficients = model_->coef_prm().get();
-    for (int i = 0; i < n; ++i) {
-      parallel_data_imputer_.add_worker(
-          new PoissonRegressionDataImputer(coefficients), rng());
-    }
-    parallel_data_imputer_.assign_data();
+  Ptr<PoissonRegressionDataImputer> PRAMS::create_worker(std::mutex &m) {
+    return new PoissonRegressionDataImputer(
+        complete_data_suf_,
+        m,
+        model_->coef_prm().get(),
+        nullptr,
+        rng());
   }
 
-  void PRAMS::fix_latent_data(bool fixed) {
-    latent_data_fixed_ = fixed;
+  void PRAMS::set_number_of_workers(int n) {
+    desired_number_of_workers_ = n;
+    if (first_pass_through_data_) {
+      n = 1;
+    }
+    Parent::set_number_of_workers(n);
+  }
+
+  void PRAMS::clear_latent_data() {
+    complete_data_suf_.clear();
   }
 
   void PRAMS::clear_complete_data_sufficient_statistics() {
@@ -155,6 +169,10 @@ namespace BOOM {
         predictors,
         precision_weighted_sum / total_precision,
         total_precision);
+  }
+
+  void PRAMS::assign_data_to_workers() {
+    BOOM::assign_data_to_workers(model_->dat(), workers());
   }
 
 }  // namespace BOOM

@@ -27,9 +27,34 @@
 #include <Models/StateSpace/StateSpaceModelBase.hpp>
 
 namespace BOOM{
+
+  namespace StateSpace {
+    class MultiplexedDoubleData
+        : public Data {
+     public:
+      MultiplexedDoubleData();
+      MultiplexedDoubleData(double y);
+      MultiplexedDoubleData * clone() const override;
+      std::ostream & display(std::ostream &out) const override;
+      void add_data(const Ptr<DoubleData> &data_point);
+
+      double adjusted_observation() const;
+      int sample_size() const;
+      const DoubleData &double_data(int i) const;
+      void set_value(double value, int i);
+
+      // Returns true if data_ is empty, or if all elements of data_ are
+      // missing.
+      bool all_missing() const;
+
+     private:
+      std::vector<Ptr<DoubleData>> data_;
+    };
+  }  // namespace StateSpace
+
   class StateSpaceModel
       : public StateSpaceModelBase,
-        public IID_DataPolicy<DoubleData>,
+        public IID_DataPolicy<StateSpace::MultiplexedDoubleData>,
         public PriorPolicy {
    public:
     StateSpaceModel();
@@ -81,6 +106,40 @@ namespace BOOM{
     // holdout sample, following immediately after the training data.
     Vector one_step_holdout_prediction_errors(const Vector &holdout_y,
                                               const Vector &final_state) const;
+
+    // Update the complete data sufficient statistics for the
+    // observation model based on the posterior distribution of the
+    // observation model error term at time t.
+    //
+    // Args:
+    //   t: The time of the observation.
+    //   observation_error_mean: Mean of the observation error given
+    //     model parameters and all observed y's.
+    //   observation_error_variance: Variance of the observation error given
+    //     model parameters and all observed y's.
+    void update_observation_model_complete_data_sufficient_statistics(
+        int t,
+        double observation_error_mean,
+        double observation_error_variance) override;
+
+    // Increment the portion of the log-likelihood gradient
+    // pertaining to the parameters of the observation model.
+    //
+    // Args:
+    //   gradient: The subset of the log likelihood gradient
+    //     pertaining to the observation model.  The gradient will be
+    //     incremented by the derivatives of log likelihood with
+    //     respect to the observation model parameters.
+    //   t:  The time index of the observation error.
+    //   observation_error_mean: The posterior mean of the observation
+    //     error at time t.
+    //   observation_error_variance: The posterior variance of the
+    //     observation error at time t.
+    void update_observation_model_gradient(
+        VectorView gradient,
+        int t,
+        double observation_error_mean,
+        double observation_error_variance) override;
 
    private:
     Ptr<ZeroMeanGaussianModel> observation_model_;

@@ -29,24 +29,88 @@ namespace BOOM {
     typedef StateSpace::AugmentedPoissonRegressionData APRD;
   }
 
-  APRD::AugmentedPoissonRegressionData(
-      double counts, double exposure, const Vector &predictors)
-      : PoissonRegressionData(counts, predictors, exposure),
-        latent_continuous_value_(0.0),
-        variance_(1.0),
-        offset_(0.0)
+  APRD::AugmentedPoissonRegressionData()
+      : state_model_offset_(0.0)
   {}
 
-  void APRD::set_latent_data(double value, double variance) {
-    latent_continuous_value_ = value;
-    if (variance < 0) {
-      report_error("variance must be positive.");
-    }
-    variance_ = variance;
+  APRD::AugmentedPoissonRegressionData(
+      double counts, double exposure, const Vector &predictors)
+      : AugmentedPoissonRegressionData()
+  {
+    NEW(PoissonRegressionData, observation)(counts, predictors, exposure);
+    add_data(observation);
   }
 
-  void APRD::set_offset(double offset) {
-    offset_ = offset;
+  APRD::AugmentedPoissonRegressionData(
+      const std::vector<Ptr<PoissonRegressionData>> &data)
+      : AugmentedPoissonRegressionData()
+  {
+    poisson_data_ = data;
+    latent_continuous_values_.assign(poisson_data_.size(), 0.0);
+    precisions_.assign(poisson_data_.size(), 1.0);
+  }
+
+  APRD * APRD::clone() const {return new APRD(*this);}
+
+  std::ostream & APRD::display(std::ostream &out) const {
+    for (int i = 0; i < poisson_data_.size(); ++i) {
+      out << poisson_data(i) << std::endl;
+    }
+    out << "latent continuous values\tprecisions " << std::endl
+        << cbind(latent_continuous_values_, precisions_) << std::endl
+        << "state model offset     : " << state_model_offset_ << std::endl;
+    return out;
+  }
+
+  void APRD::add_data(const Ptr<PoissonRegressionData> &observation) {
+    poisson_data_.push_back(observation);
+    latent_continuous_values_.push_back(0);
+    precisions_.push_back(1.0);
+  }
+
+  void APRD::set_latent_data(double value, double precision, int observation) {
+    if (precision < 0) {
+      report_error("precision must be non-negative.");
+    }
+    latent_continuous_values_[observation] = value;
+    precisions_[observation] = precision;
+  }
+
+  double APRD::latent_data_variance(int observation) const {
+    return 1.0 / precisions_[observation];
+  }
+
+  double APRD::latent_data_value(int observation) const {
+    return latent_continuous_values_[observation];
+  }
+
+  double APRD::adjusted_observation(const GlmCoefs &coefficients) const {
+    if (latent_continuous_values_.empty()) {
+      return negative_infinity();
+    }
+    double ans = 0;
+    double total_precision = 0;
+    for (int i = 0; i < latent_continuous_values_.size(); ++i ) {
+      ans += precisions_[i] * (latent_continuous_values_[i]
+                               - coefficients.predict(poisson_data_[i]->x()));
+      total_precision += precisions_[i];
+    }
+    if (total_precision <= 0 || !std::isfinite(total_precision)) {
+      return negative_infinity();
+    }
+    return ans / total_precision;
+  }
+
+  double APRD::latent_data_overall_variance() const {
+    double total_precision = sum(precisions_);
+    if (total_precision <= 0 || !std::isfinite(total_precision)) {
+      return negative_infinity();
+    }
+    return 1.0 / total_precision;
+  }
+
+  void APRD::set_state_model_offset(double offset) {
+    state_model_offset_ = offset;
   }
 
   //======================================================================
@@ -99,15 +163,14 @@ namespace BOOM {
   }
 
   double SSPM::observation_variance(int t) const {
-    return dat()[t]->latent_data_variance();
+    return dat()[t]->latent_data_overall_variance();
   }
 
   double SSPM::adjusted_observation(int t) const {
     if (is_missing_observation(t)) {
       return negative_infinity();
     }
-    return dat()[t]->latent_data_value()
-        - observation_model_->predict(dat()[t]->x());
+    return dat()[t]->adjusted_observation(observation_model_->coef());
   }
 
   bool SSPM::is_missing_observation(int t) const {
@@ -116,8 +179,7 @@ namespace BOOM {
 
   void SSPM::observe_data_given_state(int t) {
     if (!is_missing_observation(t)) {
-      double offset = observation_matrix(t).dot(state(t));
-      dat()[t]->set_offset(offset);
+      dat()[t]->set_state_model_offset(observation_matrix(t).dot(state(t)));
       signal_complete_data_change(t);
     }
   }
@@ -157,7 +219,7 @@ namespace BOOM {
     ks.a = *state_transition_matrix(t0 - 1) * final_state;
     ks.P = SpdMatrix(state_variance_matrix(t0 - 1)->dense());
 
-    // There function differs from one_step_holdout_prediction_errors
+    // This function differs from one_step_holdout_prediction_errors
     // in StateSpaceRegressionModel because the response is on the
     // Poisson scale, and the state needs a non-linear (exp) transform
     // to get it on the scale of the data.  We handle this by imputing

@@ -52,6 +52,14 @@ namespace BOOM {
     StateSpaceStudentRegressionModel *model_;
     Ptr<TRegressionSpikeSlabSampler> observation_model_sampler_;
     TDataImputer data_imputer_;
+
+    // This object is mapping between the data stored by the observation model
+    // (which is stored in a list from 1 to n), and the data stored by the state
+    // space model, which is stored in an array of objects 1..t, with each
+    // object containing a subordinate data set.  This data will be created and
+    // assigned to the model by the call to
+    // clear_complete_data_sufficient_statistics().
+    std::vector<std::vector<Ptr<RegressionData>>> subordinate_data_;
   };
 
 }  // namespace BOOM

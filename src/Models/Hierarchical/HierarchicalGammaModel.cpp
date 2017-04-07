@@ -148,9 +148,9 @@ namespace BOOM {
       Ptr<GammaSuf> suf(data_model->suf());
       if (suf->n() > 0) {
         double mean = suf->sum() / suf->n();
-        b = 1.0/mean;
+        b = 1.0 / mean;
       }
-      data_model->set_params(a, b);
+      data_model->set_shape_and_scale(a, b);
     }
   }
 

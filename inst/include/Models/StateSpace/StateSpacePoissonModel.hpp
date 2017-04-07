@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005-2015 Steven L. Scott
+  Copyright (C) 2005-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -67,35 +67,88 @@ namespace BOOM {
     // variances v1 and v2.  The information content in these two
     // observations is equivalent to a single Gaussian with mean mu_t
     // and precision 1/v1 + 1/v2.  If y_t == 0, so only a single
-    // observation is available then the precision is just 1/v1.
+    // observation is available then the precision is just 1/v2.
+    //
+    // To be explicit, let u_1t = -log tau_t, where (after un-mixing the normal
+    // mixture) we have u_1t ~ N(mu_t + m1, v1).  If y == 0 then v1 = infinity,
+    // and we will treat 1 / v1 = 0.  Similarly, let u_2t = -log delta_t, where
+    // (after un-mixing the mixture) we have u_2t ~ N(mu_t + m2, v2).  The
+    // "value" of point t is
+    // {[(u_1t - m1)/ v1] + [(u_2t - m2) / v2]} / (1/v1 + 1/v2).
+    //
+    // In the case of multiple observations at the same time point, the
+    // information content is simply a precision weighted average of the
+    // information content in each observation.  In the language of
+    // StateSpaceModelBase, the "adjusted_observation" for this data point is
+    //
+    //  \sum_i ((u_{1i} - m_{1i1}) / v_{1i}) + ((u_{2i} - m_{2i}) / v_{2i}) /
+    //         (sum_j (1/v_{1j}) + (1/v_{2j}))
     class AugmentedPoissonRegressionData
-        : public PoissonRegressionData {
+        : public Data {
      public:
-      AugmentedPoissonRegressionData(
-          double count, double exposure, const Vector &x);
+      // Starts with an empty data point, with observations to be added later
+      // using add_data.
+      AugmentedPoissonRegressionData();
 
-      void set_latent_data(double value, double variance);
-      double latent_data_variance() const {return variance_;}
-      double latent_data_value() const {return latent_continuous_value_;}
-      void set_offset(double offset);
-      double offset() const {return offset_;}
+      // A constructor for the typical case, where there is a single observation
+      // at each time point.
+      AugmentedPoissonRegressionData(double count,
+                                     double exposure,
+                                     const Vector &x);
+
+      // A constructor for the multiplexed case, where there are multiple
+      // observations at each time point.
+      AugmentedPoissonRegressionData(
+          const std::vector<Ptr<PoissonRegressionData>> &data);
+
+      AugmentedPoissonRegressionData * clone() const override;
+      std::ostream & display(std::ostream &out) const override;
+
+      void add_data(const Ptr<PoissonRegressionData> &observation);
+
+      // Set the latent data value and precision, for a specific observation
+      // (which will be zero except in the case of multiplexed data).
+      //
+      // Args:
+      //   value: The latent data value.  If y > 0 then this is the precision
+      //     weighted average
+      void set_latent_data(double value,
+                           double precision,
+                           int observation);
+
+      double latent_data_variance(int observation) const;
+      double latent_data_value(int observation) const;
+
+      double adjusted_observation(const GlmCoefs &coefficients) const;
+      double latent_data_overall_variance() const;
+
+      void set_state_model_offset(double offset);
+      double state_model_offset() const {return state_model_offset_;}
+
+      const PoissonRegressionData &poisson_data(int i) const {
+        return *(poisson_data_[i]);
+      }
+
+      int sample_size() const {return poisson_data_.size();}
 
      private:
-      // If y() > 0 this is (-log(tau_t) - m1)/v1 + (-log(delta_t -
-      // tau_t) - m2)/v2/(1/v1 + 1/v2), where m1,v1 and m2,v2 are the
-      // normal mixture means and variances.  If y() == 0 then this is
-      // just -log(delta_t) - m1.
-      double latent_continuous_value_;
+      // If y() > 0 for observation j then latent_continuous_values_[j] is
+      // (-log(tau_t) - m1)/v1 + (-log(delta_t - tau_t) - m2)/v2/(1/v1 + 1/v2),
+      // where m1,v1 and m2,v2 are the normal mixture means and variances.  If
+      // y() == 0 then this is just -log(delta_t) - m1.
+      Vector latent_continuous_values_;
 
-      // If y() > 0 this is 1/(1/v1 + 1/v2).  Otherwise it is simply
-      // v1.
-      double variance_;
+      // If y() > 0 for observation j then precisions_[j] is 1/(1/v1 + 1/v2).
+      // Otherwise it is simply v1.
+      Vector precisions_;
 
-      // The offset stores the state contribution to
-      // latent_continuous_value_.
-      double offset_;
+      // The offset stores the state contribution to latent_continuous_value_.
+      // It gets subtracted off when determining the contribution of the
+      // regression component.
+      double state_model_offset_;
+
+      std::vector<Ptr<PoissonRegressionData>> poisson_data_;
     };
-
   }  // namespace StateSpace
 
   class StateSpacePoissonModel
@@ -114,9 +167,9 @@ namespace BOOM {
     StateSpacePoissonModel(const StateSpacePoissonModel &rhs);
     StateSpacePoissonModel * clone() const override;
 
-    const StateSpace::AugmentedPoissonRegressionData &
-    data(int t) const override {
-      return *(dat()[t]);
+    const PoissonRegressionData & data(int time,
+                                       int observation) const override {
+      return dat()[time]->poisson_data(observation);
     }
     int time_dimension() const override;
 
@@ -137,7 +190,7 @@ namespace BOOM {
     const PoissonRegressionModel *observation_model() const override {
       return observation_model_.get(); }
 
-    // Set the offset in the data to the state contribution.
+    // Set the state model offset in the data to the state contribution.
     void observe_data_given_state(int t) override;
 
     Vector simulate_forecast(const Matrix &forecast_predictors,

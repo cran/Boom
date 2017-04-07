@@ -21,14 +21,14 @@
 #include <Samplers/Sampler.hpp>
 #include <TargetFun/TargetFun.hpp>
 #include <iosfwd>
-#include <boost/function.hpp>
+#include <functional>
 namespace BOOM{
 
   class ScalarSliceSampler
     : public ScalarSampler
   {
   public:
-    typedef boost::function<double(double)> Fun;
+    typedef std::function<double(double)> Fun;
 
     ScalarSliceSampler(const Fun &F,
                        bool Unimodal=false,

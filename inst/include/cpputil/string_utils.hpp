@@ -54,22 +54,22 @@ namespace BOOM{
                               const std::vector<std::string> &right,
                               uint pad = 2);
 
-  string operator+(string, int);
-  string operator+(string, double);
-  string operator+=(string, int);
-  string operator+=(string, double);
-  string operator+(int, string);
-  string operator+(double, string);
+  string operator+(const std::string &, int);
+  string operator+(const std::string &, double);
+  string operator+=(string &, int);
+  string operator+=(string &, double);
+  string operator+(int, const std::string &);
+  string operator+(double, const std::string &);
 
-  string operator>>(string , int &);
-  string operator>>(string , double &);
+  string operator>>(const std::string &, int &);
+  string operator>>(const std::string &, double &);
 
   bool is_all_white(const string &s);
   string strip_white_space(const string &s); // removes all white space
   string trim_white_space(const string &s);  // removes from the ends
   void trim_white_space(std::vector<std::string> &v);
 
-  string strip(const string &s, string bad="\r\n\t");
+  string strip(const string &s, const string &bad="\r\n\t");
   // removes \r's, \n's etc from end
 
   string replace_all(const string &s, const char *, const char *);

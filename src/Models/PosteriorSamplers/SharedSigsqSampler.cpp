@@ -51,8 +51,7 @@ namespace BOOM{
   }
 
   double SSS::logpri()const{
-    double sigsq = sigsq_->value();
-    return pri_->logp(1.0/sigsq);
+    return sigsq_sampler_.log_prior(sigsq_->value());
   }
 
 }

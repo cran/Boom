@@ -19,22 +19,19 @@
 #include <distributions.hpp>
 #include <utility>
 #include <Models/SpdData.hpp>
-namespace BOOM{
+namespace BOOM {
 
   typedef MvnGivenSigma MGS;
 
   MGS::MvnGivenSigma(const Vector &b, double k, const SpdMatrix & siginv)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
       DataPolicy(new MvnSuf(b.size())),
-      PriorPolicy(),
       Sigma_(new SpdData(siginv, true))
-  {
-  }
+  {}
 
   MGS::MvnGivenSigma(const Vector &b, double k)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
-      DataPolicy(new MvnSuf(b.size())),
-      PriorPolicy()
+      DataPolicy(new MvnSuf(b.size()))
   {
     // Sigma must be set before the class can be used_;
   }
@@ -42,73 +39,64 @@ namespace BOOM{
   MGS::MvnGivenSigma(const Vector &b, double k, Ptr<SpdData> Sigma)
     : ParamPolicy(new VectorParams(b), new UnivParams(k)),
       DataPolicy(new MvnSuf(b.size())),
-      PriorPolicy(),
       Sigma_(Sigma)
-  {
-  }
+  {}
 
   MGS::MvnGivenSigma(Ptr<VectorParams> mu, Ptr<UnivParams> Kappa)
     : ParamPolicy(mu, Kappa),
-      DataPolicy(new MvnSuf(mu->size())),
-      PriorPolicy()
+      DataPolicy(new MvnSuf(mu->size()))
   {
     // Sigma must be set before the class can be used_;
   }
 
   MGS::MvnGivenSigma(Ptr<VectorParams> mu, Ptr<UnivParams> Kappa,
-		     Ptr<SpdData> Sigma)
+                     Ptr<SpdData> Sigma)
     : ParamPolicy(mu, Kappa),
       DataPolicy(new MvnSuf(mu->size())),
       PriorPolicy(),
       Sigma_(Sigma)
   {}
 
-  MGS::MvnGivenSigma(const MGS & rhs)
-    : Model(rhs),
-      VectorModel(rhs),
-      MvnBase(rhs),
-      LoglikeModel(rhs),
-      ParamPolicy(rhs),
-      DataPolicy(rhs),
-      PriorPolicy(rhs),
-      Sigma_(rhs.Sigma_)
-  {
-  }
+  MGS * MGS::clone() const {return new MGS(*this);}
 
-  MGS * MGS::clone()const{return new MGS(*this);}
-
-  void MGS::set_Sigma(Ptr<SpdData> S){ Sigma_ = S;}
-  void MGS::set_Sigma(const SpdMatrix &V, bool ivar){
+  void MGS::set_Sigma(Ptr<SpdData> S) { Sigma_ = S;}
+  void MGS::set_Sigma(const SpdMatrix &V, bool ivar) {
     NEW(SpdData, d)(V, ivar);
     this->set_Sigma(d);
   }
 
-  Ptr<VectorParams> MGS::Mu_prm(){
-    return ParamPolicy::prm1();}
-  const Ptr<VectorParams> MGS::Mu_prm()const{
-    return ParamPolicy::prm1();}
+  Ptr<VectorParams> MGS::Mu_prm() {
+    return ParamPolicy::prm1();
+  }
 
-  Ptr<UnivParams> MGS::Kappa_prm(){
-    return ParamPolicy::prm2();}
-  const Ptr<UnivParams> MGS::Kappa_prm()const{
-    return ParamPolicy::prm2();}
+  const Ptr<VectorParams> MGS::Mu_prm() const {
+    return ParamPolicy::prm1();
+  }
 
-  uint MGS::dim()const{return mu().size();}
-  const Vector & MGS::mu()const{ return Mu_prm()->value();}
-  double MGS::kappa()const{return Kappa_prm()->value();}
+  Ptr<UnivParams> MGS::Kappa_prm() {
+    return ParamPolicy::prm2();
+  }
 
-  void MGS::set_mu(const Vector &v){Mu_prm()->set(v);}
-  void MGS::set_kappa(double kap){Kappa_prm()->set(kap);}
+  const Ptr<UnivParams> MGS::Kappa_prm() const {
+    return ParamPolicy::prm2();
+  }
 
-  void MGS::mle(){
+  uint MGS::dim() const {return mu().size();}
+  const Vector & MGS::mu() const {return ParamPolicy::prm1_ref().value();}
+  double MGS::kappa() const {return ParamPolicy::prm2_ref().value();}
+
+  void MGS::set_mu(const Vector &v) {ParamPolicy::prm1_ref().set(v);}
+  void MGS::set_kappa(double kap) {ParamPolicy::prm2_ref().set(kap);}
+
+  void MGS::mle() {
     check_Sigma();
     set_mu(suf()->ybar());
     double np = suf()->n() * dim();
     double ss = traceAB(Sigma_->ivar(), suf()->center_sumsq());
-    set_kappa(np/ss);
+    set_kappa(np / ss);
   }
 
-  double MGS::loglike(const Vector &mu_kappa)const{
+  double MGS::loglike(const Vector &mu_kappa) const {
     check_Sigma();
     const ConstVectorView mu(mu_kappa, 0, dim());
     double kappa = mu_kappa.back();
@@ -118,50 +106,53 @@ namespace BOOM{
         *suf());
   }
 
-  double MGS::pdf(Ptr<Data> dp, bool logsc)const{
-    return this->pdf(DAT(dp), logsc);}
-  double MGS::pdf(Ptr<DataType> dp, bool logsc)const{
+  double MGS::pdf(Ptr<Data> dp, bool logsc) const {
+    return this->pdf(DAT(dp), logsc);
+  }
+
+  double MGS::pdf(Ptr<DataType> dp, bool logsc) const {
     check_Sigma();
     double k = kappa();
     double ldsi = Sigma_->ldsi();
-    return dmvn(dp->value(), mu(), Sigma_->ivar() * k, ldsi + dim()*log(k),
+    return dmvn(dp->value(), mu(), Sigma_->ivar() * k, ldsi + dim() * log(k),
                 logsc);
   }
 
-  void MGS::check_Sigma()const{
-    if(!!Sigma_) return;
+  void MGS::check_Sigma() const {
+    if (!!Sigma_) return;
     ostringstream err;
     err << "Sigma has not been set in instance of MvnGivenSigma."
-	<< endl;
+        << endl;
     report_error(err.str());
   }
 
-  const SpdMatrix & MGS::Sigma()const{
-    S = Sigma_->value()/kappa();
+  const SpdMatrix & MGS::Sigma() const {
+    S = Sigma_->value() / kappa();
     return S;
   }
 
-  const SpdMatrix & MGS::siginv()const{
+  const SpdMatrix & MGS::siginv() const {
     S = Sigma_->ivar() * kappa();
     return S;
   }
 
-  double MGS::ldsi()const{
+  double MGS::ldsi() const {
     double ans = Sigma_->ldsi();
     ans += dim()*log(kappa());
     return ans;
   }
 
-  double MGS::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
+  double MGS::Logp(const Vector &x, Vector &g, Matrix &h, uint nd) const {
     const SpdMatrix & siginv(this->siginv());
     const Vector & mu(this->mu());
-    double ans = dmvn(x,mu, siginv, ldsi(), true);
-    if(nd>0){
-      g = -(siginv * (x-mu));
-      if(nd>1) h = -siginv;}
+    double ans = dmvn(x, mu, siginv, ldsi(), true);
+    if (nd > 0) {
+      g = -(siginv * (x - mu));
+      if (nd > 1) h = -siginv;
+    }
     return ans;
   }
 
-  Vector MGS::sim()const{ return rmvn_ivar(mu(),siginv());  }
+  Vector MGS::sim() const { return rmvn_ivar(mu(),siginv());  }
 
-}
+}  // namespace BOOM

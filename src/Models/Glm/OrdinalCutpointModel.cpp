@@ -25,10 +25,10 @@
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 
+#include <functional>
 #include <cmath>
 #include <stdexcept>
 #include <sstream>
-#include <boost/bind.hpp>
 
 namespace BOOM{
   inline double compute_delta(uint m, const Vector & v, uint maxscore) {
@@ -122,7 +122,7 @@ namespace BOOM{
   }
 
   bool OCM::check_delta(const Vector &d) const {
-    if (d.size() == 0) return true;// a zero length vector is okay
+    if (d.empty()) return true;// a zero length vector is okay
     if (d[0] <= 0) return false;
     for (uint i = 1; i < d.size(); ++i) {
       if (d[i] <= d[i - 1]) {
@@ -170,7 +170,7 @@ namespace BOOM{
     }
 
     Vector x(xdim());
-    x.randomize(boost::bind(rnorm, 0, 1));
+    x.randomize( [](){return rnorm(0, 1);} );
     x[0] = 1;
 
     double eta = predict(x) + simulate_latent_variable();

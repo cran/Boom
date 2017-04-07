@@ -138,7 +138,7 @@ namespace BOOM{
       }
     }
 
-    if (vnames_.size() == 0) vnames_ =default_vnames(variable_types_.size());
+    if (vnames_.empty()) vnames_ =default_vnames(variable_types_.size());
   }
 
   DataTable * DataTable::clone() const {
@@ -150,7 +150,7 @@ namespace BOOM{
   }
 
   //--- build a DataTable by appending variables ---
-  void DataTable::append_variable (const Vector &v, string name) {
+  void DataTable::append_variable (const Vector &v, const string &name) {
 
     // If there are no variables, ie the table is empty,
     // append to the continuous variables.
@@ -194,7 +194,7 @@ namespace BOOM{
     }
   }
 
-  void DataTable::append_variable(const CategoricalVariable &cv, string name) {
+  void DataTable::append_variable(const CategoricalVariable &cv, const string &name) {
     // If there are no variables, ie the table is empty,
     // append to the continuous variables.
     // IMPORTANT: The first set of observations determines

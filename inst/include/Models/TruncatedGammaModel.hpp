@@ -19,23 +19,27 @@
 #define BOOM_TRUNCATED_GAMMA_MODEL_HPP
 
 #include <Models/GammaModel.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
-// this is not a fully fledged model, because we don't have inference
-// worked out for it yet.  Loglike depends on nc_
+  // This is not a fully fledged model, because there is no mechanism
+  // for inference.
+  class TruncatedGammaModel : public GammaModel {
+   public:
+    TruncatedGammaModel(double a, double b,
+                        double lower = 0, double upper = infinity());
+    double logp(double x) const override;
+    double dlogp(double x, double &derivative) const override;
+    double sim() const override;
 
-class TruncatedGammaModel
-    : public GammaModel
-{
- public:
-  TruncatedGammaModel(double a, double b, double trunc);
-  double logp(double x)const override;
-
- private:
-  double trunc_;
-  double lognc_;
-};
+   private:
+    double lower_truncation_point_;
+    double upper_truncation_point_;
+    double plo_;
+    double phi_;
+    double lognc_;
+  };
 
 }
 #endif// BOOM_TRUNCATED_GAMMA_MODEL_HPP

@@ -23,35 +23,45 @@
 namespace BOOM{
 
   class DoubleModel : virtual public MixtureComponent{
-  public:
-    virtual double logp(double x)const=0;
-    virtual double sim()const=0;
-    DoubleModel *clone()const override =0;
-    virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    double pdf(const Data * dp, bool logscale)const override;
+   public:
+    virtual double logp(double x) const = 0;
+    virtual double sim() const = 0;
+    DoubleModel *clone() const override = 0;
+    virtual double pdf(Ptr<Data> dp, bool logscale) const;
+    double pdf(const Data * dp, bool logscale) const override;
   };
 
-  class dDoubleModel : public DoubleModel{
+  class LocationScaleDoubleModel
+      : virtual public DoubleModel {
+   public:
+    LocationScaleDoubleModel * clone() const override = 0;
+    virtual double mean() const = 0;
+    virtual double variance() const = 0;
+  };
+
+  class dDoubleModel : virtual public DoubleModel {
     // the 'diff' is for differentiable
-  public:
-    virtual double dlogp(double x, double &g) const =0;
-    dDoubleModel *clone()const override =0;
+   public:
+    virtual double dlogp(double x, double &g) const = 0;
+    dDoubleModel *clone() const override = 0;
   };
 
-  class d2DoubleModel : public dDoubleModel{
-  public:
-    virtual double d2logp(double x, double &g, double &h)const=0;
-    d2DoubleModel *clone()const override =0;
+  class d2DoubleModel : public dDoubleModel {
+   public:
+    virtual double d2logp(double x, double &g, double &h) const = 0;
+    d2DoubleModel *clone() const override = 0;
   };
 
-  class DiffDoubleModel : public d2DoubleModel{
+  class DiffDoubleModel : public d2DoubleModel {
     // the 'diff' is for differentiable
-  public:
-    virtual double Logp(double x, double &g, double &h, uint nd) const =0;
-    double logp(double x)const override;
+   public:
+    virtual double Logp(double x, double &g, double &h, uint nd) const = 0;
+    double logp(double x) const override;
     double dlogp(double x, double &g) const override;
-    double d2logp(double x, double &g, double &h)const override;
-    DiffDoubleModel *clone()const override =0;
+    double d2logp(double x, double &g, double &h) const override;
+    DiffDoubleModel *clone() const override = 0;
   };
-}
+
+}  // namespace BOOM
+
 #endif// BOOM_DOUBLE_MODEL_HPP

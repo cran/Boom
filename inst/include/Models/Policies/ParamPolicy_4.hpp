@@ -55,8 +55,8 @@ namespace BOOM{
       prm1_ = p1; prm2_ = p2, prm3_ = p3; prm4_ = p4; set_t(); }
 
     // over-rides for abstract base Model
-    ParamVector t() override {return t_;}
-    const ParamVector t() const override {return t_;}
+    ParamVector parameter_vector() override {return t_;}
+    const ParamVector parameter_vector() const override {return t_;}
 
   private:
     Ptr<P1> prm1_;

@@ -46,7 +46,7 @@ namespace BOOM {
     const GlmModel *observation_model() const override = 0;
     GlmModel *observation_model() override = 0;
 
-    virtual const GlmBaseData &data(int t) const = 0;
+    virtual const GlmBaseData &data(int time, int observation = 0) const = 0;
 
     // If the model has a regression contribution, then the return
     // vector gives the contribution of the regression component at

@@ -23,6 +23,7 @@
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
 #include <LinAlg/Vector.hpp>
+#include <LinAlg/VectorView.hpp>
 #include <distributions/rng.hpp>
 
 namespace BOOM{
@@ -53,10 +54,46 @@ namespace BOOM{
     virtual bool can_find_posterior_mode() const {
       return false;
     }
+    virtual bool can_evaluate_log_prior_density() const {
+      return false;
+    }
+    virtual bool can_increment_log_prior_gradient() const {
+      return false;
+    }
 
-    // The default implementation of this function throws an exception
-    // through report_error().
+    // The default implementations of the following three functions
+    // throw an exception through report_error().
     virtual void find_posterior_mode(double epsilon = 1e-5);
+
+    // Args:
+    //   parameters: A vector of model parameters.  The parameter
+    //     ordering is the same as the result of
+    //     model->vectorize_parameters().
+    // Returns:
+    //   The value of the log prior_density at the specified model parameters.
+    // NOTE:
+    //   The default implementation throws an exception that this
+    //   function is not implemented.  Each child class should
+    //   override this function and can_evaluate_log_prior_density().
+    virtual double log_prior_density(const ConstVectorView &parameters) const;
+
+    // Args:
+    //   parameters: A vector of model parameters.  The parameter
+    //     ordering is the same as the result of
+    //     model->vectorize_parameters().
+    //   gradient: The elements of gradient will be incremented by the
+    //     gradient of the log prior density at the specified
+    //     parameters.
+    // Returns:
+    //   The value of the log prior_density at the specified model parameters.
+    // NOTE:
+    //   The default implementation throws an exception that this
+    //   function is not implemented.  Each child class should
+    //   override this function and
+    //   can_increment_log_prior_gradient().
+    virtual double increment_log_prior_gradient(
+        const ConstVectorView &parameters,
+        VectorView gradient) const;
 
     friend void intrusive_ptr_add_ref(PosteriorSampler *m);
     friend void intrusive_ptr_release(PosteriorSampler *m);

@@ -30,10 +30,6 @@
 #include <iomanip>
 #include <cmath>
 
-
-using std::setw;
-using std::setprecision;
-
 namespace BOOM{
 
   TRegressionModel::TRegressionModel(uint p)

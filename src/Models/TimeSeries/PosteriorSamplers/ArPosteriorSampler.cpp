@@ -40,7 +40,7 @@ namespace BOOM{
   double ArPosteriorSampler::logpri()const{
     bool ok = model_->check_stationary(model_->phi());
     if(!ok) return negative_infinity();
-    return siginv_prior_->logp(1.0 / model_->sigsq());
+    return sigsq_sampler_.log_prior(model_->sigsq());
   }
 
   // Draws sigma given phi and observed data.

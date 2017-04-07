@@ -20,8 +20,7 @@
 
 #include <sstream>
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <cpputil/lse.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
@@ -72,8 +71,7 @@ namespace BOOM {
   }
 
   double ApproximationDistance::current_distance()const{
-    ScalarTarget ig = boost::bind(
-        &ApproximationDistance::integrand, this, _1);
+    ScalarTarget ig = [this](double x){return this->integrand(x);};
     Integral integral1(ig, lower_limit_, guess_at_mode_, 1000);
     integral1.throw_on_error(false);
     Integral integral2(ig, guess_at_mode_, upper_limit_, 1000);
@@ -82,7 +80,9 @@ namespace BOOM {
   }
 
   double ApproximationDistance::logf(double x)const{return logf_(x);}
-  double ApproximationDistance::approximation(double x)const{return approx_.logp(x);}
+  double ApproximationDistance::approximation(double x) const {
+    return approx_.logp(x);
+  }
   double ApproximationDistance::lower_limit()const{return lower_limit_;}
   double ApproximationDistance::upper_limit()const{return upper_limit_;}
 
@@ -92,7 +92,8 @@ namespace BOOM {
       double lower_limit,
       double upper_limit,
       double guess_at_mode)
-      : ApproximationDistance(logf, approx, lower_limit, upper_limit, guess_at_mode) {}
+      : ApproximationDistance(logf, approx, lower_limit,
+                              upper_limit, guess_at_mode) {}
 
   double KullbackLeiblerDivergence::integrand(double x)const{
     double logfx = logf(x);
@@ -107,7 +108,8 @@ namespace BOOM {
       double lower_limit,
       double upper_limit,
       double guess_at_mode)
-      : ApproximationDistance(logf, approx, lower_limit, upper_limit, guess_at_mode) {}
+      : ApproximationDistance(logf, approx, lower_limit, upper_limit,
+                              guess_at_mode) {}
 
   double AbsNormDistance::integrand(double x)const{
     return fabs(exp(logf(x)) - exp(approximation(x)));
@@ -140,6 +142,7 @@ namespace BOOM {
     order_by_mu();
     log_weights_ = log(weights_);
     check_sizes();
+    check_values();
   }
 
   NormalMixtureApproximation::NormalMixtureApproximation(
@@ -158,6 +161,7 @@ namespace BOOM {
         force_zero_mu_(force_zero_mu)
   {
     check_sizes();
+    check_values();
     BrentMaximizer brent(logf);
     brent.maximize(0.0);
     double guess_at_mode = brent.maximizing_x();
@@ -188,7 +192,8 @@ namespace BOOM {
       theta.concat(logit_w);
     }
 
-    KullbackLeiblerDivergence kl(logf, *this, lower_limit, upper_limit, guess_at_mode);
+    KullbackLeiblerDivergence kl(logf, *this, lower_limit, upper_limit,
+                                 guess_at_mode);
     PowellMinimizer powell(kl);
     powell.set_evaluation_limit(max_evals);  //
     powell.set_precision(precision);
@@ -229,24 +234,32 @@ namespace BOOM {
       int dimension = (theta.size() + 1) / 3;
       mu_ = ConstVectorView(theta, 0, dimension);
       sigma_ = exp(ConstVectorView(theta, dimension, dimension));
-      weights_ = inverse_logit(ConstVectorView(theta, 2*dimension, dimension - 1));
+      weights_ = inverse_logit(ConstVectorView(
+          theta, 2*dimension, dimension - 1));
       order_by_mu();
     }
     log_weights_ = log(weights_);
     check_sizes();
+    check_values();
   }
 
   void NormalMixtureApproximation::set(const Vector &mu,
                                        const Vector &sigma,
                                        const Vector &weights) {
-    if (mu.size() != sigma.size() ||
-       mu.size() != weights.size()) {
+    if ((mu.size() != sigma.size()) ||
+        (mu.size() != weights.size())) {
       report_error("mu, sigma, and weights must all be the same size in "
                    "NormalMixtureApproximation::set().");
     }
     mu_ = mu;
     sigma_ = sigma;
     weights_ = weights;
+    if (fabs(sum(weights) - 1.0) > 1e-6) {
+      ostringstream err;
+      err << "Weights must sum to 1.  They sum to " << sum(weights)
+          << " which is off by " << sum(weights) - 1.0 << "." << endl;
+      report_error(err.str());
+    }
     if (force_zero_mu_) {
       mu_ = 0;
       order_by_sigma();
@@ -254,6 +267,7 @@ namespace BOOM {
       order_by_mu();
     }
     log_weights_ = log(weights_);
+    check_values();
   }
 
   void NormalMixtureApproximation::set_order(
@@ -335,20 +349,86 @@ namespace BOOM {
           << "vectors have different sizes." << endl
           << "mu_           : " << mu_.size() << endl
           << "sigma_        : " << sigma_.size() << endl
-          << "weights_      : " << sigma_.size() << endl
-          << "log_weights_  : " << sigma_.size() << endl;
+          << "weights_      : " << weights_.size() << endl
+          << "log_weights_  : " << log_weights_.size() << endl;
       report_error(err.str());
     }
   }
 
-  ostream & NormalMixtureApproximation::print(ostream &out) const {
+  void NormalMixtureApproximation::check_values() {
+    int n = mu_.size();
+    for (int i = 0; i < n; ++i) {
+      if (!std::isfinite(mu_[i])
+          || !std::isfinite(sigma_[i])
+          || !std::isfinite(weights_[i])) {
+        ostringstream err;
+        err << "Error in NormalMixtureApproximation:  " << endl
+            << "Infinite or non-numeric values." << endl;
+        print(err);
+        report_error(err.str());
+      }
 
+      if (sigma_[i] <= 0) {
+        ostringstream err;
+        err << "Error in NormalMixtureApproximation: " << endl
+            << "Non-positive standard deviations." << endl;
+        print(err);
+        report_error(err.str());
+      }
+
+      if (weights_[i] <= 0 || weights_[i] > 1) {
+        ostringstream err;
+        err << "Error in NormalMixtureApproximation: " << endl
+            << "Weights must be positive and less than 1." << endl;
+        print(err);
+        report_error(err.str());
+      }
+    }
+    if (fabs(sum(weights_) - 1.0) > 1e-6) {
+      if (fabs(sum(weights_) - 1.0) < .001) {
+        weights_ /= sum(weights_);
+        log_weights_ = log(weights_);
+      } else {
+        ostringstream err;
+        err << "Error in NormalMixtureApproximation: " << endl
+            << "Weights must sum to 1.  They sum to " << sum(weights_)
+            << "." << endl
+            << "sum(weights_) - 1.0 = " << sum(weights_) - 1.0 << endl;
+        print(err);
+        report_error(err.str());
+      }
+    }
+  }
+
+  ostream & NormalMixtureApproximation::print(ostream &out) const {
     out << "mu:      " << std::setprecision(15) << mu_ << endl
         << "sigma:   " << sigma_ << endl
         << "weights: " << weights_ << endl
         << "kl:      " << kullback_leibler_ << endl
         << "evals:   " << number_of_function_evaluations_ << endl;
     return out;
+  }
+
+  Vector NormalMixtureApproximation::serialize() const {
+    Vector ans(1, sigma_.size());
+    ans.concat(weights_);
+    ans.concat(sigma_);
+    ans.concat(mu_);
+    return ans;
+  }
+
+  Vector::const_iterator NormalMixtureApproximation::deserialize(
+      Vector::const_iterator begin) {
+    int dimension = lround(*begin);
+    ++begin;
+    Vector weights(begin, begin + dimension);
+    begin += dimension;
+    Vector sigma(begin, begin + dimension);
+    begin += dimension;
+    Vector mu(begin, begin + dimension);
+    begin += dimension;
+    set(mu, sigma, weights);
+    return begin;
   }
 
   //======================================================================
@@ -463,6 +543,31 @@ namespace BOOM {
           target, mu, sigma, weights, precision, max_evals, stepsize);
       add(nu, approximation);
       return this->approximate(nu);
+    }
+  }
+
+  Vector NormalMixtureApproximationTable::serialize() const {
+    Vector ans;
+    if (index_.empty()) return ans;
+    for (size_t i = 0; i < index_.size(); ++i) {
+      ans.push_back(index_[i]);
+      ans.concat(approximations_[i].serialize());
+    }
+    return ans;
+  }
+
+  void NormalMixtureApproximationTable::deserialize(
+      const Vector &serialized_state) {
+    index_.clear();
+    approximations_.clear();
+    Vector::const_iterator b = serialized_state.begin();
+    Vector::const_iterator e = serialized_state.end();
+    while (b != e) {
+      int index = lround(*b); ++b;
+      NormalMixtureApproximation approximation(0);
+      b = approximation.deserialize(b);
+      index_.push_back(index);
+      approximations_.push_back(approximation);
     }
   }
 

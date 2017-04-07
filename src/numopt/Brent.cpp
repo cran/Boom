@@ -20,25 +20,24 @@
 #include <cmath>
 #include <limits>
 #include <numopt/Brent.hpp>
+#include <utility>
 
 namespace BOOM{
-  void bracket_minimum(ScalarTarget f, double *a, double *b);
-  double fminbr(double a, double b, ScalarTarget f, double tol);
+void bracket_minimum(const ScalarTarget& f, double* a, double* b);
+double fminbr(double a, double b, const ScalarTarget& f, double tol);
 
+BrentMinimizer::BrentMinimizer(ScalarTarget target)
+    : target_(std::move(target)), tolerance_(1e-5) {}
 
-  BrentMinimizer::BrentMinimizer(ScalarTarget target)
-      : target_(target), tolerance_(1e-5) {}
+void BrentMinimizer::minimize(double starting_value, double second_candidate) {
+  double a = starting_value;
+  double b = second_candidate;
+  if (b < a) std::swap(a, b);
 
-  void BrentMinimizer::minimize(
-      double starting_value, double second_candidate) {
-    double a = starting_value;
-    double b = second_candidate;
-    if (b < a) std::swap(a, b);
+  bracket_minimum(target_, &a, &b);
 
-    bracket_minimum(target_, &a, &b);
-
-    minimizing_x_ = fminbr(a, b, target_, tolerance_);
-    minimum_value_ = target_(minimizing_x_);
+  minimizing_x_ = fminbr(a, b, target_, tolerance_);
+  minimum_value_ = target_(minimizing_x_);
   }
 
   void BrentMinimizer::minimize(double starting_value){
@@ -83,7 +82,7 @@ inline int sign(double x) {
   return x > 0 ? 1 : -1;
 }
 
-void bracket_minimum(ScalarTarget f, double *a, double *b){
+void bracket_minimum(const ScalarTarget& f, double* a, double* b) {
   if(*a > *b) std::swap<double>(*a, *b);
 
   double fa = f(*a);
@@ -109,7 +108,7 @@ void bracket_minimum(ScalarTarget f, double *a, double *b){
 
 // The following code was obtained from netlib.org from the file
 // brent.shar.  I modified the function argument to be a
-// boost::function, and changed the function signature to ANSI syntax
+// std::function, and changed the function signature to ANSI syntax
 // (from K&R).
 /*************************************************************************
  *                          C math library
@@ -160,9 +159,7 @@ void bracket_minimum(ScalarTarget f, double *a, double *b){
  *
  *************************************************************************/
 
-double fminbr(double a,
-              double b,
-              boost::function<double(double)> f,
+double fminbr(double a, double b, const std::function<double(double)>& f,
               double tol) {
   double x,v,w;                         /* Abscissae, descr. see above  */
   double fx;                            /* f(x)                         */

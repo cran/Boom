@@ -4,11 +4,16 @@
 \name{gamma.prior}
 \title{Gamma prior distribution}
 \alias{GammaPrior}
+\alias{TruncatedGammaPrior}
 
 \description{Specifies gamma prior distribution.}
 
 \usage{
   GammaPrior(a = NULL, b = NULL, prior.mean = NULL, initial.value = NULL)
+  TruncatedGammaPrior(a = NULL, b = NULL, prior.mean = NULL,
+                      initial.value = NULL,
+                      lower.truncation.point = 0,
+                      upper.truncation.point = Inf)
 }
 
 \arguments{
@@ -17,6 +22,10 @@
   \item{prior.mean}{The mean the Gamma(a, b) distribution, which is a/b.}
   \item{initial.value}{The initial value in the MCMC algorithm of the
     variable being modeled.}
+  \item{lower.truncation.point}{The lower limit of support for the
+    truncated gamma distribution.}
+  \item{upper.truncation.point}{The upper limit of support for the
+    truncated gamma distribution.}
 }
 
 \details{
@@ -34,7 +43,14 @@
 
   The gamma distribution is the conjugate prior for the reciprocal of a
   Guassian variance, but \code{\link{SdPrior}} should usually be used in
-  that case.  }
+  that case.
+
+  A TruncatedGammaPrior is a GammaPrior with support truncated to the
+  interval \code{(lower.truncation.point, upper.truncation.point)}.
+
+  If an object specifically needs a \code{GammaPrior} you typically
+  cannot pass a \code{TruncatedGammaPrior}.
+}
 
 \references{
   Gelman, Carlin, Stern, Rubin (2003), "Bayesian Data Analysis", Chapman

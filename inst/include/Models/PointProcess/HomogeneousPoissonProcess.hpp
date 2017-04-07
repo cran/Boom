@@ -25,6 +25,7 @@
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/Policies/SufstatDataPolicy.hpp>
 #include <cpputil/DateTime.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -96,7 +97,8 @@ namespace BOOM{
     PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator())const override;
+        std::function<Data*()> mark_generator
+           = NullDataGenerator())const override;
   };
 
 }

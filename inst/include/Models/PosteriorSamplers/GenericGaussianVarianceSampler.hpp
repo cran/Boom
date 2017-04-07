@@ -69,6 +69,9 @@ namespace BOOM {
     // the mode of 1/theta is b / (a + 1).
     double posterior_mode(double data_df, double data_ss) const;
 
+    // Returns the log of the prior on the scale of sigma^2.
+    double log_prior(double sigsq) const;
+
    private:
     Ptr<GammaModelBase> prior_;
     double sigma_max_;

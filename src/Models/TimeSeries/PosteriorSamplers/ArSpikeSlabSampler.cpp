@@ -54,7 +54,7 @@ namespace BOOM {
       return negative_infinity();
     }
     return spike_slab_sampler_.logpri() +
-        residual_precision_prior_->logp(1.0 / model_->sigsq());
+        sigsq_sampler_.log_prior(model_->sigsq());
   }
 
   void ArSpikeSlabSampler::truncate_support(bool truncate) {

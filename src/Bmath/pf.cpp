@@ -66,7 +66,7 @@ double pf(double x, double n1, double n2, int lower_tail, int log_p)
     x = pbeta(n2 / (n2 + n1 * x), n2 / 2.0, n1 / 2.0,
               !lower_tail, log_p);
 
-    return ML_VALID(x) ? x : numeric_limits<double>::quiet_NaN();
+    return ML_VALID(x) ? x : std::numeric_limits<double>::quiet_NaN();
 }
 }
 

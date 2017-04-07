@@ -36,7 +36,7 @@ namespace BOOM{
   void MPP::add_params(Ptr<Params> p){t_.push_back(p);}
   void MPP::clear(){t_.clear();}
 
-  ParamVector MPP::t(){return t_;}
-  const ParamVector MPP::t()const{return t_;}
+  ParamVector MPP::parameter_vector(){return t_;}
+  const ParamVector MPP::parameter_vector()const{return t_;}
 
 }

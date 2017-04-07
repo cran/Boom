@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005-2015 Steven L. Scott
+  Copyright (C) 2005-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ namespace BOOM {
 
   namespace {
     typedef StateSpaceStudentPosteriorSampler SSSPS;
-    typedef StateSpace::VarianceAugmentedRegressionData AugmentedData;
+    typedef StateSpace::AugmentedStudentRegressionData AugmentedData;
   }
 
   SSSPS::StateSpaceStudentPosteriorSampler(
@@ -61,39 +61,60 @@ namespace BOOM {
       Ptr<AugmentedData> dp = data[t];
       double state_contribution = model_->observation_matrix(t).dot(
           model_->state(t));
-      double regression_contribution =
-          model_->observation_model()->predict(dp->x());
-      double weight = data_imputer_.impute(
-          rng(),
-          dp->y() - regression_contribution - state_contribution,
-          model_->observation_model()->sigma(),
-          model_->observation_model()->nu());
-      dp->set_weight(weight);
+      for (int j = 0; j < dp->sample_size(); ++j) {
+        const RegressionData &observation(dp->regression_data(j));
+        double regression_contribution =
+            model_->observation_model()->predict(observation.x());
+        double weight = data_imputer_.impute(
+            rng(),
+            observation.y() - regression_contribution - state_contribution,
+            model_->observation_model()->sigma(),
+            model_->observation_model()->nu());
+        dp->set_weight(weight, j);
+      }
     }
   }
 
   void SSSPS::clear_complete_data_sufficient_statistics() {
     observation_model_sampler_->clear_complete_data_sufficient_statistics();
-    if (model_->observation_model()->dat().size() != model_->time_dimension()) {
+
+    // The observation model needs access to the actual data.  Regression
+    // coefficients and residual variance are drawn based on complete data
+    // sufficient statistics, but the tail thickness parameter is drawn
+    // conditional on the other parameters using a likelihood evaluation that
+    // requires a loop over the data.
+    if (model_->observation_model()->dat().size() != model_->sample_size()) {
       model_->observation_model()->clear_data();
+      subordinate_data_.clear();
       for (int i = 0; i < model_->time_dimension(); ++i) {
+        std::vector<Ptr<RegressionData>> local_subordinate_data;
         Ptr<AugmentedData> real_data_point = model_->dat()[i];
-        NEW(RegressionData, subordinate_data)(
-            new DoubleData(real_data_point->y()),
-            real_data_point->Xptr());
-        model_->observation_model()->add_data(subordinate_data);
+        int local_sample_size = real_data_point->sample_size();
+        for (int j = 0; j < local_sample_size; ++j) {
+          const RegressionData &real_observation(
+              real_data_point->regression_data(j));
+          NEW(RegressionData, subordinate_data)(
+              new DoubleData(real_observation.y()),
+              real_observation.Xptr());
+          local_subordinate_data.push_back(subordinate_data);
+          model_->observation_model()->add_data(subordinate_data);
+        }
+        subordinate_data_.push_back(local_subordinate_data);
       }
     }
   }
 
   void SSSPS::update_complete_data_sufficient_statistics(int t) {
     Ptr<AugmentedData> dp = model_->dat()[t];
-    double time_series_residual = dp->y() - dp->offset();
-    observation_model_sampler_->update_complete_data_sufficient_statistics(
-        time_series_residual,
-        dp->x(),
-        dp->weight());
-    model_->observation_model()->dat()[t]->set_y(time_series_residual);
+    for (int i = 0; i < dp->sample_size(); ++i) {
+      const RegressionData &observation(dp->regression_data(i));
+      double time_series_residual = observation.y() - dp->state_model_offset();
+      observation_model_sampler_->update_complete_data_sufficient_statistics(
+          time_series_residual,
+          observation.x(),
+          dp->weight(i));
+      subordinate_data_[t][i]->set_y(time_series_residual);
+    }
   }
 
 }  // namespace BOOM

@@ -24,8 +24,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <boost/bind.hpp>
-
 namespace BOOM{
   typedef MultinomialSuf MS;
   typedef CategoricalData CD;
@@ -164,7 +162,7 @@ namespace BOOM{
     return ParamPolicy::prm();}
 
   void MM::set_observer(){
-    Pi_prm()->add_observer(boost::bind(&MM::observe_logp, this));
+    Pi_prm()->add_observer([this](){this->observe_logp();});
   }
 
   uint MM::nlevels()const{return pi().size();}

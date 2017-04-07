@@ -30,13 +30,10 @@
 #include <Models/EmMixtureComponent.hpp>
 
 //======================================================================
-namespace BOOM{
-  class GammaSuf: public SufstatDetails<DoubleData>{
+namespace BOOM {
+  class GammaSuf: public SufstatDetails<DoubleData> {
   public:
-
-    // constructor
     GammaSuf();
-    GammaSuf(const GammaSuf &);
     GammaSuf *clone() const override;
 
     void set(double sum, double sumlog, double n);
@@ -48,37 +45,49 @@ namespace BOOM{
     // Add the given sufficient components to the sufficient statistics.
     void increment(double n, double sumy, double sumlog);
 
-    double sum()const;
-    double sumlog()const;
-    double n()const;
-    ostream & display(ostream &out)const;
+    double sum() const;
+    double sumlog() const;
+    double n() const;
+    ostream & display(ostream &out) const;
 
     virtual void combine(Ptr<GammaSuf> s);
     virtual void combine(const GammaSuf & s);
     GammaSuf * abstract_combine(Sufstat *s) override;
-    Vector vectorize(bool minimal=true)const override;
+    Vector vectorize(bool minimal=true) const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                       bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
-    ostream &print(ostream &out)const override;
+                                       bool minimal=true) override;
+    ostream &print(ostream &out) const override;
+
   private:
-    double sum_, sumlog_, n_;
+    // Sum of the observations.
+    double sum_;
+
+    // Sum of the logs of the observations.
+    double sumlog_;
+
+    // Number of observations.
+    double n_;
   };
+
   //======================================================================
   class GammaModelBase // Gamma Model, Chi-Square Model, Scaled Chi-Square
     : public SufstatDataPolicy<DoubleData, GammaSuf>,
       public DiffDoubleModel,
+      public LocationScaleDoubleModel,
       public NumOptModel,
       public EmMixtureComponent
   {
   public:
     GammaModelBase();
-    GammaModelBase(const GammaModelBase &);
-    GammaModelBase * clone()const override =0;
+    GammaModelBase * clone() const override = 0;
 
-    virtual double alpha()const=0;
-    virtual double beta()const=0;
+    virtual double alpha() const = 0;
+    virtual double beta() const = 0;
+    double mean() const override;
+    double variance() const override;
+
     void add_mixture_data(Ptr<Data>, double prob) override;
     double pdf(Ptr<Data> dp, bool logscale) const override;
     double pdf(const Data * dp, bool logscale) const override;
@@ -102,28 +111,38 @@ namespace BOOM{
     // simply include a third argument that is an int.
     GammaModel(double shape, double mean, int);
 
-    GammaModel(const GammaModel &m);
     GammaModel *clone() const override;
 
     Ptr<UnivParams> Alpha_prm();
     Ptr<UnivParams> Beta_prm();
-    const Ptr<UnivParams> Alpha_prm()const;
-    const Ptr<UnivParams> Beta_prm()const;
+    const Ptr<UnivParams> Alpha_prm() const;
+    const Ptr<UnivParams> Beta_prm() const;
 
-    double alpha()const override;
-    double beta()const override;
+    double alpha() const override;
+    double beta() const override;
     void set_alpha(double);
     void set_beta(double);
-    void set_params(double a, double b);
 
-    double mean()const;
+    // Three different ways to set parameters, depending on the
+    // parameterization.
+    void set_shape_and_scale(double alpha, double beta);
+    void set_shape_and_mean(double alpha, double mean);
+    void set_mean_and_scale(double mean, double beta);
+
+    double mean() const override;
 
     // probability calculations
-    double Loglike(const Vector &ab, Vector &g, Matrix &h, uint lev) const override;
+    double Loglike(const Vector &shape_scale,
+                   Vector &gradient,
+                   Matrix &hessian,
+                   uint number_of_derivatives) const override;
     double loglikelihood(double a, double b) const;
-    double loglikelihood_full(const Vector &ab, Vector *g, Matrix *h)const;
+    double loglikelihood(const Vector &shape_scale,
+                         Vector *gradient,
+                         Matrix *hessian) const;
     void mle() override;
   };
 
-}
+}  // namespace BOOM
+
 #endif  // GAMMA_MODEL_H

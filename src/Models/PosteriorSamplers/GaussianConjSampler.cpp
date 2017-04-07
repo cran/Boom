@@ -35,10 +35,7 @@ namespace BOOM{
   {}
 
   double GCS::logpri()const{
-    double ivar = 1.0/mod_->sigsq();
-    double ans = siginv_->logp(ivar);
-    ans += mu_->logp(mod_->mu());
-    return ans;
+    return sigsq_sampler_.log_prior(mod_->sigsq()) + mu_->logp(mod_->mu());
   }
 
   double GCS::mu()const{return mu_->mu();}

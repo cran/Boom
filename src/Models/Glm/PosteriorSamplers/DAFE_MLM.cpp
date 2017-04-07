@@ -308,11 +308,11 @@ namespace BOOM{
   }
 
   struct Logp{
-    Logp(boost::shared_ptr<DafeLoglike> L, Ptr<MvnModel> P)
+    Logp(std::shared_ptr<DafeLoglike> L, Ptr<MvnModel> P)
       : loglike(L), pri(P){}
     double operator()(const Vector &x)const{
       return (*loglike)(x) + pri->logp(x);}
-    boost::shared_ptr<DafeLoglike> loglike;
+    std::shared_ptr<DafeLoglike> loglike;
     Ptr<MvnModel> pri;
   };
 
@@ -327,7 +327,7 @@ namespace BOOM{
   {
     uint M = mod->Nchoices();
     for(uint m=0; m<M; ++m){
-      boost::shared_ptr<DafeLoglike> loglike(new DafeLoglike(mlm_,m));
+      std::shared_ptr<DafeLoglike> loglike(new DafeLoglike(mlm_,m));
       Logp logpost(loglike, subject_pri());
       Ptr<MH> sam = new MH(logpost,subject_proposals_[m]);
       subject_samplers_.push_back(sam);
@@ -335,7 +335,8 @@ namespace BOOM{
 
     uint pch = mlm_->choice_nvars();
     if(pch>0){
-      boost::shared_ptr<DafeLoglike> choice_loglike(new DafeLoglike(mlm_,0, true));
+      std::shared_ptr<DafeLoglike> choice_loglike(
+          new DafeLoglike(mlm_,0, true));
       Logp choice_logpost(choice_loglike, choice_pri());
       choice_sampler_ = new MH(choice_logpost, choice_proposal_);
     }

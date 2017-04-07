@@ -11,9 +11,15 @@
   by a probability model that does not have a conjugate prior.
 }
 
-\seealso{ \code{\link{UniformPrior}}, \code{\link{BetaPrior}},
-  \code{\link{NormalPrior}}, \code{\link{LognormalPrior}}, and
-  \code{\link{GammaPrior}}.  }
+\seealso{
+  \code{\link{BetaPrior}},
+  \code{\link{GammaPrior}},
+  \code{\link{LognormalPrior}},
+  \code{\link{NormalPrior}},
+  \code{\link{SdPrior}},
+  \code{\link{TruncatedGammaPrior}},
+  and \code{\link{UniformPrior}}.
+}
 
 \author{
   Steven L. Scott \email{stevescott@google.com}

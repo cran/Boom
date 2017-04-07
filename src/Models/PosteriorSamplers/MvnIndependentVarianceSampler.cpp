@@ -78,7 +78,7 @@ namespace BOOM {
     double ans = 0;
     for (int i = 0; i < priors_.size(); ++i) {
       double siginv = model_->siginv()(i, i);
-      ans += priors_[i]->logp(siginv);
+      ans += sigsq_samplers_[i].log_prior(1.0 / siginv);
     }
     return ans;
   }

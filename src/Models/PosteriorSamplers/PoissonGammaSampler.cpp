@@ -19,6 +19,7 @@
 #include <Models/PoissonModel.hpp>
 #include <Models/GammaModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -45,8 +46,16 @@ namespace BOOM{
     double sum = pois->suf()->sum();
     double a = sum + gam->alpha();
     double b = n + gam->beta();
-    double ans = rgamma_mt(rng(), a,b);
-    pois->set_lam(ans);
+    int number_of_attempts = 0;
+    double lambda;
+    do {
+      if (++number_of_attempts > 100) {
+        report_error("Too many attempts trying to draw lambda in "
+                     "PoissonGammaSampler::draw.");
+      }
+      lambda = rgamma_mt(rng(), a, b);
+    } while (!std::isfinite(lambda) ||  lambda <= 0.0);
+    pois->set_lam(lambda);
   }
 
   void PoissonGammaSampler::find_posterior_mode(double){
@@ -55,7 +64,7 @@ namespace BOOM{
     double a = sum + gam->alpha();
     double b = n + gam->beta();
     double mode = (a-1)/b;
-    if(mode<0) mode=0;
+    if(mode < 0) mode=0;
     pois->set_lam(mode);
   }
 }  // namespace BOOM

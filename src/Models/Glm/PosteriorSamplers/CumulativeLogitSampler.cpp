@@ -17,7 +17,7 @@
 */
 
 #include <Models/Glm/PosteriorSamplers/CumulativeLogitSampler.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <Samplers/ScalarSliceSampler.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
@@ -95,7 +95,7 @@ namespace BOOM{
 
   class PartialTarget : public ScalarTargetFun{
    public:
-    typedef boost::function<double(const Vector &)> TF;
+    typedef std::function<double(const Vector &)> TF;
     PartialTarget(const TF &f, uint pos, const Vector &v)
         : f_(f),
           pos_(pos),

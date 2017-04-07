@@ -20,8 +20,7 @@
 #include <Models/SufstatAbstractCombineImpl.hpp>
 #include <iomanip>
 #include <distributions.hpp>
-
-using std::setw;
+#include <cpputil/report_error.hpp>
 
 namespace BOOM{
 
@@ -422,7 +421,7 @@ namespace BOOM{
   PointProcess WP::simulate(
       const DateTime &t0,
       const DateTime &t1,
-      boost::function<Data*()> mark_generator)const{
+      std::function<Data*()> mark_generator)const{
     PointProcess ans(t0, t1);
     double max_rate = 0;
     for(int d = 0; d < 7; ++d){

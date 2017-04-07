@@ -1,7 +1,7 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 // Author: stevescott@google.com (Steve Scott)
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include <cpputil/report_error.hpp>
 
@@ -146,7 +146,7 @@ namespace BOOM {
         SEXP mixture_component,
         int state_number,
         RListIoManager *io_manager) {
-      boost::scoped_ptr<MixtureComponentBuilder> builder(
+      std::unique_ptr<MixtureComponentBuilder> builder(
           MixtureComponentBuilder::Create(mixture_component));
       builder->set_state_number(state_number);
       return builder->Build(mixture_component, io_manager);
@@ -159,7 +159,7 @@ namespace BOOM {
         SEXP mixture_component,
         const std::string & component_name_prefix,
         RListIoManager *io_manager) {
-      boost::scoped_ptr<MixtureComponentBuilder> builder(
+      std::unique_ptr<MixtureComponentBuilder> builder(
           MixtureComponentBuilder::Create(mixture_component));
       builder->set_component_name_prefix(component_name_prefix);
       return builder->Build(mixture_component, io_manager);
@@ -329,6 +329,7 @@ namespace BOOM {
         if (prior.max_flips() > 0) {
           sampler->limit_model_selection(prior.max_flips());
         }
+        sampler->reassign_data_each_time(true);
         model->set_method(sampler);
         io_manager->add_list_element(new GlmCoefsListElement(
             model->coef_prm(), create_name("beta")));
@@ -492,7 +493,7 @@ namespace BOOM {
         NEW(MultinomialDirichletSampler, sampler)(model.get(), prior);
         model->set_method(sampler);
 
-        io_manager->add_list_element(new NamedVectorListElement(
+        io_manager->add_list_element(new VectorListElement(
             model->Pi_prm(),
             create_name("prob"),
             StringVector(getListElement(rmixture_component, "levels"))));
@@ -528,7 +529,7 @@ namespace BOOM {
         transition_probability_list_element->set_col_names(factor_names);
         io_manager->add_list_element(transition_probability_list_element);
 
-        io_manager->add_list_element(new NamedVectorListElement(
+        io_manager->add_list_element(new VectorListElement(
             model->Pi0_prm(),
             create_name("initial.distribution"),
             factor_names));

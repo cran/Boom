@@ -16,15 +16,17 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
+#include <functional>
+
 #include <Models/IRT/DafePcr.hpp>
-#include <cpputil/lse.hpp> // for lse and lse2
-#include <cpputil/report_error.hpp>
+#include <Models/IRT/Item.hpp>
 #include <Models/IRT/PartialCreditModel.hpp>
 #include <Models/IRT/Subject.hpp>
-#include <Models/IRT/Item.hpp>
+
+#include <cpputil/lse.hpp> // for lse and lse2
+#include <cpputil/report_error.hpp>
+
 #include <distributions.hpp>
-#include <boost/bind.hpp>
-#include <stdexcept>
 
 namespace BOOM{
   namespace IRT{
@@ -44,12 +46,12 @@ namespace BOOM{
     }
     //------------------------------------------------------------
     void IMP::setup_latent_data(Ptr<PCR> mod){
-      const SubjectSet &subjects(mod->subjects());
-      for_each(subjects.begin(), subjects.end(),
-           boost::bind(&IMP::setup_data_1, this, mod, _1));
+      for (const auto &subject : mod->subjects()) {
+        setup_data_1(mod, subject);
+      }
     }
     //------------------------------------------------------------
-    inline void mod_not_found(Ptr<PCR> mod, Ptr<Subject> s){
+    inline void mod_not_found(const Ptr<PCR> &mod, const Ptr<Subject> &s) {
       ostringstream msg;
       msg << "item " << mod->id() << " not found  in subject "
       << s->id() << endl;
@@ -84,13 +86,16 @@ namespace BOOM{
     void IMP::set_u(Response r, const Vector &u){latent_data[r]=u; }
     //------------------------------------------------------------
     void IMP::draw(){
-      std::for_each(items.begin(), items.end(),
-            boost::bind(&IMP::draw_item_u, this, _1)); }
+      for (auto &item : items) {
+        draw_item_u(item);
+      }
+    }
     //------------------------------------------------------------
     void IMP::draw_item_u(Ptr<PCR> mod){
       const SubjectSet & subjects(mod->subjects());
-      for_each(subjects.begin(), subjects.end(),
-           boost::bind(&IMP::draw_one, this, mod, _1));
+      for (auto & subject : subjects) {
+        draw_one(mod, subject);
+      }
     }
     //------------------------------------------------------------
     void IMP::draw_one(Ptr<PCR> mod, Ptr<Subject> s){

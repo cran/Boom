@@ -156,6 +156,12 @@ namespace BOOM{
                           Matrix &Hessian,
                           int nd) const;
 
+    double log_likelihood() const override {
+      Vector g;
+      Matrix h;
+      return Loglike(beta(), g, h, 0);
+    }
+
     // Compute beta^Tx for the choice and subject portions of X.
      double predict_choice(const ChoiceData &, uint m)const;
      double predict_subject(const ChoiceData &, uint m)const;

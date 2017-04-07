@@ -27,10 +27,6 @@ namespace BOOM{
 
   ConstArrayBase::ConstArrayBase() {}
 
-  ConstArrayBase::ConstArrayBase(const ConstArrayBase &rhs)
-      : dims_(rhs.dims_),
-        strides_(rhs.strides_)
-  {}
 
   ConstArrayBase::ConstArrayBase(const std::vector<int> &dims)
       : dims_(dims)
@@ -186,10 +182,9 @@ namespace BOOM{
     //   host_strides:  The strides of the input array.
     template <class RETURN_TYPE, class INPUT_TYPE>
     RETURN_TYPE template_vector_slice_array(
-        INPUT_TYPE host_data,
-        const std::vector<int> &index,
-        const std::vector<int> host_dims,
-        const std::vector<int> host_strides) {
+        INPUT_TYPE host_data, const std::vector<int> &index,
+        const std::vector<int> &host_dims,
+        const std::vector<int> &host_strides) {
       int ndim = host_dims.size();
       check_slice_size(index, host_dims);
       std::vector<int> initial_position(ndim);
@@ -216,23 +211,21 @@ namespace BOOM{
     // Syntactic sugar for getting ConstVectorView slices of const
     // arrays or views.
     inline ConstVectorView vector_slice_const_array(
-        const double *host_data,
-        const std::vector<int> &index,
-        const std::vector<int> host_dims,
-        const std::vector<int> host_strides) {
+        const double *host_data, const std::vector<int> &index,
+        const std::vector<int> &host_dims,
+        const std::vector<int> &host_strides) {
       return template_vector_slice_array<ConstVectorView, const double *>(
           host_data, index, host_dims, host_strides);
     }
 
     // Syntactic sugar for getting VectorView slices of non-const
     // arrays or views.
-    inline VectorView vector_slice_array(
-          double *host_data,
-          const std::vector<int> &index,
-          const std::vector<int> host_dims,
-          const std::vector<int> host_strides) {
-        return template_vector_slice_array<VectorView, double *>(
-            host_data, index, host_dims, host_strides);
+    inline VectorView vector_slice_array(double *host_data,
+                                         const std::vector<int> &index,
+                                         const std::vector<int> &host_dims,
+                                         const std::vector<int> &host_strides) {
+      return template_vector_slice_array<VectorView, double *>(
+          host_data, index, host_dims, host_strides);
     }
 
   }  // namespace
@@ -313,6 +306,29 @@ namespace BOOM{
   double ConstArrayBase::operator()(
       int x1, int x2, int x3, int x4, int x5, int x6) const {
     return (*this)[index6(x1, x2, x3, x4, x5, x6)]; }
+
+  Matrix ConstArrayBase::to_matrix() const {
+    if (dims_.size() > 2) {
+      report_error("to_matrix() called from array with 3 or more dimensions.");
+    } else if (dims_.size() == 2) {
+      Matrix ans(dims_[0], dims_[1]);
+      for (int i = 0; i < dims_[0]; ++i) {
+        for (int j = 0; j < dims_[1]; ++j) {
+          ans(i, j) = (*this)(i, j);
+        }
+      }
+      return ans;
+    } else if (dims_.size() == 1) {
+      Matrix ans(dims_[0], 1);
+      for (int i = 0; i < dims_[0]; ++i){
+        ans(i, 0) = (*this)(i);
+      }
+      return ans;
+    } else {
+      report_error("to_matrix() called on an array with empty dims_.");
+    }
+    return Matrix(0,0);  // Never get here.
+  }
 
   //======================================================================
   ArrayBase::ArrayBase() {}
@@ -621,6 +637,16 @@ namespace BOOM{
     }
   }
 
+  Array::Array(const std::vector<int> &dims, const double *data)
+      : ArrayBase(dims)
+  {
+    size_t length = 1;
+    for (int i = 0; i < dims.size(); ++i) {
+      length *= dims[i];
+    }
+    data_.assign(data, data + length);
+  }
+
   int ConstArrayBase::product(const std::vector<int> &dims) {
     int ans = 1;
     for(int i = 0; i < dims.size(); ++i) {
@@ -633,14 +659,6 @@ namespace BOOM{
     for(iterator it = begin(); it != end(); ++it) {
       *it = runif();
     }
-  }
-
-  Array & Array::operator=(const Array &rhs) {
-    if(&rhs == this) return *this;
-    reset_dims(rhs.dim());
-    reset_strides(rhs.strides());
-    data_ = rhs.data_;
-    return *this;
   }
 
   ArrayView Array::slice(const std::vector<int> &index) {
@@ -679,9 +697,9 @@ namespace BOOM{
     ConstArrayView view(*this);
     return view.vector_slice(index);
   }
-  ConstVectorView Array::vector_slice(int x1)const {
+  ConstVectorView Array::vector_slice(int x1) const {
     return this->vector_slice(index1(x1)); }
-  ConstVectorView Array::vector_slice(int x1, int x2)const {
+  ConstVectorView Array::vector_slice(int x1, int x2) const {
     return this->vector_slice(index2(x1, x2)); }
   ConstVectorView Array::vector_slice(int x1, int x2, int x3) const {
     return this->vector_slice(index3(x1, x2, x3)); }

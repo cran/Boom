@@ -24,7 +24,6 @@
 #include <Models/Policies/SufstatDataPolicy.hpp>
 #include <Models/Policies/ParamPolicy_2.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
-#include <boost/bind.hpp>
 
 namespace BOOM{
 

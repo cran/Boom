@@ -29,7 +29,7 @@ SdPrior <- function(sigma.guess,
               initial.value = initial.value,
               fixed = fixed,
               upper.limit = upper.limit)
-  class(ans) <- c("SdPrior", "Prior")
+  class(ans) <- c("SdPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
 
@@ -71,7 +71,8 @@ Ar1CoefficientPrior <- function(mu = 0,
   return(ans)
 }
 
-BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL) {
+BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL,
+                      initial.value = NULL) {
   ## Returns an object of class "BetaPrior", which is a list
   ## containing the parameters of a beta distribution.  The prior can
   ## either be given in terms of 'a' and 'b', or it can be given in
@@ -86,13 +87,20 @@ BetaPrior <- function(a = 1, b = 1, mean = NULL, sample.size = NULL) {
     b <- (1 - mean) * sample.size
   }
 
-  stopifnot(is.numeric(a))
-  stopifnot(is.numeric(b))
-  stopifnot(length(a) == 1)
-  stopifnot(length(b) == 1)
-  stopifnot(a > 0)
-  stopifnot(b > 0)
-  ans <- list(a = a, b = b);
+  stopifnot(is.numeric(a),
+            length(a) == 1,
+            a > 0)
+  stopifnot(is.numeric(b),
+            length(b) == 1,
+            b > 0)
+  if (is.null(initial.value)) {
+    initial.value <- a / (a + b)
+  }
+  stopifnot(is.numeric(initial.value),
+            length(initial.value) == 1,
+            initial.value > 0,
+            initial.value < 1);
+  ans <- list(a = a, b = b, initial.value = initial.value)
   class(ans) <- c("BetaPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
@@ -104,15 +112,19 @@ UniformPrior <- function(lo = 0, hi = 1, initial.value = NULL) {
   ##   hi:  The upper limit of prior support.
   ## Returns:
   ##   An object of class UniformPrior.
-  stopifnot(is.numeric(lo))
-  stopifnot(is.numeric(hi))
-  stopifnot(length(lo) == 1)
-  stopifnot(length(hi) == 1)
-  stopifnot(lo <= hi);
+  stopifnot(is.numeric(lo),
+            length(lo) == 1)
+  stopifnot(is.numeric(hi),
+            length(lo) == 1,
+            lo <= hi)
   if (is.null(initial.value)) {
     initial.value <- .5 * (lo + hi)
   }
-  ans <- list(lo = lo, hi = hi)
+  stopifnot(is.numeric(initial.value),
+            length(initial.value) == 1,
+            initial.value >= lo,
+            initial.value <= hi)
+  ans <- list(lo = lo, hi = hi, initial.value = initial.value)
   class(ans) <- c("UniformPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
@@ -155,6 +167,45 @@ GammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL,
   class(ans) <- c("GammaPrior", "DiffDoubleModel", "DoubleModel", "Prior")
   return(ans)
 }
+
+TruncatedGammaPrior <- function(a = NULL, b = NULL, prior.mean = NULL,
+                                initial.value = NULL,
+                                lower.truncation.point = 0,
+                                upper.truncation.point = Inf) {
+  ## A Gamma distribution with parameter matching 'GammaPrior' but
+  ## with support truncated to between lower.truncation.point and
+  ## upper.truncation.point.
+  ans <- GammaPrior(a, b, prior.mean, initial.value)
+  stopifnot(is.numeric(lower.truncation.point),
+            length(lower.truncation.point) == 1)
+  stopifnot(is.numeric(upper.truncation.point),
+            length(upper.truncation.point) == 1,
+            upper.truncation.point > lower.truncation.point)
+  ans$lower.truncation.point <- lower.truncation.point
+  ans$upper.truncation.point <- upper.truncation.point
+  if (!is.null(initial.value) && (
+      initial.value < lower.truncation.point ||
+          initial.value > upper.truncation.point)) {
+    stop("Initial value must be between the lower and upper truncation points.")
+  } else if (ans$initial.value < lower.truncation.point
+             || ans$initial.value > upper.truncation.point) {
+    if (is.finite(upper.truncation.point)) {
+      warning("Initial value for TruncatedGammaPrior is outside the ",
+              "supported range. Changing it to the midpoint of the ",
+              "support region.")
+      ans$initial.value <- .5 * (lower.truncation.point +
+                                     upper.truncation.point)
+    } else {
+      warning("Initial value for TruncatedGammaPrior is outside the ",
+              "supported range. Placing it above the lower bound.")
+      ans$initial.value <- lower.truncation.point + 1
+    }
+  }
+  class(ans) <- c("TruncatedGammaPrior", "DiffDoubleModel",
+                  "DoubleModel", "Prior")
+  return(ans)
+}
+
 
 LognormalPrior <- function(mu = 0.0, sigma = 1.0, initial.value = NULL) {
   ## A lognormal distribution, where log(y) ~ N(mu, sigma).  The mean
@@ -348,6 +399,12 @@ NormalInverseWishartPrior <- function(
   stopifnot(is.vector(mean.guess))
   stopifnot(is.matrix(variance.guess))
   stopifnot(all(dim(variance.guess) == length(mean.guess)))
+  stopifnot(is.numeric(mean.guess.weight),
+            length(mean.guess.weight) == 1,
+            mean.guess.weight > 0)
+  stopifnot(is.numeric(variance.guess.weight),
+            length(variance.guess.weight) == 1,
+            variance.guess.weight > 0)
 
   ans <- list(mean.guess = mean.guess,
               mean.guess.weight = mean.guess.weight,
@@ -402,6 +459,67 @@ MvnIndependentSigmaPrior <- function(mvn.prior, sd.prior.list) {
   ans <- list(mu.prior = mvn.prior,
               sigma.prior = sd.prior.list)
   class(ans) <- c("MvnIndependentSigmaPrior", "Prior")
+  return(ans)
+}
+
+RegressionCoefficientConjugatePrior <- function(
+    mean,
+    sample.size,
+    additional.prior.precision = numeric(0),
+    diagonal.weight = 0) {
+  ## A conditional prior for the coefficients (beta) in a linear
+  ## regression model.  The prior is conditional on the residual
+  ## variance sigma^2, the sample size n, and the design matrix X.
+  ## The prior is
+  ##
+  ##      beta | sigsq, X ~ N(b, sigsq * (Lambda^{-1} + V))
+  ##
+  ## where V^{-1} = ((1 - w) * XTX + w * Diag(XTX)) * kappa / n.
+  ##
+  ## Args:
+  ##   mean:  The mean of the prior distribution, denoted 'b' above.
+  ##   sample.size: The value denoted 'kappa' above.  This can be
+  ##     interpreted as a number of observations worth of weight to be
+  ##     assigned to 'b' in the posterior distribution.
+  ##   additional.prior.precision: A vector of non-negative numbers
+  ##     representing the diagonal matrix Lambda^{-1} above.  Positive
+  ##     values for additional.prior.precision will ensure the
+  ##     distribution is proper even if the regression model has no
+  ##     data.  If all columns of the design matrix have positive
+  ##     variance then additional.prior.precision can safely be set to
+  ##     zero.  A zero-length numeric vector is a slightly more
+  ##     efficient equivalent to a vector of all zeros.
+  ##   diagonal.weight: The weight given to the diagonal when XTX is
+  ##     averaged with its diagonal.  The purpose of diagonal.weight
+  ##     is to keep the prior distribution proper even if X is less
+  ##     than full rank.  If the design matrix is full rank then
+  ##     diagonal.weight can be set to zero.
+  ##
+  ## Details:
+  ##   The prior distribution also depends on the cross product matrix
+  ##   XTX and the sample size n, which are not arguments to this
+  ##   function.  It is expected that the underlying C++ code will get
+  ##   those quantities elsewhere (presumably from the regression
+  ##   modeled by this prior).
+  stopifnot(is.numeric(mean))
+  stopifnot(is.numeric(sample.size),
+            length(sample.size) == 1,
+            sample.size > 0)
+  stopifnot(is.numeric(additional.prior.precision),
+            length(additional.prior.precision) == length(mean)
+            || length(additional.prior.precision) == 0)
+  if (length(additional.prior.precision) > 0) {
+    stopifnot(all(additional.prior.precision >= 0))
+  }
+  stopifnot(is.numeric(diagonal.weight),
+            length(diagonal.weight) == 1,
+            diagonal.weight >= 0,
+            diagonal.weight <= 1)
+  ans <- list(mean = mean,
+              sample.size = sample.size,
+              additional.prior.precision = additional.prior.precision,
+              diagonal.weight = diagonal.weight)
+  class(ans) <- c("RegressionCoefficientConjugatePrior")
   return(ans)
 }
 

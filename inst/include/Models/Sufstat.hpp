@@ -43,6 +43,7 @@ namespace BOOM{
     virtual Vector::const_iterator unvectorize(const Vector &v,
                                             bool minimal=true)=0;
     virtual std::ostream & print(std::ostream &)const = 0;
+    std::string print_to_string() const;
   private:
     RefCounted rc_;
     void up_count(){rc_.up_count();}

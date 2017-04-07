@@ -28,31 +28,97 @@ namespace BOOM {
     typedef StateSpace::AugmentedBinomialRegressionData ABRD;
   }
 
+  ABRD::AugmentedBinomialRegressionData()
+      : state_model_offset_(0.0)
+  {}
+
   // Initial values for latent data are arbitrary, but must be legal
   // values.
   ABRD::AugmentedBinomialRegressionData(
       double y, double n, const Vector &x)
-      : BinomialRegressionData(y, n, x),
-        latent_continuous_value_(0.0),
-        variance_(n * .25),
-        offset_(0.0)
+      : binomial_data_(1, new BinomialRegressionData(y, n, x)),
+        latent_continuous_values_(1, 0.0),
+        precisions_(1, 4.0 / n),
+        state_model_offset_(0.0)
   {}
 
-  void ABRD::set_latent_data(double value, double variance) {
-    latent_continuous_value_ = value;
-    if (variance < 0) {
-      report_error("variance must be positive.");
+  ABRD::AugmentedBinomialRegressionData(
+      const std::vector<Ptr<BinomialRegressionData>> &binomial_data)
+      : binomial_data_(binomial_data),
+        latent_continuous_values_(binomial_data.size(), 0.0),
+        precisions_(binomial_data.size(), 1.0),
+        state_model_offset_(0.0)
+  {
+    for (int i = 0; i < precisions_.size(); ++i) {
+      precisions_[i] = 4.0 / binomial_data_[i]->n();
     }
-    variance_ = variance;
   }
 
-  void ABRD::set_offset(double offset) {
-    offset_ = offset;
+  ABRD * ABRD::clone() const {
+    return new ABRD(*this);
+  }
+
+  std::ostream & ABRD::display(std::ostream &out) const {
+    out << "state model offset:  " << state_model_offset_ << std::endl
+        << std::setw(10) << "y"
+        << std::setw(10) << "n"
+        << std::setw(12) << "latent value"
+        << std::setw(10) << "precision "
+        << "predictors" << std::endl;
+    for (int i = 0; i < binomial_data_.size(); ++i) {
+      out << std::setw(10) << binomial_data_[i]->y()
+          << std::setw(10) << binomial_data_[i]->n()
+          << std::setw(12) << latent_continuous_values_[i]
+          << std::setw(10) << precisions_[i]
+          << binomial_data_[i]->x()
+          << std::endl;
+    }
+    return out;
+  }
+
+  void ABRD::add_data(const Ptr<BinomialRegressionData> &binomial_data) {
+    binomial_data_.push_back(binomial_data);
+    latent_continuous_values_.push_back(0);
+    precisions_.push_back(4.0 / binomial_data->n());
+  }
+
+  void ABRD::set_latent_data(double value, double precision, int observation) {
+    if (precision < 0) {
+      report_error("precision must be non-negative.");
+    }
+    precisions_[observation] = precision;
+    latent_continuous_values_[observation] = value;
+  }
+
+  double ABRD::latent_data_variance(int observation) const {
+    return 1.0 / precisions_[observation];
+  }
+
+  double ABRD::latent_data_value(int observation) const {
+    return latent_continuous_values_[observation];
+  }
+
+  double ABRD::adjusted_observation(const GlmCoefs &coefficients) const {
+    double total_precision = 0;
+    double ans = 0;
+    for (int i = 0; i < binomial_data_.size(); ++i) {
+      ans += precisions_[i] * (latent_continuous_values_[i]
+          - coefficients.predict(binomial_data_[i]->x()));
+      total_precision += precisions_[i];
+    }
+    return ans / total_precision;
+  }
+
+  double ABRD::latent_data_overall_variance() const {
+    return 1.0 / sum(precisions_);
+  }
+
+  void ABRD::set_state_model_offset(double offset) {
+    state_model_offset_ = offset;
   }
 
   //======================================================================
   void SSLM::setup() {
-    ParamPolicy::add_model(observation_model_);
     observe(observation_model_->coef_prm());
   }
 
@@ -101,15 +167,14 @@ namespace BOOM {
   }
 
   double SSLM::observation_variance(int t) const {
-    return dat()[t]->latent_data_variance();
+    return dat()[t]->latent_data_overall_variance();
   }
 
   double SSLM::adjusted_observation(int t) const {
     if (is_missing_observation(t)) {
       return negative_infinity();
     }
-    return dat()[t]->latent_data_value()
-        - observation_model_->predict(dat()[t]->x());
+    return dat()[t]->adjusted_observation(observation_model_->coef());
   }
 
   bool SSLM::is_missing_observation(int t) const {
@@ -118,7 +183,7 @@ namespace BOOM {
 
   void SSLM::observe_data_given_state(int t) {
     if (!is_missing_observation(t)) {
-      dat()[t]->set_offset(observation_matrix(t).dot(state(t)));
+      dat()[t]->set_state_model_offset(observation_matrix(t).dot(state(t)));
       signal_complete_data_change(t);
     }
   }

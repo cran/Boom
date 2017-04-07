@@ -144,7 +144,11 @@ inline double myfmod(double x1, double x2)
 #ifdef HAVE_WORKING_LOG
 # define R_log  log
 #else
-double R_log(double x) { return(x > 0 ? log(x) : x < 0 ? numeric_limits<double>::quiet_NaN() : BOOM::negative_infinity()); }
+double R_log(double x) {
+  return (x > 0 ? log(x)
+                : x < 0 ? std::numeric_limits<double>::quiet_NaN()
+                        : BOOM::negative_infinity());
+}
 #endif
 
 double R_pow(double x, double y) /* = x ^ y */
@@ -183,8 +187,9 @@ double R_pow(double x, double y) /* = x ^ y */
                 return((x < 1) ? BOOM::infinity() : 0.);
         }
     }
-    return(numeric_limits<double>::quiet_NaN());                /* all other cases: (-Inf)^{+-Inf,
-                                   non-int}; (neg)^{+-Inf} */
+    return (std::numeric_limits<double>::quiet_NaN()); /* all other cases:
+                     (-Inf)^{+-Inf,
+                     non-int}; (neg)^{+-Inf} */
 }
 
 double R_pow_di(double x, int n)
@@ -203,7 +208,7 @@ double R_pow_di(double x, int n)
     return pow;
 }
 
-double NA_REAL = numeric_limits<double>::quiet_NaN();
+double NA_REAL = std::numeric_limits<double>::quiet_NaN();
 double R_PosInf = BOOM::infinity(), R_NegInf = BOOM::negative_infinity();
 
 #endif /* MATHLIB_STANDALONE */

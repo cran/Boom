@@ -16,24 +16,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <BOOM.hpp>
 #include <Models/MarkovModel.hpp>
-#include <cpputil/math_utils.hpp>
-#include <iostream>
 #include <cmath>
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
-#include <Models/ProductDirichletModel.hpp>
-#include <Models/DirichletModel.hpp>
-#include <Models/SufstatAbstractCombineImpl.hpp>
-
-#include <distributions/Markov.hpp>
-#include <stdexcept>
-
+#include <iostream>
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/VectorView.hpp>
-
-using std::endl;
+#include <Models/DirichletModel.hpp>
+#include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
+#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/ProductDirichletModel.hpp>
+#include <Models/SufstatAbstractCombineImpl.hpp>
+#include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
+#include <distributions/Markov.hpp>
 
 namespace BOOM{
 
@@ -99,24 +94,16 @@ namespace BOOM{
   void MD::set_prev(Ptr<MD>p){links.set_prev(p);}
   void MD::set_next(Ptr<MD>p){links.set_next(p);}
 
-//   void MD::assimilate(Ptr<MarkovData> nxt){
-//     set_next(nxt);
-//     nxt->set_prev(this);}
-
   ostream & MD::display(ostream &out)const{
     return CategoricalData::display(out); }
-
-//   istream & MD::read(istream &in){
-//     return CategoricalData::read(in); }
 
   //------------------------------------------------------------
   typedef MarkovDataSeries MDS;
   typedef TimeSeries<MarkovData> TS;
 
-
   template <class T>
   Ptr<MarkovDataSeries> make_mds(const std::vector<T> &raw_data,
-				 Ptr<CatKey> key){
+                                 Ptr<CatKey> key){
     NEW(MarkovData,last)(raw_data[0], key);
     uint n = raw_data.size();
     std::vector<Ptr<MarkovData> > dvec;
@@ -131,7 +118,7 @@ namespace BOOM{
   }
 
   Ptr<MarkovDataSeries> make_markov_data(const std::vector<uint> &raw_data,
-					 bool full_range){
+                                         bool full_range){
     Ptr<CatKey> pk = make_catkey(raw_data, full_range);
     return make_mds(raw_data,pk);
   }
@@ -142,7 +129,7 @@ namespace BOOM{
   }
 
   Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> & raw_data,
-					 const std::vector<string> & order){
+                                         const std::vector<string> & order){
     NEW(CatKey, pk)(order);
     return make_mds(raw_data,pk);
   }
@@ -150,7 +137,7 @@ namespace BOOM{
   //------------------------------------------------------------
   std::ostream & operator<<(std::ostream &out, Ptr<MarkovSuf> sf){
     out << "markov initial counts:" << endl<< sf->init() << endl
- 	<< " transition counts:"<< endl << sf->trans() <<endl;
+        << " transition counts:"<< endl << sf->trans() <<endl;
     return out;
   }
 
@@ -310,7 +297,8 @@ namespace BOOM{
 
    TPM * TPM::clone()const{return new TPM(*this);}
 
-   Vector::const_iterator TPM::unvectorize(Vector::const_iterator &v, bool minimal){
+   Vector::const_iterator TPM::unvectorize(Vector::const_iterator &v,
+                                           bool minimal) {
      Vector::const_iterator ans = MP::unvectorize(v, minimal);
      notify();
      return ans;
@@ -335,7 +323,7 @@ namespace BOOM{
 
    void TPM::notify()const{
      for(ObsSet::iterator it = observers.begin();
- 	it!=observers.end(); ++it){
+        it!=observers.end(); ++it){
        Ptr<VectorParams> vp= *it;
        vp->set( get_stat_dist(value()));
      }
@@ -346,7 +334,7 @@ namespace BOOM{
   //------------------------------------------------------------
   MarkovModel::MarkovModel(uint StateSize)
     : ParamPolicy(new TPM(StateSize),
-		  new VectorParams(StateSize)),
+                  new VectorParams(StateSize)),
       DataPolicy(new MarkovSuf(StateSize)),
       PriorPolicy(),
       LoglikeModel()
@@ -356,7 +344,7 @@ namespace BOOM{
 
   MarkovModel::MarkovModel(const Matrix &Q)
     : ParamPolicy(new TPM(Q),
-		  new VectorParams(Q.nrow())),
+                  new VectorParams(Q.nrow())),
       DataPolicy(new MarkovSuf(Q.nrow()))
   {
     fix_pi0_uniform();
@@ -364,7 +352,7 @@ namespace BOOM{
 
   MarkovModel::MarkovModel(const Matrix &Q, const Vector &Pi0)
     : ParamPolicy(new TPM(Q),
-		  new VectorParams(Pi0)),
+                  new VectorParams(Pi0)),
       DataPolicy(new MarkovSuf(Q.nrow()))
   {
   }
@@ -450,7 +438,7 @@ namespace BOOM{
   }
 
   double MarkovModel::pdf(const MarkovData &dat,
-				bool logscale) const{
+                                bool logscale) const{
     double ans;
     if(!!dat.prev()){
       MD * prev = dat.prev();
@@ -460,7 +448,7 @@ namespace BOOM{
 
 
   double MarkovModel::pdf(const MarkovDataSeries &dat,
-				bool logscale) const{
+                                bool logscale) const{
     double ans=0.0;
     for(uint i=0; i!=dat.length(); ++i){
       ans+= pdf(*(dat[i]), true);
@@ -488,7 +476,7 @@ namespace BOOM{
   }
 
   void MarkovModel::set_conjugate_prior(Ptr<ProductDirichletModel> pri,
-					Ptr<DirichletModel> pi0pri){
+                                        Ptr<DirichletModel> pi0pri){
     NEW(MarkovConjSampler, sam)(this, pri, pi0pri);
     set_conjugate_prior(sam);
   }

@@ -145,7 +145,7 @@ namespace BOOM {
       double total_prediction_sd,
       double prior_tree_depth_alpha,
       double prior_tree_depth_beta,
-      boost::function<double(int)> log_prior_number_of_trees,
+      std::function<double(int)> log_prior_number_of_trees,
       RNG &seeding_rng)
       : PosteriorSampler(seeding_rng),
         model_(model),
@@ -764,7 +764,7 @@ namespace BOOM {
       return;
     }
 
-    boost::shared_ptr<Tree> proposal(new Tree(0.0));
+    std::shared_ptr<Tree> proposal(new Tree(0.0));
     proposal->populate_sufficient_statistics(create_suf());
     fill_tree_with_residual_data(proposal.get());
 

@@ -28,8 +28,15 @@
 
 namespace BOOM{
 
-  MlvsDataImputer::MlvsDataImputer(MultinomialLogitModel *model)
-      : model_(model),
+  MlvsDataImputer::MlvsDataImputer(
+      SufficientStatistics &global_suf,
+      std::mutex &global_suf_mutex,
+      MultinomialLogitModel *model,
+      RNG *rng,
+      RNG &seeding_rng)
+      : SufstatImputeWorker<ChoiceData, SufficientStatistics> (
+            global_suf, global_suf_mutex, rng, seeding_rng),
+        model_(model),
         mu_(Vector("5.09 3.29 1.82 1.24 0.76 0.39 0.04 -0.31 -0.67  -1.06")),
         sigsq_inv_(pow(Vector(
             "4.5 2.02 1.1 0.42 0.2 0.11 0.08 0.08 0.09 0.15"),-1)),
@@ -44,10 +51,10 @@ namespace BOOM{
         wgts(u)
   {}
 
-  void MlvsDataImputer::impute_latent_data(
+  void MlvsDataImputer::impute_latent_data_point(
       const ChoiceData &dp,
-      LocalSuf *suf,
-      RNG &rng) const {
+      SufficientStatistics *suf,
+      RNG &rng) {
     model_->fill_eta(dp, eta);      // eta+= downsampling_logprob
     if(downsampling_) eta += log_sampling_probs_;  //
     uint M = model_->Nchoices();

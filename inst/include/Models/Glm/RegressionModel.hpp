@@ -33,11 +33,6 @@
 
 namespace BOOM{
 
-  class RegressionConjSampler;
-  class DesignMatrix;
-  class MvnGivenXandSigma;
-  class GammaModel;
-
   class AnovaTable{
    public:
     double SSE, SSM, SST;
@@ -255,7 +250,6 @@ namespace BOOM{
   {}
 
   //------------------------------------------------------------------
-
   class RegressionModel
     : public GlmModel,
       public ParamPolicy_2<GlmCoefs, UnivParams>,
@@ -264,7 +258,7 @@ namespace BOOM{
       public NumOptModel,
       public EmMixtureComponent
   {
- public:
+   public:
     RegressionModel(uint p);
     RegressionModel(const Vector &b, double Sigma);
 
@@ -326,7 +320,12 @@ namespace BOOM{
     // remaining elements corresponding to the set of included
     // coefficients.
     double Loglike(const Vector &sigsq_beta,
-                           Vector &g, Matrix &h, uint nd) const override;
+                   Vector &g, Matrix &h, uint nd) const override;
+    double log_likelihood(const Vector &beta, double sigsq) const;
+    // Avoid hiding the 'double log_likelihood()' implementation from
+    // LoglikeModel.
+    using LoglikeModel::log_likelihood;
+
     virtual double pdf(dPtr, bool) const;
     double pdf(const Data *, bool) const override;
 

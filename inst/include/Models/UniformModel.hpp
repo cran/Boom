@@ -47,7 +47,7 @@ namespace BOOM{
 
     void set_lo(double a);
     void set_hi(double b);
-    void combine(Ptr<UniformSuf>);
+    void combine(const Ptr<UniformSuf> &s);
     void combine(const UniformSuf &);
     UniformSuf * abstract_combine(Sufstat *s) override;
 
@@ -66,6 +66,7 @@ namespace BOOM{
       public SufstatDataPolicy<DoubleData, UniformSuf>,
       public PriorPolicy,
       public DiffDoubleModel,
+      public LocationScaleDoubleModel,
       public LoglikeModel
   {
   public:
@@ -80,6 +81,9 @@ namespace BOOM{
     void set_lo(double a);
     void set_hi(double b);
     void set_ab(double a,double b);
+
+    double mean() const override;
+    double variance() const override;
 
     Ptr<UnivParams> LoParam();
     Ptr<UnivParams> HiParam();

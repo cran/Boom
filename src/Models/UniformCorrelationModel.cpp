@@ -20,7 +20,6 @@
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
 
-//using namespace boost::lambda;
 namespace BOOM{
   typedef UniformCorrelationModel UCM;
 

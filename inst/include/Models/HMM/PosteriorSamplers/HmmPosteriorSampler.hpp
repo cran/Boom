@@ -46,7 +46,7 @@ class HmmPosteriorSampler
   void draw_mixture_components();
  private:
   HiddenMarkovModel *hmm_;
-  std::vector<boost::shared_ptr<MixtureComponentSampler> > workers_;
+  std::vector<std::shared_ptr<MixtureComponentSampler> > workers_;
 #ifndef NO_BOOST_THREADS
   bool use_threads_;
 #endif

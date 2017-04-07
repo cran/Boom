@@ -20,14 +20,8 @@
 #include <algorithm>
 
 namespace BOOM{
-  typedef std::vector<double> VEC;
-  typedef VEC::iterator IT;
-  typedef VEC::const_iterator CIT;
-  using std::sort;
-  using std::upper_bound;
-  using std::lower_bound;
 
-  ECDF::ECDF(const VEC & unsorted)
+  ECDF::ECDF(const std::vector<double> &unsorted)
     : sorted_(unsorted)
   {
     std::sort(sorted_.begin(), sorted_.end());
@@ -37,15 +31,15 @@ namespace BOOM{
   }
 
   double ECDF::fplus(double x)const{
-    CIT it = upper_bound(b, e, x);
-    unsigned pos = it-b;  // it is the first element >= x
-    return pos/n;
+    std::vector<double>::const_iterator it = std::upper_bound(b, e, x);
+    unsigned pos = it - b;  // it is the first element >= x
+    return pos / n;
   }
 
   double ECDF::fminus(double x)const{
-    CIT it = lower_bound(b,e, x);
-    unsigned pos = it-b;
-    return pos/n;
+    std::vector<double>::const_iterator it = std::lower_bound(b, e, x);
+    unsigned pos = it - b;
+    return pos / n;
   }
 
-}
+}  // namespace BOOM

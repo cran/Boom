@@ -25,7 +25,6 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/Vector.hpp>
 #include <stats/DataTable.hpp>
-#include <stats/Spline.hpp>
 #include <vector>
 
 namespace BOOM {

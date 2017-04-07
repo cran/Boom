@@ -23,6 +23,7 @@
 #include <Models/Policies/ParamPolicy_2.hpp>
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
+#include <functional>
 
 namespace BOOM {
   // The CosinePoissonProcess is an inhomogeneous Poisson process with
@@ -53,7 +54,8 @@ namespace BOOM {
     PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> mark_generator = NullDataGenerator()) const override;
+        std::function<Data*()> mark_generator
+           = NullDataGenerator()) const override;
 
    private:
     DateTime origin_;

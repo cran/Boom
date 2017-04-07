@@ -18,7 +18,7 @@
 #ifndef BOOM_DOUBLY_BOUNDED_ADAPTIVE_REJECTION_SAMPLER_HPP
 #define BOOM_DOUBLY_BOUNDED_ADAPTIVE_REJECTION_SAMPLER_HPP
 
-#include <boost/function.hpp>
+#include <functional>
 #include <distributions.hpp>
 #include <vector>
 
@@ -26,7 +26,7 @@ namespace BOOM{
 
   class DoublyBoundedAdaptiveRejectionSampler{
    public:
-    typedef boost::function<double(double)> Fun;
+    typedef std::function<double(double)> Fun;
     DoublyBoundedAdaptiveRejectionSampler(double lo, double hi,
                                           Fun Logf, Fun Dlogf);
     double draw(RNG & );              // simluate a value

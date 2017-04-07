@@ -16,7 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Glm/PosteriorSamplers/BinomialLogitSamplerTim.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
 namespace BOOM {
 
@@ -29,10 +29,14 @@ namespace BOOM {
       : PosteriorSampler(seeding_rng),
         m_(m),
         pri_(pri),
-        sam_(boost::bind(&BLST::logp, this, _1),
-             boost::bind(&BLST::dlogp, this, _1, _2),
-             boost::bind(&BLST::d2logp, this, _1, _2, _3),
-             nu),
+        sam_([this](const Vector &beta) {return this->logp(beta);},
+               [this](const Vector &beta,
+                        Vector &gradient) {return this->dlogp(beta, gradient);},
+               [this](const Vector &beta,
+                        Vector &gradient,
+                        Matrix &hessian) {return this->d2logp(
+                            beta, gradient, hessian);},
+               nu),
         save_modes_(mode_is_stable)
   {
     if(mode_is_stable) sam_.fix_mode();

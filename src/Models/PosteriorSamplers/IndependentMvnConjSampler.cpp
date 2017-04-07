@@ -78,7 +78,7 @@ namespace BOOM {
     const Vector &sigsq(model_->sigsq());
     double ans = 0;
     for(int i = 0; i < dim; ++i){
-      ans += dgamma(1.0/sigsq[i], prior_df_[i] / 2, prior_ss_[i] / 2, true);
+      ans += sigsq_samplers_[i].log_prior(sigsq[i]);
       ans += dnorm(mu[i],
                    mean_prior_guess_[i],
                    sqrt(sigsq[i] / mean_prior_sample_size_[i]),

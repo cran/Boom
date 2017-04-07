@@ -68,7 +68,6 @@ namespace BOOM {
     }
 
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override {
-      refresh_variance();
       return state_variance_matrix_;
     }
 
@@ -88,22 +87,11 @@ namespace BOOM {
     SpdMatrix initial_state_variance()const override;
     void set_initial_state_variance(const SpdMatrix &V);
 
-    // An observer to be placed on the variance parameters of the
-    // IndependentMvnModel base class.
-    void watch_variance_params() {variance_is_current_ = false;}
-    void refresh_variance() const {
-      if (!variance_is_current_) {
-        state_variance_matrix_->set_elements(Sigsq_ref().value());
-        variance_is_current_ = true;
-      }
-    }
-
    private:
     double period_;
     Vector frequencies_;
     Ptr<IdentityMatrix> state_transition_matrix_;
-    Ptr<DiagonalMatrixBlock> state_variance_matrix_;
-    mutable bool variance_is_current_;
+    Ptr<DiagonalMatrixBlockVectorParamView> state_variance_matrix_;
 
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;

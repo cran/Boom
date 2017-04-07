@@ -16,13 +16,11 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Glm/PosteriorSamplers/SpikeSlabDaRegressionSampler.hpp>
+#include <functional>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 #include <LinAlg/SWEEP.hpp>
-
-#include <boost/function.hpp>  // TODO(stevescott):  change to std::function
-#include <boost/bind.hpp>      // TODO(stevescott):  change to std::lambda
 
 namespace BOOM {
 
@@ -70,16 +68,20 @@ namespace BOOM {
         complete_data_information_matrix_fudge_factor);
     compute_leverage_of_missing_design_points();
     beta_prior_->prm1()->add_observer(
-        boost::bind(&SSDRS::observe_changes_in_prior, this));
+        [this](){this->observe_changes_in_prior();});
     beta_prior_->prm2()->add_observer(
-        boost::bind(&SSDRS::observe_changes_in_prior, this));
+        [this](){this->observe_changes_in_prior();});
     check_prior();
   }
 
   //----------------------------------------------------------------------
   double SSDRS::logpri() const {
     check_prior();
-    double ans = siginv_prior_->logp(1.0 / model_->sigsq());
+    // Prior is evaluated on the scale of the variance, not the
+    // precision, so we must include the jacobian of the reciprocal
+    // transformation.
+    double ans = siginv_prior_->logp(1.0 / model_->sigsq())
+        - 2 * log(model_->sigsq());
     const Vector &beta(model_->Beta());
     const Selector &inclusion_indicators(model_->coef().inc());
     for (int i = 0; i < log_prior_inclusion_probabilities_.size(); ++i) {

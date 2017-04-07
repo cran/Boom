@@ -19,7 +19,7 @@
 #ifndef BOOM_SMART_PTR_H
 #define BOOM_SMART_PTR_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/intrusive_ptr.hpp>
 
 #define NEW(T,y) Ptr<T> y = new T
@@ -108,10 +108,10 @@ namespace BOOM{
   //======================================================================
   template <class T>
   class Ptr<T,false>{
-    boost::shared_ptr<T> pt;
+    std::shared_ptr<T> pt;
   public:
-    const boost::shared_ptr<T> & get_boost()const {return pt;}
-    boost::shared_ptr<T> & get_boost() {return pt;}
+    const std::shared_ptr<T> & get_boost()const {return pt;}
+    std::shared_ptr<T> & get_boost() {return pt;}
 
     typedef T element_type;
     typedef Ptr<T,false> this_type;
@@ -126,7 +126,7 @@ namespace BOOM{
     Ptr(const Ptr &rhs): pt(rhs.pt){}
     template <class Y> Ptr(const Ptr<Y> &rhs): pt(rhs.get_boost()){}
     template <class Y> Ptr(std::auto_ptr<Y> &rhs): pt(rhs){}
-    explicit Ptr(const boost::shared_ptr<T> &rhs): pt(rhs){}
+    explicit Ptr(const std::shared_ptr<T> &rhs): pt(rhs){}
 
     Ptr & operator=(const Ptr &rhs){
       if(&rhs==this) return *this;
@@ -150,7 +150,7 @@ namespace BOOM{
       else Ptr(rhs).swap(*this);
       return *this; }
 
-    Ptr & operator=(const boost::shared_ptr<T> & rhs){
+    Ptr & operator=(const std::shared_ptr<T> & rhs){
       pt = rhs;
       return *this; }
 
@@ -238,7 +238,7 @@ namespace BOOM{
 
   template <class To, class From>
   Ptr<To,false> dcast(const Ptr<From,false> &a){
-    boost::shared_ptr<To> tmp =
+    std::shared_ptr<To> tmp =
       boost::dynamic_pointer_cast<To>(a.get_boost());
     return  Ptr<To,false>(tmp);
   }

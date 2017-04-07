@@ -70,4 +70,11 @@ namespace BOOM {
     return mode > sigsq_max ? sigsq_max : mode;
   }
 
+  double GenericGaussianVarianceSampler::log_prior(double sigsq) const {
+    // Use the prior on 1/sigsq to evaluate the base log density, then
+    // add in the log of the Jacobian of the reciprocal
+    // transformation.
+    return prior_->logp(1.0 / sigsq) - 2 * log(sigsq);
+  }
+
 }  // namespace BOOM

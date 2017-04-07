@@ -68,13 +68,12 @@ namespace BOOM{
     if(n != names.size()){
       report_error("'list' and 'names' are not the same size in setlistNames");
     }
-    SEXP list_names;
-    PROTECT(list_names = Rf_allocVector(STRSXP, n));
+    RMemoryProtector protector;
+    SEXP list_names = protector.protect(Rf_allocVector(STRSXP, n));
     for(int i = 0; i < n; ++i) {
       SET_STRING_ELT(list_names, i, Rf_mkChar(names[i].c_str()));
     }
     Rf_namesgets(list, list_names);
-    UNPROTECT(1);
     return list;
   }
 
@@ -99,27 +98,25 @@ namespace BOOM{
   }
 
   SEXP CharacterVector(const std::vector<std::string> & string_vector){
-    SEXP ans;
-    PROTECT(ans = Rf_allocVector(STRSXP, string_vector.size()));
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocVector(STRSXP, string_vector.size()));
     for(int i = 0; i < string_vector.size(); ++i){
       SET_STRING_ELT(ans, i, Rf_mkChar(string_vector[i].c_str()));
     }
-    UNPROTECT(1);
     return ans;
   }
 
   SEXP appendListElement(SEXP list, SEXP new_element, const std::string &name){
     int n = Rf_length(list);
-    SEXP ans;
-    PROTECT(ans = Rf_allocVector(VECSXP, n+1));
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocVector(VECSXP, n+1));
     for(int i = 0; i < n; ++i){
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(list, i));
     }
     SET_VECTOR_ELT(ans, n, new_element);
 
     SEXP old_list_names = Rf_getAttrib(list, R_NamesSymbol);
-    SEXP list_names;
-    PROTECT(list_names = Rf_allocVector(STRSXP, n+1));
+    SEXP list_names = protector.protect(Rf_allocVector(STRSXP, n+1));
 
     if(!Rf_isNull(old_list_names)){
       for(int i = 0; i < n; ++i){
@@ -128,7 +125,6 @@ namespace BOOM{
     }
     SET_STRING_ELT(list_names, n, Rf_mkChar(name.c_str()));
     Rf_namesgets(ans, list_names);
-    UNPROTECT(2);
     return ans;
   }
 
@@ -140,8 +136,8 @@ namespace BOOM{
                    "be the same size as the vector of new element names.");
     }
     int original_list_length = Rf_length(r_list);
-    SEXP ans;
-    PROTECT(ans = Rf_allocVector(
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocVector(
         VECSXP, original_list_length + new_elements.size()));
     for (int i = 0; i < original_list_length; ++i) {
       SET_VECTOR_ELT(ans, i, VECTOR_ELT(r_list, i));
@@ -155,25 +151,22 @@ namespace BOOM{
       new_list_names.push_back(new_element_names[i]);
     }
     ans = setListNames(ans, new_list_names);
-    UNPROTECT(1);
     return ans;
   }
 
   SEXP CreateList(const std::vector<SEXP> &elements,
                   const std::vector<std::string> &element_names) {
+    RMemoryProtector protector;
     if (!element_names.empty()) {
-      SEXP empty_list, ans;
-      PROTECT(empty_list = Rf_allocVector(VECSXP, 0));
-      PROTECT(ans = appendListElements(empty_list, elements, element_names));
-      UNPROTECT(2);
+      SEXP empty_list = protector.protect(Rf_allocVector(VECSXP, 0));
+      SEXP ans = protector.protect(appendListElements(
+          empty_list, elements, element_names));
       return(ans);
     } else {
-      SEXP ans;
-      PROTECT(ans = Rf_allocVector(VECSXP, elements.size()));
+      SEXP ans = protector.protect(Rf_allocVector(VECSXP, elements.size()));
       for (int i = 0; i < elements.size(); ++i) {
         SET_VECTOR_ELT(ans, i, elements[i]);
       }
-      UNPROTECT(1);
       return ans;
     }
   }
@@ -190,27 +183,45 @@ namespace BOOM{
       // offending argument in R, so that I can provide a better error
       // message?
     }
-    SEXP dims = PROTECT(Rf_getAttrib(matrix, R_DimSymbol));
+    RMemoryProtector protector;
+    SEXP dims = protector.protect(Rf_getAttrib(matrix, R_DimSymbol));
     if(Rf_length(dims) != 2){
       report_error("Wrong number of dimensions in GetMatrixDimensions");
     }
     int *rdims = INTEGER(dims);
     std::pair<int,int> ans = std::make_pair(rdims[0], rdims[1]);
-    UNPROTECT(1);
     return ans;
+  }
+
+  SEXP SetColnames(SEXP r_matrix, const std::vector<std::string> &names) {
+    if (names.empty()) return r_matrix;
+    int ncol = GetMatrixDimensions(r_matrix).second;
+    if (names.size() != ncol) {
+      ostringstream err;
+      err << "Columns vector of length " << names.size()
+          << " assigned to matrix with " << ncol << " columns.";
+      report_error(err.str());
+    }
+    RMemoryProtector protector;
+    SEXP r_dimnames;
+    protector.protect(r_dimnames = Rf_allocVector(VECSXP, 2));
+    SET_VECTOR_ELT(r_dimnames, 0, R_NilValue);
+    SET_VECTOR_ELT(r_dimnames, 1, CharacterVector(names));
+    Rf_dimnamesgets(r_matrix, r_dimnames);
+    return r_matrix;
   }
 
   std::vector<int> GetArrayDimensions(SEXP array) {
     if (!Rf_isArray(array)) {
       report_error("GetArrayDimensions called on a non-array object.");
     }
-    SEXP r_dims = PROTECT(Rf_getAttrib(array, R_DimSymbol));
+    RMemoryProtector protector;
+    SEXP r_dims = protector.protect(Rf_getAttrib(array, R_DimSymbol));
     std::vector<int> dims(Rf_length(r_dims));
     int *rdims = INTEGER(r_dims);
     for (int i = 0; i < dims.size(); ++i) {
       dims[i] = rdims[i];
     }
-    UNPROTECT(1);
     return dims;
   }
 
@@ -229,10 +240,10 @@ namespace BOOM{
     if (!Rf_isNumeric(v)) {
       report_error("ToBoomVectorView called with a non-numeric argument.");
     }
-    PROTECT(v = Rf_coerceVector(v, REALSXP));
+    RMemoryProtector protector;
+    v = protector.protect(Rf_coerceVector(v, REALSXP));
     int n = Rf_length(v);
     double *data = REAL(v);
-    UNPROTECT(1);
     return ConstVectorView(data, n, 1);
   }
 
@@ -245,10 +256,48 @@ namespace BOOM{
       report_error("ToBoomMatrix called with a non-matrix argument");
     }
     std::pair<int,int> dims = GetMatrixDimensions(m);
-    PROTECT(m = Rf_coerceVector(m, REALSXP));
+    RMemoryProtector protector;
+    m = protector.protect(Rf_coerceVector(m, REALSXP));
     ConstSubMatrix ans(REAL(m), dims.first, dims.second);
-    UNPROTECT(1);
     return ans;
+  }
+
+  Array ToBoomArray(SEXP r_array) {
+    if (!Rf_isNumeric(r_array)) {
+      report_error("Non-numeric argument passed to ToBoomArray.");
+    }
+    if (!Rf_isArray(r_array)) {
+      // Handle the case where r_array is a vector, e.g. because R
+      // dropped an dimension because of a singleton index.
+      ConstVectorView v = ToBoomVectorView(r_array);
+      int n = v.size();
+      Array ans({n});
+      ans.assign(v.begin(), v.end());
+      return ans;
+    } else {
+      // If r_array is actually a matrix that's okay, because to R a
+      // matrix is a 2-d array.
+      std::vector<int> dims = GetArrayDimensions(r_array);
+      return Array(GetArrayDimensions(r_array), REAL(r_array));
+    }
+  }
+
+  ConstArrayView ToBoomArrayView(SEXP r_array) {
+    if (!Rf_isNumeric(r_array)) {
+      report_error("Non-numeric argument passed to ToBoomArrayView.");
+    }
+    if (!Rf_isArray(r_array)) {
+      // Handle the case where r_array is a vector, e.g. because R
+      // dropped an dimension because of a singleton index.
+      ConstVectorView v = ToBoomVectorView(r_array);
+      int n = v.size();
+      return ConstArrayView(v.data(), {n});
+    } else {
+      // If r_array is actually a matrix that's okay, because to R a
+      // matrix is a 2-d array.
+      std::vector<int> dims = GetArrayDimensions(r_array);
+      return ConstArrayView(REAL(r_array), GetArrayDimensions(r_array));
+    }
   }
 
   Matrix ToBoomMatrix(SEXP m){
@@ -295,12 +344,12 @@ namespace BOOM{
     if(!Rf_isVector(logical_vector)) {
       report_error("ToVectorBool requires a logical vector argument.");
     }
-    PROTECT(logical_vector = Rf_coerceVector(logical_vector, LGLSXP));
+    RMemoryProtector protector;
+    logical_vector = protector.protect(Rf_coerceVector(logical_vector, LGLSXP));
     int n = Rf_length(logical_vector);
     std::vector<bool> ans(n);
     int *data = LOGICAL(logical_vector);
     ans.assign(data, data + n);
-    UNPROTECT(1);
     return ans;
   }
 
@@ -313,22 +362,54 @@ namespace BOOM{
     return std::vector<int>(values, values + length);
   }
 
+  std::vector<std::vector<int>> ToIntMatrix(SEXP r_int_matrix,
+                                            bool convert_to_zero_offset) {
+    if (!Rf_isMatrix(r_int_matrix)) {
+      report_error("Argument to ToIntMatrix must be a matrix.");
+    }
+    std::pair<int, int> dims = GetMatrixDimensions(r_int_matrix);
+    int nrow = dims.first;
+    int ncol = dims.second;
+    RMemoryProtector protector;
+    protector.protect(r_int_matrix = Rf_coerceVector(r_int_matrix, INTSXP));
+    std::vector<std::vector<int>> ans(nrow,
+                                      std::vector<int>(ncol));
+    // Read results column-by-column.
+    int *values = INTEGER(r_int_matrix);
+    for (int j = 0; j < ncol; ++j) {
+      for (int i = 0; i < nrow; ++i) {
+        ans[i][j] = *values - convert_to_zero_offset;
+        ++values;
+      }
+    }
+    return ans;
+  }
+
   SEXP ToRVector(const Vector &v){
     int n = v.size();
-    SEXP ans;
-    PROTECT(ans = Rf_allocVector(REALSXP, n));
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocVector(REALSXP, n));
     double *data = REAL(ans);
     for(int i = 0; i < n; ++i) data[i] = v[i];
-    UNPROTECT(1);
+    return ans;
+  }
+
+  SEXP ToRIntVector(const std::vector<int> &v) {
+    size_t n = v.size();
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocVector(INTSXP, n));
+    int *data = INTEGER(ans);
+    for (size_t i = 0; i < n; ++i){
+      data[i] = v[i];
+    }
     return ans;
   }
 
   SEXP ToRMatrix(const Matrix &m){
-    SEXP ans;
-    PROTECT(ans = Rf_allocMatrix(REALSXP, m.nrow(), m.ncol()));
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocMatrix(REALSXP, m.nrow(), m.ncol()));
     double *data = REAL(ans);
     std::copy(m.begin(), m.end(), data);
-    UNPROTECT(1);
     return ans;
   }
 
@@ -342,13 +423,12 @@ namespace BOOM{
       report_error("In ToRMatrix:  Vector of column names does not match "
                    "the number of columns in m.");
     }
-    SEXP ans;
-    PROTECT(ans = Rf_allocMatrix(REALSXP, m.nrow(), m.ncol()));
+    RMemoryProtector protector;
+    SEXP ans = protector.protect(Rf_allocMatrix(REALSXP, m.nrow(), m.ncol()));
     double *data = REAL(ans);
     std::copy(m.begin(), m.end(), data);
 
-    SEXP r_dimnames;
-    PROTECT(r_dimnames = Rf_allocVector(VECSXP, 2));
+    SEXP r_dimnames = protector.protect(Rf_allocVector(VECSXP, 2));
     SET_VECTOR_ELT(
         r_dimnames,
         0,
@@ -358,12 +438,30 @@ namespace BOOM{
         1,
         colnames.empty() ? R_NilValue : CharacterVector(colnames));
     Rf_dimnamesgets(ans, r_dimnames);
-    UNPROTECT(2);
     return ans;
   }
 
   SEXP ToRMatrix(const LabeledMatrix &m) {
     return ToRMatrix(m, m.row_names(), m.col_names());
+  }
+
+  SEXP ToRArray(const ConstArrayView &array) {
+    RMemoryProtector protector;
+    SEXP r_dims;
+    protector.protect(r_dims = Rf_allocVector(INTSXP, array.ndim()));
+    int * dims_data = INTEGER(r_dims);
+    for (int i = 0; i < array.ndim(); ++i) {
+      dims_data[i] = array.dim(i);
+    }
+
+    SEXP ans;
+    protector.protect(ans = Rf_allocArray(REALSXP, r_dims));
+    double *array_data = REAL(ans);
+    int i = 0;
+    for (const auto &el : array) {
+      array_data[i++] = el;
+    }
+    return ans;
   }
 
   std::string ToString(SEXP r_string) {
@@ -403,7 +501,7 @@ namespace BOOM{
     return values_[i];
   }
 
-  CategoricalData Factor::to_cateogrical_data(int i) const {
+  CategoricalData Factor::to_categorical_data(int i) const {
     return CategoricalData(values_[i], levels_);
   }
 

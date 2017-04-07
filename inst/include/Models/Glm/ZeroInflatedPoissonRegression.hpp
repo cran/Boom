@@ -41,33 +41,33 @@ namespace BOOM {
     //     events.  Must be non-negative, and cannot exceed
     //     number_of_trials.
     ZeroInflatedPoissonRegressionData(
-        int event_count,
+        int64_t event_count,
         const Vector &x,
-        int number_of_trials,
-        int number_of_zeros);
+        int64_t number_of_trials,
+        int64_t number_of_zeros);
 
     // Number of trials that each produced zero events.
-    int number_of_zero_trials() const;
+    int64_t number_of_zero_trials() const;
 
     // Number of trials that each produced a positive number of events.
-    int number_of_positive_trials() const;
+    int64_t number_of_positive_trials() const;
 
     // Total number of trials for this observation.
-    int total_number_of_trials() const;
+    int64_t total_number_of_trials() const;
 
     // Add more trials, events, and zero-events to this observation.
-    void add_incremental_data(int incremental_event_count,
-                              int incremental_number_of_trials,
-                              int incremental_number_of_zeros);
+    void add_incremental_data(int64_t incremental_event_count,
+                              int64_t incremental_number_of_trials,
+                              int64_t incremental_number_of_zeros);
 
    private:
     // The number of trials that each produced zero events.
-    int number_of_zeros_;
+    int64_t number_of_zeros_;
 
     // The number_of_trials_ is the same as 'exposure' in the
-    // underlying PoissonRegressionData.  Stored here as an int to
-    // save the effort of double -> int conversion later.
-    int number_of_trials_;
+    // underlying PoissonRegressionData.  Stored here as an integer to
+    // save the effort of double -> int64_t conversion later.
+    int64_t number_of_trials_;
   };
 
   // y | x ~  [ p(x) * Poisson(lambda(x)) + (1-p(x)) * I(0) ]

@@ -146,7 +146,7 @@ namespace BOOM{
 
     SparseVector observation_matrix_;
     Ptr<LocalLinearTrendMatrix> state_transition_matrix_;
-    Ptr<DiagonalMatrixBlock> state_variance_matrix_;
+    mutable Ptr<DiagonalMatrixBlock> state_variance_matrix_;
     Ptr<IdentityMatrix> state_error_expander_;
 
     Vector initial_state_mean_;

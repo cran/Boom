@@ -22,302 +22,377 @@
 #include <memory>
 #include <cstddef>
 
-#ifndef _WIN32
-// Support for async/future is not yet available on the version of
-// MinGW used by CRAN.
-// TODO(stevescott): Remove the ugly conditional macros once CRAN can
-// support this part of C++11.
 #include <future>
-#endif
 
 #include <Models/ModelTypes.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/report_error.hpp>
+#include <cpputil/RefCounted.hpp>
+#include <cpputil/ThreadTools.hpp>
 
+// The main class implemented in this file is
+// ParallelLatentDataImputer.
+//
+// To use the imputer, a concrete instance of a
+// LatentDataImputerWorker must first be defined.  The imputer work in
+// conjunction with a mutex that guards the "global" complete data
+// repository (e.g. complete data sufficient statistics, or complete
+// data model).
+//
+// The idiom is...
+//
+// class MyConcreteImputeWorker : public LatentDataImputeWorker {};
+// class MyPosteriorSampler : public LatentDataSampler {};
+// MyPosteriorSampler sampler;
+// sampler.set_number_of_workers(12);
+//
+// If the latent data is stored in complete data sufficient statistics
+// then MyConcreteImputeWorker can inherit from SufstatImputeWorker.
 namespace BOOM {
 
-  // A mix-in base class that provides impute_latent_data.
+  // A base class implementing the interface needed by imputation
+  // workers who want to participate in a ParallelLatentDataImputer
+  // worker pool.
   //
-  // Type requirements:
-  //   OBSERVED_DATA: The type of observed data described by the raw
-  //     model.  Should inherit from BOOM::Data (stored in a Ptr).
-  //   SUFFICIENT_STATISTICS: The sufficient statistics for the
-  //     augmented model.  The intent is that this class inherits from
-  //     the Sufstat base class, but it is sufficient for it to have
-  //     clear() and combine(const SUFFICIENT_STATISTICS &) methods.
-  template <class OBSERVED_DATA,
-            class SUFFICIENT_STATISTICS>
-  class LatentDataImputer {
+  // Child classes must implement impute_latent_data() and
+  // combine_complete_data().
+  class LatentDataImputerWorker : private RefCounted {
    public:
-    // Impute the latent information associated with obs, and update suf.
-    virtual void impute_latent_data(
-        const OBSERVED_DATA &obs,
-        SUFFICIENT_STATISTICS *complete_data_suf,
-        RNG &random_number_generator) const = 0;
+    LatentDataImputerWorker(std::mutex &shared_resource_mutex)
+        : shared_resource_mutex_(shared_resource_mutex) {}
 
-    virtual ~LatentDataImputer() {}
-  };
+    // Clear the local repository holding the complete data, and
+    // refill it with newly imputed values.  Overrides of this
+    // function should not write to resources shared by other threads.
+    virtual void impute_latent_data() = 0;
 
-  //======================================================================
-  // This is a wrapper class that combines a LatentDataImputer with
-  // other objects needed to work effectively as a member of a
-  // ParallelLatentDataImputer worker pool:
-  //   * An instance of complete data sufficient statistics.
-  //   * A (thread safe) random number generator.
-  //   * A vector of observed data to be augmented.
-  template <class OBSERVED_DATA,
-            class SUFFICIENT_STATISTICS>
-  class LatentDataImputerWorker {
-   public:
-    typedef LatentDataImputer<OBSERVED_DATA, SUFFICIENT_STATISTICS> Imputer;
-
-    LatentDataImputerWorker(Imputer *imputer,
-                            const SUFFICIENT_STATISTICS &suf,
-                            RNG &seeding_rng = GlobalRng::rng)
-        : imputer_(imputer),
-          suf_(suf)
-    {
-      forget_data();
-      // If imputer also happens to be a PosteriorSampler, then use
-      // the PosteriorSampler's methods for random number generation.
-      PosteriorSampler *sampler = dynamic_cast<PosteriorSampler *>(imputer);
-      if (sampler) {
-        rng_ = &(sampler->rng());
-      } else {
-        rng_storage_.reset(new RNG(seed_rng(seeding_rng)));
-        rng_ = rng_storage_.get();
-      }
-    }
-
-    void forget_data() {
-      observed_data_ = nullptr;
-      first_data_point_ = 0;
-      one_past_end_ = 0;
-    }
-
-    // Args:
-    //   full_data: The complete vector of observed data.  The
-    //     expectation is that this is owned by a Model.
-    //   first: The position of the first data point in *full_data
-    //     that this worker should impute.
-    //   one_past_end: The position that is one past the last data
-    //     point in *full_data that this worker should impute.
+    // To be called when impute_latent_data is finished.  Combine the
+    // completed data owned by this object with the shared set of
+    // complete data.
     //
-    // The data will be forgotten (by a call to forget_data()) if
-    // full_data is a nullptr, or first == one_past_end.
-    void assign_data(const std::vector<Ptr<OBSERVED_DATA> > *full_data,
-                     std::size_t first,
-                     std::size_t one_past_end) {
-      if (!full_data) {
-        forget_data();
-        return;
-      }
-      if (one_past_end > full_data->size()) {
-        one_past_end = full_data->size();
-      }
-      if (one_past_end < first) {
-        report_error("Last data point must come after first one.");
-      }
-      if (one_past_end == first) {
-        // It would be nice to combine this with the first if
-        // statement, but since one_past_end might change in the
-        // second one, this check needs its own branch.
-        forget_data();
-        return;
-      }
-      observed_data_ = full_data;
-      first_data_point_ = first;
-      one_past_end_ = one_past_end;
+    // A lock on the shared_resource_mutex_ must be acquired before
+    // calling this function.
+    virtual void combine_complete_data() = 0;
+
+    // Wraps this object in a callback which imputes the latent data
+    // and stores it in a local repository.  The local repository is
+    // then combined with the global repository in a thread-safe way.
+    std::function<void(void)> callback() {
+      return [this](){
+               this->impute_latent_data();
+               std::unique_lock<std::mutex>(shared_resource_mutex_);
+               this->combine_complete_data();
+             };
     }
 
-    // Imputes the latent data for the observed data that have been
-    // assigned through set_data.
-    //
-    // TODO(stevescott): Note, the return value from this function is
-    // not used.  It was set to bool after compiler errors related to
-    // std::future<void> on CRAN's winbuilder platform.  Replace with
-    // void in the future when possible.
-    bool impute() {
-      suf_.clear();
-
-      // If there are more workers than data points then some workers
-      // may not have data assigned.
-      if (!observed_data_) {
-        return true;
-      }
-      // Some syntactic sugar to prevent excessive *'s and ('s.
-      const auto &data(*observed_data_);
-      for (int i = first_data_point_; i < one_past_end_; ++i) {
-        imputer_->impute_latent_data(*data[i], &suf_, rng());
-      }
-      return true;
-    }
-
-    const SUFFICIENT_STATISTICS &suf() const {
-      return suf_;
-    }
-
-    RNG & rng() {
-      return *rng_;
-    }
-
-    void set_seed(unsigned long seed) {
-      rng_->seed(seed);
-    }
-
-    // The number of data points managed by this worker.
-    std::size_t data_size() const {
-      if (!observed_data_) {
-        return 0;
-      }
-      return observed_data_->size();
+   protected:
+    // Use the held mutex to obtain a lock on the complete data
+    // repository.  Return the lock.
+    std::unique_lock<std::mutex> lock_complete_data_repository() {
+      return std::unique_lock<std::mutex>(shared_resource_mutex_);
     }
 
    private:
-    std::unique_ptr<Imputer> imputer_;
-    SUFFICIENT_STATISTICS suf_;
+    std::mutex &shared_resource_mutex_;
 
-    // If the imputer happens to be a PosteriorSampler, then it brings
-    // its own random number generator, in which case rng_ should
-    // point to it.  If the imputer is not a PosteriorSampler then we
-    // need to maintin our own RNG, which we do in rng_storage_.  If
-    // rng_storage_ is needed, it will be pointed to by rng_.
-    // rng_storage_ is never called directly.  It will only be called
-    // through rng_.
-    RNG *rng_;
-    std::unique_ptr<RNG> rng_storage_;
-
-    // The data managed by this worker.  This is a continguous
-    // chunk of the data managed by the Model we're imputing data for.
-    const std::vector<Ptr<OBSERVED_DATA> > *observed_data_;
-    int first_data_point_;
-    int one_past_end_;
+    // A LatentDataImputerWorker can be held by a Ptr.
+    friend void intrusive_ptr_add_ref(LatentDataImputerWorker *w) {
+      w->up_count();
+    }
+    friend void intrusive_ptr_release(LatentDataImputerWorker *w) {
+      w->down_count();
+      if (w->ref_count() == 0) delete w;
+    }
   };
 
   //======================================================================
-
-  // Implements a worker pool for drawing latent data in parallel.
+  // A concrete instantiation of LatentDataImputerWorker, where the
+  // complete data are stored in a Sufstat object.
   //
-  // The idiom for using this class is
-  // ParallelLatentDataImputer imputer(
-  //     SpecificSufstats complete_data_suf,
-  //     &a_specific_model);
-  // for (int i = 0; i < number_of_workers; ++i) {
-  //   imputer.add_worker(new DerivedImputer);
-  // }
-  // imputer.assign_data();
-  // Sufstat = imputer.impute();
-  template <class OBSERVED_DATA,
-            class SUFFICIENT_STATISTICS,
-            class MODEL>
+  // Template Types:
+  //   OBSERVED_DATA:  The type of the observed data held by the model.
+  //   SUFFICIENT_STATISTICS: The type of the object used to hold the
+  //     complete data sufficient statistics.
+  template <class OBSERVED_DATA, class SUFFICIENT_STATISTICS>
+  class SufstatImputeWorker
+      : public LatentDataImputerWorker {
+   public:
+    typedef typename std::vector<Ptr<OBSERVED_DATA>>::const_iterator Iterator;
+
+    // Build a SufstatImputeWorker that uses the given set of
+    // sufficient statistics and the specified imputation generator.
+    // Args:
+    //   global_suf: A reference to the global object representing the
+    //     complete data sufficient statistics.  It must have methods
+    //     combine(), clear(), and clone(), and be storable in a Ptr.
+    //   global_suf_mutex:  A mutex protecting the global_suf object.
+    //   rng: A random number generator, or nullptr.  If a random
+    //     number generator is provided it will be used as the source
+    //     of randomness.  Otherwise a new RNG will be created.
+    //   seeding_rng: If a new random number generator must be
+    //     created, then this RNG will be used to seed it with an
+    //     initial value.
+    SufstatImputeWorker(SUFFICIENT_STATISTICS &global_suf,
+                        std::mutex &global_suf_mutex,
+                        RNG *rng = nullptr,
+                        RNG &seeding_rng = GlobalRng::rng)
+        : LatentDataImputerWorker(global_suf_mutex),
+          suf_(global_suf.clone()),
+          global_suf_(global_suf)
+    {
+      if (!rng) {
+        rng_storage_.reset(new RNG(seed_rng(seeding_rng)));
+        rng_ = rng_storage_.get();
+      } else {
+        rng_ = rng;
+      }
+      std::vector<Ptr<OBSERVED_DATA>> empty_vector;
+      observed_data_begin_ = empty_vector.end();
+      observed_data_end_ = empty_vector.end();
+    }
+
+    // Assign this object a range of data over which to impute.
+    void set_data(Iterator begin, Iterator end) {
+      observed_data_begin_ = begin;
+      observed_data_end_ = end;
+    }
+
+    // Args:
+    //   data_point: An individual piece of observed data to be
+    //     augmented with missing data.
+    //   suf: The local sufficient statistics that store the augmented
+    //     data.
+    //   rng: The random number generator used to impute the missing
+    //     data.
+    //
+    // Details:
+    //   Imputes the missing data corresponding to data_point, and
+    //   adds the augmented data to suf.
+    virtual void impute_latent_data_point(const OBSERVED_DATA &data_point,
+                                          SUFFICIENT_STATISTICS *suf,
+                                          RNG &rng) = 0;
+
+    void impute_latent_data() override {
+      suf_->clear();
+      for (Iterator it = observed_data_begin_; it != observed_data_end_; ++it) {
+        impute_latent_data_point(**it, suf_.get(), *rng_);
+      }
+    };
+
+    void combine_complete_data() override {
+      std::unique_lock<std::mutex> lock(std::move(
+          lock_complete_data_repository()));
+      global_suf_.combine(*suf_);
+    }
+
+   private:
+    Ptr<SUFFICIENT_STATISTICS> suf_;
+    SUFFICIENT_STATISTICS  &global_suf_;
+    Iterator observed_data_begin_;
+    Iterator observed_data_end_;
+    RNG *rng_;
+    std::unique_ptr<RNG> rng_storage_;
+  };
+
+  //======================================================================
+  // An object that manages the thread pool and the vector of workers
+  // responsible for imputing latent data.  Clients will typically not
+  // deal with this class directly.  It is part of the implementation
+  // for LatentDataSampler.
   class ParallelLatentDataImputer {
    public:
-    typedef LatentDataImputer<OBSERVED_DATA,
-                              SUFFICIENT_STATISTICS> Imputer;
-    typedef LatentDataImputerWorker<OBSERVED_DATA,
-                                    SUFFICIENT_STATISTICS> Worker;
-    // Args:
-    //   suf: The complete data sufficient statistics to be imputed.
-    //   model: A pointer to the model that is the source of the
-    //     observed data.  The model should probably inherit from
-    //     IID_DataPolicy<OBSERVED_DATA>.  It needs to provide a dat()
-    //     method returning const std::vector<Ptr<OBSERVED_DATA>> &.
-    ParallelLatentDataImputer(const SUFFICIENT_STATISTICS &suf,
-                              MODEL *model)
-        : suf_(suf),
-          model_(model),
-          first_pass_(true){}
+    ParallelLatentDataImputer() {}
 
-    // Add a worker to the worker pool.  The intent is for each worker
-    // to run in its own thread, though if there is only one worker no
-    // multi-threading is attempted.
-    //
-    // Args:
-    //   imputer: An imputer object.  This should be a freshly
-    //     allocated object not shared with anyone else.  The worker
-    //     pool will take ownership of the object and call delete when
-    //     the ParallelLatentDataImputer is destroyed.
-    void add_worker(Imputer *imputer, RNG &seeding_rng = GlobalRng::rng) {
-      workers_.emplace_back(new Worker(imputer, suf_, seeding_rng));
+    // Set the number of background threads to use for data
+    // augmentation.  If n <= 0 then no background threads are
+    // created.
+    void set_number_of_threads(int n) {
+      pool_.set_number_of_threads(n);
     }
 
-    int number_of_workers() const {
-      return workers_.size();
+    // Add a worker
+    void add_worker(Ptr<LatentDataImputerWorker> worker) {
+      workers_.push_back(worker);
     }
 
+    // Removes all elements from the collection of workers.
     void clear_workers() {
       workers_.clear();
     }
 
-    // Impute the latent data (in parallel) and return the imputed
-    // complete data sufficient statistics.
-    const SUFFICIENT_STATISTICS & impute() {
-      suf_.clear();
-      if (workers_.empty()) {
-        report_error("No workers have been assigned.");
-      }
-      // The data must be assigned each iteration for this to work
-      // with mixtures, because each mixture component will have a
-      // different number of observations each iteration.
-      assign_data();
-#ifdef _WIN32
-      first_pass_ = true;
-#endif
-      if (first_pass_ || workers_.size() == 1) {
-        // Because some tools (e.g.  eigen's blas) require an initial
-        // run to initialize shared data, one pass is done without
-        // threading before multiple threads are invoked.  Also, if
-        // there is only one worker, take this path to avoid the
-        // overhead of async/future.
+    // Impute the latent data.
+    void impute_latent_data() {
+      if (pool_.no_threads()) {
         for (int i = 0; i < workers_.size(); ++i) {
-          workers_[i]->impute();
-          suf_.combine(workers_[i]->suf());
+          workers_[i]->impute_latent_data();
+          workers_[i]->combine_complete_data();
         }
-        first_pass_ = false;
       } else {
-#ifndef _WIN32
-        std::vector<std::future<bool> > results;
+        std::vector<std::future<void> > jobs;
         for (int i = 0; i < workers_.size(); ++i) {
-          results.emplace_back(
-              async(std::launch::async,
-                    &Worker::impute,
-                    workers_[i].get()));
+          jobs.emplace_back(pool_.submit(workers_[i]->callback()));
         }
-        for (int i = 0; i < workers_.size(); ++i) {
-          results[i].get();
-          suf_.combine(workers_[i]->suf());
+        for (int i = 0; i < jobs.size(); ++i) {
+          jobs[i].get();
         }
-#endif
-      }
-      return suf_;
-    }
-
-    // Assigns the data controlled by model_ to the workers.
-    void assign_data() {
-      if (workers_.empty()) {
-        report_error("assign_data called, but there are no workers.");
-      }
-      const std::vector<Ptr<OBSERVED_DATA>> &observed_data(model_->dat());
-      std::size_t sample_size = observed_data.size();
-      std::size_t chunk_size = sample_size / workers_.size();
-      if (chunk_size * workers_.size() < sample_size) {
-        ++chunk_size;
-      }
-
-      std::size_t b = 0;
-      for(std::size_t i = 0; i < workers_.size(); ++i) {
-        std::size_t e = std::min<std::size_t>(b + chunk_size, sample_size);
-        workers_[i]->assign_data(&observed_data, b, e);
-        b = e;
       }
     }
 
    private:
-    SUFFICIENT_STATISTICS suf_;
-    MODEL *model_;
-    std::vector<std::unique_ptr<Worker> > workers_;
-    bool first_pass_;
+    ThreadWorkerPool pool_;
+    std::vector<Ptr<LatentDataImputerWorker>> workers_;
   };
+
+  //======================================================================
+  // A mix-in class for PosteriorSampler classes that want to sample
+  // latent data in parallel.  This class owns and manages the latent
+  // data imputer object and the mutex for the protecting the complete
+  // data.
+  //
+  // Template arguments:
+  //   WORKER:  A class inheriting from LatentDataImputerWorker.
+  template <class WORKER>
+  class LatentDataSampler {
+   public:
+    LatentDataSampler()
+        : latent_data_fixed_(false),
+          reassign_data_each_time_(false)
+    {}
+
+    // Create a new worker, which has access to the global repository
+    // of complete data, protected by mutex.
+    virtual Ptr<WORKER> create_worker(std::mutex &mutex) = 0;
+
+    // Allocate the vector of observed data among the workers.
+    virtual void assign_data_to_workers() = 0;
+
+    // Empty the complete data sufficient statistics or other object
+    // being used to hold the complete data.
+    virtual void clear_latent_data() = 0;
+
+    // Use up to 'n' logical threads to simulate the latent data.  If
+    // n <= 1 then run single threaded.
+    virtual void set_number_of_workers(int n) {
+      if (n < 1) {
+        n = 1;
+      }
+      imputer_.clear_workers();
+      workers_.clear();
+      for (int i = 0; i < n; ++i) {
+        Ptr<WORKER> worker = create_worker(global_complete_data_mutex_);
+        imputer_.add_worker(worker);
+        workers_.push_back(worker);
+      }
+      imputer_.set_number_of_threads(n == 1 ? 0 : n);
+      assign_data_to_workers();
+    }
+
+    // By default, this class updates its own latent data through a
+    // call to impute_latent_data().  Calling this function with a
+    // 'true' argument (the default), sets a flag that turns
+    // impute_latent_data into a no-op.  The latent data can still be
+    // manipulated through calls to clear_sufficient_statistics() and
+    // update_sufficient_statistics(), but implicit data augmentation
+    // is turned off.  Calling this function with a 'false' argument
+    // turns data augmentation back on.
+    void fix_latent_data(bool fixed = true) {
+      latent_data_fixed_ = fixed;
+    }
+
+    // In the typical use case, a model has a set of data that does
+    // not change.  When set_number_of_workers() is called, subsets of
+    // that data are assigned to workers, and that assignment will not
+    // change.  In special cases where the model's data changes from
+    // one iteration to the next (meaning that the model has different
+    // objects in its data set, same objects with different values are
+    // okay) call reassign_data_each_time() so that the workers
+    // continue to have access to valid data.  This might be necessary
+    // if the model is used as a mixture component in a finite mixture
+    // model, for example.
+    //
+    // Args:
+    //   reassign: If true then call assign_data_to_workers each time
+    //     impute_latent_data() is called.
+    void reassign_data_each_time(bool reassign = true) {
+      reassign_data_each_time_ = reassign;
+    }
+
+    // This is the main method of this class.  Workers, which may be
+    // running in background threads, each sample the latent data for
+    // their chunk of the data set.  Once each worker's draw is
+    // complete it is combined with the global complete data set.
+    virtual void impute_latent_data() {
+      if (!latent_data_fixed_) {
+        clear_latent_data();
+        if (reassign_data_each_time_) {
+          assign_data_to_workers();
+        }
+        imputer_.impute_latent_data();
+      }
+    }
+
+   protected:
+    std::vector<Ptr<WORKER>> &workers() {return workers_;}
+
+   private:
+    // If this flag is set then latent data will not be changed from
+    // its current values.
+    bool latent_data_fixed_;
+
+    // In the typical case the model that owns the data has a fixed
+    // set of data and it can be assigned to workers in the worker
+    // pool one time.  However, if the model is being used as a
+    // mixture component in a mixture model then it will have
+    // different observations assigned to it each iteration.  In that
+    // case (or in any other case where the data is expected to change
+    // across MCMC iterations), this flag should be set so that workers
+    // are drawing from the correct data set.
+    bool reassign_data_each_time_;
+
+    // A mutex protecting the global sufficient statistics held by a
+    // child object.
+    std::mutex global_complete_data_mutex_;
+
+    // This vector is kept in parallel to the vector of workers in
+    // imputer_ so that data can be assigned to workers after
+    // construction.
+    std::vector<Ptr<WORKER>> workers_;
+
+    // The latent data imputer does the actual drawing.
+    ParallelLatentDataImputer imputer_;
+  };
+
+  //======================================================================
+  // A default implementation of the the "assign_data_to_workers"
+  // member function declared in LatentDataSampler.
+  template <class OBSERVED_DATA, class WORKER>
+  void assign_data_to_workers(const std::vector<Ptr<OBSERVED_DATA>> &data,
+                              std::vector<Ptr<WORKER>> &workers) {
+    size_t number_of_workers = workers.size();
+    if (number_of_workers == 0) return;
+    size_t nobs = data.size();
+    if (nobs == 0) return;
+    size_t chunk_size = nobs / number_of_workers;
+    typedef typename std::vector<Ptr<OBSERVED_DATA>>::const_iterator Iterator;
+    Iterator it = data.begin();
+    Iterator end = data.end();
+    if (chunk_size == 0) {
+      for (int i = 0; i < nobs; ++i) {
+        workers[i]->set_data(it, it + 1);
+        ++it;
+      }
+      for (int i = nobs; i < number_of_workers; ++i) {
+        workers[i]->set_data(end, end);
+      }
+    } else {
+      for (int i = 0; i < number_of_workers; ++i) {
+        Iterator e = it + chunk_size;
+        if (e > end || (i + 1) == number_of_workers) e = end;
+        workers[i]->set_data(it, e);
+        it = e;
+      }
+    }
+  }
 
 }  // namespace BOOM
 

@@ -19,7 +19,7 @@
 #include <Models/Glm/PoissonRegressionModel.hpp>
 #include <numopt/initialize_derivatives.hpp>
 #include <TargetFun/TargetFun.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 #include <numopt.hpp>
@@ -77,7 +77,7 @@ namespace BOOM {
 
     for(int i = 0; i < data.size(); ++i){
       const Vector x = included.select(data[i]->x());
-      int y = data[i]->y();
+      int64_t y = data[i]->y();
       double lambda = 1.0;
       if (nvars > 0) {
         double eta = nvars > 0 ? beta.dot(x) : 0.0;
@@ -106,8 +106,10 @@ namespace BOOM {
 
   void PoissonRegressionModel::mle() {
     Vector beta = included_coefficients();
-    d2TargetFunPointerAdapter target(boost::bind(
-        &PoissonRegressionModel::log_likelihood, this, _1, _2, _3, _4));
+    d2TargetFunPointerAdapter target(
+        [this](const Vector &x, Vector *gradient,
+               Matrix *hessian, bool reset) {
+          return this->log_likelihood(x, gradient, hessian, reset);});
     Vector gradient;
     Matrix hessian;
     double function_value;

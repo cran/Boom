@@ -166,9 +166,10 @@ namespace BOOM{
   }
 
   Matrix & Matrix::operator=(const double &x) {
-    if (V.size()==0) {
+    if (V.empty()) {
       V.resize(1);
-      nr_ = nc_ = 1; }
+      nr_ = nc_ = 1;
+    }
     V.assign(V.size(), x); //
     return *this; }
 

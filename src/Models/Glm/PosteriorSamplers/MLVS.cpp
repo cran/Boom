@@ -32,10 +32,10 @@
 #include <distributions.hpp>       // for rlexp,dnorm,rmvn
 #include <stats/logit.hpp>
 
-namespace BOOM{
+namespace BOOM {
   namespace {
     typedef MultinomialLogitModel MLM;
-    typedef MultinomialLogitCompleteDataSufficientStatistics MLVSS;
+    typedef MultinomialLogit::CompleteDataSufficientStatistics MLVSS;
   }
   using std::ostringstream;
 
@@ -48,7 +48,6 @@ namespace BOOM{
         pri(Pri),
         vpri(Vpri),
         suf_(mod_->beta_size(false)),
-        parallel_imputer_(suf_, mod_),
         log_sampling_probs_(mod_->log_sampling_probs()),
         downsampling_(log_sampling_probs_.size() == mod_->Nchoices()),
         select_(true),
@@ -75,25 +74,22 @@ namespace BOOM{
     draw_beta();
   }
 
-  void MLVS::set_number_of_workers(int n) {
-    if (n < 1) {
-      report_error("You need at least one worker.");
-    }
-    parallel_imputer_.clear_workers();
-    for (int i = 0; i < n; ++i) {
-      parallel_imputer_.add_worker(new MlvsDataImputer(mod_), rng());
-    }
-    parallel_imputer_.assign_data();
+  void MLVS::clear_latent_data() {
+    suf_.clear();
   }
 
-  void MLVS::impute_latent_data() {
-    suf_ = parallel_imputer_.impute();
+  Ptr<MlvsDataImputer> MLVS::create_worker(std::mutex &m) {
+    return new MlvsDataImputer(suf_, m, mod_, nullptr, rng());
+  }
+
+  void MLVS::assign_data_to_workers() {
+    BOOM::assign_data_to_workers(mod_->dat(), workers());
   }
 
   double MLVS::logpri()const{
     const Selector &g = mod_->coef().inc();
     double ans = vpri->logp(g);
-    if (ans==BOOM::negative_infinity()) return ans;
+    if (ans == BOOM::negative_infinity()) return ans;
     if (g.nvars() > 0) {
       ans += dmvn(g.select(mod_->beta()),
                   g.select(pri->mu()),
@@ -168,7 +164,7 @@ namespace BOOM{
 
   double MLVS::log_model_prob(const Selector & g) {
     double num = vpri->logp(g);
-    if (num==BOOM::negative_infinity()) return num;
+    if (num == BOOM::negative_infinity()) return num;
     if (g.nvars() == 0) {
       num -= -.5 * suf_.weighted_sum_of_squares();
       return num;
@@ -195,4 +191,4 @@ namespace BOOM{
     return num-denom;
   }
 
-}
+}  // namespace BOOM

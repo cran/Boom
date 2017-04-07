@@ -125,7 +125,7 @@ double pgamma(double x, double alph, double scale, int lower_tail, int log_p) {
             a += 1.;
             c *= x / a;
             sum += c;
-        } while (c > numeric_limits<double>::epsilon());
+        } while (c > std::numeric_limits<double>::epsilon());
         arg += log(sum);
     }
     else { /* x >= max( 1, alph) */
@@ -149,8 +149,9 @@ double pgamma(double x, double alph, double scale, int lower_tail, int log_p) {
             if (fabs(pn6) > 0.) {
                 osum = sum;
                 sum = pn5 / pn6;
-                if (fabs(osum - sum) <= numeric_limits<double>::epsilon() * std::min(1., sum))
-                    break;
+                if (fabs(osum - sum) <=
+                    std::numeric_limits<double>::epsilon() * std::min(1., sum))
+                  break;
             }
             pn1 = pn3;
             pn2 = pn4;

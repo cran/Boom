@@ -225,6 +225,28 @@ namespace BOOM {
     }
   }
 
+  void DRSM::increment_expected_gradient(
+      VectorView gradient,
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (gradient.size() != xdim_
+        || state_error_mean.size() != xdim_
+        || state_error_variance.nrow() != xdim_
+        || state_error_variance.ncol() != xdim_) {
+      report_error(
+          "Wrong size arguments passed to "
+          "DynamicRegressionStateModel::increment_expected_gradient.");
+    }
+    for (int i = 0; i < xdim_; ++i) {
+      double mean = state_error_mean[i];
+      double var = state_error_variance(i, i);
+      double sigsq = DynamicRegressionStateModel::sigsq(i);;
+      double tmp = (var + mean * mean) / (sigsq * sigsq) - 1.0 / sigsq;
+      gradient[i] += .5 * tmp;
+    }
+  }
+
   void DRSM::check_size(int n)const{
     if (n != xdim_) {
       report_error("Wrong sized vector or matrix argument in"

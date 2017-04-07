@@ -34,19 +34,24 @@ namespace BOOM{
   class PoissonDataImputer;
 
   class PoissonRegressionDataImputer
-      : public LatentDataImputer<PoissonRegressionData, WeightedRegSuf> {
+      : public SufstatImputeWorker<PoissonRegressionData, WeightedRegSuf> {
    public:
     // Args:
     //   coefficients: The coefficients for the model managed by the
     //     sampler.  These are constant for the duration of the data
     //     augmentation step, and then change (for all workers) after
     //     the parameter sampling step.
-    PoissonRegressionDataImputer(const GlmCoefs *coefficients);
+    PoissonRegressionDataImputer(
+        WeightedRegSuf &global_suf,
+        std::mutex &global_suf_mutex,
+        const GlmCoefs *coefficients,
+        RNG *rng = nullptr,
+        RNG &seeding_rng = GlobalRng::rng);
 
-    virtual void impute_latent_data(
+    void impute_latent_data_point(
         const PoissonRegressionData &data_point,
         WeightedRegSuf *complete_data_suf,
-        RNG &rng) const;
+        RNG &rng) override;
 
    private:
     const GlmCoefs *coefficients_;
@@ -56,7 +61,8 @@ namespace BOOM{
   //----------------------------------------------------------------------
 
   class PoissonRegressionAuxMixSampler
-      : public PosteriorSampler {
+      : public PosteriorSampler,
+        public LatentDataSampler<PoissonRegressionDataImputer> {
    public:
     PoissonRegressionAuxMixSampler(PoissonRegressionModel *model,
                                    Ptr<MvnBase> prior,
@@ -66,27 +72,26 @@ namespace BOOM{
     void draw() override;
     double logpri() const override;
 
+    void clear_latent_data() override;
+    Ptr<PoissonRegressionDataImputer> create_worker(std::mutex &m) override;
+    void assign_data_to_workers() override;
+
+    // The first trip through the data is single threaded, so that the
+    // PoissonDataImputer object can be filled with required values
+    // without causing a race condition.  Subsequent trips can use
+    // multiple threads.  The overrides to set_number_of_workers() and
+    // impute_latent_data_point() ensure that multi-threading is
+    // delayed until after the first iteration.
+    void set_number_of_workers(int n) override;
+    void impute_latent_data() override;
+
     // Below this line are implementation details exposed for testing.
-    void impute_latent_data();
     double draw_final_event_time(int y);
     double draw_censored_event_time(double final_event_time, double rate);
     double draw_censored_event_time_zero_case(double rate);
 
     void draw_beta_given_complete_data();
     const WeightedRegSuf &complete_data_sufficient_statistics()const;
-
-    // Set the number of workers devoted to data augmentation, n >= 1.
-    void set_number_of_workers(int n);
-
-    // By default, this class updates its own latent data through a
-    // call to impute_latent_data().  Calling this fuction with a
-    // 'true' argument (the default), sets a flag that turns
-    // impute_latent_data into a no-op.  The latent data can still be
-    // manipulated through calls to clear_sufficient_statistics() and
-    // update_sufficient_statistics(), but implicit data augmentation
-    // is turned off.  Calling this function with a 'false' argument
-    // turns data augmentation back on.
-    void fix_latent_data(bool fixed = true);
 
     // Clear the complete data sufficient statistics.  This is
     // normally unnecessary.  This function is primarily intended for
@@ -104,14 +109,23 @@ namespace BOOM{
         double total_precision,
         const Vector &x);
 
+
    private:
     PoissonRegressionModel *model_;
     Ptr<MvnBase> prior_;
     WeightedRegSuf complete_data_suf_;
-    ParallelLatentDataImputer<PoissonRegressionData,
-                              WeightedRegSuf,
-                              PoissonRegressionModel> parallel_data_imputer_;
-    bool latent_data_fixed_;
+
+    // The Poisson data imputer needs single threaded access during
+    // the first MCMC iteration.  After that it is safe to access in a
+    // multi-threaded environment.  This flag keeps track of whether
+    // impute_data() has previously been called.
+    bool first_pass_through_data_;
+
+    // Once the first pass through the data is complete then the
+    // multi-threaded environment can be set up.  This field keeps
+    // track of the desired number of workers.
+    int desired_number_of_workers_;
+
   };
 
 }  // namespace BOOM

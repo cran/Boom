@@ -48,12 +48,12 @@ namespace BOOM{
       sym_(rhs.sym_)
   {}
 
-  MvnSuf *MvnSuf::clone() const{ return new MvnSuf(*this);}
+  MvnSuf *MvnSuf::clone() const { return new MvnSuf(*this);}
 
   void MvnSuf::clear() {
-    ybar_=0;
-    sumsq_=0;
-    n_=0;
+    ybar_ = 0;
+    sumsq_ = 0;
+    n_ = 0;
     sym_ = false;
   }
 
@@ -64,7 +64,7 @@ namespace BOOM{
   }
 
   void MvnSuf::check_dimension(const Vector &y) {
-    if (ybar_.size() == 0) {
+    if (ybar_.empty()) {
       resize(y.size());
     }
     if (y.size() != ybar_.size()) {
@@ -78,11 +78,19 @@ namespace BOOM{
 
   void MvnSuf::update_raw(const Vector & y) {
     check_dimension(y);
-    n_+=1.0;
-    wsp_ = (y - ybar_) / n_;  // old ybar, new n
+    n_ += 1.0;
+    // Being careful to avoid unnecessary memory allocations.
+    // This computes  wsp_ = (y - ybar_) / n_;
+    wsp_ = y;
+    wsp_ -= ybar_;
+    wsp_ /= n_;
     ybar_ += wsp_;            // new ybar
-    sumsq_.add_outer(wsp_, n_-1, false);
-    sumsq_.add_outer(y - ybar_, 1, false);
+    sumsq_.add_outer(wsp_, n_ - 1, false);
+
+    // And this sets wsp_ = (y - ybar_)
+    wsp_ = y;
+    wsp_ -= ybar_;
+    sumsq_.add_outer(wsp_, 1, false);
     sym_ = false;
   }
 
@@ -128,40 +136,40 @@ namespace BOOM{
     sym_ = false;
   }
 
-  Vector MvnSuf::sum()const{return ybar_ * n_;}
-  SpdMatrix MvnSuf::sumsq()const{
+  Vector MvnSuf::sum() const {return ybar_ * n_;}
+  SpdMatrix MvnSuf::sumsq() const {
     check_symmetry();
     SpdMatrix ans(sumsq_);
     ans.add_outer(ybar_, n_);
     return ans;
   }
-  double MvnSuf::n()const{return n_;}
+  double MvnSuf::n() const {return n_;}
 
-  void MvnSuf::check_symmetry()const{
+  void MvnSuf::check_symmetry() const {
     if (!sym_) {
       sumsq_.reflect();
       sym_ = true;
     }
   }
 
-  const Vector & MvnSuf::ybar()const{ return ybar_;}
-  SpdMatrix MvnSuf::sample_var()const{
+  const Vector & MvnSuf::ybar() const { return ybar_;}
+  SpdMatrix MvnSuf::sample_var() const {
     if (n()>1) return center_sumsq()/(n()-1);
     return sumsq_ * 0.0;
   }
 
-  SpdMatrix MvnSuf::var_hat()const{
+  SpdMatrix MvnSuf::var_hat() const {
     if (n()>0) return center_sumsq()/n();
     return sumsq_ * 0.0;
   }
 
-  SpdMatrix MvnSuf::center_sumsq(const Vector &mu)const{
+  SpdMatrix MvnSuf::center_sumsq(const Vector &mu) const {
     SpdMatrix ans = center_sumsq();
     ans.add_outer(ybar_ - mu, n_);
     return ans;
   }
 
-  const SpdMatrix & MvnSuf::center_sumsq()const{
+  const SpdMatrix & MvnSuf::center_sumsq() const {
     check_symmetry();
     return sumsq_;
   }
@@ -182,7 +190,7 @@ namespace BOOM{
   MvnSuf * MvnSuf::abstract_combine(Sufstat *s) {
       return abstract_combine_impl(this,s); }
 
-  Vector MvnSuf::vectorize(bool minimal)const{
+  Vector MvnSuf::vectorize(bool minimal) const {
     Vector ans(ybar_);
     ans.concat(sumsq_.vectorize(minimal));
     ans.push_back(n_);
@@ -204,7 +212,7 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-  ostream & MvnSuf::print(ostream &out)const{
+  ostream & MvnSuf::print(ostream &out) const {
     out << n_ << endl
         << ybar_ << endl
         << sumsq_;
@@ -213,17 +221,17 @@ namespace BOOM{
 
   //======================================================================
 
-  uint MB::dim()const{
+  uint MvnBase::dim() const {
     return mu().size();}
 
-  double MB::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
+  double MvnBase::Logp(const Vector &x, Vector &g, Matrix &h, uint nd) const {
     double ans = dmvn(x,mu(), siginv(), ldsi(), true);
     if (nd>0) {
       g = -(siginv() * (x-mu()));
       if (nd>1) h = -siginv();}
     return ans;}
 
-  double MB::logp_given_inclusion(const Vector &x_subset,
+  double MvnBase::logp_given_inclusion(const Vector &x_subset,
                                   Vector *gradient,
                                   Matrix *Hessian,
                                   const Selector &included,
@@ -242,13 +250,13 @@ namespace BOOM{
     return ans;
   }
 
-  double MB::log_likelihood(const Vector &mu,
+  double MvnBase::log_likelihood(const Vector &mu,
                             const SpdMatrix &siginv,
                             const MvnSuf &suf) const {
     const double log2pi = 1.83787706641;
     double n = suf.n();
-    const Vector ybar = suf.ybar();
-    const SpdMatrix sumsq = suf.center_sumsq();
+    const Vector &ybar = suf.ybar();
+    const SpdMatrix &sumsq = suf.center_sumsq();
 
     double qform = n*(siginv.Mdist(ybar, mu)) + traceAB(siginv, sumsq);
     double nc = 0.5 * n * (-dim() * log2pi + siginv.logdet());
@@ -256,7 +264,7 @@ namespace BOOM{
     return ans;
   }
 
-  Vector MB::sim()const{
+  Vector MvnBase::sim() const {
     return rmvn(mu(), Sigma());
   }
 
@@ -287,25 +295,22 @@ namespace BOOM{
 
   Ptr<VectorParams> MBP::Mu_prm() {
     return ParamPolicy::prm1();}
-  const Ptr<VectorParams> MBP::Mu_prm()const{
+  const Ptr<VectorParams> MBP::Mu_prm() const {
     return ParamPolicy::prm1();}
 
   Ptr<SpdParams> MBP::Sigma_prm() {
     return ParamPolicy::prm2();}
-  const Ptr<SpdParams> MBP::Sigma_prm()const{
+  const Ptr<SpdParams> MBP::Sigma_prm() const {
     return ParamPolicy::prm2();}
 
-  const Vector & MBP::mu()const{return prm1_ref().value();}
-  const SpdMatrix & MBP::Sigma()const{return prm2_ref().var();}
-  const SpdMatrix & MBP::siginv()const{return prm2_ref().ivar();}
-  double MBP::ldsi()const{return prm2_ref().ldsi();}
-  const Matrix & MBP::Sigma_chol()const{return prm2_ref().var_chol();}
+  const Vector & MBP::mu() const {return prm1_ref().value();}
+  const SpdMatrix & MBP::Sigma() const {return prm2_ref().var();}
+  const SpdMatrix & MBP::siginv() const {return prm2_ref().ivar();}
+  double MBP::ldsi() const {return prm2_ref().ldsi();}
+  const Matrix & MBP::Sigma_chol() const {return prm2_ref().var_chol();}
 
   void MBP::set_mu(const Vector &v) {prm1_ref().set(v);}
   void MBP::set_Sigma(const SpdMatrix &s) {prm2_ref().set_var(s);}
   void MBP::set_siginv(const SpdMatrix &ivar) {prm2_ref().set_ivar(ivar);}
-  void MBP::set_S_Rchol(const Vector &sd, const Matrix &L) {
-      prm2_ref().set_S_Rchol(sd,L); }
 
-
-}
+}  // namespace BOOM

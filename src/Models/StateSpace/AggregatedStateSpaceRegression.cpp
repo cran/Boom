@@ -22,9 +22,6 @@
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
-
 namespace BOOM{
   //======================================================================
   // One 'week' of data, which may or may not contain an observed
@@ -559,12 +556,6 @@ namespace BOOM{
 
     // Finally, the initial state of the cumulator variable is zero.
     state0[state_dimension() - 1] = 0;
-  }
-
-  Vector ASSR::simulate_initial_state()const{
-    Vector ans(state_dimension());
-    simulate_initial_state(VectorView(ans));
-    return ans;
   }
 
   Vector ASSR::simulate_state_error(int t)const{

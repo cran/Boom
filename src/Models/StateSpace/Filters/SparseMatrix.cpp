@@ -160,15 +160,13 @@ namespace BOOM{
     int stride = x.stride();
     int n = x.size();
     double *now = &x[n-1];
-    double *prev = now - stride;
-    double total = 0;
+    double total = -*now;
     for (int i = 0; i < n-1; ++i) {
-      total -= *now;
+      double *prev = now - stride;
+      total -= *prev;
       *now = *prev;
       now = prev;
-      prev -= stride;
     }
-    total -= *now;
     *now = total;
   }
 

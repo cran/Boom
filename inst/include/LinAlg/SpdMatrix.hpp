@@ -25,7 +25,7 @@ namespace BOOM{
   class SpdMatrix
     : public Matrix
   {
-    // symmetric, positive definite mattrix with 'square' storage
+    // symmetric, positive definite matrix with 'square' storage
     // (i.e. 0's are stored)
   public:
     SpdMatrix();
@@ -33,7 +33,11 @@ namespace BOOM{
     SpdMatrix(uint dim, double *m, bool ColMajor=true);
     template <class FwdIt>
     explicit SpdMatrix(FwdIt Beg, FwdIt End);
-    SpdMatrix(const SpdMatrix &sm);  // reference semantics
+
+    SpdMatrix(const SpdMatrix &rhs) = default;
+    SpdMatrix(SpdMatrix &&rhs) = default;
+    SpdMatrix & operator=(const SpdMatrix &rhs) = default;
+    SpdMatrix & operator=(SpdMatrix &&rhs) = default;
 
     // Args:
     //   v: The elements of the matrix.
@@ -52,7 +56,6 @@ namespace BOOM{
     SpdMatrix(const SubMatrix &m, bool check = true);
     SpdMatrix(const ConstSubMatrix &m, bool check = true);
 
-    SpdMatrix & operator=(const SpdMatrix &); // value semantics
     SpdMatrix & operator=(const Matrix &);
     SpdMatrix & operator=(const SubMatrix &);
     SpdMatrix & operator=(const ConstSubMatrix &);
@@ -201,9 +204,6 @@ namespace BOOM{
   SpdMatrix sandwich(const Matrix &A, const SpdMatrix &V); // AVA^t
   SpdMatrix sandwich_old(const Matrix &A, const SpdMatrix &V); // AVA^t
 
-  SpdMatrix select(const SpdMatrix &X, const std::vector<bool> &inc,
-      	      uint nvars);
-  SpdMatrix select(const SpdMatrix &X, const std::vector<bool> &inc);
   SpdMatrix as_symmetric(const Matrix &A);
 
   SpdMatrix sum_self_transpose(const Matrix &A);  // A + A.t()

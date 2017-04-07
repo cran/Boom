@@ -16,6 +16,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include <Models/Sufstat.hpp>
+#include <sstream>
 
 namespace BOOM{
   void intrusive_ptr_add_ref(Sufstat *m){ m->up_count(); }
@@ -39,5 +40,11 @@ namespace BOOM{
     for(uint i=0; i<svec.size(); ++i){
       it = svec[i]->unvectorize(it, minimal);
     }
+  }
+
+  std::string Sufstat::print_to_string() const {
+    std::ostringstream out;
+    out << *this;
+    return out.str();
   }
 }

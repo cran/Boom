@@ -524,7 +524,7 @@ namespace BOOM {
   //----------------------------------------------------------------------
   double NestedHmm::impute_latent_data(){
 #ifndef NO_BOOST_THREADS
-    if(workers_.size() > 0) return impute_latent_data_with_threads();
+    if (!workers_.empty()) return impute_latent_data_with_threads();
 #endif
     clear_client_data();
     double ans = 0;

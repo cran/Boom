@@ -18,7 +18,6 @@
 
 #include <stats/IQagent.hpp>
 #include <algorithm>
-#include <boost/bind.hpp>
 #include <stdexcept>
 #include <cassert>
 #include <cmath>
@@ -71,7 +70,7 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   inline double interp_q(double p, double p0, double p1,
-			 double q0, double q1){
+                         double q0, double q1){
     double slope = (q1-q0)/(p1-p0);
     return q0 + (p-p0)*slope;
   }
@@ -90,7 +89,7 @@ namespace BOOM{
     uint hi = upper - b;
     if(lo==hi) return quantiles_[lo];
     return interp_q(prob, probs_[lo], probs_[hi],
-		    quantiles_[lo], quantiles_[hi]);
+                    quantiles_[lo], quantiles_[hi]);
   }
   //----------------------------------------------------------------------
   inline double interp(double x, double x0, double x1, double p0, double p1){
@@ -140,8 +139,8 @@ namespace BOOM{
     uint i= n-1;
     while(Fminus_[i] > p){
       if(i==0){
-	//	report_error("find_xminus failed in IQagent");
-	break;
+        //      report_error("find_xminus failed in IQagent");
+        break;
       }
       --i;
     }
@@ -149,14 +148,14 @@ namespace BOOM{
   }
   //----------------------------------------------------------------------
   void IQagent::update_cdf(){
-    if(data_buffer_.size()==0) return;
+    if (data_buffer_.empty()) return;
     ecdf_ = ECDF(data_buffer_);
     const VEC & sorted_data(ecdf_.sorted_data());
     data_buffer_.reserve(sorted_data.size() + quantiles_.size());
     data_buffer_.clear();
     std::merge(sorted_data.begin(), sorted_data.end(),
-	       quantiles_.begin(), quantiles_.end(),
-	       back_inserter(data_buffer_));
+               quantiles_.begin(), quantiles_.end(),
+               back_inserter(data_buffer_));
     // now data buffer includes quantiles and new data
     uint n = data_buffer_.size();
     Fplus_.resize(n);
@@ -173,14 +172,14 @@ namespace BOOM{
       double xminus = find_xminus(probs_[i]);
       if(xplus==xminus) quantiles_[i] = xminus;
       else{
-	double Fplus = F(xplus, true);
-	double Fminus= F(xminus, false);
-	if(Fplus == Fminus) quantiles_[i] = xminus;
-	else{
-	  double rho = (Fplus - probs_[i])/(Fplus - Fminus);
-	  assert(std::isfinite(rho));
-	  quantiles_[i] = rho * xminus + (1-rho) * xplus;
-	}
+        double Fplus = F(xplus, true);
+        double Fminus= F(xminus, false);
+        if(Fplus == Fminus) quantiles_[i] = xminus;
+        else{
+          double rho = (Fplus - probs_[i])/(Fplus - Fminus);
+          assert(std::isfinite(rho));
+          quantiles_[i] = rho * xminus + (1-rho) * xplus;
+        }
       }
     }
 

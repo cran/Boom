@@ -25,7 +25,6 @@
 
 #include <TargetFun/TargetFun.hpp>
 #include <cpputil/ParamHolder.hpp>
-#include <boost/bind.hpp>
 #include <Samplers/MetropolisHastings.hpp>
 #include <distributions.hpp>
 
@@ -63,9 +62,9 @@ namespace BOOM{
     double SubjectTF::operator()(const Vector &theta)const{
       ParamHolder ph(theta, subject->Theta_prm(), wsp);
       ans=prior->pdf(subject, true);
-      const ItemResponseMap &ir(subject->item_responses());
-      for_each(ir.begin(),ir.end(),
-           boost::bind(&SubjectTF::loglike_contrib, this, _1));
+      for (auto &item_response : subject->item_responses()) {
+        loglike_contrib(item_response);
+      }
       return ans;
     }
     void SubjectTF::loglike_contrib(std::pair<Ptr<Item>,Response> ir)const{
@@ -110,13 +109,10 @@ namespace BOOM{
     void DAFE::set_moments(){
       Ivar = pri->siginv();           // correlation matrix
       mean = Ivar*pri->mean(subject); // zero, typically
-
-      const ItemResponseMap & items(subject->item_responses());
-      for_each(items.begin(), items.end(),
-           boost::bind(&DAFE::accumulate_moments, this, _1));
-
+      for (auto &item_response : subject->item_responses()) {
+        accumulate_moments(item_response);
+      }
       mean = Ivar.solve(mean);
-
       prop->set_mu(mean);
       prop->set_ivar(Ivar);
     };

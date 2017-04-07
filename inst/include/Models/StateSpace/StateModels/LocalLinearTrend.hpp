@@ -55,8 +55,12 @@ namespace BOOM{
     SpdMatrix initial_state_variance() const override;
     void set_initial_state_variance(const SpdMatrix &V);
 
-    void set_Sigma(const SpdMatrix &sigma) override;
     void update_complete_data_sufficient_statistics(
+        int t,
+        const ConstVectorView &state_error_mean,
+        const ConstSubMatrix &state_error_variance) override;
+    void increment_expected_gradient(
+        VectorView gradient,
         int t,
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
@@ -66,7 +70,7 @@ namespace BOOM{
 
     SparseVector observation_matrix_;
     Ptr<LocalLinearTrendMatrix> state_transition_matrix_;
-    Ptr<DenseSpd> state_variance_matrix_;
+    Ptr<DenseSpdParamView> state_variance_matrix_;
     Ptr<IdentityMatrix> state_error_expander_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;

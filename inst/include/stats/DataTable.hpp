@@ -65,8 +65,8 @@ namespace BOOM{
     ostream & display(ostream &out) const override;
 
     //--- build a DataTable by appending variables ---
-    void append_variable(const Vector &v, string name);
-    void append_variable(const CategoricalVariable &cv, string name);
+    void append_variable(const Vector &v, const string &name);
+    void append_variable(const CategoricalVariable &cv, const string &name);
 
     //--- size  ---
     uint nvars() const; // number of variables stored in the table

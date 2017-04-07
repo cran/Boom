@@ -194,7 +194,7 @@ namespace BOOM {
       void check_finalized(const char *function_name) const;
       int variable_number_;
       Vector observed_values_;
-      boost::shared_ptr<VariableSummaryImpl> impl_;
+      std::shared_ptr<VariableSummaryImpl> impl_;
     };
 
     //----------------------------------------------------------------------
@@ -455,7 +455,7 @@ namespace BOOM {
 
       // The data for a node is not owned by the node.
       std::vector<ResidualRegressionData *> data_;
-      boost::shared_ptr<SufficientStatisticsBase> suf_;
+      std::shared_ptr<SufficientStatisticsBase> suf_;
 
       // For interior nodes predictions are made by going left if x <=
       // cutpoint_, and right if x > cutpoint_.
@@ -617,7 +617,7 @@ namespace BOOM {
       void from_matrix(const ConstSubMatrix &tree_matrix);
 
      private:
-      boost::shared_ptr<TreeNode> root_;
+      std::shared_ptr<TreeNode> root_;
       int number_of_nodes_;
       std::set<TreeNode *> leaves_;
       std::set<TreeNode *> parents_of_leaves_;
@@ -702,7 +702,7 @@ namespace BOOM {
     const Bart::Tree *tree(int which_tree) const;
 
     // Adds the argument to the vector of trees managed by the model.
-    void add_tree(boost::shared_ptr<Bart::Tree> tree);
+    void add_tree(std::shared_ptr<Bart::Tree> tree);
 
     // The specified tree will be removed from the list of trees, and
     // deleted from memory.  If it is not a tree managed by the model,
@@ -740,7 +740,7 @@ namespace BOOM {
     // predictor set.  The variable_summaries_ are used to determine
     // the set of cutpoints available to the model.
     std::vector<Bart::VariableSummary> variable_summaries_;
-    std::vector<boost::shared_ptr<Bart::Tree> > trees_;
+    std::vector<std::shared_ptr<Bart::Tree> > trees_;
   };
 
 }  // namespace BOOM

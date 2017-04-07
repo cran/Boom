@@ -91,7 +91,7 @@ namespace BOOM{
 
     ostream & Subject::display(ostream &out)const{
       out << id();
-      if(x_.size()>0) out << x_;
+      if(!x_.empty()) out << x_;
       out << endl;
       return out;
     }

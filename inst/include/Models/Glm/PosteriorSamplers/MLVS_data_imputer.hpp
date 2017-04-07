@@ -25,22 +25,26 @@
 #include <Models/PosteriorSamplers/Imputer.hpp>
 
 namespace BOOM{
-
+  namespace ML = MultinomialLogit;
   class MlvsDataImputer
-      : public LatentDataImputer<ChoiceData,
-                                 MultinomialLogitCompleteDataSufficientStatistics> {
+      : public SufstatImputeWorker<ChoiceData,
+                                   ML::CompleteDataSufficientStatistics> {
   public:
-    typedef MultinomialLogitCompleteDataSufficientStatistics LocalSuf;
+    typedef ML::CompleteDataSufficientStatistics SufficientStatistics;
 
     // Args:
-    //   Mod:  A pointer to the model being data-agumented.
-    MlvsDataImputer(MultinomialLogitModel *Mod);
+    //   model:  A pointer to the model being data-agumented.
+    MlvsDataImputer(SufficientStatistics &global_suf,
+                    std::mutex &global_suf_mutex,
+                    MultinomialLogitModel *model,
+                    RNG *rng = nullptr,
+                    RNG &seeding_rng = GlobalRng::rng);
 
     // Impute latent data for a single observation, and add the
     // results to the complete data sufficient statistics.
-    virtual void impute_latent_data(const ChoiceData &observed_data,
-                                    LocalSuf *suf,
-                                    RNG &rng) const;
+    void impute_latent_data_point(const ChoiceData &observed_data,
+                                  SufficientStatistics *suf,
+                                  RNG &rng) override;
 
     // Used to decompose latent utilities into a mixture of Gaussians.
     // Args:
@@ -54,6 +58,8 @@ namespace BOOM{
 
   private:
     MultinomialLogitModel * model_;
+    Iterator observed_data_begin_;
+    Iterator observed_data_end_;
 
     const Vector mu_;                   // mean for EV approx
     const Vector sigsq_inv_;            // inverse variance for EV approx

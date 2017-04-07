@@ -8,7 +8,7 @@
 #include <LinAlg/SubMatrix.hpp>
 #include <LinAlg/Array.hpp>
 
-
+#include <Models/ModelTypes.hpp>
 #include <Models/ParamTypes.hpp>
 #include <Models/SpdParams.hpp>
 #include <Models/Glm/GlmCoefs.hpp>
@@ -87,7 +87,7 @@ namespace BOOM{
     // discarding the first 'n' elements in an MCMC sample.
     void advance(int n);
    private:
-    std::vector<boost::shared_ptr<RListIoElement> > elements_;
+    std::vector<std::shared_ptr<RListIoElement> > elements_;
   };
 
   //======================================================================
@@ -210,6 +210,18 @@ namespace BOOM{
     virtual double get_value()const=0;
   };
 
+  // A callback class for saving log likelihood values.
+  class LogLikelihoodCallback : public ScalarIoCallback {
+   public:
+    explicit LogLikelihoodCallback(LoglikeModel *model)
+        : model_(model) {}
+    double get_value() const override {
+      return model_->log_likelihood();
+    }
+   private:
+    LoglikeModel *model_;
+  };
+
   // For managing scalar (double) output that is not stored in a
   // UnivParams.
   class NativeUnivariateListElement : public RealValuedRListIoElement {
@@ -232,7 +244,7 @@ namespace BOOM{
     void write() override;
     void stream() override;
    private:
-    boost::shared_ptr<ScalarIoCallback> callback_;
+    std::shared_ptr<ScalarIoCallback> callback_;
     double *streaming_buffer_;
     BOOM::VectorView vector_view_;
   };
@@ -254,8 +266,10 @@ namespace BOOM{
   // For managing VectorParams, stored in an R matrix.
   class VectorListElement : public RealValuedRListIoElement {
    public:
-    VectorListElement(Ptr<VectorParams> m,
-                      const std::string &param_name);
+    VectorListElement(
+        Ptr<VectorParams> m,
+        const std::string &param_name,
+        const std::vector<string> &element_names = std::vector<string>());
     // Allocate a matrix
     SEXP prepare_to_write(int niter) override;
     void prepare_to_stream(SEXP object) override;
@@ -265,6 +279,7 @@ namespace BOOM{
     void CheckSize();
     Ptr<VectorParams> prm_;
     SubMatrix matrix_view_;
+    std::vector<string> element_names_;
   };
 
   //----------------------------------------------------------------------
@@ -273,28 +288,22 @@ namespace BOOM{
   // indicators must be set correctly.
   class GlmCoefsListElement : public VectorListElement {
    public:
-    GlmCoefsListElement(Ptr<GlmCoefs> m,
-                        const std::string &param_name);
+    GlmCoefsListElement(
+        Ptr<GlmCoefs> m,
+        const std::string &param_name,
+        const std::vector<string> &element_names = std::vector<string>());
     void stream() override;
+
+    // If coefficient names are set prior to calling prepare_to_write()
+    void set_coefficient_names(const std::vector<string> &names);
    private:
     Ptr<GlmCoefs> coefs_;
 
     // Workspace to use when streaming.
     Vector beta_;
+    const std::vector<string> coefficient_names_;
   };
 
-  //----------------------------------------------------------------------
-  // For vectors with named components, such as factor levels or
-  // variable names.
-  class NamedVectorListElement : public VectorListElement {
-   public:
-    NamedVectorListElement(Ptr<VectorParams> m,
-                           const std::string &param_name,
-                           const std::vector<string> &element_names);
-    SEXP prepare_to_write(int niter) override;
-   private:
-    const std::vector<string> element_names_;
-  };
   //----------------------------------------------------------------------
   // For reporting a vector of standard deviations when the model
   // stores a vector of variances.
@@ -370,7 +379,7 @@ namespace BOOM{
     // list element pointer outside of an RListIoManager.
     HierarchicalVectorListElement(const std::string &param_name);
 
-    void add_vector(Ptr<VectorParams> vector);
+    void add_vector(const Ptr<VectorParams> &vector);
     SEXP prepare_to_write(int niter) override;
     void prepare_to_stream(SEXP object) override;
     void write() override;
@@ -437,7 +446,7 @@ namespace BOOM{
     void write() override;
     void stream() override;
    private:
-    boost::shared_ptr<VectorIoCallback> callback_;
+    std::shared_ptr<VectorIoCallback> callback_;
     Vector *streaming_buffer_;
     SubMatrix matrix_view_;
   };
@@ -479,7 +488,7 @@ namespace BOOM{
     int nrow()const override;
     int ncol()const override;
    private:
-    boost::shared_ptr<MatrixIoCallback> callback_;
+    std::shared_ptr<MatrixIoCallback> callback_;
     Matrix *streaming_buffer_;
     ArrayView array_view_;
   };
@@ -540,7 +549,7 @@ namespace BOOM{
     // iteration.
     ArrayView next_array_view();
 
-    boost::shared_ptr<ArrayIoCallback> callback_;
+    std::shared_ptr<ArrayIoCallback> callback_;
 
     // A view into the R buffer holding the data.
     ArrayView array_buffer_;

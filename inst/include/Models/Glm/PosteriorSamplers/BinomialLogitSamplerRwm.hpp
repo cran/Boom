@@ -24,7 +24,7 @@
 
 #include <Samplers/MetropolisHastings.hpp>
 #include <Samplers/MH_Proposals.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM{
 

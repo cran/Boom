@@ -49,6 +49,9 @@ namespace BOOM {
     double Loglike(const Vector &sigsq_vec,
                    Vector &g, Matrix &h, uint nd)const override;
     double log_likelihood(double sigsq, double *g, double *h) const;
+    double log_likelihood() const override {
+      return log_likelihood(sigsq(), nullptr, nullptr);
+    }
   };
 }  // namespace BOOM
 #endif // BOOM_ZERO_MEAN_GAUSSIAN_MODEL_HPP

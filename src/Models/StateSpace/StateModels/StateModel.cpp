@@ -30,6 +30,15 @@ namespace BOOM{
                  "for this StateModel subclass.");
   }
 
+  void StateModel::increment_expected_gradient(
+      VectorView gradient,
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    report_error("increment_expected_gradient does not work for "
+                 "this StateModel subclass.");
+  }
+
   void StateModel::simulate_initial_state(VectorView eta)const{
     if(eta.size() != state_dimension()){
       std::ostringstream err;

@@ -27,28 +27,80 @@
 namespace BOOM {
   namespace {
     typedef StateSpaceStudentRegressionModel SSSRM;
-    typedef StateSpace::VarianceAugmentedRegressionData AugmentedData;
+    typedef StateSpace::AugmentedStudentRegressionData AugmentedData;
   }  // namespace
 
-  AugmentedData::VarianceAugmentedRegressionData(double y, const Vector &x)
-      : RegressionData(y, x),
-        weight_(1.0),
-        offset_(0.0)
+  AugmentedData::AugmentedStudentRegressionData() {}
+
+  AugmentedData::AugmentedStudentRegressionData(double y, const Vector &x)
+      : regression_data_(1, new RegressionData(y, x)),
+        weights_(1, 1.0),
+        state_model_offset_(0.0)
   {}
 
-  void AugmentedData::set_weight(double weight) {
-    weight_ = weight;
+  AugmentedData::AugmentedStudentRegressionData(
+      const std::vector<Ptr<RegressionData>> & data)
+      : regression_data_(data),
+        weights_(data.size(), 1.0),
+        state_model_offset_(0.0)
+  {}
+
+  AugmentedData * AugmentedData::clone() const {
+    return new AugmentedData(*this);
   }
 
-  void AugmentedData::set_offset(double offset) {
-    offset_ = offset;
+  std::ostream & AugmentedData::display(std::ostream &out) const {
+    out << "state model offset: " << state_model_offset_ << std::endl;
+    out << std::setw(10) << "response"
+        << std::setw(10) << " weight"
+        << " predictors" << std::endl;
+    for (int i = 0; i < regression_data_.size(); ++i) {
+      out << std::setw(10) << regression_data_[i]->y()
+          << std::setw(10) << weights_[i]
+          << regression_data_[i]->x()
+          << std::endl;
+    }
+    return out;
   }
 
+  void AugmentedData::add_data(const Ptr<RegressionData> &observation) {
+    regression_data_.push_back(observation);
+    weights_.push_back(1.0);
+  }
+
+  void AugmentedData::set_weight(double weight, int observation) {
+    if (weight < 0 || !std::isfinite(weight)) {
+      report_error("Weights must be finite and non-negative.");
+    }
+    weights_[observation] = weight;
+  }
+
+  double AugmentedData::adjusted_observation(
+      const GlmCoefs &coefficients) const {
+    double ans = 0;
+    double total_precision = 0;
+    for (int i = 0; i < regression_data_.size(); ++i) {
+      const RegressionData &data(regression_data(i));
+      ans += weights_[i] * (data.y() - coefficients.predict(data.x()));
+      total_precision += weights_[i];
+    }
+    return ans / total_precision;
+  }
+
+  double AugmentedData::sum_of_weights() const {
+    return sum(weights_);
+  }
+
+  void AugmentedData::set_state_model_offset(double offset) {
+    state_model_offset_ = offset;
+  }
+
+  //======================================================================
   SSSRM::StateSpaceStudentRegressionModel(int xdim)
       : StateSpaceNormalMixture(xdim > 1),
         observation_model_(new TRegressionModel(xdim))
   {
-    initialize_param_policy();
+    set_observers();
   }
 
   SSSRM::StateSpaceStudentRegressionModel(
@@ -58,7 +110,7 @@ namespace BOOM {
       : StateSpaceNormalMixture(ncol(predictors) > 0),
         observation_model_(new TRegressionModel(ncol(predictors)))
   {
-    initialize_param_policy();
+    set_observers();
     if ((ncol(predictors) == 1)
         && (var(predictors.col(0)) < std::numeric_limits<double>::epsilon())) {
       set_regression_flag(false);
@@ -94,16 +146,23 @@ namespace BOOM {
     return dat().size();
   }
 
+  int SSSRM::sample_size() const {
+    int ans = 0;
+    for (int i = 0; i < dat().size(); ++i) {
+      ans += dat()[i]->sample_size();
+    }
+    return ans;
+  }
+
   double SSSRM::observation_variance(int t) const {
-    return observation_model_->sigsq() / dat()[t]->weight();
+    return observation_model_->sigsq() / dat()[t]->sum_of_weights();
   }
 
   double SSSRM::adjusted_observation(int t) const {
     if (is_missing_observation(t)) {
       return negative_infinity();
     }
-    const AugmentedData &data_point(*(dat()[t]));
-    return data_point.y() - observation_model_->predict(data_point.x());
+    return dat()[t]->adjusted_observation(observation_model_->coef());
   }
 
   bool SSSRM::is_missing_observation(int t) const {
@@ -112,7 +171,7 @@ namespace BOOM {
 
   void SSSRM::observe_data_given_state(int t)  {
     if (!is_missing_observation(t)) {
-      dat()[t]->set_offset(observation_matrix(t).dot(state(t)));
+      dat()[t]->set_state_model_offset(observation_matrix(t).dot(state(t)));
       signal_complete_data_change(t);
     }
   }
@@ -120,6 +179,7 @@ namespace BOOM {
   Vector SSSRM::simulate_forecast(
       const Matrix &predictors,
       const Vector &final_state) {
+    set_state_model_behavior(StateModel::MARGINAL);
     Vector state = final_state;
     Vector ans(nrow(predictors));
     int t0 = dat().size();
@@ -192,8 +252,7 @@ namespace BOOM {
     return ans;
   }
 
-  void SSSRM::initialize_param_policy() {
-    ParamPolicy::add_model(observation_model_);
+  void SSSRM::set_observers() {
     observe(observation_model_->coef_prm());
     observe(observation_model_->Sigsq_prm());
     observe(observation_model_->Nu_prm());

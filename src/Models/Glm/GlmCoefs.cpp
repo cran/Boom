@@ -17,7 +17,6 @@
 */
 
 #include <Models/Glm/GlmCoefs.hpp>
-#include <boost/bind.hpp>
 #include <stdexcept>
 #include <cpputil/report_error.hpp>
 

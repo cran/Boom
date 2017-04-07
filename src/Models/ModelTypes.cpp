@@ -35,7 +35,7 @@ namespace BOOM{
   {}
 
   Vector Model::vectorize_params(bool minimal)const{
-    ParamVector prm(t());
+    ParamVector prm(parameter_vector());
     uint nprm = prm.size();
     uint N(0), nmax(0);
     for(uint i=0; i<nprm; ++i){
@@ -54,7 +54,7 @@ namespace BOOM{
   }
 
   void Model::unvectorize_params(const Vector &v, bool minimal){
-    ParamVector prm(t());
+    ParamVector prm(parameter_vector());
     Vector::const_iterator b = v.begin();
     for(uint i=0; i<prm.size(); ++i) b = prm[i]->unvectorize(b, minimal);
   }
@@ -79,6 +79,49 @@ namespace BOOM{
     return sampler(0)->can_find_posterior_mode();
   }
 
+  double PosteriorModeModel::log_prior_density(
+      const ConstVectorView &parameters) const {
+    if (number_of_sampling_methods() != 1) {
+      report_error("log_prior_density requires a single posterior sampler.");
+    }
+    const PosteriorSampler *posterior_sampler = sampler(0);
+    if (!posterior_sampler->can_evaluate_log_prior_density()) {
+      report_error("Posterior sampler does not implement "
+                   "log_prior_density.");
+    }
+    return posterior_sampler->log_prior_density(parameters);
+  }
+
+  bool PosteriorModeModel::can_evaluate_log_prior_density() const {
+    if (number_of_sampling_methods() != 1) {
+      return false;
+    }
+    return sampler(0)->can_evaluate_log_prior_density();
+  }
+
+  double PosteriorModeModel::increment_log_prior_gradient(
+      const ConstVectorView &parameters,
+      VectorView gradient) const {
+    if (number_of_sampling_methods() != 1) {
+      report_error("increment_log_prior_gradient requires a "
+                   "single posterior sampler.");
+    }
+    const PosteriorSampler *posterior_sampler = sampler(0);
+    if (!posterior_sampler->can_increment_log_prior_gradient()) {
+      report_error("Posterior sampler does not implement "
+                   "increment_log_prior_gradient.");
+    }
+    return posterior_sampler->increment_log_prior_gradient(
+        parameters, gradient);
+  }
+
+  bool PosteriorModeModel::can_increment_log_prior_gradient() const {
+    if (number_of_sampling_methods() != 1) {
+      return false;
+    }
+    return sampler(0)->can_increment_log_prior_gradient();
+  }
+
   //============================================================
   void MLE_Model::initialize_params(){ mle(); }
 
@@ -94,10 +137,12 @@ namespace BOOM{
     dLoglikeTF loglike(this);
     Vector prms = vectorize_params(true);
     double logf;
+    std::string error_message;
     bool ok = max_nd1_careful(prms,
                               logf,
                               Target(loglike),
                               dTarget(loglike),
+                              error_message,
                               1e-5);
     if (ok) {
       MLE_Model::set_status(SUCCESS, "");

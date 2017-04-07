@@ -44,9 +44,13 @@ namespace BOOM{
       p = rbeta_mt(rng(), a + nyes, b+nno);
       if (++ntries > 500) {
         const double epsilon = std::numeric_limits<double>::epsilon();
-        if (p >= 1.0) {
+        if (p >= 1.0 || ((nyes > nno) && (b + nno < 1))) {
+          // One way for p to be nan is for nyes to be substantially larger than
+          // nno, with a small prior value of b.  This is a signal that p should
+          // be 1.
           p = 1.0 - epsilon;
-        } else if (p <= 0.0) {
+        } else if (p <= 0.0 || ((nno > nyes) && (a + nyes < 1))) {
+          // By symmetry to the case above.
           p = epsilon;
         } else if (!std::isfinite(p)) {
           ostringstream err;

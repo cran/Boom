@@ -22,7 +22,8 @@
 #include <cpputil/seq.hpp>
 #include <cpputil/lse.hpp>
 #include <cpputil/report_error.hpp>
-#include <boost/bind.hpp>
+
+#include <functional>
 #include <stdexcept>
 
 namespace BOOM{
@@ -135,11 +136,11 @@ namespace BOOM{
     }
 
     void PCR::set_observers(){
-      A_prm()->add_observer(boost::bind(&PCR::observe_a, this));
-      B_prm()->add_observer(boost::bind(&PCR::observe_b, this));
-      D_prm()->add_observer(boost::bind(&PCR::observe_d, this));
+      A_prm()->add_observer([this](){this->observe_a();});
+      B_prm()->add_observer([this](){this->observe_b();});
+      D_prm()->add_observer([this](){this->observe_d();});
 
-      beta_->add_observer(boost::bind(&PCR::observe_beta, this));
+      beta_->add_observer([this](){this->observe_beta();});
     }
 
     //______________________________________________________________________
@@ -249,13 +250,13 @@ namespace BOOM{
       return beta_;
     }
 
-    ParamVector PCR::t(){
+    ParamVector PCR::parameter_vector(){
       sync_params();
-      return ParamPolicy::t();}
+      return ParamPolicy::parameter_vector();}
 
-    const ParamVector PCR::t()const{
+    const ParamVector PCR::parameter_vector()const{
       sync_params();
-      return ParamPolicy::t();}
+      return ParamPolicy::parameter_vector();}
 
     double PCR::a()const{ return A_prm()->value();}
     double PCR::b()const{ return B_prm()->value();}
@@ -331,16 +332,17 @@ namespace BOOM{
 
     std::pair<double, double> PCR::theta_moments()const{
       double mean(0), var(0), n(0);
-      for_each(subjects().begin(), subjects().end(),
-               boost::bind(&PCR::increment_theta_moments, this, _1,
-                           boost::ref(mean), boost::ref(var), boost::ref(n)));
+      for (auto &subject : subjects()) {
+        increment_theta_moments(subject, mean, var, n);
+      }
       if(n>0) mean/=n;
       var -= n*mean*mean;
       if(n>1) var/= n-1;
       return std::make_pair(mean, var);
     }
 
-    void PCR::increment_theta_moments(Ptr<Subject> s, double &m, double &v, double &n)const{
+    void PCR::increment_theta_moments(
+        Ptr<Subject> s, double &m, double &v, double &n)const{
       double theta=(s->Theta())[which_subscale()];
       m+= theta;
       v+= theta*theta;

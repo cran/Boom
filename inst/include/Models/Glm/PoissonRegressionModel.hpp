@@ -56,9 +56,15 @@ namespace BOOM {
     // The dimension of the arguments to Loglike and log_likelihood is
     // the number of included coefficients.
     double Loglike(const Vector &beta,
-                           Vector &g,
-                           Matrix &h,
-                           uint nd) const override;
+                   Vector &g,
+                   Matrix &h,
+                   uint nd) const override;
+
+    double log_likelihood() const override {
+      Vector g;
+      Matrix h;
+      return Loglike(Beta(), g, h, 0);
+    }
 
     // Log likelihood function.
     // Args:

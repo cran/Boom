@@ -23,10 +23,10 @@
 namespace BOOM {
 
   ZeroInflatedPoissonRegressionData::ZeroInflatedPoissonRegressionData(
-      int y,
+      int64_t y,
       const Vector &x,
-      int total_number_of_trials,
-      int number_of_zero_trials)
+      int64_t total_number_of_trials,
+      int64_t number_of_zero_trials)
       : PoissonRegressionData(y, x, total_number_of_trials),
         number_of_zeros_(number_of_zero_trials),
         number_of_trials_(total_number_of_trials)
@@ -39,22 +39,22 @@ namespace BOOM {
     }
   }
 
-  int ZeroInflatedPoissonRegressionData::number_of_zero_trials() const {
+  int64_t ZeroInflatedPoissonRegressionData::number_of_zero_trials() const {
     return number_of_zeros_;
   }
 
-  int ZeroInflatedPoissonRegressionData::number_of_positive_trials() const {
+  int64_t ZeroInflatedPoissonRegressionData::number_of_positive_trials() const {
     return number_of_trials_ - number_of_zeros_;
   }
 
-  int ZeroInflatedPoissonRegressionData::total_number_of_trials() const {
+  int64_t ZeroInflatedPoissonRegressionData::total_number_of_trials() const {
     return number_of_trials_;
   }
 
   void ZeroInflatedPoissonRegressionData::add_incremental_data(
-      int incremental_event_count,
-      int incremental_number_of_trials,
-      int incremental_number_of_zeros) {
+      int64_t incremental_event_count,
+      int64_t incremental_number_of_trials,
+      int64_t incremental_number_of_zeros) {
     if (incremental_number_of_zeros > incremental_number_of_trials) {
       report_error("Number of trials producing zero events cannot "
                    "exceed the total number of trials.");

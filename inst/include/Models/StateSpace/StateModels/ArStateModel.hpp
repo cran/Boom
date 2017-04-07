@@ -88,21 +88,17 @@ namespace BOOM{
 
    private:
     Ptr<AutoRegressionTransitionMatrix> state_transition_matrix_;
-    Ptr<UpperLeftCornerMatrix> state_variance_matrix_;
+    Ptr<UpperLeftCornerMatrixParamView> state_variance_matrix_;
     Ptr<FirstElementSingleColumnMatrix> state_error_expander_;
-    Ptr<SingleSparseDiagonalElementMatrix> state_error_variance_matrix_;
+    typedef SingleSparseDiagonalElementMatrixParamView StateErrorVarianceType;
+    Ptr<StateErrorVarianceType> state_error_variance_matrix_;
 
-    mutable bool state_variance_is_current_;
     SparseVector observation_matrix_;
 
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
     bool stationary_initial_distribution_;
 
-    void observe_residual_variance() {
-      state_variance_is_current_ = false;
-    }
-    void update_variance() const;
   };
 
 

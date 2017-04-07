@@ -19,7 +19,6 @@
 #include <Models/StateSpace/StateModels/ArStateModel.hpp>
 #include <distributions.hpp>
 #include <cpputil/report_error.hpp>
-#include <boost/bind.hpp>
 
 namespace BOOM {
 
@@ -28,12 +27,12 @@ namespace BOOM {
         state_transition_matrix_(
             new AutoRegressionTransitionMatrix(Phi_prm())),
         state_variance_matrix_(
-            new UpperLeftCornerMatrix(number_of_lags, 1.0)),
+            new UpperLeftCornerMatrixParamView(number_of_lags, Sigsq_prm())),
         state_error_expander_(
             new FirstElementSingleColumnMatrix(number_of_lags)),
         state_error_variance_matrix_(
-            new SingleSparseDiagonalElementMatrix(1, 1.0, 0)),
-        state_variance_is_current_(false),
+            new SingleSparseDiagonalElementMatrixParamView(
+                1, Sigsq_prm(), 0)),
         observation_matrix_(number_of_lags),
         initial_state_mean_(number_of_lags, 0.0),
         initial_state_variance_(number_of_lags, 1.0),
@@ -41,9 +40,6 @@ namespace BOOM {
   {
     observation_matrix_[0] = 1.0;
     DataPolicy::only_keep_sufstats();
-    Sigsq_prm()->add_observer(
-        boost::bind(&ArStateModel::observe_residual_variance,
-                    this));
   }
 
   //======================================================================
@@ -52,18 +48,19 @@ namespace BOOM {
         StateModel(rhs),
         ArModel(rhs),
         state_transition_matrix_(new AutoRegressionTransitionMatrix(Phi_prm())),
-        state_variance_matrix_(new UpperLeftCornerMatrix(
-            Phi_prm()->nvars_possible(), 1.0)),
-        state_variance_is_current_(false),
+        state_variance_matrix_(new UpperLeftCornerMatrixParamView(
+            Phi_prm()->nvars_possible(), Sigsq_prm())),
+        state_error_expander_(
+            new FirstElementSingleColumnMatrix(rhs.number_of_lags())),
+        state_error_variance_matrix_(
+            new SingleSparseDiagonalElementMatrixParamView(
+                1, Sigsq_prm(), 0)),
         observation_matrix_(rhs.observation_matrix_),
         initial_state_mean_(rhs.initial_state_mean_),
         initial_state_variance_(rhs.initial_state_variance_),
         stationary_initial_distribution_(rhs.stationary_initial_distribution_)
   {
     DataPolicy::only_keep_sufstats();
-    Sigsq_prm()->add_observer(
-        boost::bind(&ArStateModel::observe_residual_variance,
-                    this));
   }
 
   //======================================================================
@@ -106,12 +103,10 @@ namespace BOOM {
 
   //======================================================================
   Ptr<SparseMatrixBlock> ArStateModel::state_variance_matrix(int t) const {
-    update_variance();
     return state_variance_matrix_;
   }
   //======================================================================
   Ptr<SparseMatrixBlock> ArStateModel::state_error_variance(int t) const {
-    update_variance();
     return state_error_variance_matrix_;
   }
   //======================================================================
@@ -167,15 +162,6 @@ namespace BOOM {
                    "ArStateModel::set_initial_state_mean");
     }
     initial_state_variance_ = Sigma;
-  }
-
-  //======================================================================
-  void ArStateModel::update_variance() const {
-    if (!state_variance_is_current_) {
-      state_variance_matrix_->set_value(sigsq());
-      state_error_variance_matrix_->set_value(sigsq());
-      state_variance_is_current_ = true;
-    }
   }
 
 }  // namespace BOOM

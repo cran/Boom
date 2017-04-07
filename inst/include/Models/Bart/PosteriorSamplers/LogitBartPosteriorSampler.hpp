@@ -137,7 +137,7 @@ namespace BOOM {
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees,
+        std::function<double(int)> log_prior_on_number_of_trees,
         RNG &seeding_rng = GlobalRng::rng);
     void draw() override;
     double draw_mean(Bart::TreeNode *leaf) override;
@@ -161,8 +161,8 @@ namespace BOOM {
     void impute_latent_data_point(DataType *data);
    private:
     LogitBartModel *model_;
-    std::vector<boost::shared_ptr<DataType> > residuals_;
-    boost::shared_ptr<BinomialLogitDataImputer> data_imputer_;
+    std::vector<std::shared_ptr<DataType> > residuals_;
+    std::shared_ptr<BinomialLogitDataImputer> data_imputer_;
   };
 
 }  // namespace BOOM

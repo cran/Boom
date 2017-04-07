@@ -19,58 +19,121 @@
 #include <iostream>
 #include <cmath>
 
-#include <LinAlg/Matrix.hpp>
-
-
 #include <numopt.hpp>
 
+#include <LinAlg/Matrix.hpp>
 #include <cpputil/report_error.hpp>
+#include <numopt/Powell.hpp>
+#include <utility>
 
 namespace BOOM{
-  using std::cerr;
-  using std::endl;
   /*----------------------------------------------------------------------
-    functions for maximizing functions of several variables.
+    Maximizing functions of several variables.
     ----------------------------------------------------------------------*/
-
   double max_nd0(Vector &x, Target tf) {
-    Negate f(tf);
+    Negate f(std::move(tf));
     Vector wsp(x);
     int fc = 0;
     double ans = nelder_mead_driver(x, wsp, f, 1e-8, 1e-8, 1.0, .5, 2.0,
-                                    false, fc, 1000);
+                                    fc, 1000);
     return ans * -1;
   }
   //======================================================================
   bool max_nd1_careful(Vector &x,
-                       double &logf,
+                       double &function_value,
                        Target f,
                        dTarget dtf,
-                       double epsilon) {
-    dNegate df(f, dtf);
-    bool fail=false;
+                       std::string &error_message,
+                       double epsilon,
+                       int max_iterations,
+                       OptimizationMethod method) {
+    dNegate negative_f(std::move(f), std::move(dtf));
+    bool fail = false;
     int fcount = 0;
     int gcount = 0;
     int ntries = 0;
-    int maxntries= 5;
-    logf = bfgs(x, df, df, 200, epsilon, epsilon, fcount, gcount, fail);
+    int maxntries = 5;
+    Vector original_x = x;
+    switch (method) {
+      case BFGS : {
+        // Try to minimize negative_f
+        function_value = bfgs(x, negative_f, negative_f, 200, epsilon, epsilon,
+                              fcount, gcount, fail);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+        break;
+      }
+
+      case ConjugateGradient : {
+        fail = !conj_grad(x, function_value, negative_f, negative_f,
+                          epsilon, epsilon, PolakRibiere, fcount, gcount,
+                          max_iterations, error_message);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+        break;
+      }
+
+      case Both : {
+        // Start with conjugate gradient, but set convergence epsilon
+        // larger than desired.
+        fail = !conj_grad(x, function_value, negative_f, negative_f,
+                          epsilon * 10, epsilon * 10, PolakRibiere,
+                          fcount, gcount, max_iterations, error_message);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+        // Polish off with bfgs near the mode.
+        function_value = bfgs(x, negative_f, negative_f, 200, epsilon, epsilon,
+                              fcount, gcount, fail);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+        break;
+      }
+      default:
+        error_message = "Unknown optimization method.";
+        return false;
+    }  // switch method
+
     while (fail && ntries < maxntries) {
       Vector g = x;
-      nelder_mead_driver(x,g, Target(df), 1e-5, 1e-5, 1.0, .5, 2.0, false,
+      nelder_mead_driver(x, g, Target(negative_f), 1e-5, 1e-5, 1.0, .5, 2.0,
                          fcount, 1000);
-      fcount=gcount = 0;
+      fcount = gcount = 0;
       fail = false;
-      logf = bfgs(x,df, df, 200, 1e-8, 1e-8, fcount, gcount, fail);
+      if (method == BFGS) {
+        function_value = bfgs(x, negative_f, negative_f, 200, 1e-8, 1e-8,
+                              fcount, gcount, fail);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+      } else if (method == ConjugateGradient || method == Both) {
+        fail = !conj_grad(x, function_value, negative_f, negative_f,
+            epsilon, epsilon, PolakRibiere, fcount, gcount, max_iterations,
+            error_message);
+        if (!std::isfinite(function_value) || !x.all_finite()) {
+          x = original_x;
+        }
+      }
       ++ntries;
     }
-    logf *= -1;
+    function_value *= -1;
     return !fail;
   }
 
   //======================================================================
-  double max_nd1(Vector &x, Target f, dTarget dtf, double eps) {
+  double max_nd1(Vector &x,
+                 Target target,
+                 dTarget differentiable_target,
+                 double epsilon,
+                 int max_iterations,
+                 OptimizationMethod method) {
     double ans;
-    max_nd1_careful(x, ans, f, dtf, eps);
+    std::string error_message;
+    max_nd1_careful(x, ans, std::move(target), std::move(differentiable_target),
+                    error_message, epsilon, max_iterations, method);
     return ans;
   }
 
@@ -80,7 +143,8 @@ namespace BOOM{
                  double leps) {
     double ans;
     string error_message;
-    bool ok = max_nd2_careful(x, g, h, ans, f, df, d2f, leps, error_message);
+    bool ok = max_nd2_careful(x, g, h, ans, std::move(f), std::move(df),
+                              std::move(d2f), leps, error_message);
     if (!ok) {
       report_error(error_message);
     }
@@ -94,7 +158,7 @@ namespace BOOM{
 
     unsigned int ntries = 0, maxtries = 5;
     Vector original_x = x;
-    d2Negate nd2f(f, df, d2f);
+    d2Negate nd2f(std::move(f), std::move(df), std::move(d2f));
     /*------------ we should check that h is negative definite -----------*/
     int function_count = 0;
     bool happy = true;

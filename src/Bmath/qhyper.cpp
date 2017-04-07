@@ -86,7 +86,7 @@ double qhyper(double p, double NR, double NB, double n,
     if(!lower_tail || log_p) {
         p = R_DT_qIv(p);
     }
-    p *= 1 - 64*numeric_limits<double>::epsilon();
+    p *= 1 - 64*std::numeric_limits<double>::epsilon();
     sum = small_N ? term : exp(term);
 
     while(sum < p && xr < xend) {

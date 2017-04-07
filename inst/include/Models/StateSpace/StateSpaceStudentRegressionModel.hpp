@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2005-2015 Steven L. Scott
+  Copyright (C) 2005-2017 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,24 +26,59 @@
 
 namespace BOOM {
   namespace StateSpace {
-    class VarianceAugmentedRegressionData
-        : public RegressionData {
+
+    // If y ~ T(mu, sigma^2, nu) then
+    //          y = mu + epsilon / sqrt(w)
+    //    epsilon ~ N(0, sigma^2)
+    //          w ~ Gamma(nu / 2, nu / 2)
+    // with epsilon independent of w.
+    //
+    // This class denotes 'w' as the 'weight' of y, which is a latent variable
+    // that can be imputed from its full conditional distribution.  w / sigma^2
+    // is the precision of y.
+    //
+    // In the case of multiplexed data, the "value" of this data point is the
+    // precision weighted average of (y - x * beta) across observations.  The
+    // precision weighted average has precision = (sum of weights) / sigma^2.
+    class AugmentedStudentRegressionData
+        : public Data {
      public:
-      VarianceAugmentedRegressionData(double y, const Vector &x);
-      double weight() const override {return weight_;}
-      void set_weight(double weight);
-      double offset() const {return offset_;}
-      void set_offset(double offset);
+      AugmentedStudentRegressionData();
+      AugmentedStudentRegressionData(double y, const Vector &x);
+      AugmentedStudentRegressionData(
+          const std::vector<Ptr<RegressionData>> &data);
+
+      AugmentedStudentRegressionData * clone() const override;
+      std::ostream & display(std::ostream &out) const override;
+
+      void add_data(const Ptr<RegressionData> &observation);
+
+      double weight(int observation) const {return weights_[observation];}
+      void set_weight(double weight, int observation);
+
+      double adjusted_observation(const GlmCoefs &coefficients) const;
+      double sum_of_weights() const;
+
+      double state_model_offset() const {return state_model_offset_;}
+      void set_state_model_offset(double offset);
+
+      int sample_size() const {return regression_data_.size();}
+      const RegressionData &regression_data(int observation) const {
+        return *(regression_data_[observation]);
+      }
 
      private:
-      double weight_;
-      double offset_;
+      std::vector<Ptr<RegressionData>> regression_data_;
+
+      Vector weights_;
+
+      double state_model_offset_;
     };
   }  // namespace StateSpace
 
   class StateSpaceStudentRegressionModel
       : public StateSpaceNormalMixture,
-        public IID_DataPolicy<StateSpace::VarianceAugmentedRegressionData>,
+        public IID_DataPolicy<StateSpace::AugmentedStudentRegressionData>,
         public PriorPolicy
   {
    public:
@@ -58,9 +93,11 @@ namespace BOOM {
 
     int time_dimension() const override;
 
-    const StateSpace::VarianceAugmentedRegressionData &
-    data(int t) const override {
-      return *(dat()[t]);
+    // The total number of observations across all time points.
+    int sample_size() const;
+
+    const RegressionData & data(int t, int observation) const override {
+      return dat()[t]->regression_data(observation);
     }
 
     // Returns the imputed observation variance from the latent data
@@ -92,10 +129,11 @@ namespace BOOM {
         const Vector &final_state);
 
    private:
-    void initialize_param_policy();
+    // Sets up observers on model parameters, so that the Kalman
+    // filter knows when it needs to be recomputed.
+    void set_observers();
     Ptr<TRegressionModel> observation_model_;
   };
-
 
 }  // namespace BOOM
 

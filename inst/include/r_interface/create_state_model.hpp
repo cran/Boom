@@ -21,7 +21,7 @@
 
 #include <r_interface/list_io.hpp>
 #include <Models/StateSpace/StateSpaceModelBase.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <list>
 
 //======================================================================
@@ -39,7 +39,7 @@ namespace BOOM{
   class LocalLevelStateModel;
   class LocalLinearTrendStateModel;
   class SeasonalStateModel;
-  class LocalLinearTrendMeanRevertingSlopeStateModel;
+  class SemilocalLinearTrendStateModel;
   class RandomWalkHolidayStateModel;
   class DynamicRegressionStateModel;
   class ArStateModel;
@@ -85,7 +85,7 @@ namespace BOOM{
                           const std::string & list_element_name = "final.state");
 
      private:
-      typedef boost::function<void(StateSpaceModelBase *)> ConstructionCallback;
+      typedef std::function<void(StateSpaceModelBase *)> ConstructionCallback;
       typedef std::vector<ConstructionCallback> CallbackVector;
       // Factory method for creating a StateModel based on inputs
       // supplied to R.  Returns a smart pointer to the StateModel that
@@ -113,8 +113,7 @@ namespace BOOM{
           SEXP r_state_component, const std::string &prefix);
       SeasonalStateModel * CreateSeasonal(
           SEXP r_state_component, const std::string &prefix);
-      LocalLinearTrendMeanRevertingSlopeStateModel *
-      CreateGeneralizedLocalLinearTrend(
+      SemilocalLinearTrendStateModel * CreateSemilocalLinearTrend(
           SEXP r_state_component, const std::string &prefix);
       RandomWalkHolidayStateModel * CreateRandomWalkHolidayStateModel(
           SEXP r_state_component, const std::string &prefix);
@@ -122,6 +121,8 @@ namespace BOOM{
           SEXP r_state_component, const std::string &prefix,
           CallbackVector * callbacks);
       ArStateModel * CreateArStateModel(
+          SEXP r_state_component, const std::string &prefix);
+      ArStateModel * CreateAutoArStateModel(
           SEXP r_state_component, const std::string &prefix);
       StudentLocalLinearTrendStateModel * CreateStudentLocalLinearTrend(
           SEXP r_state_component, const std::string &prefix);

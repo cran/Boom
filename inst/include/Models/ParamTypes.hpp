@@ -53,10 +53,19 @@ namespace BOOM{
     //     available because the probabilities sum to 1.
     virtual uint size(bool minimal = true) const = 0;
     virtual Vector vectorize(bool minimal = true) const = 0;
+
+    // Params can be restored from a previously vectorized Vector.
+    // This is useful for serializing data (e.g. storing a model to
+    // disk) or for communication between machines.
+    //
+    // It is important that child classes call potential observers
+    // when data is restored using this mechanism.  The simplest way
+    // to make sure this happens is to call the set() function from
+    // the underlying Data class.
     virtual Vector::const_iterator unvectorize(Vector::const_iterator &v,
-                                            bool minimal=true)=0;
+                                               bool minimal=true)=0;
     virtual Vector::const_iterator unvectorize(const Vector &v,
-                                            bool minimal=true)=0;
+                                               bool minimal=true)=0;
   };
 
   //============================================================

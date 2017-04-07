@@ -63,8 +63,8 @@ int i1mach(int i)
     case 13: return FLT_MAX_EXP;
 
     case 14: return DBL_MANT_DIG;
-    case 15: return numeric_limits<double>::min_exponent;
-    case 16: return numeric_limits<double>::max_exponent;
+    case 15: return std::numeric_limits<double>::min_exponent;
+    case 16: return std::numeric_limits<double>::max_exponent;
 
     default: return 0;
     }

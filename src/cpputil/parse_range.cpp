@@ -40,7 +40,7 @@ namespace BOOM{
     range=s;
     check_range();
     ans.clear();
-    while(range.size()!=0){
+    while (!range.empty()) {
       find_block();
       parse_block();
     }

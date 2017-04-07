@@ -180,11 +180,11 @@ namespace Rmath{
     /* -----------------------------------------------------------------
        Argument is positive
        -----------------------------------------------------------------*/
-    if (y < numeric_limits<double>::epsilon()) {
+    if (y < std::numeric_limits<double>::epsilon()) {
       /* --------------------------------------------------------------
          Argument < EPS
          -------------------------------------------------------------- */
-      if (y >= numeric_limits<double>::min()) {
+      if (y >= std::numeric_limits<double>::min()) {
         res = 1. / y;
       } else {
         return(BOOM::infinity());

@@ -19,7 +19,7 @@
 #ifndef BOOM_NUMERICAL_INTEGRAL_HPP_
 #define BOOM_NUMERICAL_INTEGRAL_HPP_
 
-#include <boost/function.hpp>
+#include <functional>
 #include <cpputil/math_utils.hpp>
 #include <vector>
 
@@ -27,7 +27,7 @@ namespace BOOM{
 
   class Integral{
    public:
-    typedef boost::function<double(double)> Fun;
+    typedef std::function<double(double)> Fun;
     Integral(const Fun &integrand,
              double lower_limit = BOOM::negative_infinity(),
              double upper_limit = BOOM::infinity(),

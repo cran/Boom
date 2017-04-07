@@ -23,29 +23,25 @@
 #include <Models/VectorModel.hpp>
 #include <Samplers/MetropolisHastings.hpp>
 
-namespace BOOM{
+namespace BOOM {
   class MvnModel;
   class MH_Proposal;
-
-
-  namespace IRT{
+  namespace IRT {
     class PartialCreditModel;
-
-    class DafePcrRwmItemSampler : public PosteriorSampler{
-    public:
+    class DafePcrRwmItemSampler : public PosteriorSampler {
+     public:
       DafePcrRwmItemSampler(Ptr<PartialCreditModel>,
-                Ptr<MvnModel> Prior,
-                double Tdf,
-          RNG &seeding_rng = GlobalRng::rng);
+                            Ptr<MvnModel> Prior,
+                            double Tdf,
+                            RNG &seeding_rng = GlobalRng::rng);
       void draw() override;
       double logpri()const override;
-    private:
+
+     private:
       Ptr<PartialCreditModel> mod;
       Ptr<MvnModel> prior;
       Ptr<MetropolisHastings> sampler;
       Ptr<MvtRwmProposal> prop;
-      //      Ptr<LocationScaleVectorModel> prop_model;
-
       const double sigsq;  //  = pi^2/6 = 1.64493406684
       SpdMatrix xtx, ivar;
       Vector b;
@@ -53,8 +49,8 @@ namespace BOOM{
       void get_moments();
       void accumulate_moments(Ptr<Subject>);
     };
-    //======================================================================
 
+    //======================================================================
     class DafePcrRwmSubjectSampler : public PosteriorSampler{
     public:
       DafePcrRwmSubjectSampler(Ptr<Subject>,
@@ -68,7 +64,6 @@ namespace BOOM{
       Ptr<SubjectPrior> prior;
       Ptr<MetropolisHastings> sampler;
       Ptr<MvtRwmProposal> prop;
-      //      Ptr<LocationScaleVectorModel> prop_model;
 
       const double sigsq;  //  = pi^2/6 = 1.64493406684
       SpdMatrix ivar;
@@ -77,7 +72,7 @@ namespace BOOM{
       void get_moments();
       void accumulate_moments(std::pair<Ptr<Item>, Response>);
     };
+  }  // namespace IRT
+}  // namespace BOOM
 
-  }
-}
-#endif // BOOM_DAFE_PCR_RWM_HPP
+#endif  // BOOM_DAFE_PCR_RWM_HPP

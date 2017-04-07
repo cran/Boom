@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007 Steven L. Scott
+  Copyright (C) 2005-2016 Steven L. Scott
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -16,6 +16,25 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-namespace BOOM{
+#include <Models/Glm/QuantileRegressionModel.hpp>
+
+namespace BOOM {
+  namespace {
+    typedef QuantileRegressionModel QRM;
+  }
+
+  QRM::QuantileRegressionModel(uint beta_dim, double quantile, bool include_all)
+      : ParamPolicy(new GlmCoefs(beta_dim, include_all)),
+        quantile_(quantile)
+  {}
+
+  QRM::QuantileRegressionModel(const Vector &beta, double quantile)
+      : ParamPolicy(new GlmCoefs(beta)),
+        quantile_(quantile)
+  {}
+
+  QuantileRegressionModel *QRM::clone() const {
+    return new QuantileRegressionModel(*this);
+  }
 
 }

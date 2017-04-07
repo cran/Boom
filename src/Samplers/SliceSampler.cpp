@@ -18,6 +18,7 @@
 #include <Samplers/SliceSampler.hpp>
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
+#include <stats/moments.hpp>  // for mean()
 #include <distributions.hpp>
 #include <cmath>
 #include <cassert>
@@ -40,9 +41,17 @@ namespace BOOM {
       std::string msg = "invalid condition used to initialize SliceSampler";
       report_error(msg);
     }
+    log_p_slice_ -= rexp_mt(rng(), 1);
 
     // Reset scale_ if something has gone wrong.
-    if (scale_ <= 0.0) {
+    if (scale_ < .0001 * fabs(mean(last_position_))) {
+      // Very small values of scale_ can make the algorithm take
+      // forever.
+      scale_ = .1 * fabs(mean(last_position_));
+    }
+    if (scale_ <= 0.0 || !std::isfinite(scale_)) {
+      // Infinite or NaN values of scale can result in an infinite
+      // loop.
       scale_ = 1.0;
     }
     lo_ = scale_;
@@ -84,7 +93,13 @@ namespace BOOM {
       report_error("The slice sampler has collapsed.  Initial value "
                    "may be on the boundary of the parameter space.");
     }
+    // Double the value of the endpoint, unless doing so would produce
+    // an infinity.
     value *= 2.0;
+    if (!std::isfinite(value)) {
+      value = old;
+      return;
+    }
     p = logp_(last_position_ + sgn * value * random_direction_);
     while (isnan(p)) {
       value = (value + old) / 2;
@@ -134,8 +149,6 @@ namespace BOOM {
   Vector SliceSampler::draw(const Vector &theta) {
     last_position_ = theta;
     initialize();
-
-    log_p_slice_ = logp_(last_position_) - rexp(1);
     find_limits();
     Vector candidate;
     double logp_candidate = log_p_slice_ -1;

@@ -78,7 +78,7 @@ double fprec(double x, double digits)
     double l10, pow10, sgn, p10, P10;
     int e10, e2, do_round, dig;
     /* Max.expon. of 10 (=308.2547) */
-    const double max10e = numeric_limits<double>::max_exponent * M_LOG10_2;
+    const double max10e = std::numeric_limits<double>::max_exponent * M_LOG10_2;
 
 #ifdef IEEE_754
     if (ISNAN(x) || ISNAN(digits))

@@ -162,7 +162,9 @@ namespace BOOM {
   int random_int(int lo, int hi);
   int random_int_mt(RNG & rng, int lo, int hi);
 
-
+  //======================================================================
+  // Several varieties of multivariate normal generation.
+  //
   // basic rmvn checks the cholesky decomposition, if there is a
   // problem it calls rmvn_robust
   Vector rmvn(const Vector &Mu, const SpdMatrix &Sigma);
@@ -170,24 +172,45 @@ namespace BOOM {
 
   // rmvn_robust computes the spectral decomposition of Sigma which
   // can be done even if there is a zero pivot that would prevent the
-  // Cholesky decomposition from working
+  // Cholesky decomposition from working, so it can be used even if
+  // Sigma is only positive semidefinite.
   Vector rmvn_robust(const Vector &Mu, const SpdMatrix &Sigma);
-  Vector rmvn_L(const Vector &mu, const Matrix &L);
-  Vector rmvn_ivar(const Vector &Mu, const SpdMatrix &Sigma_Inverse);
-  Vector rmvn_ivar_L(const Vector &Mu, const Matrix &Ivar_chol);
-  Vector rmvn_ivar_U(const Vector &Mu, const Matrix &Ivar_chol_transpose);
-  Vector rmvn_suf(const SpdMatrix & Ivar, const Vector & IvarMu);
-
   Vector rmvn_robust_mt(RNG & rng, const Vector &Mu, const SpdMatrix &Sigma);
+
+  // Simulate given the lower cholesky triange of the variance matrix.
+  Vector rmvn_L(const Vector &mu, const Matrix &L);
   Vector rmvn_L_mt(RNG & rng, const Vector &mu, const Matrix &L);
-  Vector rmvn_ivar_mt(RNG & rng, const Vector &Mu,
-                      const SpdMatrix &Sigma_Inverse);
+
+  Vector rmvn_ivar(const Vector &Mu, const SpdMatrix &Sigma_Inverse);
+  Vector rmvn_ivar_mt(RNG & rng, const Vector &Mu, const SpdMatrix &precision);
+
+  // Simulate using the lower cholesky triangle of the precision matrix.
+  Vector rmvn_ivar_L(const Vector &Mu, const Matrix &Ivar_chol);
   Vector rmvn_ivar_L_mt(RNG & rng, const Vector &Mu, const Matrix &Ivar_chol);
+
+  // Simulate using the upper cholesky triangle of the precision matrix.
+  Vector rmvn_ivar_U(const Vector &Mu, const Matrix &Ivar_chol_transpose);
   Vector rmvn_ivar_U_mt(RNG & rng, const Vector &Mu,
                         const Matrix &Ivar_chol_transpose);
+
+  // Simulate given the precision matrix, and the precision matrix
+  // times the mean.  This form arises frequently in Bayesian
+  // inference.
+  Vector rmvn_suf(const SpdMatrix & Ivar, const Vector & IvarMu);
   Vector rmvn_suf_mt(RNG & rng, const SpdMatrix & Ivar, const Vector & IvarMu);
 
-
+  //======================================================================
+  // Evaluates the multivariate normal density function.
+  // Args:
+  //   y:  The location where the density is to be evalutated.
+  //   mu: Mean of the distribution.
+  //  Siginv:  Precision (inverse variance) matrix.
+  //  ldsi:  Log determinant of sigma inverse.
+  //  logscale:  If true then the log of the density is returned.
+  //
+  // Returns:
+  //   The value of the multivariate normal density at the specified
+  //   location.
   double dmvn(const Vector &y, const Vector &mu, const SpdMatrix &Siginv,
               double ldsi, bool logscale);
   double dmvn_zero_mean(const Vector &y, const SpdMatrix &Siginv,

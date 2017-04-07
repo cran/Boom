@@ -43,32 +43,33 @@ namespace BOOM{
     LogisticRegressionModel(const Vector &beta);
     LogisticRegressionModel(const Matrix &X, const Vector &y, bool add_int);
     LogisticRegressionModel(const LogisticRegressionModel &);
-    LogisticRegressionModel *clone()const override;
+    LogisticRegressionModel *clone() const override;
 
-    GlmCoefs &coef() override{return ParamPolicy::prm_ref();}
-    const GlmCoefs &coef()const override{return ParamPolicy::prm_ref();}
-    Ptr<GlmCoefs> coef_prm() override{return ParamPolicy::prm();}
-    const Ptr<GlmCoefs> coef_prm()const override{return ParamPolicy::prm();}
+    GlmCoefs &coef() override {return ParamPolicy::prm_ref();}
+    const GlmCoefs &coef() const override {return ParamPolicy::prm_ref();}
+    Ptr<GlmCoefs> coef_prm() override {return ParamPolicy::prm();}
+    const Ptr<GlmCoefs> coef_prm() const override {return ParamPolicy::prm();}
 
-    virtual double pdf(dPtr dp, bool logscale)const;
-    double pdf(const Data * dp, bool logscale)const override;
-    double logp(bool y, const Vector &x)const;
+    virtual double pdf(dPtr dp, bool logscale) const;
+    double pdf(const Data * dp, bool logscale) const override;
+    double logp(bool y, const Vector &x) const;
 
     // In the following, 'beta' refers to the set of nonzero
     // "included" coefficients, so its dimension might be less than
     // the number of columns in the design matrix.
-    double Loglike(const Vector &beta, Vector &g, Matrix &h, uint nd)const override;
+    double Loglike(const Vector &beta, Vector &g, Matrix &h,
+                   uint nd) const override;
     virtual double log_likelihood(const Vector &beta, Vector *g, Matrix *h,
-                                  bool initialize_derivs = true)const;
+                                  bool initialize_derivs = true) const;
+    using LoglikeModel::log_likelihood;
+    d2TargetFunPointerAdapter log_likelihood_tf() const;
 
-    d2TargetFunPointerAdapter log_likelihood_tf()const;
-
-    virtual SpdMatrix xtx()const;
+    virtual SpdMatrix xtx() const;
 
     // when modeling rare events it can be convenient to retain all
     // the events and 100 * alpha% of the non-events.
     void set_nonevent_sampling_prob(double alpha);
-    double log_alpha()const;
+    double log_alpha() const;
 
    private:
     double log_alpha_;  // alpha is the probability that a 'zero'

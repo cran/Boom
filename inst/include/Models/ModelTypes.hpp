@@ -60,8 +60,9 @@ namespace BOOM {
     virtual ~Model() {}
 
     //----------- parameter interface  ---------------------
-    virtual ParamVector t() = 0;              // implemented in ParmPolicy
-    virtual const ParamVector t()const = 0;
+    // implemented in ParmPolicy
+    virtual ParamVector parameter_vector() = 0;
+    virtual const ParamVector parameter_vector() const = 0;
 
     virtual Vector vectorize_params(bool minimal=true)const;
     virtual void unvectorize_params(const Vector &v, bool minimal = true);
@@ -157,12 +158,62 @@ namespace BOOM {
     // a PosteriorSampler that can help out.  This function returns
     // 'true' if an appropriate sampler has been assigned, and 'false'
     // otherwise.
-    virtual bool can_find_posterior_mode() const;
+    bool can_find_posterior_mode() const;
+
+    // Pass the parameters on to the PosteriorSampler with a request
+    // to evaluate the log prior density.  This can result in an
+    // exception being thrown if no sampler was assigned (or if
+    // multiple samplers were assigned), or if the assigned sampler
+    // can't do the evaluation.  To check that the operation is safe,
+    // check can_evaluate_log_prior_density() before calling this
+    // function.
+    double log_prior_density(const ConstVectorView &parameters) const;
+
+    // Returns 'true' if the model was assigned a single
+    // PosteriorSampler that is capable of evaluating
+    // log_prior_density.  Returns 'false' otherwise.
+    bool can_evaluate_log_prior_density() const;
+
+    // Pass the parameters on to the PosteriorSampler with a request
+    // to evaluate the gradient of the log prior density.  This can
+    // result in an exception being thrown if no sampler was assigned
+    // (or if multiple samplers were assigned), or if the assigned
+    // sampler can't do the evaluation.  To check that the operation
+    // is safe, check can_increment_log_prior_gradient() before
+    // calling this function.
+    //
+    // Args:
+    //   parameters: The model parameters where the log prior density
+    //     is to be evaluated.
+    //   gradient: The gradient of log_prior_density will be added to
+    //     the elements already in gradient.  This is to facilitate
+    //     computations like log_posterior = log_prior +
+    //     log_likelihood, where the likelihood gradient may already
+    //     have been computed.
+    //
+    // Returns:
+    //   The value of log prior density at parameters.
+    double increment_log_prior_gradient(const ConstVectorView &parameters,
+                                        VectorView gradient) const;
+
+    // Returns 'true' if the model has been assigned a single
+    // PosteriorSampler capable of computing the gradient of the log
+    // prior density.  Returns false otherwise.
+    bool can_increment_log_prior_gradient() const;
+
   };
   //======================================================================
   class LoglikeModel : public MLE_Model {
    public:
+    // Evaluate log likelihood at the given parameter vector.
     virtual double loglike(const Vector &theta)const = 0;
+
+    // Evaluate log likelihood with the current set of model parameters.
+    virtual double log_likelihood() const {
+      return loglike(vectorize_params(true));
+    }
+
+    // Set model parameters to their maximum likelihood estimates.
     void mle() override;
   };
 

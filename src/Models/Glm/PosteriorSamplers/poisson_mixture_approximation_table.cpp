@@ -47,7 +47,7 @@ namespace BOOM {
       double *mu,
       double *sigsq,
       NormalMixtureApproximationTable *table) {
-    if (number_of_events >= 30000) {
+    if (number_of_events >= table->largest_index()) {
       // If n is very large then the distribution very close to
       // Gaussian.  The mode can be obtained analytically, and the
       // curvature at the mode is just 1.0/n.

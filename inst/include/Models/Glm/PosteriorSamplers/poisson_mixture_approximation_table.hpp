@@ -25,8 +25,7 @@ namespace BOOM {
   void fill_poisson_mixture_approximation_table(
       NormalMixtureApproximationTable *table);
 
-  NormalMixtureApproximationTable
-  create_poisson_mixture_approximation_table();
+  NormalMixtureApproximationTable create_poisson_mixture_approximation_table();
 
   void unmix_poisson_augmented_data(
       RNG &rng,

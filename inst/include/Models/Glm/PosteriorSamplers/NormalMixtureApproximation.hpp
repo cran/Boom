@@ -108,9 +108,24 @@ namespace BOOM {
     int number_of_function_evaluations()const;
 
     ostream & print(ostream &out)const;
+
+    Vector serialize() const;
+    Vector::const_iterator deserialize(Vector::const_iterator begin);
+
    private:
     // Ensures that mu, sigma, and weights are all the correct size.
+    // Calls report_error if they are not.
     void check_sizes();
+
+    // Ensures:
+    //   (1) that all values of mu, sigma, and weights are finite,
+    //   (2) that all values of sigma and weights are positive,
+    //   (3) that weights sums to 1.
+    // If the sum of the weights is off by less than .001 the weights
+    // are corrected and the log weights are recomputed..  Otherwise
+    // If any of these is not satisfied then report_error is called.
+    void check_values();
+
     // Apply the given permutation to the mixture components.
     // Args:
     //   permutation: An arrangement of the numbers 0, 1, 2,
@@ -137,18 +152,60 @@ namespace BOOM {
                               const NormalMixtureApproximation &approximation){
     return approximation.print(out);}
 
+  //======================================================================
 
-  // A ZeroMeanNormalMixtureApproximation is a
-  // NormalMixtureApproximation with mu forced to zero.
-  class ZeroMeanNormalMixtureApproximation {
+  // A table of NormalMixtureApproximations.
+  class NormalMixtureApproximationTable {
+   public:
+    NormalMixtureApproximationTable();
+    ~NormalMixtureApproximationTable(){}
+    NormalMixtureApproximationTable(const NormalMixtureApproximationTable &rhs);
+    NormalMixtureApproximationTable & operator=(
+        const NormalMixtureApproximationTable &rhs);
+
+    // Add an entry into the table.
+    void add(int index, const NormalMixtureApproximation &spec);
+
+    // Return the smallest and lagest indices contained in the table.
+    int smallest_index()const;
+    int largest_index()const;
+
+    // If a numerical approximation exists at index_value, then return
+    // it.  Otherwise return an interpolation between the two nearest
+    // indices.
+    NormalMixtureApproximation & approximate(int index_value);
+
+    // Save the current state of the table to a numeric vector that
+    // can be stored somewhere.
+    Vector serialize() const;
+
+    // Clear the current contents of the table, and replace it with
+    // the values read from serialized_state.
+    void deserialize(const Vector &serialized_state);
+
+   private:
+    std::vector<int> index_;
+
+    // These should all be of the same dimension.
+    std::vector<NormalMixtureApproximation> approximations_;
   };
 
+  // The density for -1 times the log of a gamma(nu, 1) random
+  // variable.
+  class NegLogGamma {
+   public:
+    NegLogGamma(double nu) : nu_(nu) {}
+    double operator()(double y)const {
+      return -nu_*y - exp(-y) - lgamma(nu_); }
+   private:
+    double nu_;
+  };
 
   //======================================================================
+  // A base class for a distance metric for measuring the closeness
+  // between the NormalMixtureApproximation and the target function.
   class ApproximationDistance {
    public:
-    // A base class for a distance metric for measuring the closeness
-    // between the NormalMixtureApproximation and the target function.
     ApproximationDistance(ScalarTarget logf,
                           const NormalMixtureApproximation &approximation,
                           double lower_limit,
@@ -195,47 +252,5 @@ namespace BOOM {
         double lower_limit, double upper_limit, double guess_at_mode);
     double integrand(double x)const override;
   };
-
-  //======================================================================
-
-  // A table of NormalMixtureApproximations.
-  class NormalMixtureApproximationTable {
-   public:
-    NormalMixtureApproximationTable();
-    ~NormalMixtureApproximationTable(){}
-    NormalMixtureApproximationTable(const NormalMixtureApproximationTable &rhs);
-    NormalMixtureApproximationTable & operator=(
-        const NormalMixtureApproximationTable &rhs);
-
-    // Add an entry into the table.
-    void add(int index, const NormalMixtureApproximation &spec);
-
-    // Return the smallest and lagest indices contained in the table.
-    int smallest_index()const;
-    int largest_index()const;
-
-    // If a numerical approximation exists at index_value, then return
-    // it.  Otherwise return an interpolation between the two nearest
-    // indices.
-    NormalMixtureApproximation & approximate(int index_value);
-
-   private:
-    std::vector<int> index_;
-
-    // These should all be of the same dimension.
-    std::vector<NormalMixtureApproximation> approximations_;
-  };
-
-  // The density for -1 times the log of a gamma(nu, 1) random
-  // variable.
-  class NegLogGamma {
-   public:
-    NegLogGamma(double nu) : nu_(nu) {}
-    double operator()(double y)const {
-      return -nu_*y - exp(-y) - lgamma(nu_); }
-   private:
-    double nu_;
-  };
-
 }  // namespace BOOM
 #endif //  BOOM_NORMAL_MIXTURE_APPROXIMATION_HPP_

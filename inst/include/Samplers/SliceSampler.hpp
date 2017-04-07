@@ -20,11 +20,11 @@
 
 #include <Samplers/Sampler.hpp>
 #include <LinAlg/Vector.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM{
 
-  typedef boost::function<double(const Vector &)> Func;
+  typedef std::function<double(const Vector &)> Func;
 
   class SliceSampler : public Sampler{
   public:

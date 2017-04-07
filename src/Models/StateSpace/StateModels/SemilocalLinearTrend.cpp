@@ -16,19 +16,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <Models/StateSpace/StateModels/LocalLinearTrendMeanRevertingSlope.hpp>
+#include <Models/StateSpace/StateModels/SemilocalLinearTrend.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 
 namespace BOOM{
-  typedef LocalLinearTrendMeanRevertingSlopeMatrix LMAT;
-  typedef LocalLinearTrendMeanRevertingSlopeStateModel LMSM;
+  typedef SemilocalLinearTrendMatrix LMAT;
+  typedef SemilocalLinearTrendStateModel SLLT;
 
-  LMAT::LocalLinearTrendMeanRevertingSlopeMatrix(Ptr<UnivParams> phi)
+  LMAT::SemilocalLinearTrendMatrix(Ptr<UnivParams> phi)
       : phi_(phi)
   {}
 
-  LMAT::LocalLinearTrendMeanRevertingSlopeMatrix(const LMAT &rhs)
+  LMAT::SemilocalLinearTrendMatrix(const LMAT &rhs)
       : SparseMatrixBlock(rhs),
         phi_(rhs.phi_)
   {}
@@ -90,7 +90,7 @@ namespace BOOM{
     return ans;
   }
 
-  LMSM::LocalLinearTrendMeanRevertingSlopeStateModel(
+  SLLT::SemilocalLinearTrendStateModel(
       Ptr<ZeroMeanGaussianModel> level,
       Ptr<NonzeroMeanAr1Model> slope)
       : level_(level),
@@ -115,7 +115,7 @@ namespace BOOM{
     initial_state_variance_(2,2) = 0;
   }
 
-  LMSM::LocalLinearTrendMeanRevertingSlopeStateModel(const LMSM &rhs)
+  SLLT::SemilocalLinearTrendStateModel(const SLLT &rhs)
       : Model(rhs),
         StateModel(rhs),
         ParamPolicy(rhs),
@@ -135,9 +135,9 @@ namespace BOOM{
     ParamPolicy::add_model(slope_);
   }
 
-  LMSM * LMSM::clone() const {return new LMSM(*this);}
+  SLLT * SLLT::clone() const {return new SLLT(*this);}
 
-  void LMSM::clear_data(){
+  void SLLT::clear_data(){
     level_->clear_data();
     slope_->clear_data();
   }
@@ -146,7 +146,7 @@ namespace BOOM{
   // State is (level, slope, slope_mean) The level model expects the
   // error term in level.  The slope model expects the current value
   // of the slope.
-  void LMSM::observe_state(const ConstVectorView then,
+  void SLLT::observe_state(const ConstVectorView then,
                            const ConstVectorView now,
                            int time_now){
     double change_in_level = now[0] - then[0] - then[1];
@@ -156,44 +156,44 @@ namespace BOOM{
     slope_->suf()->update_raw(current_slope);
   }
 
-  void LMSM::observe_initial_state(const ConstVectorView &state){
+  void SLLT::observe_initial_state(const ConstVectorView &state){
     slope_->suf()->update_raw(state[1]);
   }
 
-  void LMSM::update_complete_data_sufficient_statistics(
+  void SLLT::update_complete_data_sufficient_statistics(
       int t,
       const ConstVectorView &,
       const ConstSubMatrix &) {
-    report_error("LocalLinearTrendMeanRevertingSlopeStateModel cannot "
+    report_error("SemilocalLinearTrendStateModel cannot "
                  "be part of an EM algorithm.");
   }
 
-  void LMSM::simulate_state_error(VectorView eta, int t) const {
+  void SLLT::simulate_state_error(VectorView eta, int t) const {
     eta[0] = rnorm(0, level_->sigma());
     eta[1] = rnorm(0, slope_->sigma());
     eta[2] = 0;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_transition_matrix(int) const {
+  Ptr<SparseMatrixBlock> SLLT::state_transition_matrix(int) const {
     return state_transition_matrix_;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_variance_matrix(int) const {
+  Ptr<SparseMatrixBlock> SLLT::state_variance_matrix(int) const {
     return state_variance_matrix_;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_error_expander(int) const {
+  Ptr<SparseMatrixBlock> SLLT::state_error_expander(int) const {
     return state_error_expander_;
   }
 
-  Ptr<SparseMatrixBlock> LMSM::state_error_variance(int) const {
+  Ptr<SparseMatrixBlock> SLLT::state_error_variance(int) const {
     return state_error_variance_;
   }
 
-  SparseVector LMSM::observation_matrix(int) const {
+  SparseVector SLLT::observation_matrix(int) const {
     return observation_matrix_;}
 
-  Vector LMSM::initial_state_mean()const{
+  Vector SLLT::initial_state_mean()const{
     Vector ans(3);
     ans[0] = initial_level_mean_;
     ans[1] = initial_slope_mean_;
@@ -201,38 +201,38 @@ namespace BOOM{
     return ans;
   }
 
-  SpdMatrix LMSM::initial_state_variance()const{
+  SpdMatrix SLLT::initial_state_variance()const{
     return initial_state_variance_;
   }
-  void LMSM::set_initial_level_mean(double level_mean){
+  void SLLT::set_initial_level_mean(double level_mean){
     initial_level_mean_ = level_mean;}
-  void LMSM::set_initial_level_sd(double level_sd){
+  void SLLT::set_initial_level_sd(double level_sd){
     initial_state_variance_(0,0) = pow(level_sd, 2);}
-  void LMSM::set_initial_slope_mean(double slope_mean){
+  void SLLT::set_initial_slope_mean(double slope_mean){
     initial_slope_mean_ = slope_mean;}
-  void LMSM::set_initial_slope_sd(double sd){
+  void SLLT::set_initial_slope_sd(double sd){
     initial_state_variance_(1,1) = pow(sd, 2); }
 
-  void LMSM::check_dim(const ConstVectorView &v) const {
+  void SLLT::check_dim(const ConstVectorView &v) const {
     if(v.size() != 3){
       ostringstream err;
       err << "improper dimesion of ConstVectorView v = :"
           << v << endl
-          << "in LocalLinearTrendMeanRevertingSlopeStateModel.  "
+          << "in SemilocalLinearTrendStateModel.  "
           << "Should be of dimension 3"
           << endl;
       report_error(err.str());
     }
   }
 
-  std::vector<Ptr<UnivParams> > LMSM::get_variances() {
+  std::vector<Ptr<UnivParams> > SLLT::get_variances() {
     std::vector<Ptr<UnivParams> > ans(2);
     ans[0] = level_->Sigsq_prm();
     ans[1] = slope_->Sigsq_prm();
     return ans;
   }
 
-  void LMSM::simulate_initial_state(VectorView state) const {
+  void SLLT::simulate_initial_state(VectorView state) const {
     check_dim(state);
     state[0] = rnorm(initial_level_mean_, sqrt(initial_state_variance_(0,0)));
     state[1] = rnorm(initial_slope_mean_, sqrt(initial_state_variance_(1,1)));

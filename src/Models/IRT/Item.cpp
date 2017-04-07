@@ -21,8 +21,6 @@
 #include <sstream>
 #include <distributions.hpp>
 #include <Models/Glm/Glm.hpp>
-#include <boost/bind.hpp>
-#include <boost/ref.hpp>
 
 namespace BOOM{
   namespace IRT{
@@ -33,19 +31,19 @@ namespace BOOM{
     inline Ptr<CatKey> make_resp(uint Mscore){
       StringVector ans(Mscore+1);
       for(uint i=0; i<=Mscore; ++i){
-	ostringstream s;
-	s << i;
-	(ans)[i] = s.str();
-	//	cout << "ans[" << i << "] = " << ans[i] << endl;
+        ostringstream s;
+        s << i;
+        (ans)[i] = s.str();
+        //      cout << "ans[" << i << "] = " << ans[i] << endl;
       }
       return new CatKey(ans);
     }
 
     Item::Item(const string &Id, uint Mscore, uint one_subscale, uint nscales, const string &Name)
       : subscales_(nscales, false),
-	id_(Id),
-	name_(Name),
-	possible_responses_(make_resp(Mscore))
+        id_(Id),
+        name_(Name),
+        possible_responses_(make_resp(Mscore))
     {
       //      cout << "__________________" << Id << "__________________" <<endl;
       subscales_.add(one_subscale);
@@ -55,9 +53,9 @@ namespace BOOM{
 
     Item::Item(const string &Id, uint Mscore, std::vector<bool> subscales, const string &Name)
       : subscales_(subscales),
-	id_(Id),
-	name_(Name),
-	possible_responses_(make_resp(Mscore))
+        id_(Id),
+        name_(Name),
+        possible_responses_(make_resp(Mscore))
     {
       if(Name=="") name_=id_;
     }
@@ -65,10 +63,10 @@ namespace BOOM{
 
     Item::Item(const Item &rhs)
       : Model(rhs),
-	DataPolicy(rhs),
-	subscales_(rhs.subscales_),
-	id_(rhs.id_),
-	possible_responses_(rhs.possible_responses_)
+        DataPolicy(rhs),
+        subscales_(rhs.subscales_),
+        id_(rhs.id_),
+        possible_responses_(rhs.possible_responses_)
     {}
 
     //    Item * Item::clone()const{return new Item(*this);}
@@ -129,7 +127,7 @@ namespace BOOM{
 
     void Item::remove_subject(Ptr<Subject> s){
       DatasetType::iterator it =
-	std::lower_bound(dat().begin(), dat().end(), s);
+        std::lower_bound(dat().begin(), dat().end(), s);
       if(it==dat().end() || *it!=s) return;
       dat().erase(it);
     }
@@ -197,12 +195,12 @@ namespace BOOM{
     ostream & Item::display(ostream & out)const{
       out << id() << "\t" << name() << "\t";
       for(uint i=0; i<subscales_.nvars_possible(); ++i){
-	out << subscales_[i] << "\t";
+        out << subscales_[i] << "\t";
       }
       display_item_params(out);
       out << endl;
       return out;
     }
 
-  }
-}
+  }  // namespace IRT
+}  // namespace BOOM

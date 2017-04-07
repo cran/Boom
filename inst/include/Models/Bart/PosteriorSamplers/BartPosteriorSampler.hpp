@@ -110,7 +110,7 @@ namespace BOOM {
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees,
+        std::function<double(int)> log_prior_on_number_of_trees,
         RNG &seeding_rng = GlobalRng::rng);
 
     // The destructor should clear pointers to the
@@ -319,7 +319,7 @@ namespace BOOM {
     double total_prediction_variance_;
 
     // Functor returning log P(model_->number_of_trees).
-    boost::function<double(int)> log_prior_number_of_trees_;
+    std::function<double(int)> log_prior_number_of_trees_;
 
     // The types of moves (for manipulating a single tree) considered
     // by the Metropolis-Hastings algorithm.

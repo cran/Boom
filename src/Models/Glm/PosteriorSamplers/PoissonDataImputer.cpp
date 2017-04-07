@@ -20,7 +20,6 @@
 #include <Models/Glm/PosteriorSamplers/poisson_mixture_approximation_table.hpp>
 #include <cmath>
 #include <distributions.hpp>
-#include <Models/Glm/PosteriorSamplers/poisson_mixture_approximation_table.hpp>
 
 namespace BOOM {
 
@@ -61,6 +60,15 @@ namespace BOOM {
       *internal_neglog_final_event_time = z_internal;
       *internal_mu = mu;
       *internal_weight = 1.0 / sigsq;
+    }
+  }
+
+  void PoissonDataImputer::saturate_mixture_table() {
+    // Force the table to fill itself with interpolated values, so that it does
+    // not change later, while being accessed from separate threads.
+    for (int n = mixture_table_.smallest_index();
+         n < mixture_table_.largest_index(); ++n) {
+      mixture_table_.approximate(n);
     }
   }
 }  // namespace BOOM:

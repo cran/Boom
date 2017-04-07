@@ -19,11 +19,10 @@
 #ifndef TARGET_FUN_H
 #define TARGET_FUN_H
 
-
 #include <LinAlg/Vector.hpp>
-#include <boost/function.hpp>
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
+#include <functional>
 
 namespace BOOM {
   // A suite of function object which can be passed to optimization
@@ -94,10 +93,10 @@ namespace BOOM {
   //     argument is passed.
   class d2TargetFunPointerAdapter : public d2TargetFun {
    public:
-    typedef boost::function<double(const Vector &x,
-                                   Vector *gradient,
-                                   Matrix *Hessian,
-                                   bool reset_derivatives)> TargetType;
+    typedef std::function<double(const Vector &x,
+                                 Vector *gradient,
+                                 Matrix *Hessian,
+                                 bool reset_derivatives)> TargetType;
     d2TargetFunPointerAdapter() {}
     d2TargetFunPointerAdapter(const TargetType &target);
     d2TargetFunPointerAdapter(const TargetType &prior,
@@ -159,11 +158,11 @@ namespace BOOM {
   // argument).
   class ScalarTargetFunAdapter : public ScalarTargetFun{
   public:
-    ScalarTargetFunAdapter(boost::function<double(const Vector &)> F,
+    ScalarTargetFunAdapter(std::function<double(const Vector &)> F,
                            Vector *X, uint position);
     double operator()(double x)const override;
   private:
-    boost::function<double(const Vector &)> f_;
+    std::function<double(const Vector &)> f_;
     Vector *wsp_;
     uint which_;
   };

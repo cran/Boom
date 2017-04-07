@@ -61,7 +61,7 @@ namespace BOOM {
   PointProcess CosinePoissonProcess::simulate(
       const DateTime &t0,
       const DateTime &t1,
-      boost::function<Data*()> mark_generator) const {
+      std::function<Data*()> mark_generator) const {
     BoundedPoissonProcessSimulator simulator(this, 2 * lambda());
     return simulator.simulate(t0, t1, mark_generator);
   }

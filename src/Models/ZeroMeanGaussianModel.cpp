@@ -61,13 +61,12 @@ namespace BOOM{
     const double log2pi = 1.8378770664093453;
     double n = suf()->n();
     double sumsq = suf()->sumsq();
-    double SS = sumsq;
-    double ans = -0.5*(n*(log2pi + log(sigsq)) + SS/sigsq);
+    double ans = -0.5 * (n * (log2pi + log(sigsq)) + sumsq / sigsq);
     if(d1){
-      double sigsq_sq = sigsq*sigsq;
-      *d1 = -0.5*n/sigsq + 0.5*SS/sigsq_sq;
+      double sig4 = sigsq * sigsq;
+      *d1 = .5 * ( (sumsq / sig4) - (n / sigsq));
       if(d2) {
-        *d2 = (n/2 - SS/sigsq)/sigsq_sq;
+        *d2 = (n/2 - sumsq / sigsq) / sig4;
       }
     }
     return ans;

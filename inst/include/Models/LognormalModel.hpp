@@ -31,7 +31,8 @@ namespace BOOM {
       : public ParamPolicy_2<UnivParams, UnivParams>,
         public SufstatDataPolicy<DoubleData, GaussianSuf>,
         public PriorPolicy,
-        public DiffDoubleModel {
+        public DiffDoubleModel,
+        public LocationScaleDoubleModel {
    public:
 
     // Args:
@@ -59,8 +60,8 @@ namespace BOOM {
     void set_sigsq(double sigsq);
     void set_sigma(double sigma) {set_sigsq(sigma * sigma);}
 
-    double mean() const;
-    double variance() const;
+    double mean() const override;
+    double variance() const override;
     double sd() const {return sqrt(variance());}
 
     double Logp(double x, double &d1, double &d2, uint nderiv) const override;

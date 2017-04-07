@@ -40,7 +40,7 @@ namespace BOOM{
   }
 
   Vector EC::reduce(const Vector &v)const{
-    if(v.size()==0) return Vector(0);
+    if(v.empty()) return Vector(0);
     Vector ans(v.size()-1);
     Vector::const_iterator b(v.begin()), e(v.end());
     std::copy(b, b+element_, ans.begin());

@@ -69,6 +69,7 @@ namespace BOOM{
       double sigma()const {return sigma_;}
       double initial_value()const {return initial_value_;}
       bool fixed() const {return fixed_;}
+
      private:
       double mu_;
       double sigma_;
@@ -167,24 +168,39 @@ namespace BOOM{
       explicit BetaPrior(SEXP prior);
       double a()const{return a_;}
       double b()const{return b_;}
+      double initial_value() const {return initial_value_;}
       std::ostream & print(std::ostream &out)const;
 
      private:
       double a_, b_;
+      double initial_value_;
     };
 
     //----------------------------------------------------------------------
     class GammaPrior {
      public:
       explicit GammaPrior(SEXP prior);
+      virtual ~GammaPrior(){}
       double a()const{return a_;}
       double b()const{return b_;}
       double initial_value()const{return initial_value_;}
-      std::ostream & print(std::ostream &out)const;
+      virtual std::ostream & print(std::ostream &out)const;
 
      private:
       double a_, b_;
       double initial_value_;
+    };
+
+    class TruncatedGammaPrior : public GammaPrior {
+     public:
+      explicit TruncatedGammaPrior(SEXP prior);
+      double lower_truncation_point() const {return lower_truncation_point_;}
+      double upper_truncation_point() const {return upper_truncation_point_;}
+      std::ostream &print(std::ostream &out) const override;
+
+     private:
+      double lower_truncation_point_;
+      double upper_truncation_point_;
     };
 
     class MvnPrior {
@@ -248,6 +264,7 @@ namespace BOOM{
       double logp(int value) const;
       int lo() const {return lo_;}
       int hi() const {return hi_;}
+
      private:
       int lo_, hi_;
       double log_normalizing_constant_;
@@ -260,6 +277,7 @@ namespace BOOM{
       PoissonPrior(SEXP prior);
       double logp(int value) const;
       double lambda() const {return lambda_;}
+
      private:
       double lambda_;
       double lo_, hi_;
@@ -271,6 +289,7 @@ namespace BOOM{
       PointMassPrior(SEXP prior);
       double logp(int value) const;
       int location() const {return location_;}
+
      private:
       int location_;
     };
@@ -323,6 +342,7 @@ namespace BOOM{
       Ptr<ChisqModel> siginv_prior() {return siginv_prior_;}
       int max_flips() const {return max_flips_;}
       double sigma_upper_limit() const {return sigma_upper_limit_;}
+
      private:
       Vector prior_inclusion_probabilities_;
       Ptr<VariableSelectionPrior> spike_;
@@ -341,6 +361,7 @@ namespace BOOM{
        StudentRegressionConjugateSpikeSlabPrior(
            SEXP r_prior, Ptr<UnivParams> residual_variance);
        Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+
       private:
        Ptr<DoubleModel> df_prior_;
      };
@@ -376,7 +397,16 @@ namespace BOOM{
       Ptr<ChisqModel> siginv_prior_;
       double sigma_upper_limit_;
     };
+    //----------------------------------------------------------------------
+    class ArSpikeSlabPrior
+        : public RegressionNonconjugateSpikeSlabPrior {
+     public:
+      ArSpikeSlabPrior(SEXP r_prior);
+      bool truncate() const {return truncate_;}
 
+     private:
+      bool truncate_;
+    };
 
     //----------------------------------------------------------------------
     // A version of RegressionNonconjugateSpikeSlabPrior for
@@ -386,6 +416,7 @@ namespace BOOM{
      public:
       StudentRegressionNonconjugateSpikeSlabPrior(SEXP r_prior);
        Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+
      private:
       Ptr<DoubleModel> df_prior_;
     };
@@ -423,8 +454,40 @@ namespace BOOM{
      public:
       StudentIndependentSpikeSlabPrior(SEXP prior, Ptr<UnivParams> sigsq);
       Ptr<DoubleModel> degrees_of_freedom_prior() {return df_prior_;}
+
      private:
       Ptr<DoubleModel> df_prior_;
+    };
+
+    //----------------------------------------------------------------------
+    // Conjugate prior for regression coefficients.  Multivariate
+    // normal given sigma^2 and X.
+    class RegressionCoefficientConjugatePrior {
+     public:
+      RegressionCoefficientConjugatePrior(SEXP prior);
+      const Vector &mean() const {return mean_;}
+      double sample_size() const {return sample_size_;}
+      const Vector &additional_prior_precision() const {
+        return additional_prior_precision_;
+      }
+      double diagonal_weight() const {return diagonal_weight_;}
+
+     private:
+      Vector mean_;
+      double sample_size_;
+      Vector additional_prior_precision_;
+      double diagonal_weight_;
+    };
+
+    class UniformPrior {
+     public:
+      UniformPrior(SEXP prior);
+      double lo() const {return lo_;}
+      double hi() const {return hi_;}
+      double initial_value() const {return initial_value_;}
+     private:
+      double lo_, hi_;
+      double initial_value_;
     };
 
     inline std::ostream & operator<<(std::ostream &out, const NormalPrior &p) {
@@ -451,6 +514,11 @@ namespace BOOM{
     // As in create_double_model, but the model's log density is twice
     // differentiable.
     Ptr<DiffDoubleModel> create_diff_double_model(SEXP specification);
+
+    // As in create_double_model, but the model knows how to compute
+    // its mean and variance (or equivalent).
+    Ptr<LocationScaleDoubleModel> create_location_scale_double_model(
+        SEXP specification, bool throw_on_error);
 
     // Creates a pointer to a IntModel based on the given
     // specification.  The specification must correspond to a BOOM model

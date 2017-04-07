@@ -47,7 +47,7 @@ namespace BOOM {
       double total_prediction_sd,
       double prior_tree_depth_alpha,
       double prior_tree_depth_beta,
-      boost::function<double(int)> log_prior_on_number_of_trees,
+      std::function<double(int)> log_prior_on_number_of_trees,
       RNG &seeding_rng)
       : BartPosteriorSamplerBase(model,
                                  total_prediction_sd,
@@ -194,7 +194,7 @@ namespace BOOM {
   GaussianBartPosteriorSampler::create_and_store_residual(int i) {
     Ptr<RegressionData> dp = model_->dat()[i];
     double original_prediction = model_->predict(dp->x());
-    boost::shared_ptr<Bart::GaussianResidualRegressionData> data(
+    std::shared_ptr<Bart::GaussianResidualRegressionData> data(
         new Bart::GaussianResidualRegressionData(
             dp, original_prediction));
     residuals_.push_back(data);

@@ -74,6 +74,10 @@ namespace BOOM{
                           double sigma,
                           double nu) const;
 
+    double log_likelihood() const override {
+      return log_likelihood(Beta(), sigma(), nu());
+    }
+
     // The MLE is computed using an EM algorithm.
     void mle() override;
 

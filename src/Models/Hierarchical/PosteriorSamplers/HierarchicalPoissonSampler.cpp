@@ -56,7 +56,14 @@ namespace BOOM {
             data_model, Ptr<GammaModel>(prior), rng());
         data_model->set_method(data_model_sampler);
       }
-      data_model->sample_posterior();
+      int number_attempts = 0;
+      do {
+        data_model->sample_posterior();
+        if (++number_attempts > 1000) {
+          report_error("Too many attempts to draw a positive mean in "
+                       "HierarchicalPoissonSampler::draw");
+        }
+      } while (data_model->lam() == 0);
       prior->suf()->update_raw(data_model->lam());
     }
     prior->sample_posterior();

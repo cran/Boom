@@ -106,7 +106,7 @@ namespace BOOM {
     mutable double log_zero_prob_;
     mutable double log_poisson_prob_;
     mutable bool log_zero_prob_current_;
-    boost::function<void(void)> create_zero_probability_observer();
+    std::function<void(void)> create_zero_probability_observer();
     void observe_zero_probability();
     void check_log_probabilities()const;
   };

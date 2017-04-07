@@ -27,8 +27,9 @@ namespace BOOM {
         period_(period),
         frequencies_(frequencies),
         state_transition_matrix_(new IdentityMatrix(state_dimension())),
-        state_variance_matrix_(new DiagonalMatrixBlock(state_dimension())),
-        variance_is_current_(false)
+        state_variance_matrix_(
+            new DiagonalMatrixBlockVectorParamView(
+                Sigsq_prm()))
   {
     if (frequencies_.empty()) {
       report_error("At least one frequency needed to "
@@ -61,7 +62,6 @@ namespace BOOM {
   }
 
   void TrigStateModel::simulate_state_error(VectorView eta, int t) const {
-    refresh_variance();
     eta = sim();
   }
 

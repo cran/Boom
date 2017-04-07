@@ -21,27 +21,38 @@
 
 #include <LinAlg/SpdMatrix.hpp>
 #include <Models/Glm/ChoiceData.hpp>
+#include <cpputil/RefCounted.hpp>
 
 namespace BOOM {
-  class MultinomialLogitCompleteDataSufficientStatistics {
-  public:
-    MultinomialLogitCompleteDataSufficientStatistics(uint dim);
-    MultinomialLogitCompleteDataSufficientStatistics * clone() const;
+  namespace MultinomialLogit {
 
-    void clear();
-    void update(const ChoiceData &dp, const Vector &wgts, const Vector &u);
-    void combine(const MultinomialLogitCompleteDataSufficientStatistics &rhs);
+    class CompleteDataSufficientStatistics
+        : private RefCounted {
+     public:
+      CompleteDataSufficientStatistics(uint dim);
+      CompleteDataSufficientStatistics * clone() const;
 
-    const SpdMatrix & xtwx()const;
-    const Vector & xtwu()const;
-    double weighted_sum_of_squares() const;
+      void clear();
+      void update(const ChoiceData &dp, const Vector &wgts, const Vector &u);
+      void combine(const CompleteDataSufficientStatistics &rhs);
 
-  private:
-    mutable SpdMatrix xtwx_;
-    Vector xtwu_;
-    mutable bool sym_;
-    double weighted_sum_of_squares_;
-  };
+      const SpdMatrix & xtwx()const;
+      const Vector & xtwu()const;
+      double weighted_sum_of_squares() const;
+
+     private:
+      mutable SpdMatrix xtwx_;
+      Vector xtwu_;
+      mutable bool sym_;
+      double weighted_sum_of_squares_;
+
+      friend void intrusive_ptr_add_ref(CompleteDataSufficientStatistics *w) {
+        w->up_count(); }
+      friend void intrusive_ptr_release(CompleteDataSufficientStatistics *w) {
+        w->down_count(); if (w->ref_count() == 0) delete w; }
+    };
+
+  }  // namespace MultinomialLogit
 }  // namespace BOOM
 
 #endif // BOOM_MULTINOMIAL_LOGIT_COMPLETE_DATA_SUF_HPP_

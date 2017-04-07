@@ -18,6 +18,7 @@
 
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/report_error.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
@@ -42,6 +43,20 @@ namespace BOOM{
 
   void PosteriorSampler::find_posterior_mode(double epsilon) {
     report_error("Sampler class does not implement find_posterior_mode.");
+  }
+
+  double PosteriorSampler::log_prior_density(
+      const ConstVectorView &parameters) const {
+    report_error("Sampler class does not implement log_prior_density.");
+    return negative_infinity();
+  }
+
+  double PosteriorSampler::increment_log_prior_gradient(
+      const ConstVectorView &parameters,
+      VectorView gradient) const {
+    report_error("Sampler class does not implement "
+                 "increment_log_prior_gradient.");
+    return negative_infinity();
   }
 
 }  // namespace BOOM

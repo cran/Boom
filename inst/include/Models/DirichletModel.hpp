@@ -97,6 +97,9 @@ namespace BOOM{
                 Matrix &Hessian,
                 uint nderiv) const override ;
     double Loglike(const Vector &nu, Vector &g, Matrix &h, uint nderiv) const override;
+    double log_likelihood() const override {
+      return loglike(nu());
+    }
     void mle() override {return d2LoglikeModel::mle();}
 
     double nu_loglike(const Vector & nu)const;

@@ -28,6 +28,7 @@
 #include <LinAlg/SubMatrix.hpp>
 
 #include <Models/ParamTypes.hpp>
+#include <Models/SpdParams.hpp>
 
 #include <cpputil/RefCounted.hpp>
 #include <cpputil/Ptr.hpp>
@@ -124,23 +125,40 @@ namespace BOOM{
   };
 
   //======================================================================
+  class DenseSpdBase : public SparseMatrixBlock {
+   public:
+    virtual const SpdMatrix &value() const = 0;
+    int nrow() const override {return value().nrow();}
+    int ncol() const override {return value().ncol();}
+    void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
+      lhs = value() * rhs; }
+    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
+      lhs = value() * rhs; }
+    void multiply_inplace(VectorView x) const override { x = value() * x;}
+    void add_to(SubMatrix block) const override { block += value(); }
+  };
+
   // A SparseMatrixBlock filled with a dense SpdMatrix.
-  class DenseSpd : public SparseMatrixBlock {
+  class DenseSpd : public DenseSpdBase {
    public:
     DenseSpd(const SpdMatrix &m) : m_(m){}
-    DenseSpd(const DenseSpd &rhs) : SparseMatrixBlock(rhs), m_(rhs.m_){}
+    DenseSpd(const DenseSpd &rhs) : DenseSpdBase(rhs), m_(rhs.m_){}
     DenseSpd * clone() const override {return new DenseSpd(*this);}
+    const SpdMatrix &value() const override {return m_;}
     void set_matrix(const SpdMatrix &m){m_ = m;}
-    int nrow() const override {return m_.nrow();}
-    int ncol() const override {return m_.ncol();}
-    void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
-      lhs = m_ * rhs; }
-    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
-      lhs = m_ * rhs; }
-    void multiply_inplace(VectorView x) const override { x = m_ * x;}
-    void add_to(SubMatrix block) const override { block += m_; }
    private:
     SpdMatrix m_;
+  };
+
+  class DenseSpdParamView : public DenseSpdBase {
+   public:
+    DenseSpdParamView(Ptr<SpdParams> matrix) : matrix_(matrix) {}
+    DenseSpdParamView *clone() const override {
+      return new DenseSpdParamView(*this);
+    }
+    const SpdMatrix &value() const override {return matrix_->value();}
+   private:
+    Ptr<SpdParams> matrix_;
   };
 
   //======================================================================
@@ -150,7 +168,38 @@ namespace BOOM{
   // conceptutally similar to UpperLeftDiagonalMatrix, but it allows
   // different behavior with respect to setting its elements to
   // arbitrary values.
-  class DiagonalMatrixBlock : public SparseMatrixBlock {
+  class DiagonalMatrixBlockBase : public SparseMatrixBlock {
+   public:
+    virtual const Vector &diagonal_elements() const = 0;
+    double operator[](int i) const {return diagonal_elements()[i];}
+    int nrow() const override {return diagonal_elements().size();}
+    int ncol() const override {return diagonal_elements().size();}
+    void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
+      lhs = diagonal_elements();
+      lhs *= rhs;
+    }
+    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
+      multiply(lhs, rhs);
+    }
+    void multiply_inplace(VectorView x) const override {x *= diagonal_elements();}
+    void matrix_multiply_inplace(SubMatrix m) const override {
+      for(int i = 0; i < m.ncol(); ++i){
+        m.col(i) *= diagonal_elements();
+      }
+    }
+
+    void matrix_transpose_premultiply_inplace(SubMatrix m) const override {
+      for(int i = 0; i < m.nrow(); ++i){
+        m.row(i) *= diagonal_elements();
+      }
+    }
+
+    void add_to(SubMatrix block) const override {
+      block.diag() += diagonal_elements();
+    }
+  };
+
+  class DiagonalMatrixBlock : public DiagonalMatrixBlockBase {
    public:
     DiagonalMatrixBlock(int size)
         : diagonal_elements_(size)
@@ -158,40 +207,34 @@ namespace BOOM{
     DiagonalMatrixBlock(const Vector &diagonal_elements)
         : diagonal_elements_(diagonal_elements)
     {}
-    DiagonalMatrixBlock * clone() const override {return new DiagonalMatrixBlock(*this);}
+    DiagonalMatrixBlock * clone() const override {
+      return new DiagonalMatrixBlock(*this);}
+    const Vector &diagonal_elements() const override {
+      return diagonal_elements_;
+    }
+    double & mutable_element(int i){return diagonal_elements_[i];}
+
     void set_elements(const Vector &v){diagonal_elements_ = v;}
     void set_elements(const VectorView &v){diagonal_elements_ = v;}
     void set_elements(const ConstVectorView &v){diagonal_elements_ = v;}
-    double operator[](int i) const {return diagonal_elements_[i];}
-    double & operator[](int i){return diagonal_elements_[i];}
-    int nrow() const override {return diagonal_elements_.size();}
-    int ncol() const override {return diagonal_elements_.size();}
-    void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
-      lhs = diagonal_elements_;
-      lhs *= rhs;
-    }
-    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
-      multiply(lhs, rhs);
-    }
-    void multiply_inplace(VectorView x) const override {x *= diagonal_elements_;}
-    void matrix_multiply_inplace(SubMatrix m) const override {
-      for(int i = 0; i < m.ncol(); ++i){
-        m.col(i) *= diagonal_elements_;
-      }
-    }
-
-    void matrix_transpose_premultiply_inplace(SubMatrix m) const override {
-      for(int i = 0; i < m.nrow(); ++i){
-        m.row(i) *= diagonal_elements_;
-      }
-    }
-
-    void add_to(SubMatrix block) const override {
-      block.diag() += diagonal_elements_;
-    }
-
    private:
     Vector diagonal_elements_;
+  };
+
+  class DiagonalMatrixBlockVectorParamView : public DiagonalMatrixBlockBase {
+   public:
+    DiagonalMatrixBlockVectorParamView(
+        Ptr<VectorParams> diagonal_elements)
+        : diagonal_elements_(diagonal_elements)
+    {}
+    DiagonalMatrixBlockVectorParamView * clone() const override {
+      return new DiagonalMatrixBlockVectorParamView(*this);
+    }
+    const Vector &diagonal_elements() const override {
+      return diagonal_elements_->value();
+    }
+   private:
+    Ptr<VectorParams> diagonal_elements_;
   };
 
   //======================================================================
@@ -291,40 +334,63 @@ namespace BOOM{
 
   //======================================================================
   // A scalar constant times the identity matrix
-  class ConstantMatrix : public SparseMatrixBlock{
+  class ConstantMatrixBase : public SparseMatrixBlock{
    public:
-    ConstantMatrix(int dim, double value)
-        : dim_(dim),
-          value_(value)
-    {}
-    ConstantMatrix * clone() const override {return new ConstantMatrix(*this);}
+    ConstantMatrixBase(int dim) : dim_(dim) {}
+    virtual double value() const = 0;
     int nrow() const override {return dim_;}
     int ncol() const override {return dim_;}
     void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
       conforms_to_cols(rhs.size());
       conforms_to_rows(lhs.size());
       // Doing this operation in two steps, insted of lhs = rhs *
-      // value_, eliminates a temporary that profiliing found to be
+      // value(), eliminates a temporary that profiliing found to be
       // expensive.
       lhs = rhs;
-      lhs *= value_;
+      lhs *= value();
     }
     void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
       conforms_to_rows(rhs.size());
       conforms_to_cols(lhs.size());
-      lhs = rhs * value_;
+      lhs = rhs * value();
     }
     void multiply_inplace(VectorView x) const override {
-      x *= value_;}
+      x *= value();}
     void matrix_multiply_inplace(SubMatrix x) const override {
-      x *= value_;}
+      x *= value();}
     void matrix_transpose_premultiply_inplace(SubMatrix x) const override {
-      x *= value_;}
-    void add_to(SubMatrix block) const override {block.diag() += value_;}
-    void set_value(double value){value_ = value;}
+      x *= value();}
+    void add_to(SubMatrix block) const override {block.diag() += value();}
    private:
     int dim_;
+  };
+
+  class ConstantMatrix : public ConstantMatrixBase {
+   public:
+    ConstantMatrix(int dim, double value)
+        : ConstantMatrixBase(dim),
+          value_(value)
+    {}
+    ConstantMatrix * clone() const override {return new ConstantMatrix(*this);}
+    void set_value(double value){value_ = value;}
+    double value() const override {return value_;}
+   private:
     double value_;
+  };
+
+  class ConstantMatrixParamView : public ConstantMatrixBase {
+   public:
+    ConstantMatrixParamView(int dim,
+                            Ptr<UnivParams> value)
+        : ConstantMatrixBase(dim),
+          value_(value) {}
+    ConstantMatrixParamView * clone() const override {
+      return new ConstantMatrixParamView(nrow(), value_);
+    }
+    double value() const override {return value_->value();}
+
+   private:
+    Ptr<UnivParams> value_;
   };
 
   //======================================================================
@@ -339,21 +405,17 @@ namespace BOOM{
   //======================================================================
   //  A matrix that is all zeros except for a single nonzero value in
   //  the (0,0) corner.
-  class UpperLeftCornerMatrix : public SparseMatrixBlock {
+  class UpperLeftCornerMatrixBase : public SparseMatrixBlock {
    public:
-    UpperLeftCornerMatrix(int dim, double value)
-        : dim_(dim),
-          value_(value)
-    {}
-    UpperLeftCornerMatrix * clone() const override {
-      return new UpperLeftCornerMatrix(*this);}
+    UpperLeftCornerMatrixBase(int dim) : dim_(dim) {}
+    virtual double value() const = 0;
     int nrow() const override {return dim_;}
     int ncol() const override {return dim_;}
     void multiply(VectorView lhs, const ConstVectorView &rhs) const override {
       conforms_to_cols(rhs.size());
       conforms_to_rows(lhs.size());
       lhs = rhs * 0;
-      lhs[0] = rhs[0] * value_;
+      lhs[0] = rhs[0] * value();
     }
     void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
       // An upper left corner matrix is symmetric, so Tmult is the
@@ -362,13 +424,37 @@ namespace BOOM{
     void multiply_inplace(VectorView x) const override {
       double tmp = x[0];
       x = 0;
-      x[0] = tmp * value_;
+      x[0] = tmp * value();
     }
-    void set_value(double value){value_ = value;}
-    void add_to(SubMatrix block) const override { block(0,0) += value_; }
+    void add_to(SubMatrix block) const override { block(0,0) += value(); }
    private:
     int dim_;
+  };
+
+  class UpperLeftCornerMatrix : public UpperLeftCornerMatrixBase {
+   public:
+    UpperLeftCornerMatrix(int dim, double value)
+        : UpperLeftCornerMatrixBase(dim),
+          value_(value)
+    {}
+    UpperLeftCornerMatrix * clone() const override {
+      return new UpperLeftCornerMatrix(*this);}
+    double value() const override {return value_;}
+    void set_value(double value){value_ = value;}
+   private:
     double value_; // the value in the upper left corner of the matrix
+  };
+
+  class UpperLeftCornerMatrixParamView : public UpperLeftCornerMatrixBase {
+   public:
+    UpperLeftCornerMatrixParamView(int dim, Ptr<UnivParams> param)
+        : UpperLeftCornerMatrixBase(dim),
+          value_(param) {}
+    UpperLeftCornerMatrixParamView * clone() const override{
+      return new UpperLeftCornerMatrixParamView(*this);}
+    double value() const override {return value_->value();}
+   private:
+    Ptr<UnivParams> value_;
   };
 
   //======================================================================
@@ -494,17 +580,14 @@ namespace BOOM{
 
   //======================================================================
   // A diagonal matrix that is zero in all but (at most) one element.
-  class SingleSparseDiagonalElementMatrix : public SparseMatrixBlock{
+  class SingleSparseDiagonalElementMatrixBase : public SparseMatrixBlock{
    public:
-    SingleSparseDiagonalElementMatrix(int dim, double value, int which_element)
+    SingleSparseDiagonalElementMatrixBase(int dim, int which_element)
         : dim_(dim),
-          value_(value),
           which_element_(which_element)
     {}
-    SingleSparseDiagonalElementMatrix * clone() const override {
-      return new SingleSparseDiagonalElementMatrix(*this);}
+    virtual double value() const =  0;
 
-    void set_value(double value){value_ = value;}
     void set_element(int which_element){which_element_ = which_element;}
 
     int nrow() const override {return dim_;}
@@ -513,7 +596,7 @@ namespace BOOM{
       conforms_to_rows(lhs.size());
       conforms_to_cols(rhs.size());
       lhs = 0;
-      lhs[which_element_] = value_ * rhs[which_element_];
+      lhs[which_element_] = value() * rhs[which_element_];
     }
     void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
       // Symmetric
@@ -521,16 +604,43 @@ namespace BOOM{
     }
     void multiply_inplace(VectorView x) const override {
       conforms_to_cols(x.size());
-      x[which_element_] *= value_;
+      x[which_element_] *= value();
     }
     void add_to(SubMatrix block) const override {
       check_can_add(block);
-      block(which_element_, which_element_) += value_;
+      block(which_element_, which_element_) += value();
     }
    private:
     int dim_;
-    double value_;
     int which_element_;
+  };
+
+  class SingleSparseDiagonalElementMatrix
+      : public SingleSparseDiagonalElementMatrixBase {
+   public:
+    SingleSparseDiagonalElementMatrix(int dim, double value, int which_element)
+        : SingleSparseDiagonalElementMatrixBase(dim, which_element),
+          value_(value) {}
+    SingleSparseDiagonalElementMatrix * clone() const override {
+      return new SingleSparseDiagonalElementMatrix(*this);}
+    double value() const override {return value_;}
+    void set_value(double value) {value_ = value;}
+   private:
+    double value_;
+  };
+
+  class SingleSparseDiagonalElementMatrixParamView
+      : public SingleSparseDiagonalElementMatrixBase {
+   public:
+    SingleSparseDiagonalElementMatrixParamView(
+        int dim, Ptr<UnivParams> value, int which_element)
+        : SingleSparseDiagonalElementMatrixBase(dim, which_element),
+          value_(value) {}
+    SingleSparseDiagonalElementMatrixParamView * clone() const override {
+      return new SingleSparseDiagonalElementMatrixParamView(*this);}
+    double value() const override {return value_->value();}
+   private:
+    Ptr<UnivParams> value_;
   };
 
   //======================================================================

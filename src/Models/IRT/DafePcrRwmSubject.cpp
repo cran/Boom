@@ -27,8 +27,6 @@
 #include <Samplers/MetropolisHastings.hpp>
 #include <TargetFun/TargetFun.hpp>
 
-#include <boost/bind.hpp>
-
 namespace BOOM{
   namespace IRT{
 
@@ -100,12 +98,12 @@ namespace BOOM{
 
     void SS::get_moments(){
       ivar = prior->siginv();
-      const ItemResponseMap & r(sub->item_responses());
-      for_each(r.begin(), r.end(),
-           boost::bind(&SS::accumulate_moments, this, _1));
+      for (auto &item_response : sub->item_responses()) {
+        accumulate_moments(item_response);
+      }
     }
 
-    void SS::accumulate_moments(std::pair<Ptr<Item>, Response> ir){
+    void SS::accumulate_moments(std::pair<Ptr<Item>, Response> ir) {
       Ptr<Item> it = ir.first;
       Ptr<PCR> pcr = it.dcast<PCR>();
       Response r = ir.second;
@@ -113,10 +111,11 @@ namespace BOOM{
       uint M = it->maxscore();
       uint which = pcr->which_subscale();
       for(uint m=1; m<=M; ++m){
-    double ma = m*a;
-    double w = ma*ma;
-    ivar(which,which) += w/sigsq;}}
+        double ma = m*a;
+        double w = ma*ma;
+        ivar(which,which) += w/sigsq;
+      }
+    }
 
-
-  }
-}
+  }  // namespace IRT
+}  // namespace BOOM

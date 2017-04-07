@@ -23,14 +23,14 @@
 namespace BOOM {
 
   PoissonRegressionData::PoissonRegressionData(
-      int y,
+      int64_t y,
       const Vector &x,
       double exposure)
       : PoissonRegressionData(y, new VectorData(x), exposure)
   {}
 
   PoissonRegressionData::PoissonRegressionData(
-      int y,
+      int64_t y,
       Ptr<VectorData> x,
       double exposure)
       : GlmData<IntData>(Ptr<IntData>(new IntData(y)),

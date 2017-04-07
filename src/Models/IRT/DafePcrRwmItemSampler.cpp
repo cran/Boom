@@ -28,8 +28,6 @@
 #include <cpputil/ParamHolder.hpp>
 #include <cpputil/math_utils.hpp>
 
-#include <boost/bind.hpp>
-
 namespace BOOM{
   namespace IRT{
     typedef DafePcrRwmItemSampler ISAM;
@@ -102,10 +100,9 @@ namespace BOOM{
 
     void ISAM::get_moments(){
       xtx=0.0;
-      const SubjectSet &subjects(mod->subjects());
-      for_each(subjects.begin(), subjects.end(),
-           boost::bind(&ISAM::accumulate_moments, this, _1));
-
+      for (auto &subject : mod->subjects()) {
+        accumulate_moments(subject);
+      }
       ivar = prior->siginv() + xtx/sigsq;
     }
 

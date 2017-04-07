@@ -138,7 +138,10 @@ namespace BOOM {
         << "      b = " << model_->b() << endl
         << "  a/a+b = " << model_->mean() << endl
         << "    a+b = " << model_->sample_size() << endl
-        << "    suf = " << *(model_->suf()) << endl;
+        << "    sufficient statistics: " << endl
+        << "              n  = " << model_->suf()->n() << endl
+        << "     sum(log(p)) = " << model_->suf()->sumlog() << endl
+        << " sum(log(1 - p)) = " << model_->suf()->sumlogc() << endl;
     if (e) {
       err << "The exception message was: " << endl
           << e->what() << endl;

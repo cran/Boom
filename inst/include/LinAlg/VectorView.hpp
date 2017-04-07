@@ -143,7 +143,7 @@ namespace BOOM{
     double affdot(const VectorView &y)const;
     // affine dot product:  dim(y) == dim(x)-1. ignores lower bounds
 
-    VectorView & transform(std::function<double(double)> f);
+    VectorView & transform(const std::function<double(double)> &f);
    private:
     double *V;
     uint nelem_;

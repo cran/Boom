@@ -17,7 +17,8 @@
 */
 
 #include <Models/PosteriorSamplers/BetaBinomialPosteriorSampler.hpp>
-#include <boost/bind.hpp>
+#include <functional>
+
 #include <distributions.hpp>
 #include <stats/logit.hpp>
 #include <cpputil/report_error.hpp>
@@ -112,10 +113,10 @@ namespace BOOM{
         model_(model),
         probability_prior_(probability_prior),
         sample_size_prior_(sample_size_prior),
-        probability_sampler_(boost::bind(
-            &BetaBinomialPosteriorSampler::logp_prob, this, _1)),
-        sample_size_sampler_(boost::bind(
-            &BetaBinomialPosteriorSampler::logp_sample_size, this, _1)),
+        probability_sampler_([this](double prob) {
+            return this->logp_prob(prob);}),
+        sample_size_sampler_([this](double sample_size) {
+            return this->logp_sample_size(sample_size);}),
         sampling_method_(DATA_AUGMENTATION),
         trouble_locating_mode_(false)
   {

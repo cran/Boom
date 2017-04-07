@@ -33,7 +33,7 @@ namespace BOOM{
      // If created using the default constructor, the MvnSuf will be
      // resized to the dimension of the first data point passed to it
      // in update().
-     MvnSuf(uint p=0);
+     MvnSuf(uint p = 0);
      MvnSuf(double n, const Vector &ybar, const SpdMatrix&sumsq);
      MvnSuf(const MvnSuf &sf);
      MvnSuf *clone() const override;
@@ -51,33 +51,34 @@ namespace BOOM{
      // assuming that x was previously added.
      void remove_data(const Vector &x);
 
-     Vector sum()const;
-     SpdMatrix sumsq()const;       // Un-centered sum of squares
-     double n()const;
-     const Vector & ybar()const;
-     SpdMatrix sample_var()const;  // divides by n-1
-     SpdMatrix var_hat()const;     // divides by n
-     SpdMatrix center_sumsq(const Vector &mu)const;
-     const SpdMatrix & center_sumsq()const;
+     Vector sum() const;
+     SpdMatrix sumsq() const;       // Un-centered sum of squares
+     double n() const;
+     const Vector & ybar() const;
+     SpdMatrix sample_var() const;  // divides by n-1
+     SpdMatrix var_hat() const;     // divides by n
+     SpdMatrix center_sumsq(const Vector &mu) const;
+     const SpdMatrix & center_sumsq() const;
 
      void combine(Ptr<MvnSuf>);
      void combine(const MvnSuf &);
      MvnSuf * abstract_combine(Sufstat *s) override;
 
-     Vector vectorize(bool minimal=true)const override;
+     Vector vectorize(bool minimal = true) const override;
      Vector::const_iterator unvectorize(Vector::const_iterator &v,
-                                             bool minimal=true) override;
+                                        bool minimal = true) override;
      Vector::const_iterator unvectorize(const Vector &v,
-                                             bool minimal=true) override;
+                                        bool minimal = true) override;
 
-     ostream & print(ostream &)const override;
+     ostream & print(ostream &) const override;
+
     private:
      Vector ybar_;
      Vector wsp_;
      mutable SpdMatrix sumsq_;     // centered at ybar
      double n_;              // sample size
      mutable bool sym_;
-     void check_symmetry()const;
+     void check_symmetry() const;
 
      // resizes if empty, otherwise throws if dimension is wrong.
      void check_dimension(const Vector &y);
@@ -91,12 +92,12 @@ namespace BOOM{
     : public DiffVectorModel
   {
   public:
-    MvnBase * clone()const override =0;
-    virtual uint dim()const;
+    MvnBase * clone() const override = 0;
+    virtual uint dim() const;
     double Logp(const Vector &x,
-                        Vector &g,
-                        Matrix &h,
-                        uint nderiv)const override;
+                Vector &g,
+                Matrix &h,
+                uint nderiv) const override;
 
     // Args:
     //   x_subset: A subset (determined by 'inclusion') of the vector
@@ -133,13 +134,13 @@ namespace BOOM{
     // variables are included.
     double log_likelihood(const Vector &mu,
                           const SpdMatrix &siginv,
-                          const MvnSuf &suf)const;
+                          const MvnSuf &suf) const;
 
-    virtual const Vector & mu() const=0;
-    virtual const SpdMatrix & Sigma()const=0;
-    virtual const SpdMatrix & siginv() const=0;
-    virtual double ldsi()const=0;
-    Vector sim()const override;
+    virtual const Vector & mu() const = 0;
+    virtual const SpdMatrix & Sigma() const = 0;
+    virtual const SpdMatrix & siginv() const = 0;
+    virtual double ldsi() const = 0;
+    Vector sim() const override;
   };
 
   //____________________________________________________________
@@ -149,32 +150,31 @@ namespace BOOM{
       public LocationScaleVectorModel
   {
   public:
-    MvnBaseWithParams(uint p, double mu=0.0, double sig=1.0);
+    MvnBaseWithParams(uint p, double mu= 0.0, double sig=1.0);
     // N(mu,V)... if(ivar) then V is the inverse variance.
     MvnBaseWithParams(const Vector &mean, const SpdMatrix &V,
                       bool ivar=false);
     MvnBaseWithParams(Ptr<VectorParams>, Ptr<SpdParams>);
     MvnBaseWithParams(const MvnBaseWithParams &);
-    MvnBaseWithParams * clone()const override =0;
+    MvnBaseWithParams * clone() const override = 0;
 
     Ptr<VectorParams> Mu_prm();
-    const Ptr<VectorParams> Mu_prm()const;
+    const Ptr<VectorParams> Mu_prm() const;
     Ptr<SpdParams> Sigma_prm();
-    const Ptr<SpdParams> Sigma_prm()const;
+    const Ptr<SpdParams> Sigma_prm() const;
 
     const Vector & mu() const override;
-     const SpdMatrix & Sigma()const override;
-     const SpdMatrix & siginv() const override;
-    double ldsi()const override;
+    const SpdMatrix & Sigma() const override;
+    const SpdMatrix & siginv() const override;
+    double ldsi() const override;
     const Matrix & Sigma_chol() const;
 
-    void set_mu(const Vector &) override;
-    void set_Sigma(const SpdMatrix &) override;
-    void set_siginv(const SpdMatrix &) override;
-    void set_S_Rchol(const Vector &sd, const Matrix &L) override;
+    void set_mu(const Vector &);
+    void set_Sigma(const SpdMatrix &);
+    void set_siginv(const SpdMatrix &);
+    void set_S_Rchol(const Vector &sd, const Matrix &L);
   };
 
-
-}
+}  // namespace BOOM
 
 #endif// BOOM_MVN_MODEL_BASE_HPP

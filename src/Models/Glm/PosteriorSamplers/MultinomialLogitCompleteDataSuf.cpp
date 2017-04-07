@@ -20,11 +20,12 @@
 #include <cpputil/math_utils.hpp>
 
 namespace BOOM {
+ namespace MultinomialLogit {
   namespace {
-    typedef MultinomialLogitCompleteDataSufficientStatistics MLVSS;
+    typedef CompleteDataSufficientStatistics MLVSS;
   }
 
-  MLVSS::MultinomialLogitCompleteDataSufficientStatistics(uint dim)
+  MLVSS::CompleteDataSufficientStatistics(uint dim)
     : xtwx_(dim),
       xtwu_(dim),
       sym_(false),
@@ -68,4 +69,5 @@ namespace BOOM {
   double MLVSS::weighted_sum_of_squares() const {
     return weighted_sum_of_squares_;
   }
-}
+ }  // namespace MultinomialLogit
+}  // namespace BOOM

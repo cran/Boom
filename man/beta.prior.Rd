@@ -9,7 +9,8 @@
   probability parameter.}
 
 \usage{
-  BetaPrior(a = 1, b = 1, mean = NULL, sample.size = NULL)
+  BetaPrior(a = 1, b = 1, mean = NULL, sample.size = NULL,
+            initial.value = NULL)
 }
 
 \arguments{
@@ -18,6 +19,9 @@
     count.}
   \item{mean}{A positive real number representing \code{a/(a+b)}.}
   \item{sample.size}{A positive real number representing \code{a+b}.}
+  \item{initial.value}{An initial value to be used for the variable
+    being modeled.  If \code{NULL} then the mean of the distribution
+    will be used instead.}
 }
 
 \details{

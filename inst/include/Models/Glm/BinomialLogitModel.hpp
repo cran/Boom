@@ -47,12 +47,12 @@ namespace BOOM{
 
     BinomialLogitModel(const Matrix &X, const Vector &y, const Vector &n);
     BinomialLogitModel(const BinomialLogitModel &);
-    BinomialLogitModel *clone()const override;
+    BinomialLogitModel *clone() const override;
 
     GlmCoefs & coef() override{return ParamPolicy::prm_ref();}
-    const GlmCoefs & coef()const override{return ParamPolicy::prm_ref();}
+    const GlmCoefs & coef() const override{return ParamPolicy::prm_ref();}
     Ptr<GlmCoefs> coef_prm() override{return ParamPolicy::prm();}
-    const Ptr<GlmCoefs> coef_prm()const override{return ParamPolicy::prm();}
+    const Ptr<GlmCoefs> coef_prm() const override{return ParamPolicy::prm();}
 
     double success_probability(const Vector &x) const;
     double success_probability(const VectorView &x) const;
@@ -61,26 +61,27 @@ namespace BOOM{
     double failure_probability(const VectorView &x) const;
     double failure_probability(const ConstVectorView &x) const;
 
-    double pdf(const Data * dp, bool logscale)const override;
-    virtual double pdf(dPtr dp, bool logscale)const;
-    virtual double pdf(Ptr<BinomialRegressionData>, bool)const;
-    virtual double logp(double y, double n, const Vector &x, bool logscale)const;
-    virtual double logp_1(bool y, const Vector &x, bool logscale)const;
+    double pdf(const Data * dp, bool logscale) const override;
+    virtual double pdf(dPtr dp, bool logscale) const;
+    virtual double pdf(Ptr<BinomialRegressionData>, bool) const;
+    virtual double logp(double y, double n, const Vector &x,
+                        bool logscale) const;
+    virtual double logp_1(bool y, const Vector &x, bool logscale) const;
 
     // In the following, beta refers to the set of nonzero "included"
     // coefficients.
     double Loglike(const Vector &beta,
-                           Vector &g, Matrix &h, uint nd)const override;
+                   Vector &g, Matrix &h, uint nd) const override;
     virtual double log_likelihood(const Vector &beta, Vector *g, Matrix *h,
-                                  bool initialize_derivs = true)const;
+                                  bool initialize_derivs = true) const;
+    using LoglikeModel::log_likelihood;
+    d2TargetFunPointerAdapter log_likelihood_tf() const;
 
-    d2TargetFunPointerAdapter log_likelihood_tf()const;
-
-    virtual SpdMatrix xtx()const;
+    virtual SpdMatrix xtx() const;
 
     // see comments in LogisticRegressionModel
     void set_nonevent_sampling_prob(double alpha);
-    double log_alpha()const;
+    double log_alpha() const;
 
    private:
     double log_alpha_;  // see comments in logistic_regression_model

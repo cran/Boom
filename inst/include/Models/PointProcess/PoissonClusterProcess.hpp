@@ -28,7 +28,7 @@
 #include <LinAlg/Selector.hpp>
 #include <vector>
 #include <map>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM{
 
@@ -259,8 +259,9 @@ namespace BOOM{
     virtual PointProcess simulate(
         const DateTime &t0,
         const DateTime &t1,
-        boost::function<Data*()> primary_mark_simulator = NullDataGenerator(),
-        boost::function<Data*()> secondary_mark_simulator = NullDataGenerator())const;
+        std::function<Data*()> primary_mark_simulator = NullDataGenerator(),
+        std::function<Data*()> secondary_mark_simulator
+           = NullDataGenerator()) const;
 
     const std::vector<Mat> & probability_of_activity()const;
     const std::vector<Mat> & probability_of_responsibility()const;
@@ -409,9 +410,7 @@ namespace BOOM{
     // each PointProcess.  If some events are known to be
     typedef std::map<Ptr<PointProcess>, std::vector<int> > SourceMap;
     SourceMap known_source_store_;
-
   };
 
-}
-
+}  // namespace BOOM
 #endif// BOOM_POISSON_CLUSTER_PROCESS_HPP_

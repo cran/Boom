@@ -36,6 +36,7 @@
 #include <sstream>
 
 #include <cstdlib>
+#include <utility>
 
 using namespace std;
 
@@ -101,10 +102,6 @@ namespace BOOM{
       : dVector(rhs)
   {}
 
-  Vector::Vector(const Vector &rhs)
-      : dVector(rhs)
-  {}
-
   Vector::Vector(const VectorView &rhs)
       : dVector(rhs.begin(), rhs.end())
   {}
@@ -112,10 +109,6 @@ namespace BOOM{
   Vector::Vector(const ConstVectorView &rhs)
       : dVector(rhs.begin(), rhs.end())
   {}
-
-  Vector & Vector::operator=(const Vector &rhs){
-    if(&rhs!=this) dVector::operator=(rhs);
-    return *this; }
 
   Vector & Vector::operator=(const VectorView &v){
     assign(v.begin(), v.end()); return *this; }
@@ -378,8 +371,11 @@ namespace BOOM{
   Vector & Vector::normalize_logprob(){
     double nc=0;
     Vector &x= *this;
+    int n = size();
+    if (n == 0) {
+      report_error("Vector::normalize_logprob called for empty vector");
+    }
     double m = max();
-    uint n = size();
     for(uint i=0; i<n; ++i){
       x[i] = std::exp(x[i]-m);
       nc+=x[i]; }
@@ -446,7 +442,7 @@ namespace BOOM{
     return *this;
   }
 
-  Vector & Vector::transform(std::function<double(double)> f) {
+  Vector & Vector::transform(const std::function<double(double)> &f) {
     const auto n = this->size();
     double *d = data();
     for (auto i = n * 0; i < n; ++i) {
@@ -667,9 +663,9 @@ namespace BOOM{
   namespace {
     typedef double (*DoubleFunction)(double);
     Vector vector_transform(const ConstVectorView &x,
-                            std::function<double(double)> f) {
+                            const std::function<double(double)> &f) {
       Vector ans(x.size());
-      std::transform(x.begin(), x.end(), ans.begin(), f);
+      std::transform(x.begin(), x.end(), ans.begin(), std::move(f));
       return ans;
     }
 

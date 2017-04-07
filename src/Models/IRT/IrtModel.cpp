@@ -34,10 +34,7 @@
 
 #include <Models/MvnModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-
-using std::setw;
+#include <functional>
 
 namespace BOOM{
   namespace IRT{

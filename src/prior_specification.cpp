@@ -21,6 +21,7 @@
 #include <Models/BetaModel.hpp>
 #include <Models/DiscreteUniformModel.hpp>
 #include <Models/GammaModel.hpp>
+#include <Models/TruncatedGammaModel.hpp>
 #include <Models/GaussianModel.hpp>
 #include <Models/LognormalModel.hpp>
 #include <Models/MarkovModel.hpp>
@@ -30,8 +31,8 @@
 #include <cpputil/math_utils.hpp>
 #include <distributions.hpp>
 
-namespace BOOM{
-  namespace RInterface{
+namespace BOOM {
+  namespace RInterface {
     SdPrior::SdPrior(SEXP prior)
         : prior_guess_(Rf_asReal(getListElement(prior, "prior.guess"))),
           prior_df_(Rf_asReal(getListElement(prior, "prior.df"))),
@@ -44,7 +45,7 @@ namespace BOOM{
       }
     }
 
-    std::ostream & SdPrior::print(std::ostream &out)const{
+    std::ostream & SdPrior::print(std::ostream &out) const {
       out << "prior_guess_   = " << prior_guess_ << std::endl
           << "prior_df_      = " << prior_df_ << std::endl
           << "initial_value_ = " << initial_value_ << std::endl
@@ -58,14 +59,16 @@ namespace BOOM{
           sigma_(Rf_asReal(getListElement(prior, "sigma"))),
           initial_value_(Rf_asReal(getListElement(prior, "initial.value"))) {
       int is_fixed = Rf_asLogical(getListElement(prior, "fixed"));
-      if (is_fixed == 1) fixed_ = true;
-      else if (is_fixed == 0) fixed_ = false;
-      else {
+      if (is_fixed == 1) {
+        fixed_ = true;
+      } else if (is_fixed == 0) {
+        fixed_ = false;
+      } else {
         report_error("Strange value of 'fixed' in NormalPrior constructor.");
       }
     }
 
-    std::ostream & NormalPrior::print(std::ostream &out)const{
+    std::ostream & NormalPrior::print(std::ostream &out) const {
       out << "mu =     " << mu_ << std::endl
           << "sigma_ = " << sigma_ << std::endl
           << "init   = " << initial_value_ << std::endl;
@@ -74,10 +77,11 @@ namespace BOOM{
 
     BetaPrior::BetaPrior(SEXP prior)
         : a_(Rf_asReal(getListElement(prior, "a"))),
-          b_(Rf_asReal(getListElement(prior, "b")))
+          b_(Rf_asReal(getListElement(prior, "b"))),
+          initial_value_(Rf_asReal(getListElement(prior, "initial.value")))
     {}
 
-    std::ostream & BetaPrior::print(std::ostream &out)const{
+    std::ostream & BetaPrior::print(std::ostream &out) const {
       out << "a = " << a_ << "b = " << b_;
       return out;
     }
@@ -91,23 +95,36 @@ namespace BOOM{
           getListElement(prior, "initial.value"));
       if (rinitial_value == R_NilValue) {
         initial_value_ = Rf_asReal(rinitial_value);
-      }else{
+      } else {
         initial_value_ = a_ / b_;
       }
     }
 
-    std::ostream & GammaPrior::print(std::ostream &out)const{
+    std::ostream & GammaPrior::print(std::ostream &out) const {
       out << "a = " << a_ << "b = " << b_;
       return out;
     }
 
+    TruncatedGammaPrior::TruncatedGammaPrior(SEXP prior)
+        : GammaPrior(prior),
+          lower_truncation_point_(Rf_asReal(getListElement(
+              prior, "lower.truncation.point"))),
+          upper_truncation_point_(Rf_asReal(getListElement(
+              prior, "upper.truncation.point")))
+    {}
+
+    std::ostream & TruncatedGammaPrior::print(std::ostream &out) const {
+      GammaPrior::print(out) << " (" << lower_truncation_point_
+          << ", " << upper_truncation_point_ << ") ";
+      return out;
+    }
 
     MvnPrior::MvnPrior(SEXP prior)
         : mu_(ToBoomVector(getListElement(prior, "mean"))),
           Sigma_(ToBoomSpdMatrix(getListElement(prior, "variance")))
     {}
 
-    std::ostream & MvnPrior::print(std::ostream &out)const{
+    std::ostream & MvnPrior::print(std::ostream &out) const {
       out << "mu: " << mu_ << std::endl
           << "Sigma:" << std::endl
           << Sigma_;
@@ -121,7 +138,7 @@ namespace BOOM{
           force_positive_(Rf_asLogical(getListElement(
               prior, "force.positive"))) {}
 
-    std::ostream & Ar1CoefficientPrior::print(std::ostream &out)const{
+    std::ostream & Ar1CoefficientPrior::print(std::ostream &out) const {
       NormalPrior::print(out) << "force_stationary_ = "
                               << force_stationary_ << std::endl;
       return out;
@@ -132,7 +149,7 @@ namespace BOOM{
           sample_size_(Rf_asReal(getListElement(prior, "sample.size")))
     {}
 
-    std::ostream & ConditionalNormalPrior::print(std::ostream & out)const{
+    std::ostream & ConditionalNormalPrior::print(std::ostream & out) const {
       out << "prior mean: " << mu_ << std::endl
           << "prior sample size for prior mean:" << sample_size_;
       return out;
@@ -146,7 +163,7 @@ namespace BOOM{
           sd_prior_(getListElement(prior, "sigma.prior"))
     {}
 
-    std::ostream & NormalInverseGammaPrior::print(std::ostream &out)const{
+    std::ostream & NormalInverseGammaPrior::print(std::ostream &out) const {
       out << "prior_mean_guess        = " << prior_mean_guess_ << std::endl
           << "prior_mean_sample_size: = " << prior_mean_sample_size_
           << std::endl
@@ -160,11 +177,11 @@ namespace BOOM{
             getListElement(prior, "prior.counts")))
     {}
 
-    const Vector & DirichletPrior::prior_counts()const{
+    const Vector & DirichletPrior::prior_counts() const {
       return prior_counts_;
     }
 
-    int DirichletPrior::dim()const{
+    int DirichletPrior::dim() const {
       return prior_counts_.size();
     }
 
@@ -175,7 +192,7 @@ namespace BOOM{
               prior, "prior.initial.state.counts")))
     {}
 
-    std::ostream & MarkovPrior::print(std::ostream &out)const{
+    std::ostream & MarkovPrior::print(std::ostream &out) const {
       out << "prior transition counts: " << std::endl
           << transition_counts_ << std::endl
           << "prior initial state counts:" << std::endl
@@ -183,7 +200,7 @@ namespace BOOM{
       return out;
     }
 
-    MarkovModel * MarkovPrior::create_markov_model()const{
+    MarkovModel * MarkovPrior::create_markov_model() const {
       MarkovModel * ans(new MarkovModel(transition_counts_.nrow()));
       Ptr<MarkovConjSampler> sampler(new MarkovConjSampler(
           ans, transition_counts_, initial_state_counts_));
@@ -201,7 +218,7 @@ namespace BOOM{
               prior, "variance.guess.weight")))
     {}
 
-    std::ostream & NormalInverseWishartPrior::print(std::ostream &out)const{
+    std::ostream & NormalInverseWishartPrior::print(std::ostream &out) const {
       out << "the prior mean for mu:" << std::endl
           << mu_guess_ << std::endl
           << "prior sample size for mu0: " << mu_guess_weight_ << std::endl
@@ -259,7 +276,6 @@ namespace BOOM{
       }
       log_normalizing_constant_ = log(ppois(hi_, lambda_)
                                       - ppois(lo_ - 1, lambda_));
-
     }
 
     double PoissonPrior::logp(int value) const {
@@ -274,7 +290,24 @@ namespace BOOM{
       return value == location_ ? 0 : negative_infinity();
     }
 
-    Ptr<DoubleModel> create_double_model(SEXP r_spec) {
+    RegressionCoefficientConjugatePrior::RegressionCoefficientConjugatePrior(
+        SEXP r_prior)
+        : mean_(ToBoomVector(getListElement(r_prior, "mean"))),
+          sample_size_(Rf_asReal(getListElement(r_prior, "sample.size"))),
+          additional_prior_precision_(ToBoomVector(getListElement(
+              r_prior, "additional.prior.precision"))),
+          diagonal_weight_(Rf_asReal(getListElement(
+              r_prior, "diagonal.weight")))
+    {}
+
+    UniformPrior::UniformPrior(SEXP r_prior)
+        : lo_(Rf_asReal(getListElement(r_prior, "lo"))),
+          hi_(Rf_asReal(getListElement(r_prior, "hi"))),
+          initial_value_(Rf_asReal(getListElement(r_prior, "initial.value")))
+    {}
+
+    Ptr<LocationScaleDoubleModel> create_location_scale_double_model(
+        SEXP r_spec, bool throw_on_failure) {
       if (Rf_inherits(r_spec, "GammaPrior")) {
         GammaPrior spec(r_spec);
         return new GammaModel(spec.a(), spec.b());
@@ -293,6 +326,24 @@ namespace BOOM{
         double sigma = Rf_asReal(getListElement(r_spec, "sigma"));
         return new LognormalModel(mu, sigma);
       }
+      if (throw_on_failure) {
+        report_error("Could not convert specification into a "
+                     "LocationScaleDoubleModel");
+      }
+      return nullptr;
+    }
+
+    Ptr<DoubleModel> create_double_model(SEXP r_spec) {
+      Ptr<LocationScaleDoubleModel> ans =
+          create_location_scale_double_model(r_spec, false);
+      if (!!ans) {
+        return ans;
+      } else if (Rf_inherits(r_spec, "TruncatedGammaPrior")) {
+        TruncatedGammaPrior spec(r_spec);
+        return new TruncatedGammaModel(
+            spec.a(), spec.b(), spec.lower_truncation_point(),
+            spec.upper_truncation_point());
+      }
       report_error("Could not convert specification into a DoubleModel");
       return nullptr;
     }
@@ -301,16 +352,33 @@ namespace BOOM{
       if (Rf_inherits(r_spec, "GammaPrior")) {
         GammaPrior spec(r_spec);
         return new GammaModel(spec.a(), spec.b());
-      }else if (Rf_inherits(r_spec, "BetaPrior")) {
+      } else if (Rf_inherits(r_spec, "TruncatedGammaPrior")) {
+        TruncatedGammaPrior spec(r_spec);
+        return new TruncatedGammaModel(
+            spec.a(), spec.b(), spec.lower_truncation_point(),
+            spec.upper_truncation_point());
+      } else if (Rf_inherits(r_spec, "BetaPrior")) {
         BetaPrior spec(r_spec);
         return new BetaModel(spec.a(), spec.b());
-      }else if (Rf_inherits(r_spec, "NormalPrior")) {
+      } else if (Rf_inherits(r_spec, "NormalPrior")) {
         NormalPrior spec(r_spec);
         return new GaussianModel(spec.mu(), spec.sigma() * spec.sigma());
-      }else if (Rf_inherits(r_spec, "UniformPrior")) {
-        double lo = Rf_asReal(getListElement(r_spec, "lo"));
-        double hi = Rf_asReal(getListElement(r_spec, "hi"));
-        return new UniformModel(lo, hi);
+      } else if (Rf_inherits(r_spec, "SdPrior")) {
+        SdPrior spec(r_spec);
+        double shape = spec.prior_df() / 2;
+        double sum_of_squares = square(spec.prior_guess()) * spec.prior_df();
+        double scale = sum_of_squares / 2;
+        if (spec.upper_limit() < infinity()) {
+          double lower_limit = 1.0 / square(spec.upper_limit());
+          double upper_limit = infinity();
+          return new TruncatedGammaModel(shape, scale, lower_limit,
+                                         upper_limit);
+        } else {
+          return new GammaModel(shape, scale);
+        }
+      } else if (Rf_inherits(r_spec, "UniformPrior")) {
+        UniformPrior spec(r_spec);
+        return new UniformModel(spec.lo(), spec.hi());
       }
       report_error("Could not convert specification into a DiffDoubleModel");
       return nullptr;
@@ -332,5 +400,5 @@ namespace BOOM{
       }
     }
 
-  } // namespace RInterface
-} // namespace BOOM
+  }  // namespace RInterface
+}  // namespace BOOM

@@ -19,12 +19,13 @@
 #include <Models/Glm/RegressionModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <distributions.hpp>
-#include <boost/bind.hpp>
+#include <functional>
 
 namespace BOOM{
-
-  typedef ProbitRegressionModel PRM;
-  typedef BinaryRegressionData BRD;
+  namespace {
+    typedef ProbitRegressionModel PRM;
+    typedef BinaryRegressionData BRD;
+  }  // namespace
 
   PRM::ProbitRegressionModel(const Vector &beta)
       : ParamPolicy(new GlmCoefs(beta))
@@ -149,7 +150,7 @@ namespace BOOM{
 
   Ptr<BinaryRegressionData> PRM::sim()const{
     Vector x(xdim());
-    x.randomize(boost::bind(&rnorm, 0, 1));
+    x.randomize([](){return rnorm(0, 1);});
     bool y = this->sim(x);
     NEW(BinaryRegressionData, ans)(y,x);
     return ans;

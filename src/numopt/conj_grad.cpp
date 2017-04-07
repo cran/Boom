@@ -28,15 +28,42 @@
 
 namespace BOOM{
 
-  const double reltest= 10.0;
-  const double acctol=  0.0001;
-  const double stepredn= 0.2;
-
-  double conj_grad(Vector & Bvec, Vector & X, Target target, dTarget dtarget,
-                   double abstol, double intol, conj_grad_method type,
-                   bool, int & fncount, int &grcount, int maxit){
-    double Fmin;
+  // Args:
+  //   X: On input X contains the starting value for the algorithm.
+  //     On output X is the minimizing value.
+  //   Fmin:  The value of the function at the minimum;
+  //   target:  A functor returning the value of the function to be optimized.
+  //   dtarget: A functor that computes the gradient of the function
+  //     to be optimized.
+  //   abstol:  Absolute tolerance.
+  //   intol:  Relative tolerance.
+  //   method:  Which flavor of conjugate gradient algorithm should be used?
+  //   fncount:  The number of times target was evaluated.
+  //   gradient:  The number of times dtarget was evaluated.
+  //   maxit:  The maximum number of iterations.
+  //   error_message: Will be empty if the return value is true.
+  //     Otherwise contains an error meessage explaining the type of
+  //     error encountered.
+  //
+  // Returns:
+  //   The value of target at the minimum.
+  bool conj_grad(Vector &X,
+                 double &Fmin,
+                 const Target &target,
+                 const dTarget &dtarget,
+                 double abstol,
+                 double intol,
+                 ConjugateGradientMethod method,
+                 int &fncount,
+                 int &grcount,
+                 int maxit,
+                 std::string &error_message) {
+    const double reltest= 10.0;
+    const double acctol=  0.0001;
+    const double stepredn= 0.2;
+    Vector Bvec = X;
     int n = Bvec.size();
+    error_message = "";
     bool accpoint;
     int count, cycle, cyclimit;
     double f;
@@ -48,7 +75,8 @@ namespace BOOM{
     if (maxit <= 0) {
       Fmin = target(Bvec); //fminfn(n, Bvec, ex);
       fncount = grcount = 0;
-      return Fmin;
+      error_message = "The maximum number of iterations was negative.";
+      return false;
     }
 
     Vector c(n);
@@ -63,7 +91,8 @@ namespace BOOM{
     if(!std::isfinite(f)) {
       ostringstream err;
       err << "bad initial value: " << Bvec << " in conj_grad";
-      report_error(err.str());
+      error_message = err.str();
+      return false;
     }
 
     Fmin = f;
@@ -82,24 +111,36 @@ namespace BOOM{
         if (gradcount > maxit) {
           fncount = funcount;
           grcount = gradcount;
-          report_error("max_iter_exceeded in conj_grad");
+          error_message = "max_iter_exceeded in conj_grad";
+          return false;
         }
         dtarget(Bvec, g);
 
         X = Bvec;
         G1 = 0;
         G2 = 0;
-        if(type==FletcherReeves){
-          G1 = g.normsq();
-          G2 = c.normsq();
-        }else if(type==PolakRibiere){
-          G1 = g.normsq() - g.dot(c);
-          G2 = c.normsq();
-        }else if(type==BealeSorenson){
-          G1 = g.normsq() - g.dot(c);
-          G2 = t.dot(g) - t.dot(c);
+        switch (method) {
+          case FletcherReeves : {
+            G1 = g.normsq();
+            G2 = c.normsq();
+            break;
+          }
+          case PolakRibiere : {
+            G1 = g.normsq() - g.dot(c);
+            G2 = c.normsq();
+            break;
+          }
+          case BealeSorenson : {
+            G1 = g.normsq() - g.dot(c);
+            G2 = t.dot(g) - t.dot(c);
+            break;
+          }
+          default: {
+            error_message = "Unknown ConjugateGradientMethod passed to "
+                "conj_grad.";
+            return false;
+          }
         }
-        else report_error("unkonwn_type in CG method of optim");
         c=g;
 
         if (G1 > tol) {
@@ -154,6 +195,6 @@ namespace BOOM{
 
     fncount = funcount;
     grcount = gradcount;
-    return Fmin;
+    return true;
   }
 }  // namespace BOOM

@@ -26,7 +26,7 @@ namespace BOOM{
 
   typedef VariableSelectionPrior VSP;
 
-  namespace ModelSelection{
+  namespace ModelSelection {
 
     Variable::Variable(uint pos, double prob, const string &name)
       : pos_(pos),
@@ -188,9 +188,8 @@ namespace BOOM{
 
     void Interaction::add_to(VSP & vsp)const{
       vsp.add_interaction(pos(), prob(), parent_pos_, name());}
-  }// closes namespace ModelSelection
+  }  // namespace ModelSelection
 
-  namespace ms=ModelSelection;
   //______________________________________________________________________
 
   VsSuf::VsSuf() {}
@@ -252,10 +251,6 @@ namespace BOOM{
   ostream & VsSuf::print(ostream &out)const{
     return out << "VsSuf is hard to print!";
   }
-
-
-  //______________________________________________________________________
-
 
   VSP::VariableSelectionPrior()
     : DataPolicy(new VsSuf),
@@ -354,11 +349,11 @@ namespace BOOM{
     pi_->set(tmp);
   }
 
-  ParamVector VSP::t() {
+  ParamVector VSP::parameter_vector() {
     fill_pi();
     return ParamVector(1,pi_); }
 
-  const ParamVector VSP::t()const{
+  const ParamVector VSP::parameter_vector() const {
     fill_pi();
     return ParamVector(1,pi_);}
 
@@ -387,10 +382,11 @@ namespace BOOM{
     return vars_[i]; }
 
   namespace {
-    inline void draw(Ptr<ModelSelection::Variable> v, Selector &g, RNG &rng) {
-      double u =runif_mt(rng, 0,1);
-      uint pos = v->pos();
-      if (u < v->prob()) g.add(pos);
+  inline void draw(const Ptr<ModelSelection::Variable> &v, Selector &g,
+                   RNG &rng) {
+    double u = runif_mt(rng, 0, 1);
+    uint pos = v->pos();
+    if (u < v->prob()) g.add(pos);
     }
   }
 

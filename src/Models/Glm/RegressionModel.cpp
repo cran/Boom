@@ -18,9 +18,6 @@
 
 #include <Models/Glm/RegressionModel.hpp>
 
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Models/GammaModel.hpp>
-#include <Models/Glm/MvnGivenXandSigma.hpp>
 #include <sstream>
 #include <cmath>
 #include <distributions.hpp>
@@ -346,7 +343,7 @@ namespace BOOM{
     int p = rdp.xdim();
     if(xtx_.nrow()==0 || xtx_.ncol()==0)
       xtx_ = SpdMatrix(p,0.0);
-    if(xty_.size()==0) xty_ = Vector(p, 0.0);
+    if(xty_.empty()) xty_ = Vector(p, 0.0);
     const Vector & tmpx(rdp.x());  // add_intercept(rdp.x());
     double y = rdp.y();
     xty_.axpy(tmpx, y);
@@ -483,7 +480,6 @@ namespace BOOM{
     return *this;
   }
 
-
   //======================================================================
   typedef RegressionModel RM;
 
@@ -608,25 +604,36 @@ namespace BOOM{
 
   double RM::Loglike(const Vector &sigsq_beta,
                      Vector &g, Matrix &h, uint nd)const{
-    const double log2pi = 1.83787706640935;
     const double sigsq = sigsq_beta[0];
     const Vector b(ConstVectorView(sigsq_beta, 1));
+    if(b.empty()) return empty_loglike(g, h, nd);
     double n = suf()->n();
-    if(b.size()==0) return empty_loglike(g, h, nd);
-
-    double SSE = yty() - 2*b.dot(xty()) + xtx().Mdist(b);
-    double ans =  -.5*(n * log2pi  + n *log(sigsq)+ SSE/sigsq);
-
-    if(nd>0){  // sigsq derivs come first in CP2 vectorization
+    const double log2pi = 1.83787706640935;
+    double SSE = yty() - 2 * b.dot(xty()) + xtx().Mdist(b);
+    // It is tempting to compute ans using log_likelihood(), but some
+    // of the pieces are also needed for derivatives, and we don't
+    // want to compute those pieces twice.
+    double ans = -.5*(n * log2pi  + n * log(sigsq) + SSE / sigsq);
+    if (nd > 0){  // sigsq derivs come first in CP2 vectorization
       SpdMatrix xtx = this->xtx();
-      Vector gbeta = (xty() - xtx*b)/sigsq;
+      Vector gbeta = (xty() - xtx * b) / sigsq;
       double sig4 = sigsq*sigsq;
-      double gsigsq = -n/(2*sigsq) + SSE/(2*sig4);
+      double gsigsq = -n/(2*sigsq) + SSE / (2*sig4);
       g = concat(gsigsq, gbeta);
       if(nd>1){
-        double h11 = .5*n/sig4 - SSE/(sig4*sigsq);
-        h = unpartition(h11, (-1/sigsq)*gbeta, (-1/sigsq)*xtx);}}
+        double h11 = .5 * n / sig4 - SSE / (sig4 * sigsq);
+        h = unpartition(h11,
+                        (-1 / sigsq) * gbeta, (-1.0 / sigsq) * xtx);
+      }
+    }
     return ans;
+  }
+
+  double RM::log_likelihood(const Vector &beta, double sigsq) const {
+    const double log2pi = 1.83787706640935;
+    double n = suf()->n();
+    double SSE = yty() - 2 * beta.dot(xty()) + xtx().Mdist(beta);
+    return -.5 * (n * log2pi  + n * log(sigsq) + SSE / sigsq);
   }
 
   // Log likelihood when beta is empty, so that xbeta = 0.  In this

@@ -33,7 +33,7 @@
 #include <Models/Policies/IID_DataPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 // AggregatedStateSpaceRegression models a StateSpaceModel that
 // produces values on a fine time scale (e.g. weeks) but is only
@@ -323,7 +323,6 @@ namespace BOOM{
     state_variance_matrix(int t) const override;
 
     void simulate_initial_state(VectorView v) const override;
-    Vector simulate_initial_state() const override;
     Vector simulate_state_error(int t) const override;
 
     Vector initial_state_mean() const override;
@@ -334,8 +333,8 @@ namespace BOOM{
     std::vector<Ptr<StateModel> > state_models_;
     Ptr<GaussianModel> observation_model_;
     Ptr<AggregatedRegressionStateModel> regression_state_;
-    mutable boost::scoped_ptr<AccumulatorStateVarianceMatrix> variance_matrix_;
-    mutable boost::scoped_ptr<AccumulatorTransitionMatrix> transition_matrix_;
+    mutable std::unique_ptr<AccumulatorStateVarianceMatrix> variance_matrix_;
+    mutable std::unique_ptr<AccumulatorTransitionMatrix> transition_matrix_;
   };
 
 }

@@ -256,7 +256,7 @@ posterior mean.  Then the integrated likelihood is
         double total_prediction_sd,
         double prior_tree_depth_alpha,
         double prior_tree_depth_beta,
-        boost::function<double(int)> log_prior_on_number_of_trees,
+        std::function<double(int)> log_prior_on_number_of_trees,
         RNG &seeding_rng = GlobalRng::rng);
 
     void draw() override;
@@ -281,8 +281,8 @@ posterior mean.  Then the integrated likelihood is
 
    private:
     PoissonBartModel *model_;
-    std::vector<boost::shared_ptr<DataType> > residuals_;
-    boost::shared_ptr<PoissonDataImputer> data_imputer_;
+    std::vector<std::shared_ptr<DataType> > residuals_;
+    std::shared_ptr<PoissonDataImputer> data_imputer_;
   };
 
 }  // namespace BOOM

@@ -30,8 +30,12 @@ namespace BOOM {
    public:
     typedef NonparametricParamPolicy ParamPolicy;
     // Return an empty vector of parameters.
-    ParamVector t() override { return ParamVector(); }
-    const ParamVector t() const override { return ParamVector(); }
+    ParamVector parameter_vector() override {
+      return ParamVector();
+    }
+    const ParamVector parameter_vector() const override {
+      return ParamVector();
+    }
   };
 }
 #endif //  BOOM_NONPARAMETRIC_PARAM_POLICY_HPP_

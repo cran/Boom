@@ -22,25 +22,25 @@
 #include <sstream>
 
 namespace BOOM{
-  std::string operator+(std::string s, int i){
+  std::string operator+(const std::string &s, int i){
     std::ostringstream ans;
     ans << s << i;
     return ans.str();
   }
 
-  std::string operator+(int i , std::string s){
+  std::string operator+(int i , const std::string &s){
     std::ostringstream ans;
     ans << i<< s;
     return ans.str();
   }
 
-  std::string operator+(std::string s, double d){
+  std::string operator+(const std::string& s, double d){
     std::ostringstream ans;
     ans << s << d;
     return ans.str();
   }
 
-  std::string operator+(double d, std::string s){
+  std::string operator+(double d, const std::string& s){
     std::ostringstream ans;
     ans << d << s;
     return ans.str();
@@ -60,16 +60,16 @@ namespace BOOM{
     return s;
   }
 
-  std::string operator>>(std::string s, int &n){
+  std::string operator>>(const std::string& s, int &n){
     std::istringstream ans(s);
     ans >> n;
     return ans.str();
   }
 
-  std::string operator>>(std::string s, double &d){
+  std::string operator>>(const std::string& s, double &d){
     std::istringstream ans(s);
     ans >> d;
     return ans.str();
   }
 
-}
+}  // namespace BOOM

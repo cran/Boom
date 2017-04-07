@@ -41,7 +41,10 @@ namespace BOOM{
       in J.C. Nash, `Compact Numerical Methods for Computers', 2nd edition,
       converted by p2c then re-crafted by B.D. Ripley */
 
-  double bfgs(Vector &b, Target target, dTarget dtarget, int maxit,
+  double bfgs(Vector &b,
+              const Target &target,
+              const dTarget &dtarget,
+              int maxit,
               double abstol, double reltol,
               int &fncount, int & grcount, bool & fail,
               int trace_frequency){
@@ -131,7 +134,7 @@ namespace BOOM{
           }
         } while (!(count == n || accpoint));
         // SLS... changed the following line, which appears to assume f>0
-        //      bool enough = (f > abstol) &&
+        //        bool enough = (f > abstol) &&
         bool enough = (fabs(f-Fmin) > abstol) &&
           fabs(f - Fmin) > reltol * (fabs(Fmin) + reltol);
         /* stop if value if small or if relative change is low */

@@ -19,18 +19,50 @@
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
-typedef TruncatedGammaModel TGM;
+  TruncatedGammaModel::TruncatedGammaModel(double a, double b,
+                                           double lower, double upper)
+      : GammaModel(a, b),
+        lower_truncation_point_(lower),
+        upper_truncation_point_(upper),
+        plo_(pgamma(lower_truncation_point_, a, b, false, false)),
+        phi_(pgamma(upper_truncation_point_, a, b, false, false)),
+        lognc_(log(phi_ - plo_))
+  {}
 
-TGM::TruncatedGammaModel(double a, double b, double trunc)
-    : GammaModel(a,b),
-      trunc_(trunc),
-      lognc_(pgamma(trunc_, a, b, false, true))
-{}
+  double TruncatedGammaModel::logp(double x) const {
+    if (x < lower_truncation_point_ || x > upper_truncation_point_) {
+      return BOOM::negative_infinity();
+    } else {
+      return dgamma(x, alpha(), beta(), true) - lognc_;
+    }
+  }
 
-double TGM::logp(double x)const{
-  if(x < trunc_) return BOOM::negative_infinity();
-  return dgamma(x,alpha(),beta(),true) - lognc_;
-}
-}
+  double TruncatedGammaModel::dlogp(double x, double &derivative) const {
+    if (x < lower_truncation_point_) {
+      derivative = infinity();
+      return negative_infinity();
+    } else if (x > upper_truncation_point_) {
+      derivative = negative_infinity();
+      return negative_infinity();
+    } else {
+      return GammaModel::dlogp(x, derivative) - lognc_;
+    }
+  }
+
+  double TruncatedGammaModel::sim() const {
+    static const double threshold = log(.1);
+    if (lognc_ > threshold) {
+      double ans = negative_infinity();
+      do {
+        ans = GammaModel::sim();
+      } while (ans < lower_truncation_point_ || ans > upper_truncation_point_);
+      return ans;
+    } else {
+      double u = runif_mt(GlobalRng::rng, plo_, phi_);
+      return qgamma(u, alpha(), beta());
+    }
+  }
+
+}  // namespace BOOM

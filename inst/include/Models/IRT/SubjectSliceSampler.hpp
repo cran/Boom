@@ -20,7 +20,6 @@
 
 #include <TargetFun/TargetFun.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <boost/function.hpp>
 #include <Models/ParamTypes.hpp>
 
 namespace BOOM{
@@ -34,7 +33,6 @@ namespace BOOM{
       : public BOOM::TargetFun{
     public:
       SubjectTF(Ptr<Subject>, Ptr<SubjectPrior>);
-      //      SubjectTF * clone()const{return new SubjectTF(*this);}
       double operator()(const Vector &v)const override;
     private:
       Ptr<Subject> sub;
@@ -42,7 +40,6 @@ namespace BOOM{
       mutable Ptr<VectorParams> prms;
       mutable Vector wsp;
     };
-
 
     class SubjectSliceSampler
       : public PosteriorSampler{
@@ -59,8 +56,6 @@ namespace BOOM{
       Ptr<SliceSampler> sam;
       Vector Theta;
     };
-
-
-  }
-}
+  }  // namespace IRT
+}  // namespace BOOM
 #endif // BOOM_IRT_SUBJECT_SLICE_SAMPLER_HPP

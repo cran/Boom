@@ -269,7 +269,8 @@ double norm_rand(BOOM::RNG & rng)
             return s;
         } else {
             theta = 2 * M_PI * rng();
-            R = sqrt(-2 * log(rng())) + 10*numeric_limits<double>::min(); /* ensure non-zero */
+            R = sqrt(-2 * log(rng())) +
+                10 * std::numeric_limits<double>::min(); /* ensure non-zero */
             BM_norm_keep = R * sin(theta);
             return R * cos(theta);
         }

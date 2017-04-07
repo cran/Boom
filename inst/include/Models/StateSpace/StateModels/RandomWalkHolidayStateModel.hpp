@@ -19,7 +19,7 @@
 #ifndef BOOM_RANDOM_WALK_HOLIDAY_STATE_MODEL_HPP_
 #define BOOM_RANDOM_WALK_HOLIDAY_STATE_MODEL_HPP_
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <cpputil/Date.hpp>
 #include <Models/StateSpace/StateModels/StateModel.hpp>
 #include <Models/ZeroMeanGaussianModel.hpp>
@@ -83,22 +83,20 @@ namespace BOOM {
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
 
-    void set_sigsq(double sigsq) override;
-
     void set_initial_state_mean(const Vector &v);
     void set_initial_state_variance(const SpdMatrix &Sigma);
     void set_time_zero(const Date &time_zero);
 
    private:
     // TODO(stevescott): Make this a unique_ptr once available.
-    boost::shared_ptr<Holiday> holiday_;
+    std::shared_ptr<Holiday> holiday_;
     Date time_zero_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
     Ptr<IdentityMatrix> identity_transition_matrix_;
     Ptr<ZeroMatrix> zero_state_variance_matrix_;
 
-    std::vector<Ptr<SingleSparseDiagonalElementMatrix> >
+    std::vector<Ptr<SingleSparseDiagonalElementMatrixParamView> >
     active_state_variance_matrix_;
   };
 

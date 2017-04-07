@@ -16,13 +16,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
+#ifndef BOOM_SAMPLERS_UNIVARIATE_SLICE_SAMPLER_HPP_
+#define BOOM_SAMPLERS_UNIVARIATE_SLICE_SAMPLER_HPP_
+
 #include <Samplers/Sampler.hpp>
 #include <Samplers/ScalarSliceSampler.hpp>
 #include <LinAlg/Vector.hpp>
 #include <functional>
 #include <TargetFun/TargetFun.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
    // A "Univariate" slice sampler draws a vector one component at a
    // time.  If you just want to draw a scalar quantity then you want
@@ -41,7 +44,6 @@ namespace BOOM{
     //   rng: A pointer to the random number generator that supplies
     //     randomness to this sampler.
     UnivariateSliceSampler(const Target &logdensity,
-                           int dim,
                            double suggested_dx = 1.0,
                            bool unimodal = false,
                            RNG *rng = nullptr);
@@ -53,10 +55,20 @@ namespace BOOM{
     void set_limits(const Vector &lower, const Vector &upper);
 
    private:
+    // Vector valued members start out empty until the first call to
+    // draw() or set_limits, at which point the dimension of the
+    // problem becomes apparent.  At that point, initialize is called
+    // to set up the vector of samplers and scalar target adapters
+    // with the right dimension.
+    void initialize(int dimension);
+
     Target f_;
+    double suggested_dx_;
+    bool unimodal_;
     std::vector<ScalarTargetFunAdapter> scalar_targets_;
     std::vector<ScalarSliceSampler> scalar_samplers_;
     Vector theta_;
   };
 
-}
+}  // namespace BOOM
+#endif  // BOOM_SAMPLERS_UNIVARIATE_SLICE_SAMPLER_HPP_

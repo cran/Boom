@@ -10,7 +10,7 @@
 \description{Uses boxplots to compare distributions of vectors.}
 
 \usage{
-CompareVectorBoxplots(draws, main = NULL, colors = NULL, burn = 0)
+CompareVectorBoxplots(draws, main = NULL, colors = NULL, burn = 0, \dots)
 }
 
 \arguments{
@@ -27,6 +27,8 @@ CompareVectorBoxplots(draws, main = NULL, colors = NULL, burn = 0)
 
  \item{burn}{The number of initial MCMC iterations to discard before
    making the plot.}
+
+ \item{\dots}{Extra arguments passed to \code{\link{boxplot}}.}
 }
 
 \details{Creates side-by-side boxplots with the dimensions of each

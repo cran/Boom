@@ -38,14 +38,35 @@ namespace BOOM{
 
      // The posterior mode is with respect to sigma^2, not 1 / sigma^2.
      void find_posterior_mode(double epsilon = 1e-5) override;
-     bool can_find_posterior_mode() const override {
-       return true;
-     }
+     bool can_find_posterior_mode() const override {return true;}
+     bool can_evaluate_log_prior_density() const override {return true;}
+     bool can_increment_log_prior_gradient() const override {return true;}
+
+     double log_prior_density(const ConstVectorView &parameters) const override;
+     double increment_log_prior_gradient(const ConstVectorView &parameters,
+                                         VectorView gradient) const override;
+
+     // Rturns the log prior density, and the first or second
+     // derivatives, if requested.
+     // Args:
+     //   sigsq: The value of the variance parameter at which to
+     //     evaluate the log density.
+     //   d1: Ignored if nullptr.  Otherwise, input value is
+     //     incremented by the first derivative of log density with
+     //     respect to sigma^2.
+     //   d2: Ignored if nullptr.  Otherwise, input value is
+     //     incremented by the second derivative of log prior density
+     //     with respect to sigma^2.
+     // Returns:
+     //   The un-normalized log posterior density (log likelihood +
+     //   log prior) evaluated at sigsq.
+     double log_prior(double sigsq, double *d1, double *d2) const;
 
      // Returns the log posterior with respect to sigma^2, including
      // derivatives with respect to sigma^2.
      // Args:
-     //   sigsq:  The value of the variance parameter at which to evaluate the log density.
+     //   sigsq: The value of the variance parameter at which to
+     //     evaluate the log density.
      //   d1: Input value is not used.  If nd > 0 then on output d1
      //     contains the first derivative of log density with respect
      //     to sigma^2.

@@ -72,6 +72,9 @@ namespace BOOM{
     void initialize_params() override;
     void add_mixture_data(Ptr<Data>, double prob) override;
     double loglike(const Vector &mu_siginv) const override;
+    double log_likelihood() const override {
+      return MvnBase::log_likelihood(mu(), siginv(), *suf());
+    }
 
     void add_raw_data(const Vector &y);
     double pdf(Ptr<Data>, bool logscale)const;

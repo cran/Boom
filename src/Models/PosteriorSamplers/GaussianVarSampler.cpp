@@ -54,7 +54,7 @@ namespace BOOM{
   }
 
   double GVS::logpri()const{
-    return prior_->logp(1.0/model_->sigsq());
+    return sampler_.log_prior(model_->sigsq());
   }
 
   void GVS::set_sigma_upper_limit(double max_sigma){

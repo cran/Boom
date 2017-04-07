@@ -21,6 +21,7 @@
 #include <Models/GammaModel.hpp>
 #include <Models/ChisqModel.hpp>
 #include <distributions.hpp>
+#include <cpputil/math_utils.hpp>
 
 namespace BOOM{
 
@@ -59,6 +60,43 @@ namespace BOOM{
     model_->set_sigsq(b/(a+1));   // with respect to 1.0 / sigsq
   }
 
+  double ZGS::increment_log_prior_gradient(const ConstVectorView &parameters,
+                                           VectorView gradient) const {
+    if (parameters.size() != 1
+        || gradient.size() != 1) {
+      report_error(
+          "Wrong size arguments passed to "
+          "ZeroMeanGaussianConjSampler::increment_log_prior_gradient.");
+    }
+    return log_prior(parameters[0], &gradient[0], nullptr);
+  }
+
+  double ZGS::log_prior_density(const ConstVectorView &parameters) const {
+    if (parameters.size() != 1) {
+      report_error("Wrong size parameters passed to "
+                   "ZeroMeanGaussianConjSampler::log_prior_density.");
+    }
+    return log_prior(parameters[0], nullptr, nullptr);
+  }
+
+  double ZGS::log_prior(double sigsq, double *d1, double *d2) const {
+    if (sigsq <= 0.0) {
+      return negative_infinity();
+    }
+    double a = ivar()->alpha();
+    double b = ivar()->beta();
+    // The log prior is the gamma density plus a jacobian term:
+    // log(abs(d(siginv) / d(sigsq))).
+    if (d1) {
+      double sig4 = sigsq * sigsq;
+      *d1 += -(a + 1) / sigsq + b / sig4;
+      if (d2) {
+        double sig6 = sigsq * sig4;
+        *d2 += (a + 1) / sig4 - 2 * b / sig6;
+      }
+    }
+    return dgamma(1/sigsq, a, b, true) - 2 * log(sigsq);
+  }
 
   //
   double ZGS::log_posterior(double sigsq, double &d1, double &d2,
@@ -68,20 +106,9 @@ namespace BOOM{
     double logp = model_->log_likelihood(sigsq,
                                          nd > 0 ? &d1 : nullptr,
                                          nd > 1 ? &d2 : nullptr);
-
-    double a = ivar()->alpha();
-    double b = ivar()->beta();
-    // The log prior is the gamma density plus a jacobian term:
-    // log(abs(d(siginv) / d(sigsq))).
-    logp += dgamma(1/sigsq, a, b, true) - 2 * log(sigsq);
-    if (nd > 0) {
-      double sig4 = sigsq * sigsq;
-      d1 += -(a + 1) / sigsq + b / sig4;
-      if (nd > 1) {
-        d2 += (a + 1) / sig4 - 2 * b / (sig4 * sigsq);
-      }
-    }
-    return logp;
+    return logp + log_prior(sigsq,
+                            nd > 0 ? &d1 : nullptr,
+                            nd > 1 ? &d2 : nullptr);
   }
 
 }  // namespace BOOM

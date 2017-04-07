@@ -46,10 +46,10 @@ namespace BOOM{
     else return true;
   }
 
-  double nelder_mead_driver(Vector & Bvec, Vector &X, Target target,
+  double nelder_mead_driver(Vector & Bvec, Vector &X, const Target &target,
                             double abstol, double intol, double alpha,
                             double bet, double gamm,
-                            bool trace, int &fncount, int maxit){
+                            int &fncount, int maxit){
     double ans, ans2;
     int restarts(0);
     int maxrestart(20);
@@ -59,27 +59,25 @@ namespace BOOM{
       if(restarts > maxrestart) report_error("too many restarts");
       fcount=0;
       ans = nelder_mead(Bvec, X, target, abstol, intol, alpha,
-                        bet, gamm, trace, fcount, maxit);
+                        bet, gamm, fcount, maxit);
       Bvec = X;
       fncount+=fcount;
-      X=0;
+      X = 0;
       fcount=0;
       ans2 = nelder_mead(Bvec, X, target, abstol, intol, alpha,
-                         bet, gamm, trace, fcount, maxit);
+                         bet, gamm, fcount, maxit);
       Bvec = X;
-      fncount+=fcount;
-    }while(keep_going(ans, ans2, abstol, intol, maxit, fcount));
+      fncount += fcount;
+    } while (keep_going(ans, ans2, abstol, intol, maxit, fcount));
     return ans2;
   }
 
 
-  double nelder_mead(Vector & Bvec, Vector &X, Target target,
+  double nelder_mead(Vector & Bvec, Vector &X, const Target &target,
                      double abstol, double intol, double alpha,
                      double bet, double gamm,
-                     bool, int &fncount, int maxit) {
-
+                     int &fncount, int maxit) {
     int n = Bvec.size();
-    char action[50];
     int C;
     bool calcvert, shrinkfail = false;
     double convtol, f;
@@ -87,7 +85,6 @@ namespace BOOM{
     int n1=0;
     double oldsize;
     double size, step, temp, trystep;
-    //    char tstr[6];
     double VH, VL, VR;
     double Fmin;
 
@@ -96,10 +93,6 @@ namespace BOOM{
       fncount = 0;
       return Fmin;
     }
-    //     if (trace)
-    //       Rprintf("  Nelder-Mead direct search function minimizer\n");
-
-    //    Matrix P(0, n, 0, n+1);
     Matrix P(n+1, n+2);
     f = target(Bvec);
     if (!std::isfinite(f)) {
@@ -110,10 +103,8 @@ namespace BOOM{
           << Bvec;
       report_error(err.str());
     } else {
-      //      if (trace) Rprintf("Function value for initial parameters = %f\n", f);
       funcount = 1;
       convtol = intol * (fabs(f) + intol);
-      //      if (trace) Rprintf("  Scaled convergence tolerance is %g\n", convtol);
       n1 = n + 1;
       C = n + 2;
       P(n1 - 1,0) = f;
@@ -129,9 +120,7 @@ namespace BOOM{
           step = 0.1 * fabs(Bvec[i]);
       }
       if (step == 0.0) step = 0.1;
-      //      if (trace) Rprintf("Stepsize computed as %f\n", step);
       for (j = 2; j <= n1; j++) {
-        strcpy(action, "BUILD          ");
         for (i = 0; i < n; i++)
           P(i,j-1) = Bvec[i];
 
@@ -179,9 +168,6 @@ namespace BOOM{
         }
 
         if (VH > VL + convtol && VL > abstol) {
-          // sprintf(tstr, "%5d", funcount);
-          //      if (trace) Rprintf("%s%s %f %f\n", action, tstr, VH, VL);
-
           for (i = 0; i < n; i++) {
             temp = -P(i,H - 1);
             for (j = 0; j < n1; j++)
@@ -194,7 +180,6 @@ namespace BOOM{
           //      if (!R_FINITE(f)) f = big;
           f = Myf(Bvec,target);
           funcount++;
-          strcpy(action, "REFLECTION     ");
           VR = f;
           if (VR < VL) {
             P(n1 - 1,C - 1) = f;
@@ -211,19 +196,16 @@ namespace BOOM{
               for (i = 0; i < n; i++)
                 P(i,H-1) = Bvec[i];
               P(n1 - 1,H - 1) = f;
-              strcpy(action, "EXTENSION      ");
             } else {
               for (i = 0; i < n; i++)
                 P(i,H-1) = P(i,C-1);
               P(n1 - 1,H - 1) = VR;
             }
           } else {
-            strcpy(action, "HI-REDUCTION   ");
             if (VR < VH) {
               for (i = 0; i < n; i++)
                 P(i,H-1) = Bvec[i];
               P(n1 - 1,H - 1) = VR;
-              strcpy(action, "LO-REDUCTION   ");
             }
 
             for (i = 0; i < n; i++)
@@ -239,7 +221,6 @@ namespace BOOM{
               P(n1 - 1,H - 1) = f;
             } else {
               if (VR >= VH) {
-                strcpy(action, "SHRINK         ");
                 calcvert = true;
                 size = 0.0;
                 for (j = 0; j < n1; j++) {
@@ -255,8 +236,6 @@ namespace BOOM{
                   shrinkfail = false;
                   oldsize = size;
                 } else {
-                  //              if (trace)
-                  //                Rprintf("Polytope size measure not decreased in shrink\n");
                   shrinkfail = true;
                 }
               }
@@ -269,10 +248,6 @@ namespace BOOM{
 
     }
 
-    //     if (trace) {
-    //       Rprintf("Exiting from Nelder Mead minimizer\n");
-    //       Rprintf("    %d function evaluations used\n", funcount);
-    //     }
     Fmin = P(n1 - 1,L - 1);
     for (i = 0; i < n; i++) X[i] = P(i,L - 1);
     if (shrinkfail) report_error("Nelder-Mead shrink failure");

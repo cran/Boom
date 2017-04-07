@@ -27,7 +27,7 @@ namespace BOOM{
       : ZeroMeanMvnModel(2),
         observation_matrix_(2),
         state_transition_matrix_(new LocalLinearTrendMatrix),
-        state_variance_matrix_(new DenseSpd(ZeroMeanMvnModel::Sigma())),
+        state_variance_matrix_(new DenseSpdParamView(Sigma_prm())),
         state_error_expander_(new IdentityMatrix(2)),
         initial_state_mean_(2, 0.0),
         initial_state_variance_(2)
@@ -98,11 +98,6 @@ namespace BOOM{
   void LLTSM::set_initial_state_variance(const SpdMatrix &Sigma){
     initial_state_variance_ = Sigma; }
 
-  void LLTSM::set_Sigma(const SpdMatrix &Sigma){
-    ZeroMeanMvnModel::set_Sigma(Sigma);
-    state_variance_matrix_->set_matrix(Sigma);
-  }
-
   void LLTSM::update_complete_data_sufficient_statistics(
       int t,
       const ConstVectorView &state_error_mean,
@@ -115,5 +110,32 @@ namespace BOOM{
           state_error_mean,
           state_error_variance + outer(state_error_mean));
     }
+  }
+
+  void LLTSM::increment_expected_gradient(
+      VectorView gradient,
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (gradient.size() != 2
+        || state_error_mean.size() != 2
+        || state_error_variance.nrow() != 2
+        || state_error_variance.ncol() != 2) {
+      report_error("Wrong size arguments to LocalLinearTrendStateModel::"
+                   "increment_expected_gradient.");
+    }
+
+    // The derivatives of log likelihood are:
+    //
+    //  -Siginv + Siginv V Siginv, where V = eta eta' See Anderson and
+    // Olkin (1984), in the remarks following equation 2.4.
+    // http://www.sciencedirect.com/science/article/pii/0024379585900497
+    SpdMatrix ans = state_error_variance;
+    ans.add_outer(state_error_mean);
+    ans = sandwich(siginv(), ans) - siginv();
+    // TODO(stevescott): This is a potential bottleneck.  Profile it,
+    // and if necessary use the fact that we're only doing 2x2
+    // matrices here to work this out by hand.
+    gradient += .5 * ans.vectorize(true);
   }
 }  // namespace BOOM

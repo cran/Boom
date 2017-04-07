@@ -32,7 +32,7 @@ namespace BOOM{
       public SufstatDataPolicy<VectorData, MvnSuf>,
       public PriorPolicy
   {
-  public:
+   public:
     //  This model is y | mu, kappa Sigma ~ N(mu, Sigma/kappa)
 
     // Sigma is viewed as a fixed constant, not a parameter of the
@@ -54,12 +54,11 @@ namespace BOOM{
     MvnGivenSigma(const Vector &mu, double Kappa, const SpdMatrix & Siginv);
     MvnGivenSigma(const Vector &mu, double Kappa, Ptr<SpdData> Sigma);
     MvnGivenSigma(Ptr<VectorParams> mu,
-		  Ptr<UnivParams> Kappa);
+                  Ptr<UnivParams> Kappa);
     MvnGivenSigma(Ptr<VectorParams> mu,
-		  Ptr<UnivParams> Kappa,
-		  Ptr<SpdData> Sigma);
+                  Ptr<UnivParams> Kappa,
+                  Ptr<SpdData> Sigma);
 
-    MvnGivenSigma(const MvnGivenSigma & rhs);
     MvnGivenSigma * clone()const override;
 
     void set_Sigma(Ptr<SpdData> Sigma);
@@ -93,18 +92,12 @@ namespace BOOM{
     const SpdMatrix & Sigma()const override;
     const SpdMatrix & siginv()const override;
     double ldsi()const override;
-    //--------------------------------------------------------
 
-
-  private:
+   private:
     Ptr<SpdData> Sigma_;
     void check_Sigma()const;
-
     mutable SpdMatrix S;
-//     virtual const SpdMatrix & Sigma()const;
-//     virtual const SpdMatrix & siginv()const;
-//     virtual double ldsi()const;
   };
 
-}
+}  // namespace BOOM
 #endif // BOOM_MVN_GIVEN_SIGMA_HPP

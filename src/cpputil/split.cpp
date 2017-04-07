@@ -51,7 +51,7 @@ namespace BOOM{
       vector<string> ans;
       for(tokenizer::iterator it = tk.begin(); it!=tk.end(); ++it){
         string s = *it;
-        if(s.size()>0) ans.push_back(s);
+        if (!s.empty()) ans.push_back(s);
       }
       return ans;
 

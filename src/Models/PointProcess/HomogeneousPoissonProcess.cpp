@@ -174,7 +174,7 @@ namespace BOOM{
   PointProcess HomogeneousPoissonProcess::simulate(
       const DateTime &t0,
       const DateTime &t1,
-      boost::function<Data*()> mark_generator)const{
+      std::function<Data*()> mark_generator)const{
     PointProcess ans(t0, t1);
     int number_of_events = rpois(expected_number_of_events(t0, t1));
     double duration = t1 - t0;

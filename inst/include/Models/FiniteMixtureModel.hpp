@@ -49,33 +49,33 @@ namespace BOOM{
 
     void clear_component_data();
     void impute_latent_data(RNG &rng) override;
-    void class_membership_probability(Ptr<Data>, Vector &ans)const;
-    double last_loglike()const;
+    void class_membership_probability(Ptr<Data>, Vector &ans) const;
+    double last_loglike() const;
 
-    double pdf(dPtr dp, bool logscale)const;
-    uint number_of_mixture_components()const;
+    double pdf(dPtr dp, bool logscale) const;
+    uint number_of_mixture_components() const;
 
-    const Vector & pi()const;
-    const Vector & logpi()const;
+    const Vector & pi() const;
+    const Vector & logpi() const;
 
     Ptr<MultinomialModel> mixing_distribution();
-    const MultinomialModel * mixing_distribution()const;
+    const MultinomialModel * mixing_distribution() const;
 
     Ptr<MixtureComponent> mixture_component(int s);
-    const MixtureComponent * mixture_component(int s)const;
+    const MixtureComponent * mixture_component(int s) const;
 
     // Returns a matrix of class membership probabilities for each
     // observation.  The table of membership probabilities is
     // re-written with each call to impute_latent_data().
-    const Matrix & class_membership_probability()const;
+    const Matrix & class_membership_probability() const;
 
     // Returns a vector giving the latent class to which each
     // observation was assigned during the most recent call to
     // impute_latent_data().
-    Vector class_assignment()const;
+    Vector class_assignment() const;
 
   protected:
-    void set_logpi()const;
+    void set_logpi() const;
     mutable Vector wsp_;
 
     // Save the class membership probabilities for user i.
@@ -85,10 +85,10 @@ namespace BOOM{
     Ptr<MultinomialModel> mixing_dist_;
     mutable Vector logpi_;
     mutable bool logpi_current_;
-    void observe_pi()const;
+    void observe_pi() const;
     void set_observers();
     virtual std::vector<Ptr<MixtureComponent> > models();
-    virtual const std::vector<Ptr<MixtureComponent> > models()const;
+    virtual const std::vector<Ptr<MixtureComponent> > models() const;
     double last_loglike_;
     Matrix class_membership_probabilities_;
     std::vector<int> which_mixture_component_;
@@ -137,9 +137,9 @@ namespace BOOM{
     {}
 
     EmFiniteMixtureModel(const EmFiniteMixtureModel &rhs);
-    EmFiniteMixtureModel * clone()const override;
+    EmFiniteMixtureModel * clone() const override;
 
-    double loglike()const;
+    double loglike() const;
     void mle();
 
     // The EStep returns the observed data likelihood
@@ -147,7 +147,7 @@ namespace BOOM{
     void MStep(bool posterior_mode);
 
     Ptr<EmMixtureComponent> em_mixture_component(int s);
-    const EmMixtureComponent * em_mixture_component(int s)const;
+    const EmMixtureComponent * em_mixture_component(int s) const;
    private:
     std::vector<Ptr<EmMixtureComponent> > em_mixture_components_;
     void populate_em_mixture_components();

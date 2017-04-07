@@ -24,7 +24,7 @@
 namespace BOOM {
 
 // Sets out to be appropriate for numeric formatting.
-inline ostream & numeric(ostream &out) {
+inline std::ostream & numeric(std::ostream &out) {
   return out << std::dec << std::setfill(' ');
 }
 

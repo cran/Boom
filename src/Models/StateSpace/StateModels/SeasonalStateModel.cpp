@@ -29,9 +29,10 @@ namespace BOOM{
         duration_(season_duration),
         time_of_first_observation_(0),
         T0_(new SeasonalStateSpaceMatrix(nseasons)),
-        RQR0_(new UpperLeftCornerMatrix(state_dimension(), 1.0)),
+        RQR0_(new UpperLeftCornerMatrixParamView(
+            state_dimension(), Sigsq_prm())),
         state_error_variance_at_new_season_(
-            new UpperLeftCornerMatrix(1, 1.0)),
+            new UpperLeftCornerMatrixParamView(1, Sigsq_prm())),
         T1_(new IdentityMatrix(state_dimension())),
         RQR1_(new ZeroMatrix(state_dimension())),
         state_error_variance_in_season_interior_(new ZeroMatrix(1)),
@@ -153,12 +154,6 @@ namespace BOOM{
     return ans;
   }
 
-  void SSM::set_sigsq(double sigsq){
-    ZeroMeanGaussianModel::set_sigsq(sigsq);
-    RQR0_->set_value(sigsq);
-    state_error_variance_at_new_season_->set_value(sigsq);
-  }
-
   void SSM::set_time_of_first_observation(int t){
     time_of_first_observation_ = t;
   }
@@ -226,5 +221,24 @@ namespace BOOM{
     }
   }
 
+  void SSM::increment_expected_gradient(
+      VectorView gradient,
+      int t,
+      const ConstVectorView &state_error_mean,
+      const ConstSubMatrix &state_error_variance) {
+    if (gradient.size() != 1
+        || state_error_mean.size() != 1
+        || state_error_variance.nrow() != 1
+        || state_error_variance.ncol() != 1) {
+      report_error("Wrong size argument passed to SeasonalStateModel::"
+                   "increment_expected_gradient.");
+    }
+    if (new_season(t)) {
+      double mean = state_error_mean[0];
+      double var = state_error_variance(0, 0);
+      double sigsq = ZeroMeanGaussianModel::sigsq();
+      gradient[0] += (-.5 /sigsq) + .5 * (var + mean * mean) / (sigsq * sigsq);
+    }
+  }
 
-}
+}  // namespace BOOM

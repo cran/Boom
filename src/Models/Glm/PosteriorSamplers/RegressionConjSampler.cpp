@@ -75,7 +75,7 @@ namespace BOOM{
 
   double RCS::logpri()const{
     double ans = mu_->logp(m_->Beta());
-    ans += siginv_->logp(1.0/m_->sigsq());
+    ans += sigsq_sampler_.log_prior(m_->sigsq());
     return ans;
   }
 

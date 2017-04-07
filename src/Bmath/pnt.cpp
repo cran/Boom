@@ -91,14 +91,16 @@ double pnt(double t, double df, double delta, int lower_tail, int log_p)
         negdel = true;          tt = -t;        del = -delta;
     }
 
-    if (df > 4e5 || del*del > 2*M_LN2*(-(numeric_limits<double>::min_exponent))) {
-        /*-- 2nd part: if del > 37.62, then p=0 below
-          FIXME: test should depend on `df', `tt' AND `del' ! */
-        /* Approx. from  Abramowitz & Stegun 26.7.10 (p.949) */
-        s = 1./(4.*df);
+    if (df > 4e5 ||
+        del * del >
+            2 * M_LN2 * (-(std::numeric_limits<double>::min_exponent))) {
+      /*-- 2nd part: if del > 37.62, then p=0 below
+        FIXME: test should depend on `df', `tt' AND `del' ! */
+      /* Approx. from  Abramowitz & Stegun 26.7.10 (p.949) */
+      s = 1. / (4. * df);
 
-        return pnorm(tt*(1. - s), del, sqrt(1. + tt*tt*2.*s),
-                     lower_tail != negdel, log_p);
+      return pnorm(tt * (1. - s), del, sqrt(1. + tt * tt * 2. * s),
+                   lower_tail != negdel, log_p);
     }
 
     /* initialize twin series */

@@ -31,7 +31,7 @@ namespace BOOM{
   class ZeroInflatedLognormalModel
       : public CompositeParamPolicy,
         public PriorPolicy,
-        public DoubleModel,
+        public LocationScaleDoubleModel,
         public EmMixtureComponent
   {
    public:
@@ -69,9 +69,9 @@ namespace BOOM{
     void set_positive_probability(double prob);
 
     // Moments of the actual observations, including zeros.
-    double mean()const;
-    double variance()const;
-    double sd()const;
+    double mean() const override;
+    double variance() const override;
+    double sd() const;
 
     Ptr<GaussianModel> Gaussian_model();
     Ptr<BinomialModel> Binomial_model();
@@ -83,12 +83,10 @@ namespace BOOM{
     mutable double log_probability_of_positive_;
     mutable double log_probability_of_zero_;
     mutable bool log_probabilities_are_current_;
-    boost::function<void(void)> create_binomial_observer();
+    std::function<void(void)> create_binomial_observer();
     void observe_binomial_probability();
     void check_log_probabilities()const;
-    Ptr<DoubleData> DAT(Ptr<Data>)const;
+    Ptr<DoubleData> DAT(const Ptr<Data> &dp)const;
   };
-
-}
-
+}  // namespace BOOM
 #endif // BOOM_ZERO_INFLATED_LOGNORMAL_MODEL_HPP_

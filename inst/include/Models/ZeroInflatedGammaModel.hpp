@@ -19,6 +19,8 @@
 #ifndef BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_
 #define BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_
 
+#include <functional>
+
 #include <Models/Policies/CompositeParamPolicy.hpp>
 #include <Models/Policies/PriorPolicy.hpp>
 #include <Models/DoubleModel.hpp>
@@ -41,7 +43,7 @@ namespace BOOM{
   class ZeroInflatedGammaModel
       : public CompositeParamPolicy,
         public PriorPolicy,
-        public DoubleModel
+        public LocationScaleDoubleModel
   {
    public:
     ZeroInflatedGammaModel();
@@ -54,16 +56,15 @@ namespace BOOM{
     ZeroInflatedGammaModel(const ZeroInflatedGammaModel &rhs);
     ZeroInflatedGammaModel * clone() const override;
 
-    double pdf(Ptr<Data>, bool logscale)const override;
-    double pdf(const Data *, bool logscale)const override;
-    double logp(double x)const override;
-    double sim()const override;
+    double pdf(Ptr<Data>, bool logscale) const override;
+    double pdf(const Data *, bool logscale) const override;
+    double logp(double x) const override;
+    double sim() const override;
 
     // This model does not keep copies of the original data set.  It
     // uses the sufficient statistics of its component models instead.
     void add_data(Ptr<Data>) override;
     void add_data_raw(double y);
-    virtual void add_mixture_data(Ptr<Data>, double weight);
     void add_mixture_data_raw(double y, double weight);
     void clear_data() override;
 
@@ -74,28 +75,28 @@ namespace BOOM{
     virtual void mle();
 
     // The probability that an event is greater than zero.
-    double positive_probability()const;
+    double positive_probability() const;
     void set_positive_probability(double prob);
 
     // Mean of the positive part (i.e. the gamma part) of the
     // distribution.
-    double mean_parameter()const;
+    double mean_parameter() const;
     void set_mean_parameter(double mu);
 
     // Shape parameter of the positive part (i.e. the gamma part) of
     // the distribution.
-    double shape_parameter()const;
+    double shape_parameter() const;
     void set_shape_parameter(double a);
 
     // Scale parameter of the positive part (i.e. the gamma part) of
     // the distribution.  This is shape_parameter() / mean_parameter().
-    double scale_parameter()const;
+    double scale_parameter() const;
 
     // Moments of the actual random variables produced by the model,
     // including both the gamma part and the zero part.
-    double mean()const;
-    double variance()const;
-    double sd()const;
+    double mean() const override;
+    double variance() const override;
+    double sd() const;
 
     Ptr<GammaModel> Gamma_model();
     Ptr<BinomialModel> Binomial_model();
@@ -121,14 +122,14 @@ namespace BOOM{
     mutable double log_probability_of_zero_;
     mutable bool log_probabilities_are_current_;
 
-    Ptr<DoubleData> DAT(Ptr<Data>)const;
+    Ptr<DoubleData> DAT(const Ptr<Data> &dp) const;
 
-    boost::function<void(void)> create_binomial_observer();
+    std::function<void(void)> create_binomial_observer();
     // An 'observer' that will be called whenever the binomial
     // probability parameter is set.
     void observe_binomial_probability();
 
-    void check_log_probabilities()const;
+    void check_log_probabilities() const;
 
     // To be called by all constructors after gamma_ and binomial_
     // have been created.  Registers the models with the ParamPolicy
@@ -136,6 +137,6 @@ namespace BOOM{
     void setup();
   };
 
-}
+}  // namespace BOOM
 
 #endif // BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_

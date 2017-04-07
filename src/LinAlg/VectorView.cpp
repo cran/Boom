@@ -348,7 +348,7 @@ namespace BOOM{
     return affdot_impl(*this, y);
   }
 
-  VV & VV::transform(std::function<double(double)> f) {
+  VV & VV::transform(const std::function<double(double)> &f) {
     for (int i = 0; i < size(); ++i) {
       double *d = V + i * stride_;
       *d = f(*d);

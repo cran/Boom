@@ -20,8 +20,7 @@
 #include <cmath>
 #include <LinAlg/Matrix.hpp>
 #include <cpputil/report_error.hpp>
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace BOOM {
 
@@ -95,7 +94,7 @@ namespace BOOM {
   //======================================================================
 
   ScalarTargetFunAdapter::ScalarTargetFunAdapter(
-      boost::function<double(const Vector &)> F,
+      std::function<double(const Vector &)> F,
       Vector *X,
       uint position)
     : f_(F),

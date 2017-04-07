@@ -55,7 +55,7 @@ namespace BOOM{
   double NonzeroMeanAr1Sampler::logpri()const{
     double ans = mean_prior_->logp(m_->mu());
     ans += phi_prior_->logp(m_->phi());
-    ans += siginv_prior_->logp(1.0 / m_->sigsq());
+    ans += sigsq_sampler_.log_prior(m_->sigsq());
     return ans;
   }
   //----------------------------------------------------------------------

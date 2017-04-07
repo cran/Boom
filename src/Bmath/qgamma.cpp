@@ -147,7 +147,7 @@ double qgamma(double p, double alpha, double scale, int lower_tail, int log_p)
 #else
         if(errno != 0)
 #endif
-                return numeric_limits<double>::quiet_NaN();
+                return std::numeric_limits<double>::quiet_NaN();
 
         t = p2*exp(alpha*M_LN2+g+p1-c*log(ch));
         b = t/ch;

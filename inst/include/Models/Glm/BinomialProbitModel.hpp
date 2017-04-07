@@ -82,7 +82,7 @@ namespace BOOM {
                    Vector &g, Matrix &h, uint nd) const override;
     virtual double log_likelihood(const Vector &beta, Vector *g, Matrix *h,
                                   bool initialize_derivs = true) const;
-
+    using LoglikeModel::log_likelihood;
     d2TargetFunPointerAdapter log_likelihood_tf() const;
 
     virtual SpdMatrix xtx() const;

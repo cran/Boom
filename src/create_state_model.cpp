@@ -1,11 +1,11 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 // Author: stevescott@google.com (Steve Scott)
 
+#include <r_interface/create_state_model.hpp>
 #include <string>
 #include <cpputil/report_error.hpp>
 #include <cpputil/Date.hpp>
 
-#include <r_interface/create_state_model.hpp>
 #include <r_interface/boom_r_tools.hpp>
 #include <r_interface/list_io.hpp>
 #include <r_interface/prior_specification.hpp>
@@ -27,7 +27,7 @@
 #include <Models/StateSpace/StateModels/Holiday.hpp>
 #include <Models/StateSpace/StateModels/LocalLevelStateModel.hpp>
 #include <Models/StateSpace/StateModels/LocalLinearTrend.hpp>
-#include <Models/StateSpace/StateModels/LocalLinearTrendMeanRevertingSlope.hpp>
+#include <Models/StateSpace/StateModels/SemilocalLinearTrend.hpp>
 #include <Models/StateSpace/StateModels/RandomWalkHolidayStateModel.hpp>
 #include <Models/StateSpace/StateModels/SeasonalStateModel.hpp>
 #include <Models/StateSpace/StateModels/StateModel.hpp>
@@ -37,6 +37,7 @@
 #include <Models/TimeSeries/NonzeroMeanAr1Model.hpp>
 #include <Models/TimeSeries/PosteriorSamplers/NonzeroMeanAr1Sampler.hpp>
 #include <Models/TimeSeries/PosteriorSamplers/ArPosteriorSampler.hpp>
+#include <Models/TimeSeries/PosteriorSamplers/ArSpikeSlabSampler.hpp>
 
 namespace BOOM{
   namespace RInterface{
@@ -86,14 +87,18 @@ namespace BOOM{
         return CreateLocalLinearTrend(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "Seasonal")) {
         return CreateSeasonal(list_arg, prefix);
-      } else if (Rf_inherits(list_arg, "GeneralizedLocalLinearTrend")) {
-        return CreateGeneralizedLocalLinearTrend(list_arg, prefix);
+      } else if (Rf_inherits(list_arg, "SemilocalLinearTrend")) {
+        return CreateSemilocalLinearTrend(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "LocalLevel")) {
         return CreateLocalLevel(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "Holiday")) {
         return CreateRandomWalkHolidayStateModel(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "DynamicRegression")) {
         return CreateDynamicRegressionStateModel(list_arg, prefix, callbacks);
+      } else if (Rf_inherits(list_arg, "AutoAr")) {
+        // AutoAr also inherits from ArProcess, so this case must be
+        // handled before ArProcess.
+        return CreateAutoArStateModel(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "ArProcess")) {
         return CreateArStateModel(list_arg, prefix);
       } else if (Rf_inherits(list_arg, "StudentLocalLinearTrend")) {
@@ -444,8 +449,8 @@ namespace BOOM{
       return trig_state_model;
     }
     //======================================================================
-    LocalLinearTrendMeanRevertingSlopeStateModel *
-    StateModelFactory::CreateGeneralizedLocalLinearTrend(
+    SemilocalLinearTrendStateModel *
+    StateModelFactory::CreateSemilocalLinearTrend(
         SEXP list_arg, const std::string &prefix) {
 
       SdPrior level_sigma_prior_spec(getListElement(
@@ -463,8 +468,8 @@ namespace BOOM{
                                       slope_ar1_prior_spec.initial_value(),
                                       slope_sd_prior_spec.initial_value());
 
-      LocalLinearTrendMeanRevertingSlopeStateModel *trend
-          = new LocalLinearTrendMeanRevertingSlopeStateModel(level, slope);
+      SemilocalLinearTrendStateModel *trend
+          = new SemilocalLinearTrendStateModel(level, slope);
 
       // Create the prior for level model.  This prior is simple,
       // because it is for a random walk.
@@ -719,7 +724,7 @@ namespace BOOM{
       state_model->set_method(sampler);
 
       std::ostringstream phi_parameter_name;
-      phi_parameter_name << prefix << "AR" << number_of_lags << ".phi";
+      phi_parameter_name << prefix << "AR" << number_of_lags << ".coefficients";
       io_manager_->add_list_element(new GlmCoefsListElement(
           state_model->Phi_prm(),
           phi_parameter_name.str()));
@@ -732,39 +737,48 @@ namespace BOOM{
       return state_model;
     }
     //======================================================================
-    // ArStateModel * StateModelFactory::CreateAutoArStateModel(
-    //     SEXP list_arg, const std::string & prefix) {
-    //   int number_of_lags = Rf_asInteger(getListElement(list_arg, "lags"));
-    //   ArStateModel *state_model(new ArStateModel(number_of_lags));
+    ArStateModel * StateModelFactory::CreateAutoArStateModel(
+        SEXP list_arg, const std::string & prefix) {
+      int number_of_lags = Rf_asInteger(getListElement(list_arg, "lags"));
+      ArStateModel *state_model(new ArStateModel(number_of_lags));
 
-    //   ArSpikeSlabPrior phi_prior_spec(getListElement(list_arg, "prior"));
+      ArSpikeSlabPrior prior_spec(getListElement(list_arg, "prior"));
 
-    //   NEW(ArSpikeSlabSampler, sampler)(state_model,
-    //                                    phi_prior_spec.slab(),
-    //                                    phi_prior_spec.spike(),
-    //                                    phi_prior_spec.siginv_prior(),
-    //                                    phi_prior_spec.truncate());
-    //   if (phi_prior_spec.max_flips() > 0) {
-    //     sampler->limit_model_selection(phi_prior_spec.max_flips());
-    //   }
+      NEW(ArSpikeSlabSampler, sampler)(state_model,
+                                       prior_spec.slab(),
+                                       prior_spec.spike(),
+                                       prior_spec.siginv_prior(),
+                                       prior_spec.truncate());
+      if (prior_spec.max_flips() > 0) {
+        sampler->limit_model_selection(prior_spec.max_flips());
+      }
 
-    //   if (phi_prior_spec.sigma_upper_limit() > 0) {
-    //     sampler->set_sigma_upper_limit(phi_prior_spec.sigma_upper_limit());
-    //   }
+      if (prior_spec.sigma_upper_limit() > 0) {
+        sampler->set_sigma_upper_limit(prior_spec.sigma_upper_limit());
+      }
 
-    //   std::ostringstream phi_parameter_name;
-    //   phi_parameter_name << prefix << "AR" << number_of_lags << ".phi";
-    //   io_manager_->add_list_element(new GlmCoefsListElement(
-    //       state_model->Phi_prm(),
-    //       phi_parameter_name.str()));
+      state_model->set_method(sampler);
 
-    //   std::ostringstream sigma_parameter_name;
-    //   sigma_parameter_name << prefix << "AR" << number_of_lags << ".sigma";
-    //   io_manager_->add_list_element(new StandardDeviationListElement(
-    //       state_model->Sigsq_prm(),
-    //       sigma_parameter_name.str()));
+      std::ostringstream phi_parameter_name;
+      phi_parameter_name << prefix << "AR" << number_of_lags << ".coefficients";
+      std::vector<std::string> column_names;
+      for (int i = 0; i < number_of_lags; ++i) {
+        ostringstream column_name;
+        column_name << "lag." << i + 1;
+        column_names.push_back(column_name.str());
+      }
+      io_manager_->add_list_element(new GlmCoefsListElement(
+          state_model->Phi_prm(),
+          phi_parameter_name.str(),
+          column_names));
 
-    // }
+      std::ostringstream sigma_parameter_name;
+      sigma_parameter_name << prefix << "AR" << number_of_lags << ".sigma";
+      io_manager_->add_list_element(new StandardDeviationListElement(
+          state_model->Sigsq_prm(),
+          sigma_parameter_name.str()));
+      return state_model;
+    }
 
     //======================================================================
     // This is a callback designed to be used with a
@@ -787,7 +801,7 @@ namespace BOOM{
       virtual int nrow()const {return state_model_->state_dimension(); }
       virtual int ncol()const {return model_->time_dimension();}
       virtual BOOM::Matrix get_matrix()const {
-        return model_->full_time_series_state_component(model_position_);
+        return model_->full_state_subcomponent(model_position_);
       }
 
      private:

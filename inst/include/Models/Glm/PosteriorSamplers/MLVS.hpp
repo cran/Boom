@@ -25,14 +25,16 @@
 #include <Models/Glm/PosteriorSamplers/MLVS_data_imputer.hpp>
 #include <Models/PosteriorSamplers/Imputer.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   class MultinomialLogitModel;
   class MvnBase;
   class ChoiceData;
 
   //------------------------------------------------------------
-  class MLVS : public PosteriorSampler {
+  class MLVS : public PosteriorSampler,
+               public LatentDataSampler<MlvsDataImputer>
+  {
     // Draws the parameters of a multinomial logit model using the
     // approximate method from Fruewirth-Schnatter and Fruewirth,
     // Computational Statistics and Data Analysis 2007, 3508-3528.
@@ -71,14 +73,12 @@ namespace BOOM{
     void draw() override;
     double logpri() const override;
 
-    // The individual steps needed to implement the draw.
-    void impute_latent_data();
-    void draw_beta();
+    void clear_latent_data() override;
+    Ptr<MlvsDataImputer> create_worker(std::mutex &m) override;
+    void assign_data_to_workers() override;
 
-    // Sets the number of workers to use for multi-threaded data
-    // augmentation.  Implementations are permitted to use less than
-    // this number of threads.
-    void set_number_of_workers(int n);
+    // Part of the implementation for draw().
+    void draw_beta();
 
     // Functions to control Bayesian variable selection.  If
     // suppress_model_selection is called then the current
@@ -104,11 +104,9 @@ namespace BOOM{
     MultinomialLogitModel *mod_;
     Ptr<MvnBase> pri;
     Ptr<VariableSelectionPrior> vpri;
-    typedef MultinomialLogitCompleteDataSufficientStatistics LocalSuf;
+
+    typedef MultinomialLogit::CompleteDataSufficientStatistics LocalSuf;
     LocalSuf suf_;
-    ParallelLatentDataImputer<ChoiceData,
-                              LocalSuf,
-                              MultinomialLogitModel> parallel_imputer_;
 
     const Vector & log_sampling_probs_;
     const bool downsampling_;
@@ -121,5 +119,6 @@ namespace BOOM{
     double log_model_prob(const Selector &inc);
   };
 
-}
-#endif//  BOOM_MULTINOMIAL_LOGIT_VARIABLE_SELECTION_HPP
+}  // namespace BOOM
+
+#endif  // BOOM_MULTINOMIAL_LOGIT_VARIABLE_SELECTION_HPP

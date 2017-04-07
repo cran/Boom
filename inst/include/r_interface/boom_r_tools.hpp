@@ -25,7 +25,7 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 #include <LinAlg/SubMatrix.hpp>
-
+#include <LinAlg/Array.hpp>
 
 #include <Models/CategoricalData.hpp>
 
@@ -131,6 +131,23 @@ namespace BOOM{
   // matrix then an exception will be thrown.
   std::pair<int, int> GetMatrixDimensions(SEXP matrix);
 
+  // Set the column names for a matrix.
+  // Args:
+  //   r_matrix:  The matrix whose column names are to be set.
+  //   column_names: The vector of names to be assigned to the
+  //     columns.
+  // Returns:
+  //   If column_names is empty then r_matrix is returned unchanged.
+  //   If column_names is non-empty but contains a number of elements
+  //   that differs from ncol(r_matrix) then an error is reported with
+  //   report_error.  Otherwise the column names of r_matrix are set
+  //   to the supplied values and the matrix with column names is
+  //   returned.  Note that this is the same object as r_matrix, so
+  //   it inherits the PROTECT status of the r_matrix argument.
+  //
+  //   Row names, if they previously existed, are removed.
+  SEXP SetColnames(SEXP r_matrix, const std::vector<std::string> &column_names);
+
   // Returns a vector of dimensions for an R multi-way array.  If the
   // argument is not an array, then an exception will be thrown.
   std::vector<int> GetArrayDimensions(SEXP array);
@@ -155,6 +172,13 @@ namespace BOOM{
   Matrix ToBoomMatrix(SEXP r_matrix);
   ConstSubMatrix ToBoomMatrixView(SEXP r_matrix);
 
+  // If 'r_array' is an R multi-way array then it is converted to an
+  // equivalent BOOM::Array.  Otherwise an exception will be thrown.
+  // A numeric vector is interpreted as a 1-d array, and a matrix as a
+  // 2-d array.
+  Array ToBoomArray(SEXP r_array);
+  ConstArrayView ToBoomArrayView(SEXP r_array);
+
   // If 'r_data_frame' is an R data frame object, then it will be
   // converted into a BOOM::DataTable.  Otherwise an exception will be
   // thrown.  The return value is a copy, not a reference.
@@ -172,11 +196,26 @@ namespace BOOM{
   // to a std::vector<int>.  Otherwise an exception is thrown.
   std::vector<int> ToIntVector(SEXP r_int_vector);
 
-  // Convert a BOOM vector or matrix to its R equivalent.  Less type
-  // checking is needed for these functions than in the other
-  // direction because we know the type of the input.
+  // If r_int_matrix is an R matrix of integers then it is converted
+  // to a std::vector<std::vector<int>>.  Otherwise an exception is
+  // thrown.  Note that C++ storage is row-major, while R's storage is
+  // column-major.
+  //
+  // If convert_to_zero_offset is true then 1 is subtracted from each
+  // matrix element.  This is useful if the values are indices in R's
+  // unit-offset scheme.  Setting this flag will transform the indices
+  // to the equivalent location in C++'s zero-offset scheme.
+  std::vector<std::vector<int>> ToIntMatrix(
+      SEXP r_int_matrix,
+      bool convert_to_zero_offset = false);
+
+  // Convert a BOOM vector, matrix, or array to its R equivalent.
+  // Less type checking is needed for these functions than in the
+  // other direction because we know the type of the input.
   SEXP ToRVector(const Vector &boom_vector);
   SEXP ToRMatrix(const Matrix &boom_matrix);
+  SEXP ToRArray(const ConstArrayView &boom_array);
+  SEXP ToRIntVector(const std::vector<int> &ints);
 
   // This version produces an R matrix with row names and column
   // names.  A zero-length vector indicates that no names are desired
@@ -194,7 +233,7 @@ namespace BOOM{
   //     STRINGSXP then the first element is returned.
   std::string ToString(SEXP r_string);
 
-  // A Factor object is intended to be intialized with an R factor.
+  // A Factor object is intended to be initialized with an R factor.
   class Factor {
    public:
     Factor(SEXP r_factor);
@@ -206,11 +245,11 @@ namespace BOOM{
     int number_of_levels() const;
 
     // Returns the integer value of observation i.  Note that in R,
-    // observation i is 1-based, while here it is zero-basd.
+    // observation i is 1-based, while here it is zero-based.
     int operator[](int i) const;
 
     // Returns a BOOM::CategoricalData corresponding to observation i.
-    CategoricalData to_cateogrical_data(int i)const;
+    CategoricalData to_categorical_data(int i)const;
 
     // The names of the factor levels.
     const std::vector<std::string> labels() const {
@@ -265,7 +304,7 @@ namespace BOOM{
 
   // The job of an RErrorReporter is to reconcile the error handling
   // mechanisms of C++ (exceptions) and R (Rf_error).  When C++
-  // exceptions are thrown, stack unwiding frees memory in objects
+  // exceptions are thrown, stack unwinding frees memory in objects
   // held by smart pointers that go out of scope.  When Rf_error is
   // called, the destructors that C++ relies on to do the right thing
   // are never called, and so memory leaks.  The solution is to define

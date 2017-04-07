@@ -47,7 +47,7 @@
 #include <distributions/rng.hpp>
 namespace Rmath{
 
-constexpr double expmax = (numeric_limits<double>::max_exponent * M_LN2);
+constexpr double expmax = (std::numeric_limits<double>::max_exponent * M_LN2);
 
   double rbeta_mt(BOOM::RNG & rng, double aa, double bb);
 
@@ -80,7 +80,7 @@ constexpr double expmax = (numeric_limits<double>::max_exponent * M_LN2);
     if (v <= expmax)                            \
       w = AA * exp(v);                          \
     else                                        \
-      w = numeric_limits<double>::max()
+      w = std::numeric_limits<double>::max()
 
 
     if (a <= 1.0) {     /* --- Algorithm BC --- */

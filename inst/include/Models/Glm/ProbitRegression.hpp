@@ -63,6 +63,7 @@ namespace BOOM{
     // Otherwise they will be incremented.
     double log_likelihood(const Vector & beta, Vector *g, Matrix *h,
                           bool initialize_derivs = true)const;
+    using LoglikeModel::log_likelihood;
     d2TargetFunPointerAdapter log_likelihood_tf()const;
 
     bool sim(const Vector &x)const;
