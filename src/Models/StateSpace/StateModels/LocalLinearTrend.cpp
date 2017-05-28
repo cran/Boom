@@ -72,8 +72,8 @@ namespace BOOM{
     }
   }
 
-  void LLTSM::simulate_state_error(VectorView eta, int t)const{
-    eta = ZeroMeanMvnModel::sim();
+  void LLTSM::simulate_state_error(RNG &rng, VectorView eta, int t)const{
+    eta = ZeroMeanMvnModel::sim(rng);
   }
 
   Ptr<SparseMatrixBlock> LLTSM::state_transition_matrix(int t)const{

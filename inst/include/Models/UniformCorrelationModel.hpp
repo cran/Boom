@@ -42,7 +42,7 @@ namespace BOOM{
     double logp(const CorrelationMatrix &)const override;
 
     uint dim()const;
-    CorrelationMatrix sim()const;
+    CorrelationMatrix sim(RNG &rng = GlobalRng::rng)const;
   private:
     uint dim_;
   };

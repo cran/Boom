@@ -30,8 +30,8 @@ namespace BOOM{
 
 
   MNP::MultinomialProbitModel(const Matrix & beta_subject,
-			      const Vector & beta_choice,
-			      const SpdMatrix & Sig)
+                              const Vector & beta_choice,
+                              const SpdMatrix & Sig)
     : ParamPolicy(make_beta(beta_subject, beta_choice), new SpdParams(Sig)),
       DataPolicy(),
       PriorPolicy(),
@@ -47,14 +47,14 @@ namespace BOOM{
   // the function make_catdat_ptrs can make a ResponseVector out of a
   // vector of strings or uints
 //   MNP::MultinomialProbitModel(ResponseVector responses,
-// 			      const Matrix &Xsubject_info,
-// 			      const Arr3 &Xchoice_info)
+//                            const Matrix &Xsubject_info,
+//                            const Arr3 &Xchoice_info)
 //     : ParamPolicy(make_beta(responses, Xsubject_info
 //   {}
   // dim(Xchoice_info) = [#obs, #choices, #choice x's]
 
 //   MNP::MultinomialProbitModel(ResponseVector responses,    // no choice information
-// 			      const Matrix &Xsubject_info);
+//                            const Matrix &Xsubject_info);
 
   MNP::MultinomialProbitModel(const std::vector<Ptr<ChoiceData> > &d)
     : ParamPolicy(make_beta(d), new SpdParams(d[0]->nchoices())),
@@ -93,9 +93,9 @@ namespace BOOM{
   public:
     TrunMvnTF(const SpdMatrix & siginv)
       : mu(siginv.nrow()),
-	Ivar(siginv),
-	ldsi(siginv.logdet()),
-	y(0)
+        Ivar(siginv),
+        ldsi(siginv.logdet()),
+        y(0)
     {}
 
     TrunMvnTF * clone()const{return new TrunMvnTF(*this); }
@@ -274,7 +274,7 @@ namespace BOOM{
 
 
   inline void rsw_mv(double &m, double &v, Vector &b, const Vector &u,
-		     const Vector &mu, const SpdMatrix &siginv, uint pos){
+                     const Vector &mu, const SpdMatrix &siginv, uint pos){
     // compute the mean and variance of one dimension of a MVN(mu,
     // siginv^{-1}) conditional on the other dimension.
     v = 1.0/siginv(pos,pos);  // residual variance
@@ -300,8 +300,8 @@ namespace BOOM{
     u[y] = rtrun_norm(mean, sqrt(v), second_largest, true);
     for(uint i=0; i<dp->nchoices(); ++i){
       if(i!=y){
-	rsw_mv(mean,v,b,u,wsp,siginv,i);
-	u[i] = rtrun_norm_mt(rng, mean, sqrt(v), u[y], false);
+        rsw_mv(mean,v,b,u,wsp,siginv,i);
+        u[i] = rtrun_norm_mt(rng, mean, sqrt(v), u[y], false);
       }
     }
   }

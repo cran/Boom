@@ -31,31 +31,35 @@ namespace BOOM{
 
   class LogPostTF{
   public:
-    LogPostTF(Target Loglike, Ptr<VectorModel> Pri);
+    LogPostTF(const Target &loglike, const Ptr<VectorModel> &prior);
     double operator()(const Vector &z)const;
   private:
-    Target loglike;
-    Ptr<VectorModel> pri;
+    Target loglike_;
+    Ptr<VectorModel> prior_;
   };
   /*----------------------------------------------------------------------*/
   class dLogPostTF : public LogPostTF{
   public:
-    dLogPostTF(dLoglikeTF Loglike, Ptr<dVectorModel>);
-    dLogPostTF(Target Loglike, dTarget dLoglike, Ptr<dVectorModel>);
+    dLogPostTF(const dLoglikeTF &loglike, const Ptr<dVectorModel> &prior);
+    dLogPostTF(const Target &loglike, const dTarget &dloglike,
+               const Ptr<dVectorModel> &prior);
     double operator()(const Vector &z)const{
       return LogPostTF::operator()(z);}
     double operator()(const Vector &z, Vector &g)const;
   private:
-    dTarget dloglike;
-    Ptr<dVectorModel> dpri;
+    dTarget dloglike_;
+    Ptr<dVectorModel> dprior_;
   };
 
   //----------------------------------------------------------------------
   class d2LogPostTF : public dLogPostTF{
   public:
-    d2LogPostTF(d2LoglikeTF Loglike, Ptr<d2VectorModel> dp);
-    d2LogPostTF(Target Loglike, dTarget dLoglike, d2Target d2Loglike,
-                Ptr<d2VectorModel> dp);
+    d2LogPostTF(const d2LoglikeTF &loglike,
+                const Ptr<d2VectorModel> &prior);
+    d2LogPostTF(const Target &loglike,
+                const dTarget &dloglike,
+                const d2Target &d2loglike,
+                const Ptr<d2VectorModel> &prior);
 
     double operator()(const Vector &z)const{
       return LogPostTF::operator()(z);}
@@ -63,8 +67,8 @@ namespace BOOM{
       return dLogPostTF::operator()(z,g);}
     double operator()(const Vector &z, Vector &g, Matrix &h)const;
   private:
-    std::function<double(const Vector &x, Vector &g, Mat&h)> d2loglike;
-    Ptr<d2VectorModel> d2pri;
+    std::function<double(const Vector &x, Vector &g, Mat&h)> d2loglike_;
+    Ptr<d2VectorModel> d2prior_;
   };
 
 }

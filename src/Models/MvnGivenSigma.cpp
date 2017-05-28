@@ -153,6 +153,6 @@ namespace BOOM {
     return ans;
   }
 
-  Vector MGS::sim() const { return rmvn_ivar(mu(),siginv());  }
+  Vector MGS::sim(RNG &rng) const { return rmvn_ivar_mt(rng, mu(),siginv());  }
 
 }  // namespace BOOM

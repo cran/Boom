@@ -225,7 +225,9 @@ namespace BOOM{
     return dirichlet_loglike(nu, G, H, sumlogpi, nobs);
   }
 
-  Vector DirichletModel::sim() const { return rdirichlet(nu()); }
+  Vector DirichletModel::sim(RNG &rng) const {
+    return rdirichlet_mt(rng, nu());
+  }
 
   void DirichletModel::add_mixture_data(Ptr<Data> dp, double prob){
     suf()->add_mixture_data(DAT(dp)->value(), prob);

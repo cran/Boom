@@ -23,9 +23,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							zetac.c
+  /*                                                    zetac.c
    *
-   *	Riemann zeta function
+   *    Riemann zeta function
    *
    *
    *
@@ -49,7 +49,7 @@ namespace BOOM {
    *
    * is related to the Riemann zeta function by
    *
-   *	Riemann zeta(x) = zetac(x) + 1.
+   *    Riemann zeta(x) = zetac(x) + 1.
    *
    * Extension of the function definition for x < 1 is implemented.
    * Zero is returned for x > log2(MAXNUM).
@@ -63,7 +63,7 @@ namespace BOOM {
    *
    *                      Relative error:
    * arithmetic   domain     # trials      peak         rms
-   *    IEEE      1,50        10000       9.8e-16	    1.3e-16
+   *    IEEE      1,50        10000       9.8e-16           1.3e-16
    *    DEC       1,50         2000       1.1e-16     1.9e-17
    *
    *
@@ -195,7 +195,7 @@ namespace BOOM {
 
     if( x < 0.0 )
     {
-	if( x < -170.6243 )
+        if( x < -170.6243 )
         {
           report_error("Overflow error in BOOM::Cephes::zetac()");
           return(0.0);
@@ -207,7 +207,7 @@ namespace BOOM {
     }
 
     if( x >= MAXL2 )
-      return(0.0);	/* because first term is 2**-x */
+      return(0.0);      /* because first term is 2**-x */
 
     /* Tabulated values for integer argument */
     w = floor(x);

@@ -59,13 +59,13 @@ namespace BOOM {
     return holiday_->maximum_window_width();
   }
 
-  void RWHSM::simulate_state_error(VectorView eta, int t)const{
+  void RWHSM::simulate_state_error(RNG &rng, VectorView eta, int t)const{
     Date now = time_zero_ + t;
     eta = 0;
     if(holiday_->active(now)){
       Date holiday_date(holiday_->nearest(now));
       int position = now - holiday_->earliest_influence(holiday_date);
-      eta[position] = rnorm(0, sigma());
+      eta[position] = rnorm_mt(rng, 0, sigma());
     }
   }
 

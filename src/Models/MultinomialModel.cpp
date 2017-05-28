@@ -213,7 +213,7 @@ namespace BOOM{
     return logscale ? logp_[i] : pi(i);
   }
 
-  uint MM::simdat()const{ return rmulti(pi()); }
+  uint MM::simdat(RNG &rng)const{ return rmulti_mt(rng, pi()); }
 
   void MM::add_mixture_data(Ptr<Data> dp, double prob){
     uint i = DAT(dp)->value();

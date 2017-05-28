@@ -109,10 +109,6 @@ namespace BOOM {
     // in the model object to different clusters.
     void draw_cluster_membership_indicators();
 
-    const std::vector<int> &cluster_indicators() const {
-      return cluster_indicators_;
-    }
-
     // Draws the model parameters given the cluster indicators.
     void draw_parameters();
 
@@ -146,8 +142,6 @@ namespace BOOM {
     Ptr<MvnGivenSigma> mean_base_measure_;
     Ptr<WishartModel> precision_base_measure_;
 
-    // cluster_indicators_[i] == -1 means observation i is unassigned.
-    std::vector<int> cluster_indicators_;
     MvnSuf empty_suf_;
 
     mutable NormalInverseWishart::NormalInverseWishartParameters prior_;

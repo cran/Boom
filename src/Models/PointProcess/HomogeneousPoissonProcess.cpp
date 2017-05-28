@@ -172,15 +172,16 @@ namespace BOOM{
   }
 
   PointProcess HomogeneousPoissonProcess::simulate(
+      RNG &rng,
       const DateTime &t0,
       const DateTime &t1,
       std::function<Data*()> mark_generator)const{
     PointProcess ans(t0, t1);
-    int number_of_events = rpois(expected_number_of_events(t0, t1));
+    int number_of_events = rpois_mt(rng, expected_number_of_events(t0, t1));
     double duration = t1 - t0;
     std::vector<double> points(number_of_events);
     for(int i = 0; i < number_of_events; ++i){
-      points[i] = runif(0, duration);
+      points[i] = runif_mt(rng, 0, duration);
     }
     std::sort(points.begin(), points.end());
     for(int i = 0; i < number_of_events; ++i){

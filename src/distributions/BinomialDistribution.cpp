@@ -76,7 +76,7 @@ uint binomial_distribution::operator()(RNG &rng){
         continue;
       ix = static_cast<int>(x);
     } else {
-      if (u > p3) {	/* right tail */
+      if (u > p3) {     /* right tail */
         ix = static_cast<int>(xr - log(v) / xlr);
         if (static_cast<unsigned>(ix) > n)
           continue;

@@ -52,9 +52,9 @@ namespace BOOM{
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     ostream & print(ostream &out)const override;
   };
 
@@ -104,11 +104,9 @@ namespace BOOM{
 
     double nu_loglike(const Vector & nu)const;
 
-    Vector sim() const override;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
     virtual void add_mixture_data(Ptr<Data>, double prob);
   };
 
-  //======================================================================
-
-}
+}  // namespace BOOM
 #endif

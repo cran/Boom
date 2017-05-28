@@ -27,6 +27,7 @@ namespace BOOM{
         max_event_rate_(max_event_rate) {}
 
   PointProcess BoundedPoissonProcessSimulator::simulate(
+      RNG &rng,
       const DateTime &t0,
       const DateTime &t1,
       std::function<Data*()> mark_generator) const{
@@ -35,14 +36,14 @@ namespace BOOM{
     int number_of_candidate_events = rpois(max_event_rate_ * duration);
     Vector times(number_of_candidate_events);
     for(int i = 0; i < number_of_candidate_events; ++i){
-      times[i] = runif(0, duration);
+      times[i] = runif_mt(rng, 0, duration);
     }
     times.sort();
 
     for(int i = 0; i < times.size(); ++i){
       DateTime cand = t0 + times[i];
       double prob = process_->event_rate(cand) / max_event_rate_;
-      if(runif(0, 1) < prob){
+      if(runif_mt(rng, 0, 1) < prob){
         Data *mark = mark_generator();
         if (mark) {
           ans.add_event(cand, Ptr<Data>(mark));

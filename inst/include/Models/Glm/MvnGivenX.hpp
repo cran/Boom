@@ -71,12 +71,12 @@ namespace BOOM{
     MvnGivenX(const Vector &Mu, double kappa, double diag_wgt=0);
 
     MvnGivenX(Ptr<VectorParams> Mu,
-	      Ptr<UnivParams> kappa,
-	      double diag_wgt=0);
+              Ptr<UnivParams> kappa,
+              double diag_wgt=0);
     MvnGivenX(Ptr<VectorParams> Mu,
-	      Ptr<UnivParams> kappa,
-	      const Vector & Lambda,
-	      double diag_wgt=0);
+              Ptr<UnivParams> kappa,
+              const Vector & Lambda,
+              double diag_wgt=0);
     MvnGivenX(const MvnGivenX &rhs);
 
     MvnGivenX * clone() const override;
@@ -98,7 +98,7 @@ namespace BOOM{
     Ptr<UnivParams> Kappa_prm();
 
     double diagonal_weight()const;
-    Vector sim()const override;
+    Vector sim(RNG &rng = GlobalRng::rng)const override;
   private:
     virtual void set_ivar()const;  // logical constness
 
@@ -192,6 +192,6 @@ namespace BOOM{
     void make_current()const;
   };
 
-}
+}  // namespace BOOM
 
 #endif// BOOM_MVN_GIVEN_X_HPP

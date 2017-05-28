@@ -164,16 +164,18 @@ namespace BOOM{
 
   uint OCM::maxscore() const {return delta().size() + 1; }
 
-  Ptr<OrdinalRegressionData> OCM::sim() {
+  Ptr<OrdinalRegressionData> OCM::sim(RNG &rng) {
     if (!simulation_key_) {
       simulation_key_ = new CatKey(maxscore() + 1);
     }
 
     Vector x(xdim());
-    x.randomize( [](){return rnorm(0, 1);} );
     x[0] = 1;
+    for (int i = 1; i < x.size(); ++i) {
+      x[i] = rnorm_mt(rng);
+    }
 
-    double eta = predict(x) + simulate_latent_variable();
+    double eta = predict(x) + simulate_latent_variable(rng);
     int y = maxscore();
     for (uint m = 0; m < maxscore(); ++m) {
       if (eta < delta(m)) {

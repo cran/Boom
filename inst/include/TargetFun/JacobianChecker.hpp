@@ -43,8 +43,8 @@ namespace BOOM {
     //     when deciding whether the numerical version and the
     //     analytic version match.
     JacobianChecker(
-        std::function<Vector(const Vector &) > inverse_transformation,
-        std::shared_ptr<Jacobian> analytic_jacobian,
+        const std::function<Vector(const Vector &)> &inverse_transformation,
+        const std::shared_ptr<Jacobian> &analytic_jacobian,
         double epsilon);
 
     // The following functions return 'true' if the analytic and

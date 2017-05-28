@@ -83,7 +83,7 @@ namespace BOOM{
 
     Ptr<UnivParams> Prob_prm();
     const Ptr<UnivParams> Prob_prm()const;
-    uint sim()const;
+    uint sim(RNG &rng = GlobalRng::rng)const;
 
     void add_mixture_data(Ptr<Data>, double prob) override;
 

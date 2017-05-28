@@ -23,9 +23,9 @@
 
 namespace BOOM {
   namespace Cephes {
-  /*							dawsn.c
+  /*                                                    dawsn.c
    *
-   *	Dawson's Integral
+   *    Dawson's Integral
    *
    *
    *
@@ -62,7 +62,7 @@ namespace BOOM {
    *
    *
    */
-  /*							dawsn.c */
+  /*                                                    dawsn.c */
 
   // This file was modified from the public domain cephes math library
   // taken from netlib.

@@ -397,43 +397,113 @@ namespace BOOM {
       return ans;
     }
     //======================================================================
-    SEXP BuildDesignMatrix(
-        SEXP r_formula_rhs,
-        SEXP r_data_frame,
-        SEXP r_add_intercept) {
-      bool add_intercept = Rf_asLogical(r_add_intercept);
-
-      std::vector<BOOM::Factor> factors;
-      std::vector<int> nlevels;
-      std::vector<std::string> variable_names =
-          BOOM::getListNames(r_data_frame);
-      int nvars = Rf_length(r_data_frame);
-      for (int i = 0; i < nvars; ++i) {
-        BOOM::Factor factor(VECTOR_ELT(r_data_frame, i));
-        factors.push_back(factor);
-        nlevels.push_back(factor.number_of_levels());
+    // Args:
+    //   factors: A vector of factors.  Conceptually this is a data frame with
+    //     all factor data.  All factors are assumed to have the same length.
+    //   which_row: The row to extract from the notional data frame represented
+    //     by the first argument.
+    //
+    // Returns:
+    //   A vector of integers giving the level of each factor in the first
+    //   argument, at the specified row.
+    std::vector<int> ExtractRow(const std::vector<BOOM::Factor> &factors,
+                                int which_row) {
+      std::vector<int> ans(factors.size());
+      for (int j = 0; j < factors.size(); ++j) {
+        ans[j] = factors[j][which_row];
       }
+      return ans;
+    }
 
+    //======================================================================
+    // Args:
+    //   r_factor_data_frame:  An R data frame where all columns are factors.
+    //
+    // Returns:
+    //   A vector where each element is the BOOM representation of the columns
+    //   in the data frame.
+    std::vector<BOOM::Factor> ExtractFactors(SEXP r_factor_data_frame) {
+      int nvars = Rf_length(r_factor_data_frame);
+      std::vector<BOOM::Factor> ans;
+      ans.reserve(nvars);
+      for (int i = 0; i < nvars; ++i) {
+        ans.push_back(BOOM::Factor(VECTOR_ELT(r_factor_data_frame, i)));
+      }
+      return ans;
+    }
+
+    //======================================================================
+    // Args:
+    //   r_formula_rhs: The right hand side of an R formula describing a model
+    //     in terms of factor variables contained in r_data_frame.
+    //   r_data_frame:  An R data frame containing all factor data.
+    //   r_add_intercept: Scalar logical value indicating whether an intercept
+    //     should be added to the formula specified in the first argument.
+    //
+    // Returns:
+    //   An R matrix, including column names describing the variables, formed by
+    //   expanding the data frame into a design matrix.
+    SEXP BuildDesignMatrix(SEXP r_formula_rhs,
+                           SEXP r_data_frame,
+                           SEXP r_add_intercept) {
+      bool add_intercept = Rf_asLogical(r_add_intercept);
       BOOM::RowBuilder row_builder = ParseModelFormulaRHS(
-          r_formula_rhs,
-          r_data_frame,
-          add_intercept);
-
-      std::vector<std::string> column_names = row_builder.variable_names();
-      int number_of_observations = factors[0].length();
-      BOOM::Matrix design_matrix(number_of_observations,
-                                 row_builder.dimension());
-      for (int i = 0; i < number_of_observations; ++i) {
-        std::vector<int> values(nvars);
-        for (int j = 0; j < nvars; ++j) {
-          values[j] = factors[j][i];
-        }
-        design_matrix.row(i) = row_builder.build_row(values);
+          r_formula_rhs, r_data_frame, add_intercept);
+      std::vector<BOOM::Factor> factors = ExtractFactors(r_data_frame);
+      int nobs = factors[0].length();
+      BOOM::Matrix design_matrix(nobs, row_builder.dimension());
+      for (int i = 0; i < nobs; ++i) {
+        design_matrix.row(i) = row_builder.build_row(ExtractRow(factors, i));
       }
       return ToRMatrix(BOOM::LabeledMatrix(
           design_matrix,
           std::vector<std::string>(),
-          column_names));
+          row_builder.variable_names()));
     }
+    //======================================================================
+    // Args:
+    //   r_formula_rhs: The right hand side of an R formula describing a model
+    //     in terms of factor variables contained in r_data_frame.
+    //   r_experiment_data_only_factors: An R data frame, with all rows being
+    //     factors, representing the experimental variables in an experiment
+    //     with both experimental and context factors.
+    //   r_context_data_only_factors: An R data frame, with all rows being
+    //     factors, representing the contextual variables in an experiment with
+    //     both experimental and context factors.
+    //   r_add_intercept: Scalar logical value indicating whether an intercept
+    //     should be added to the formula specified in the first argument.
+    //
+    // Returns:
+    //   An R matrix, including column names describing the variables, formed by
+    //   expanding the data frame into a design matrix.
+    SEXP BuildContextualDesignMatrix(
+        SEXP r_formula_rhs,
+        SEXP r_experiment_data_only_factors,
+        SEXP r_context_data_only_factors,
+        SEXP r_add_intercept) {
+      bool add_intercept = Rf_asLogical(r_add_intercept);
+
+      BOOM::ContextualRowBuilder row_builder = ParseContextualModelFormulaRHS(
+          r_formula_rhs,
+          r_experiment_data_only_factors,
+          r_context_data_only_factors,
+          add_intercept);
+      std::vector<BOOM::Factor> experiment_factors =
+          ExtractFactors(r_experiment_data_only_factors);
+      std::vector<BOOM::Factor> context_factors = ExtractFactors(
+          r_context_data_only_factors);
+      int nobs = experiment_factors[0].length();
+      BOOM::Matrix design_matrix(nobs, row_builder.dimension());
+      for (int i = 0; i < nobs; ++i) {
+        design_matrix.row(i) = row_builder.build_row(
+            ExtractRow(experiment_factors, i),
+            ExtractRow(context_factors, i));
+      }
+      return ToRMatrix(BOOM::LabeledMatrix(
+          design_matrix,
+          std::vector<std::string>(),
+          row_builder.variable_names()));
+    }
+
   }   // namespace RInterface
 }  // namespace BOOM

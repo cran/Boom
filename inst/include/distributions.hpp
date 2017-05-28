@@ -184,14 +184,19 @@ namespace BOOM {
   Vector rmvn_ivar(const Vector &Mu, const SpdMatrix &Sigma_Inverse);
   Vector rmvn_ivar_mt(RNG & rng, const Vector &Mu, const SpdMatrix &precision);
 
-  // Simulate using the lower cholesky triangle of the precision matrix.
-  Vector rmvn_ivar_L(const Vector &Mu, const Matrix &Ivar_chol);
-  Vector rmvn_ivar_L_mt(RNG & rng, const Vector &Mu, const Matrix &Ivar_chol);
-
   // Simulate using the upper cholesky triangle of the precision matrix.
-  Vector rmvn_ivar_U(const Vector &Mu, const Matrix &Ivar_chol_transpose);
-  Vector rmvn_ivar_U_mt(RNG & rng, const Vector &Mu,
-                        const Matrix &Ivar_chol_transpose);
+  // Args:
+  //   rng:  The U(0, 1) random number generator to use for the simulation.
+  //   mean:  The mean of the distribution to be simulated.
+  //   precision_upper_cholesky: The upper cholesky triangle of the precision
+  //     matrix for the distribution to be simulated.
+  // Returns:
+  //   A draw from the N(mu, Sigma) distribution, where Sigma^{-1} = L * L',
+  //   with L' = precision_upper_cholesky.
+  Vector rmvn_precision_upper_cholesky_mt(
+      RNG & rng,
+      const Vector &mean,
+      const Matrix &precision_upper_cholesky);
 
   // Simulate given the precision matrix, and the precision matrix
   // times the mean.  This form arises frequently in Bayesian

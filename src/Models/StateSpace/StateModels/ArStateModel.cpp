@@ -91,9 +91,9 @@ namespace BOOM {
   }
 
   //======================================================================
-  void ArStateModel::simulate_state_error(VectorView eta, int t)const{
+  void ArStateModel::simulate_state_error(RNG &rng, VectorView eta, int t)const{
     eta = 0;
-    eta[0] = rnorm() * sigma();
+    eta[0] = rnorm_mt(rng) * sigma();
   }
 
   //======================================================================

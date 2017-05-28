@@ -69,7 +69,7 @@ namespace BOOM{
 
   double LS::draw_z(bool y, double eta)const{
     double trun_prob = plogis(0, eta);
-    double u = y ? runif(trun_prob,1) : runif(0,trun_prob);
+    double u = y ? runif_mt(rng(), trun_prob,1) : runif_mt(rng(), 0, trun_prob);
     return qlogis(u,eta);
   }
 

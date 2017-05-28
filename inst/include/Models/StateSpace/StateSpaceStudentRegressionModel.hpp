@@ -41,7 +41,7 @@ namespace BOOM {
     // precision weighted average of (y - x * beta) across observations.  The
     // precision weighted average has precision = (sum of weights) / sigma^2.
     class AugmentedStudentRegressionData
-        : public Data {
+        : public MultiplexedData {
      public:
       AugmentedStudentRegressionData();
       AugmentedStudentRegressionData(double y, const Vector &x);
@@ -62,16 +62,17 @@ namespace BOOM {
       double state_model_offset() const {return state_model_offset_;}
       void set_state_model_offset(double offset);
 
-      int sample_size() const {return regression_data_.size();}
       const RegressionData &regression_data(int observation) const {
         return *(regression_data_[observation]);
       }
+      Ptr<RegressionData> regression_data_ptr(int observation) {
+        return regression_data_[observation];
+      }
+      int total_sample_size() const override {return regression_data_.size();}
 
      private:
       std::vector<Ptr<RegressionData>> regression_data_;
-
       Vector weights_;
-
       double state_model_offset_;
     };
   }  // namespace StateSpace
@@ -94,7 +95,11 @@ namespace BOOM {
     int time_dimension() const override;
 
     // The total number of observations across all time points.
-    int sample_size() const;
+    int total_sample_size() const;
+
+    int total_sample_size(int time) const override {
+      return dat()[time]->total_sample_size();
+    }
 
     const RegressionData & data(int t, int observation) const override {
       return dat()[t]->regression_data(observation);
@@ -120,7 +125,8 @@ namespace BOOM {
     // Set the offset in the data to the state contribution.
     void observe_data_given_state(int t) override;
 
-    Vector simulate_forecast(const Matrix &predictors,
+    Vector simulate_forecast(RNG &rng,
+                             const Matrix &predictors,
                              const Vector &final_state);
     Vector one_step_holdout_prediction_errors(
         RNG &rng,
@@ -129,6 +135,12 @@ namespace BOOM {
         const Vector &final_state);
 
    private:
+    // Returns the marginal variance of the student error distribution.  If the
+    // 'nu' degrees of freedom parameter <= 2 this is technically infinity, but
+    // a "large value" will be returned instead.
+    double student_marginal_variance() const;
+
+
     // Sets up observers on model parameters, so that the Kalman
     // filter knows when it needs to be recomputed.
     void set_observers();

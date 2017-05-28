@@ -144,14 +144,15 @@ namespace BOOM{
         });
   }
 
-  bool PRM::sim(const Vector &x)const{
-    return runif() < pnorm(predict(x));
+  bool PRM::sim(const Vector &x, RNG &rng)const{
+    return runif_mt(rng) < pnorm(predict(x));
   }
 
-  Ptr<BinaryRegressionData> PRM::sim()const{
+  Ptr<BinaryRegressionData> PRM::sim(RNG &rng)const{
     Vector x(xdim());
-    x.randomize([](){return rnorm(0, 1);});
-    bool y = this->sim(x);
+    x[0] = 1.0;
+    for (int i = 1; i < x.size(); ++i) x[i] = rnorm_mt(rng);
+    bool y = this->sim(x, rng);
     NEW(BinaryRegressionData, ans)(y,x);
     return ans;
   }

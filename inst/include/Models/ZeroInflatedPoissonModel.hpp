@@ -92,7 +92,7 @@ namespace BOOM {
     virtual double pdf(Ptr<Data> dp, bool logscale)const;
     double pdf(const Data * dp, bool logscale)const override;
     double logp(int y)const;
-    double sim()const;
+    double sim(RNG &rng = GlobalRng::rng)const;
 
     // Simulates the specified number of trials and returns a structure
     // containing the a summary of the results.

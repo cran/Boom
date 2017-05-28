@@ -26,15 +26,12 @@
 #include <Models/Policies/SufstatDataPolicy.hpp>
 #include <Models/DataTypes.hpp>
 
-namespace BOOM{
+namespace BOOM {
 
   class GaussianSuf
-    : public SufstatDetails<DoubleData>{
-    double sum_, sumsq_, n_;
+    : public SufstatDetails<DoubleData> {
   public:
-    // constructor
-    GaussianSuf();
-    GaussianSuf(double Sum, double Ssq, double N);
+    GaussianSuf(double Sum = 0, double Ssq = 0, double N = 0);
     GaussianSuf(const GaussianSuf &);
     GaussianSuf *clone() const override;
 
@@ -51,25 +48,28 @@ namespace BOOM{
     // statistics, as if it were dropped from the data set.
     void remove(double y);
     void add_mixture_data(double y, double prob);
-    double sum()const;
+    double sum() const;
     // sumsq returns the uncentered (raw) sum of squared y's: sum(y^2)
-    double sumsq()const;
+    double sumsq() const;
     // centered_sumsq returns sum((y - mu)^2).
     double centered_sumsq(double mu) const;
-    double n()const;
+    double n() const;
 
-    double ybar()const;
-    double sample_var()const;
+    double ybar() const;
+    double sample_var() const;
 
     GaussianSuf * abstract_combine(Sufstat *s) override;
-    void combine(Ptr<GaussianSuf>);
+    void combine(const Ptr<GaussianSuf> &);
     void combine(const GaussianSuf &);
-    Vector vectorize(bool minimal=true)const override;
+    Vector vectorize(bool minimal=true) const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-                                            bool minimal=true) override;
+                                       bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-                                            bool minimal=true) override;
-    ostream &print(ostream &out)const override;
+                                       bool minimal=true) override;
+    ostream &print(ostream &out) const override;
+
+   private:
+    double sum_, sumsq_, n_;
   };
   //======================================================================
   class GaussianModelBase
@@ -82,25 +82,31 @@ namespace BOOM{
    public:
     GaussianModelBase();
     GaussianModelBase(const std::vector<double> &y);
-    GaussianModelBase * clone()const override =0;
-    virtual double mu()const=0;
-    virtual double sigsq()const=0;
-    virtual double sigma()const;
+    GaussianModelBase * clone() const override = 0;
+
+    // Returns the mean of the distribution.
+    virtual double mu() const = 0;
+
+    // Variance of the distribution.
+    virtual double sigsq() const = 0;
+
+    // Standard deviation of the distribution.
+    virtual double sigma() const;
 
     double mean() const override {return mu();}
     double variance() const override {return sigsq();}
 
-    virtual void set_sigsq(double sigsq)=0;
-    double pdf(Ptr<Data> dp, bool logscale)const override;
-    double pdf(const Data * dp, bool logscale)const override;
-    double Logp(double x, double &g, double &h, uint nd)const override;
-    double Logp(const Vector & x, Vector &g, Matrix &h, uint nd)const;
+    double pdf(Ptr<Data> dp, bool logscale) const override;
+    double pdf(const Data * dp, bool logscale) const override;
+    double Logp(double x, double &g, double &h, uint nd) const override;
+    double Logp(const Vector & x, Vector &g, Matrix &h, uint nd) const;
 
-    double ybar()const;
-    double sample_var()const;
+    // Sample moments of data assigned to the model.
+    double ybar() const;
+    double sample_var() const;
 
     void add_mixture_data(Ptr<Data>, double prob) override;
-    double sim()const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
 
     void add_data_raw(double x);
   };

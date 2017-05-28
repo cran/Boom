@@ -59,13 +59,14 @@ namespace BOOM{
 
   uint LLSM::state_dimension() const {return 1;}
 
-  void LLSM::simulate_state_error(VectorView eta, int) const {
-    eta[0] = rnorm(0, sigma());
+  void LLSM::simulate_state_error(RNG &rng, VectorView eta, int) const {
+    eta[0] = rnorm_mt(rng, 0, sigma());
   }
 
-  void LLSM::simulate_initial_state(VectorView eta) const {
-    eta[0] = rnorm(initial_state_mean_[0],
-                   sqrt(initial_state_variance_(0,0)));
+  void LLSM::simulate_initial_state(RNG &rng, VectorView eta) const {
+    eta[0] = rnorm_mt(rng,
+                      initial_state_mean_[0],
+                      sqrt(initial_state_variance_(0,0)));
   }
 
   Ptr<SparseMatrixBlock> LLSM::state_transition_matrix(int) const {
@@ -113,10 +114,6 @@ namespace BOOM{
 
   void LLSM::set_initial_state_variance(double v){
     initial_state_variance_(0,0) = v;
-  }
-
-  void LLSM::set_sigsq(double sigsq){
-    ZeroMeanGaussianModel::set_sigsq(sigsq);
   }
 
   void LLSM::update_complete_data_sufficient_statistics(

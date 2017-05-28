@@ -419,6 +419,7 @@ namespace BOOM{
 
   // Simulate a WeeklyCyclePoissonProcess by thinning
   PointProcess WP::simulate(
+      RNG &rng,
       const DateTime &t0,
       const DateTime &t1,
       std::function<Data*()> mark_generator)const{
@@ -431,17 +432,17 @@ namespace BOOM{
     }
 
     double duration = t1 - t0;
-    int number_of_candidate_events = rpois(max_rate * duration);
+    int number_of_candidate_events = rpois_mt(rng, max_rate * duration);
     Vector times(number_of_candidate_events);
     for(int i = 0; i < number_of_candidate_events; ++i){
-      times[i] = runif(0, duration);
+      times[i] = runif_mt(rng, 0, duration);
     }
     times.sort();
 
     for(int i = 0; i < times.size(); ++i){
       DateTime cand = t0 + times[i];
       double prob = event_rate(cand) / max_rate;
-      if(runif(0, 1) < prob){
+      if(runif_mt(rng, 0, 1) < prob){
         Data *mark = mark_generator();
         if (mark) {
           ans.add_event(cand, Ptr<Data>(mark));

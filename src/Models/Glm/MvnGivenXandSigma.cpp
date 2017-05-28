@@ -141,11 +141,11 @@ namespace BOOM {
   Ptr<UnivParams> MGXS::Kappa_prm() {return ParamPolicy::prm2();}
   const Ptr<UnivParams> MGXS::Kappa_prm() const {return ParamPolicy::prm2();}
 
-  Vector MGXS::sim() const {
+  Vector MGXS::sim(RNG &rng) const {
     const Matrix & L(ivar_->var_chol());
     uint p = dim();
     Vector ans(p);
-    for(uint i = 0; i < p; ++i) ans[i] = rnorm();
+    for(uint i = 0; i < p; ++i) ans[i] = rnorm_mt(rng);
     ans = L * ans;
     ans += mu();
     return ans;

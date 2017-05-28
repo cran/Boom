@@ -379,6 +379,21 @@ MvnPrior <- function(mean, variance) {
   return(ans)
 }
 
+InverseWishartPrior <- function(variance.guess,
+                                variance.guess.weight) {
+  ## Conjugate prior distribution for the variance matrix in a multivariate
+  ## normal wtih known mean.
+
+  stopifnot(is.matrix(variance.guess))
+  stopifnot(is.numeric(variance.guess.weight),
+            length(variance.guess.weight) == 1,
+            variance.guess.weight > ncol(variance.guess))
+  ans <- list(variance.guess = variance.guess,
+              variance.guess.weight = variance.guess.weight)
+  class(ans) <- c("InverseWishartPrior", "Prior")
+  return(ans)
+}
+
 NormalInverseWishartPrior <- function(
     mean.guess,
     mean.guess.weight = .01,

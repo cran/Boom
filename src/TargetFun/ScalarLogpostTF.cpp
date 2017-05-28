@@ -23,22 +23,23 @@
 namespace BOOM{
   typedef ScalarLogpostTF SLT;
 
-  SLT::ScalarLogpostTF(LoglikeModel * m, Ptr<DoubleModel> Pri)
-    : loglike(LoglikeTF(m)),
-      pri(Pri)
+  SLT::ScalarLogpostTF(LoglikeModel *loglike,
+                       const Ptr<DoubleModel> &prior)
+    : loglike_(LoglikeTF(loglike)),
+      prior_(prior)
   { }
 
-  double SLT::operator()(const Vector &x)const{
-    double ans = loglike(x);
-    ans += pri->logp(x[0]);
+  double SLT::operator()(const Vector &x) const {
+    double ans = loglike_(x);
+    ans += prior_->logp(x[0]);
     return ans;
   }
 
-  double SLT::operator()(double x)const{
-    Vector v(1,x);
-    double ans = loglike(v);
-    ans += pri->logp(x);
+  double SLT::operator()(double x) const {
+    Vector v(1, x);
+    double ans = loglike_(v);
+    ans += prior_->logp(x);
     return ans;
   }
 
-}
+}  // namespace BOOM

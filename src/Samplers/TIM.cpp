@@ -44,7 +44,7 @@ namespace BOOM{
 
   typedef std::function<double(const Vector &,Vector &, Matrix &,int)> FullTarget;
 
-  TIM::TIM(FullTarget logf,
+  TIM::TIM(const FullTarget &logf,
            double nu,
            RNG *rng)
       : MetropolisHastings(TIM_empty_target, 0, rng),

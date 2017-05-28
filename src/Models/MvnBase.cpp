@@ -264,8 +264,8 @@ namespace BOOM{
     return ans;
   }
 
-  Vector MvnBase::sim() const {
-    return rmvn(mu(), Sigma());
+  Vector MvnBase::sim(RNG &rng) const {
+    return rmvn_mt(rng, mu(), Sigma());
   }
 
   typedef MvnBaseWithParams MBP;

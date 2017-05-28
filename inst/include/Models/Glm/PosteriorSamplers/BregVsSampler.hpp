@@ -112,7 +112,7 @@ namespace BOOM{
 
     void draw() override;
     double logpri() const override;
-    double log_model_prob(const Selector &inc)const;
+    double log_model_prob(const Selector &inclusion_indicators) const;
 
     // Model selection can be turned on and off altogether, or if very
     // large sets of predictors are being considered then the number
@@ -182,31 +182,46 @@ namespace BOOM{
 
    private:
     // The model whose paramaters are to be drawn.
-    RegressionModel * m_;
+    RegressionModel *model_;
 
     // A conditionally (given sigma) Gaussian prior distribution for
     // the coefficients of the full model (with all variables included).
-    Ptr<MvnGivenScalarSigmaBase> bpri_;
+    Ptr<MvnGivenScalarSigmaBase> slab_;
 
     // A marginal prior distribution for 1/sigma^2.
     Ptr<GammaModelBase> spri_;
 
     // A marginal prior for the set of 0's and 1's indicating which
     // variables are in/out of the model.
-    Ptr<VariableSelectionPrior> vpri_;
+    Ptr<VariableSelectionPrior> spike_;
 
     std::vector<uint> indx;
     uint max_nflips_;
     bool draw_beta_;
     bool draw_sigma_;
 
-    mutable Vector beta_tilde_;      // this is work space for computing
-    mutable SpdMatrix iV_tilde_;        // posterior model probs
+    // The normal inverse gamma distribution for regression models is:
+    //
+    //     beta | sigsq ~ N(b, Omega * sigsq)
+    //        1 / sigsq ~ Gamma(df / 2, ss / 2)
+    //
+    // Upon observing data, the parameters b, Omega, df, and ss are updated to
+    // become
+    //      b -> posterior_mean_
+    // V^{-1} -> unscaled_posterior_precision_
+    //     df -> DF_
+    //     ss -> SS_
+    //
+    // These quantities are mutable because they are modified when computing
+    // posterior model probabilities.
+    mutable Vector posterior_mean_;
+    mutable SpdMatrix unscaled_posterior_precision_;
     mutable double DF_, SS_;
 
     GenericGaussianVarianceSampler sigsq_sampler_;
 
-    double set_reg_post_params(const Selector &g, bool do_ldoi)const;
+    double set_reg_post_params(const Selector &inclusion_indicators,
+                               bool do_ldoi) const;
 
     void draw_beta();
     void draw_model_indicators();
@@ -217,4 +232,4 @@ namespace BOOM{
     void check_dimensions()const;
   };
 }  // namespace BOOM
-#endif// BOOM_BREG_VS_SAMPLER_HPP
+#endif  // BOOM_BREG_VS_SAMPLER_HPP

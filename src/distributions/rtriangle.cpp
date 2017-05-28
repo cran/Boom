@@ -66,7 +66,7 @@ namespace BOOM{
    }
    /*======================================================================*/
    double dtriangle(double x, double x0, double x1, double xm,
- 		   bool logscale){
+                   bool logscale){
      double m0, m1, y, ans;
 
      if(x1<x0){
@@ -93,7 +93,7 @@ namespace BOOM{
    }
    /*======================================================================*/
    double ptriangle(double x, double x0, double x1, double xm,
- 		   bool lower_tail){
+                   bool lower_tail){
 
      double y;
 

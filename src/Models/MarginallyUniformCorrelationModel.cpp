@@ -49,12 +49,10 @@ namespace BOOM{
 
   uint MUCM::dim()const{return dim_;}
 
-  CorrelationMatrix MUCM::sim()const{
+  CorrelationMatrix MUCM::sim(RNG &rng)const{
     uint d = dim();
     SpdMatrix I(d, 1.0);
-    SpdMatrix Sigma = rWish(d+1, I, true); // inverse wishart
+    SpdMatrix Sigma = rWish_mt(rng, d+1, I, true); // inverse wishart
     return var2cor(Sigma);
   }
-
-
-}
+}  // namespace BOOM

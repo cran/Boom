@@ -92,7 +92,7 @@ namespace BOOM{
   void CS::draw_one(){
     double oldr = R_(i_,j_);
     double logp_star = logp(R_(i_,j_));
-    double u = logp_star - rexp(1);
+    double u = logp_star - rexp_mt(rng(), 1);
     find_limits();
     if(lo_>=hi_){
       set_r(0);
@@ -102,7 +102,7 @@ namespace BOOM{
     const double eps(1e-6);
     check_limits(oldr, eps);
     while(1){
-      double cand = runif(lo_, hi_);
+      double cand = runif_mt(rng(), lo_, hi_);
       double logp_cand = logp(cand);
       if(logp_cand > u){  // found something inside slice
         set_r(cand);

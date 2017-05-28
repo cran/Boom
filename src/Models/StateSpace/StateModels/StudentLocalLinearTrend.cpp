@@ -135,14 +135,13 @@ namespace BOOM {
                  "of the EM algorithm.");
   }
 
-  void SLLTSM::simulate_state_error(
-      VectorView eta, int t) const {
+  void SLLTSM::simulate_state_error(RNG &rng, VectorView eta, int t) const {
     switch (behavior_) {
       case MIXTURE:
-        simulate_conditional_state_error(eta, t);
+        simulate_conditional_state_error(rng, eta, t);
         break;
       case MARGINAL:
-        simulate_marginal_state_error(eta, t);
+        simulate_marginal_state_error(rng, eta, t);
         break;
       default:
         ostringstream err;
@@ -154,17 +153,17 @@ namespace BOOM {
   }
 
   void SLLTSM::simulate_marginal_state_error(
-      VectorView eta, int t) const {
-    eta[0] = rt(nu_level()) * sigma_level();
-    eta[1] = rt(nu_slope()) * sigma_slope();
+      RNG &rng, VectorView eta, int t) const {
+    eta[0] = rt_mt(rng, nu_level()) * sigma_level();
+    eta[1] = rt_mt(rng, nu_slope()) * sigma_slope();
   };
 
   void SLLTSM::simulate_conditional_state_error(
-      VectorView eta, int t) const {
+      RNG &rng, VectorView eta, int t) const {
     double level_weight = latent_level_scale_factors_[t];
     double slope_weight = latent_slope_scale_factors_[t];
-    eta[0] = rnorm(0, sigma_level() / sqrt(level_weight));
-    eta[1] = rnorm(0, sigma_slope() / sqrt(slope_weight));
+    eta[0] = rnorm_mt(rng, 0, sigma_level() / sqrt(level_weight));
+    eta[1] = rnorm_mt(rng, 0, sigma_slope() / sqrt(slope_weight));
   };
 
   Ptr<SparseMatrixBlock> SLLTSM::state_transition_matrix(int t) const {

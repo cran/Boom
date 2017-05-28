@@ -73,28 +73,18 @@ namespace BOOM {
     // Draws a multivariate normal with mean mu and precision matrix
     // ivar.
     Matrix U = ivar.chol().t();
-    return rmvn_ivar_U_mt(rng, mu, U);
+    return rmvn_precision_upper_cholesky_mt(rng, mu, U);
   }
 
-  Vector rmvn_ivar_U(const Vector &mu, const Matrix &U) {
-    return rmvn_ivar_U_mt(GlobalRng::rng, mu, U);
-  }
-
-  Vector rmvn_ivar_U_mt(RNG & rng, const Vector &mu, const Matrix &U) {
+  Vector rmvn_precision_upper_cholesky_mt(RNG & rng,
+                                          const Vector &mu,
+                                          const Matrix &precision_upper_cholesky) {
     // U is the upper cholesky factor of the inverse variance Matrix
     uint n = mu.size();
     Vector z(n);
     for (uint i = 0; i < n; ++i) z[i] = rnorm_mt(rng, 0, 1);
-    //    if ivar = L L^T then Sigma = (L^T)^{-1} L^{-1} = U U^T
-    return Usolve_inplace(U, z) + mu;
-  }
-
-  Vector rmvn_ivar_L(const Vector &mu, const Matrix &L) {
-    return rmvn_ivar_L_mt(GlobalRng::rng, mu, L);
-  }
-  Vector rmvn_ivar_L_mt(RNG & rng, const Vector &mu, const Matrix &L) {
-    // L is the lower cholesky triangle  of the inverse variance Matrix
-    return rmvn_ivar_U_mt(rng, mu, L.t());
+    //    if precision = L L^T then Sigma = (L^T)^{-1} L^{-1} = U U^T
+    return Usolve_inplace(precision_upper_cholesky, z) + mu;
   }
 
   Vector rmvn_suf(const SpdMatrix & Ivar, const Vector & IvarMu) {

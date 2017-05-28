@@ -27,7 +27,7 @@ namespace BOOM{
   // Starting with Jan=1 helps keep things sane, but puts everything
   // off by 1 from the tm_mon field in struct tm from <ctime>.
   enum MonthNames{unknown_month=0, Jan=1, Feb, Mar, Apr, May, Jun, Jul,
- 		   Aug, Sep, Oct, Nov, Dec};
+                   Aug, Sep, Oct, Nov, Dec};
   inline MonthNames next(MonthNames month){
     return month < Dec ? MonthNames(month+1) : Jan;
   }
@@ -217,7 +217,7 @@ namespace BOOM{
 
   std::ostream & operator<<(std::ostream &, const Date &d);
   std::ostream & display(std::ostream &, DayNames,
- 			 calendar_format=Abbreviations);
+                         calendar_format=Abbreviations);
   Date guess_date_format(const string &s, char delim='/');
 }
 #endif // BOOM_DATE_HPP

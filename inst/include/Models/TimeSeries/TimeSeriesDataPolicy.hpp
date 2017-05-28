@@ -135,8 +135,8 @@ namespace BOOM{
 
     ostringstream err;
     err << "data value " << *d << " could not be cast to a "
-	<< "time series or a time series data point.  "
-	<< endl;
+        << "time series or a time series data point.  "
+        << endl;
     report_error(err.str());
   }
 

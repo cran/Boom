@@ -27,37 +27,56 @@ namespace BOOM{
 
   typedef ZeroMeanGaussianConjSampler ZGS;
 
-  ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                   Ptr<GammaModelBase> ivar,
+  ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
+                                   const Ptr<GammaModelBase> &precision_prior,
                                    RNG &seeding_rng)
-      : GaussianVarSampler(mod, ivar, seeding_rng),
-        model_(mod)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
+        precision_prior_(precision_prior),
+        variance_sampler_(precision_prior)
   {}
 
-  ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel * mod,
-                                   double df, double sigma_guess,
+  ZGS::ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
+                                   double df,
+                                   double sigma_guess,
                                    RNG &seeding_rng)
-      : GaussianVarSampler(mod, new ChisqModel(df, sigma_guess)),
-        model_(mod)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
+        precision_prior_(new ChisqModel(df, sigma_guess)),
+        variance_sampler_(precision_prior_)
   {}
 
   ZGS * ZGS::clone()const{ return new ZGS(*this);}
 
-  // The logic of the posterior mode here is as follows.  The prior is
-  // a Gamma on 1/sigsq, but the parameter we really care about is
-  // sigsq.  This introduces a Jacobian term that needs to be taken
-  // account of in the optimization.  The mode of the gamma
-  // distribution is (a-1)/b, but the mode of the inverse gamma
-  // distribution is b/(a+1).
+  void ZGS::draw() {
+    model_->set_sigsq(variance_sampler_.draw(
+        rng(), model_->suf()->n(), model_->suf()->sumsq()));
+  }
+
+  double ZGS::logpri() const {
+    return variance_sampler_.log_prior(model_->sigsq());
+  }
+
+  void ZGS::set_sigma_upper_limit(double sigma_upper_limit) {
+    variance_sampler_.set_sigma_max(sigma_upper_limit);
+  }
+
+  // The logic of the posterior mode here is as follows.  The prior is a Gamma
+  // on 1 / sigsq, but the parameter we really care about (i.e. the parameter as
+  // expressed in the likelihood function for ZeroMeanGaussianModel) is sigsq.
+  // This introduces a Jacobian term that needs to be taken account of in the
+  // optimization.  The mode of the gamma distribution is (a-1)/b, but the mode
+  // of the inverse gamma distribution is b/(a+1).
   //
-  // The deciding factor is that the prior on sigsq is a Gamma model
-  // on 1/sigsq and not an inverse Gamma model on sigsq.  For this
-  // result to agree with numerical optimizers we need to do the
-  // optimization with respect to 1/sigsq.
+  // The deciding factor is that the prior on sigsq is a Gamma model on 1/sigsq
+  // and not an inverse Gamma model on sigsq.  For this result to agree with
+  // numerical optimizers we need to do the optimization with respect to
+  // 1/sigsq.
   void ZGS::find_posterior_mode(double){
-    double a = ivar()->alpha() + .5 * model_->suf()->n();
-    double b = ivar()->beta() + .5 * model_->suf()->sumsq();
-    model_->set_sigsq(b/(a+1));   // with respect to 1.0 / sigsq
+    double sigsq_mode = variance_sampler_.posterior_mode(
+        model_->suf()->n(),
+        model_->suf()->sumsq());
+    model_->set_sigsq(sigsq_mode);
   }
 
   double ZGS::increment_log_prior_gradient(const ConstVectorView &parameters,
@@ -83,8 +102,8 @@ namespace BOOM{
     if (sigsq <= 0.0) {
       return negative_infinity();
     }
-    double a = ivar()->alpha();
-    double b = ivar()->beta();
+    double a = precision_prior_->alpha();
+    double b = precision_prior_->beta();
     // The log prior is the gamma density plus a jacobian term:
     // log(abs(d(siginv) / d(sigsq))).
     if (d1) {
@@ -98,7 +117,6 @@ namespace BOOM{
     return dgamma(1/sigsq, a, b, true) - 2 * log(sigsq);
   }
 
-  //
   double ZGS::log_posterior(double sigsq, double &d1, double &d2,
                             uint nd) const {
     // The log likelihood is already parameterized with respect to

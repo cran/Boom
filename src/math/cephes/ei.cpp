@@ -23,9 +23,9 @@
 
 namespace BOOM {
   namespace Cephes {
-  /*							ei.c
+  /*                                                    ei.c
    *
-   *	Exponential integral
+   *    Exponential integral
    *
    *
    * SYNOPSIS:

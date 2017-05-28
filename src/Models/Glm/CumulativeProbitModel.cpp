@@ -45,7 +45,7 @@ namespace BOOM{
     return dnorm(eta);
   }
 
-  double CPM::simulate_latent_variable()const{
-    return rnorm();
+  double CPM::simulate_latent_variable(RNG &rng)const{
+    return rnorm_mt(rng);
   }
 }

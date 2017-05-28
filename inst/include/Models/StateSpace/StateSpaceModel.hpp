@@ -30,7 +30,7 @@ namespace BOOM{
 
   namespace StateSpace {
     class MultiplexedDoubleData
-        : public Data {
+        : public MultiplexedData {
      public:
       MultiplexedDoubleData();
       MultiplexedDoubleData(double y);
@@ -39,13 +39,15 @@ namespace BOOM{
       void add_data(const Ptr<DoubleData> &data_point);
 
       double adjusted_observation() const;
-      int sample_size() const;
       const DoubleData &double_data(int i) const;
+      Ptr<DoubleData> double_data_ptr(int i);
       void set_value(double value, int i);
 
       // Returns true if data_ is empty, or if all elements of data_ are
       // missing.
       bool all_missing() const;
+
+      int total_sample_size() const override {return data_.size();}
 
      private:
       std::vector<Ptr<DoubleData>> data_;
@@ -80,7 +82,7 @@ namespace BOOM{
 
     // Simulate the next n time periods, given current parameters and
     // state.
-    Vector simulate_forecast(int n, const Vector &final_state);
+    Vector simulate_forecast(RNG &rng, int n, const Vector &final_state);
 
     // Simulate the next n time periods given current parameters and a
     // specified set of observed data.  Uses negative_infinity() as a
@@ -91,7 +93,7 @@ namespace BOOM{
     //     forecast.  This might be different than the data used to
     //     fit the model.
     Vector simulate_forecast_given_observed_data(
-        int n, const Vector &observed_data);
+        RNG &rng, int n, const Vector &observed_data);
 
     // Run the Kalman filter over the set of observed data, using
     // negative_infinity() as a signal for missing data.  The .a and .P

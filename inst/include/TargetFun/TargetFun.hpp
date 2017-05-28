@@ -158,7 +158,7 @@ namespace BOOM {
   // argument).
   class ScalarTargetFunAdapter : public ScalarTargetFun{
   public:
-    ScalarTargetFunAdapter(std::function<double(const Vector &)> F,
+    ScalarTargetFunAdapter(const std::function<double(const Vector &)> &F,
                            Vector *X, uint position);
     double operator()(double x)const override;
   private:
@@ -172,7 +172,7 @@ namespace BOOM {
   // takes a scalar argument).
   class dScalarTargetFunAdapter : public dScalarTargetFun {
    public:
-    dScalarTargetFunAdapter(Ptr<dScalarEnabledTargetFun> f,
+    dScalarTargetFunAdapter(const Ptr<dScalarEnabledTargetFun> &f,
                             Vector *x,
                             uint position);
     double operator()(double x) const override;

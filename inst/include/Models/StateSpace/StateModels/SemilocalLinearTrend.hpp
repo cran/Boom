@@ -97,7 +97,7 @@ namespace BOOM{
         const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
 
-    void simulate_state_error(VectorView eta, int t) const override;
+    void simulate_state_error(RNG &rng, VectorView eta, int t) const override;
     Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
     Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
@@ -112,7 +112,7 @@ namespace BOOM{
     void set_initial_slope_mean(double slope_mean);
     void set_initial_slope_sd(double slope_sd);
 
-    void simulate_initial_state(VectorView state)const override;
+    void simulate_initial_state(RNG &rng, VectorView state)const override;
 
    private:
     void check_dim(const ConstVectorView &) const;

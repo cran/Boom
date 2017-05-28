@@ -58,8 +58,8 @@ namespace BOOM{
     template<class D>
     ItemDataPolicy<D>::ItemDataPolicy(const ItemDataPolicy &rhs)
       : Model(rhs),
-	ItemModel(rhs),
-	dat_(new DatasetType(rhs.dat().size()))
+        ItemModel(rhs),
+        dat_(new DatasetType(rhs.dat().size()))
     {}       // copy constructor makes way for
 
     template<class D>
@@ -80,14 +80,14 @@ namespace BOOM{
       DatasetType &d(*dat_);
       uint i=0;
       for(SubjectSet::iterator it = subjects.begin();
-	  it!=subjects.end(); ++it, ++i){
-	Ptr<Subject> s = *it;
-	Vector & Theta(s->Theta());
-	Response r = response(s);
-	if(!d[i]) d[i] = new DataType(*r,Theta);
-	else{
-	  d[i]->set_x(Theta);     // adds intercept
-	  d[i]->set_y(r);}}}
+          it!=subjects.end(); ++it, ++i){
+        Ptr<Subject> s = *it;
+        Vector & Theta(s->Theta());
+        Response r = response(s);
+        if(!d[i]) d[i] = new DataType(*r,Theta);
+        else{
+          d[i]->set_x(Theta);     // adds intercept
+          d[i]->set_y(r);}}}
 
     template<class D>
     typename ItemDataPolicy<D>::DatasetType & ItemDataPolicy<D>::dat(){

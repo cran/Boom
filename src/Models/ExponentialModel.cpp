@@ -145,8 +145,8 @@ namespace BOOM{
     if(lam<=0){
       ans = negative_infinity();
       if(nd>0){
- 	g[0]= std::max(fabs(lam), .10);
- 	if(nd>1) h(0,0) = -1;
+        g[0]= std::max(fabs(lam), .10);
+        if(nd>1) h(0,0) = -1;
       }
       return ans;}
 
@@ -182,15 +182,15 @@ namespace BOOM{
       if(lam>0) g = 1.0/lam - x;
       else g = 1.0;
       if(nd>1){
- 	if(lam>0) h = -1.0/(lam*lam);
- 	else h = -1.0;}}
+        if(lam>0) h = -1.0/(lam*lam);
+        else h = -1.0;}}
     return ans;
   }
 
-  double ExponentialModel::sim()const{ return rexp(lam());}
+  double ExponentialModel::sim(RNG &rng)const{ return rexp_mt(rng, lam());}
 
   void ExponentialModel::add_mixture_data(Ptr<Data> dp, double prob){
     double y = DAT(dp)->value();
     suf()->add_mixture_data(y, prob);
   }
-}
+}  // namespace BOOM

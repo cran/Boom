@@ -53,11 +53,17 @@ namespace BOOM{
     class StateModelFactory {
      public:
       // Args:
-      //   io_manager: A pointer to the object manaaging the R list that
-      //     will record (or has already recorded) the MCMC output.
-      //   model:  The model that will receive the state to be added.
-      StateModelFactory(RListIoManager * io_manager,
-                        StateSpaceModelBase * model);
+
+      //   io_manager: A pointer to the object manaaging the R list that will
+      //     record (or has already recorded) the MCMC output.  If a nullptr is
+      //     passed then states will be created without IoManager support.
+
+      //   model: The model that will receive the state to be added.  If a
+      //     nullptr is passed then this factory can still call
+      //     CreateStateModel(), but AddState and SaveFinalState() will do
+      //     nothing.
+      StateModelFactory(RListIoManager *io_manager,
+                        StateSpaceModelBase *model);
 
       // Adds all the state components listed in
       // r_state_specification_list to the model.
@@ -84,9 +90,9 @@ namespace BOOM{
       void SaveFinalState(BOOM::Vector *final_state = NULL,
                           const std::string & list_element_name = "final.state");
 
-     private:
       typedef std::function<void(StateSpaceModelBase *)> ConstructionCallback;
       typedef std::vector<ConstructionCallback> CallbackVector;
+
       // Factory method for creating a StateModel based on inputs
       // supplied to R.  Returns a smart pointer to the StateModel that
       // gets created.
@@ -96,8 +102,9 @@ namespace BOOM{
       //     that needs to be created.
       //   prefix: A prefix to be added to the name field of the
       //     list_arg in the io_manager.
-      //   callbacks: A pointer to a vector of ConstructionCallbacks
-      //     that are to be called once all state has been added.
+      //   callbacks: A pointer to a vector of ConstructionCallbacks that are to
+      //     be called once all state has been added.  This can be nullptr if
+      //     io_manager is also nullptr.
       // Returns:
       //   A Ptr to a StateModel that can be added as a component of
       //   state to a state space model.
@@ -106,34 +113,37 @@ namespace BOOM{
           const std::string &prefix,
           CallbackVector * callbacks);
 
+     private:
       // Concrete implementations of CreateStateModel.
-      LocalLevelStateModel * CreateLocalLevel(
+      LocalLevelStateModel *CreateLocalLevel(
           SEXP r_state_component, const std::string &prefix);
-      LocalLinearTrendStateModel * CreateLocalLinearTrend(
+      LocalLinearTrendStateModel *CreateLocalLinearTrend(
           SEXP r_state_component, const std::string &prefix);
-      SeasonalStateModel * CreateSeasonal(
+      SeasonalStateModel *CreateSeasonal(
           SEXP r_state_component, const std::string &prefix);
-      SemilocalLinearTrendStateModel * CreateSemilocalLinearTrend(
+      SemilocalLinearTrendStateModel *CreateSemilocalLinearTrend(
           SEXP r_state_component, const std::string &prefix);
-      RandomWalkHolidayStateModel * CreateRandomWalkHolidayStateModel(
+      RandomWalkHolidayStateModel *CreateRandomWalkHolidayStateModel(
           SEXP r_state_component, const std::string &prefix);
-      DynamicRegressionStateModel * CreateDynamicRegressionStateModel(
+      DynamicRegressionStateModel *CreateDynamicRegressionStateModel(
           SEXP r_state_component, const std::string &prefix,
           CallbackVector * callbacks);
-      ArStateModel * CreateArStateModel(
+      ArStateModel *CreateArStateModel(
           SEXP r_state_component, const std::string &prefix);
-      ArStateModel * CreateAutoArStateModel(
+      ArStateModel *CreateAutoArStateModel(
           SEXP r_state_component, const std::string &prefix);
-      StudentLocalLinearTrendStateModel * CreateStudentLocalLinearTrend(
+      StudentLocalLinearTrendStateModel *CreateStudentLocalLinearTrend(
           SEXP r_state_component, const std::string &prefix);
-      TrigStateModel * CreateTrigStateModel(
+      TrigStateModel *CreateTrigStateModel(
           SEXP r_state_component, const std::string &prefix);
 
-      // A pointer to the object manaaging the R list that will record
-      // (or has already recorded) the MCMC output.
+      // A pointer to the object manaaging the R list that will record (or has
+      // already recorded) the MCMC output.  This can be a nullptr if IoManager
+      // support is not desired.
       RListIoManager * io_manager_;
 
-      // The model that needs state added.
+      // The model that needs state added.  This can be a nullptr if the state
+      // space model is managed externally.
       StateSpaceModelBase * model_;
     };
 

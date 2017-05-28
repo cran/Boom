@@ -102,7 +102,7 @@ namespace BOOM {
     using LoglikeModel::log_likelihood;
 
     double Logp(double x, double &d1, double &d2, uint nd) const override ;
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
   private:
     double Logp_degenerate(double x, double &g, double &h, uint nd)const;
   };

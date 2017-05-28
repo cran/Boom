@@ -187,7 +187,7 @@ namespace BOOM{
   double PoissonModel::mean()const{return lam();}
   double PoissonModel::var()const{return lam();}
   double PoissonModel::sd()const{return sqrt(lam());}
-  double PoissonModel::simdat()const{return rpois(lam());}
+  double PoissonModel::simdat(RNG &rng)const{return rpois_mt(rng, lam());}
   void PoissonModel::add_mixture_data(Ptr<Data> dp, double prob){
     double y = DAT(dp)->value();
     suf()->add_mixture_data(y, prob);

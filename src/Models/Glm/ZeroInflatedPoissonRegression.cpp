@@ -127,10 +127,10 @@ namespace BOOM {
   }
 
   ZeroInflatedPoissonSuf ZIPRM::simulate_sufficient_statistics(
-      const Vector &x, int64_t n) const {
-    double number_of_zeros = rbinom(n, probability_forced_to_zero(x));
+      const Vector &x, int64_t n, RNG &rng) const {
+    double number_of_zeros = rbinom_mt(rng, n, probability_forced_to_zero(x));
     double number_of_positives = n - number_of_zeros;
-    double sum_of_positives = rpois(number_of_positives * poisson_mean(x));
+    double sum_of_positives = rpois_mt(rng, number_of_positives * poisson_mean(x));
     return ZeroInflatedPoissonSuf(
         number_of_zeros, number_of_positives, sum_of_positives);
   }

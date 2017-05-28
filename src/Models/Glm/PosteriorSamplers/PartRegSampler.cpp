@@ -34,7 +34,8 @@ namespace BOOM{
                       double prior_df,
                       double prior_sigma_guess,
                       double inc_prob)
-      : suf_(new NeRegSuf(
+      : rng_(seed_rng(GlobalRng::rng)),
+        suf_(new NeRegSuf(
             xtx,
             xty,
             yty,
@@ -87,7 +88,7 @@ namespace BOOM{
       Selector mod(p,false);
       while(mod.nvars()==0){
         for(uint j = 0; j<p; ++j){
-          double u = runif(0,1);
+          double u = runif_mt(rng_, 0, 1);
           if(u < inc_probs_[j]) mod.add(j);
         }
       }
@@ -210,7 +211,7 @@ namespace BOOM{
     double logp_old = log_model_prob(mod);
     mod.flip(which_var);
     double logp_new = log_model_prob(mod);
-    double u = runif(0,1);
+    double u = runif_mt(rng_, 0, 1);
     if(log(u) > logp_new - logp_old){
       mod.flip(which_var);  // reject draw
     }

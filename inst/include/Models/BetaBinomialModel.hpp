@@ -30,19 +30,26 @@ namespace BOOM{
    public:
     BinomialData(int64_t n = 0, int64_t y = 0);
     BinomialData(const BinomialData &rhs);
-    BinomialData * clone()const override;
+    BinomialData * clone() const override;
     BinomialData & operator=(const BinomialData &rhs);
 
-    virtual uint size(bool minimal = true)const;
-    ostream &display(ostream &)const override;
+    virtual uint size(bool minimal = true) const;
+    ostream &display(ostream &) const override;
 
-    int64_t trials()const;
-    int64_t n()const;
+    int64_t trials() const;
+    int64_t n() const;
     void set_n(int64_t trials);
 
-    int64_t y()const;
-    int64_t successes()const;
+    int64_t y() const;
+    int64_t successes() const;
     void set_y(int64_t successes);
+
+    // Add to the success and trial counts.
+    // Args:
+    //   more_trials:  The number of additional trials.
+    //   more_successes:  The number of additional successes.
+    void increment(int64_t more_trials, int64_t more_successes);
+
    private:
     int64_t trials_;
     int64_t successes_;
@@ -98,7 +105,7 @@ namespace BOOM{
     //     have the same success probability.
     // Returns:
     //   The number of successes for the observation in question.
-    int64_t sim(int64_t n)const;
+    int64_t sim(RNG &rng, int64_t n)const;
 
     Ptr<UnivParams> SuccessPrm();
     Ptr<UnivParams> FailurePrm();

@@ -208,6 +208,13 @@ namespace BOOM {
       return ans;
     }
 
+    InverseWishartPrior::InverseWishartPrior(SEXP prior)
+        : variance_guess_weight_(Rf_asReal(getListElement(
+              prior, "variance.guess.weight"))),
+          variance_guess_(ToBoomSpdMatrix(getListElement(
+              prior, "variance.guess")))
+    {}
+
     NormalInverseWishartPrior::NormalInverseWishartPrior(SEXP prior)
         : mu_guess_(ToBoomVector(getListElement(prior, "mean.guess"))),
           mu_guess_weight_(Rf_asReal(getListElement(

@@ -322,8 +322,8 @@ namespace BOOM{
     const AccumulatorStateVarianceMatrix *
     state_variance_matrix(int t) const override;
 
-    void simulate_initial_state(VectorView v) const override;
-    Vector simulate_state_error(int t) const override;
+    void simulate_initial_state(RNG &rng, VectorView v) const override;
+    Vector simulate_state_error(RNG &rng, int t) const override;
 
     Vector initial_state_mean() const override;
     SpdMatrix initial_state_variance() const override;

@@ -262,7 +262,7 @@ namespace BOOM {
     return x == 1.0 ?  0.0 : BOOM::negative_infinity();
   }
 
-  double BM::sim() const { return rbeta(a(), b()); }
+  double BM::sim(RNG &rng) const { return rbeta_mt(rng, a(), b()); }
 
   double beta_log_likelihood(double a, double b, const BetaSuf &suf) {
     if (a <= 0 || b <= 0) {

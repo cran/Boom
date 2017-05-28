@@ -44,9 +44,9 @@ namespace BOOM{
     WishartSuf * abstract_combine(Sufstat *s) override;
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     ostream &print(ostream &out)const override;
   private:
     double n_;
@@ -119,7 +119,7 @@ namespace BOOM{
     void set_nu(double);
     void set_sumsq(const SpdMatrix &);
 
-    SpdMatrix simdat();
+    SpdMatrix simdat(RNG &rng = GlobalRng::rng);
     int dim()const {return sumsq().nrow();}
 
     // Experimental code for finding the MLE of the Wishart density.

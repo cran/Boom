@@ -95,7 +95,7 @@ namespace BOOM{
     std::vector<Ptr<MixtureComponent> > mixture_components();
     Ptr<MixtureComponent> mixture_component(uint s);
 
-    double impute_latent_data();
+    double impute_latent_data(RNG &rng);
     Ptr<MarkovModel> mark(int treatment);
    private:
     // Add mix_ and mark_ to the list of models managed by the
@@ -105,7 +105,7 @@ namespace BOOM{
     double initialize_fwd(Ptr<HealthStateData>)const;
     double fwd(const TimeSeries<HealthStateData> &series);
     double compute_loglike(const TimeSeries<HealthStateData> &series)const;
-    void bkwd(const TimeSeries<HealthStateData> &series);
+    void bkwd(RNG &rng, const TimeSeries<HealthStateData> &series);
 
     // Fill logp_[0..state_space_size()-1] with the conditional
     // probability density of the given data point under each mixture
@@ -116,7 +116,8 @@ namespace BOOM{
     void fill_logQ(Ptr<HealthStateData>);
     void fill_logQ(Ptr<HealthStateData>, Matrix &logQ)const;
 
-    int sample_treatment(Ptr<HealthStateData>,
+    int sample_treatment(RNG &rng,
+                         Ptr<HealthStateData>,
                          uint previous_state,
                          uint current_state);
 

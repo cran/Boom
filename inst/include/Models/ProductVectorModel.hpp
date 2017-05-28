@@ -58,7 +58,7 @@ namespace BOOM {
     }
 
     double logp(const Vector &y) const override;
-    Vector sim() const override;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
 
     virtual void add_model(const Ptr<DoubleModel> &model);
     virtual void clear_models();

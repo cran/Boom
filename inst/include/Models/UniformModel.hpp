@@ -92,7 +92,7 @@ namespace BOOM{
     double Logp(double x, double &g, double &h, uint nd)const override;
     double loglike(const Vector &support_lower_and_upper_limits)const override;
     void mle() override;
-    double sim()const override;
+    double sim(RNG &rng = GlobalRng::rng)const override;
   };
 }
 #endif  // BOOM_UNIFORM_MODEL_HPP;

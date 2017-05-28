@@ -65,8 +65,8 @@ namespace BOOM{
     void clear_suf(){suf_->clear();}
     void update_suf(Ptr<DataType> d){suf_->update(d);}
     void refresh_suf();
-  protected:
-    virtual void reset_suf_ptr(Ptr<S> s){suf_ = s;}
+    void set_suf(const Ptr<S> &s){suf_ = s;}
+
   private:
     Ptr<S> suf_;
     bool only_keep_suf_;
@@ -186,12 +186,10 @@ namespace BOOM{
 
   template<class D, class S>
   void SufstatDataPolicy<D,S>::combine_data(const Model & other, bool just_suf){
-    //    Ptr<SufstatDataPolicy<D,S> > m(other.dcast<SufstatDataPolicy<D,S> >());
-    //    Ptr<SufstatDataPolicy<D,S> > m(other.dcast<SufstatDataPolicy<D,S> >());
     const DataPolicy & m(dynamic_cast<const DataPolicy &>(other));
     suf_->combine(m.suf_);
     if(!just_suf) IID_DataPolicy<D>::combine_data(other,just_suf);
   }
 
-}
-#endif// BOOM_IID_SUFSTAT_DATA_POLICY_HPP
+}  // namespace BOOM
+#endif  // BOOM_IID_SUFSTAT_DATA_POLICY_HPP

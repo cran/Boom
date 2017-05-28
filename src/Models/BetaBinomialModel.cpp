@@ -71,6 +71,14 @@ namespace BOOM {
     successes_ = successes;
   }
 
+  void BinomialData::increment(int64_t more_n, int64_t more_y) {
+    if (more_n < 0 || more_y < 0 || more_y > more_n) {
+      report_error("Illegal values passed to increment.");
+    }
+    trials_ += more_n;
+    successes_ += more_y;
+  }
+
   void BinomialData::check_size(int64_t n, int64_t y)const{
     if (n < 0 || y < 0) {
       ostringstream err;
@@ -239,9 +247,9 @@ namespace BOOM {
     return ans;
   }
 
-  int64_t BetaBinomialModel::sim(int64_t n)const{
-    double rate = rbeta(a(), b());
-    return rbinom(n, rate);
+  int64_t BetaBinomialModel::sim(RNG &rng, int64_t n)const{
+    double rate = rbeta_mt(rng, a(), b());
+    return rbinom_mt(rng, n, rate);
   }
 
   // Set a/(a+b) and a+b using a very rough method of moments

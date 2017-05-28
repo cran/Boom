@@ -19,105 +19,100 @@
 #include <Models/GammaModel.hpp>
 #include <Models/PosteriorSamplers/PosteriorSampler.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/report_error.hpp>
 #include <distributions.hpp>
 #include <cmath>
 
-namespace BOOM{
+namespace BOOM {
 
-  typedef GaussianModelGivenSigma GMGS;
+  namespace {
+    typedef GaussianModelGivenSigma GMGS;
+  }  // namespace
 
-  GaussianModelGivenSigma::GaussianModelGivenSigma(Ptr<UnivParams> sigsq,
-                                                   double mu0, double kappa)
-    : Model(),
-      ParamPolicy(new UnivParams(mu0), new UnivParams(kappa)),
-      PriorPolicy(),
-      DataPolicy(new GaussianSuf()),
-      sigsq_(sigsq)
-  { }
+  GMGS::GaussianModelGivenSigma(const Ptr<UnivParams> &scaling_variance,
+                                double mean,
+                                double sample_size)
+      : ParamPolicy(new UnivParams(mean), new UnivParams(sample_size)),
+        scaling_variance_(scaling_variance)
+  {}
 
-  GMGS * GMGS::clone()const{return new GMGS(*this);}
+  GMGS * GMGS::clone() const {return new GMGS(*this);}
 
-  Ptr<UnivParams> GMGS::Mu_prm(){ return prm1(); }
-  Ptr<UnivParams> GMGS::Kappa_prm(){ return prm2(); }
-  const Ptr<UnivParams> GMGS::Mu_prm()const{ return prm1(); }
-  const Ptr<UnivParams> GMGS::Kappa_prm()const{ return prm2(); }
+  Ptr<UnivParams> GMGS::Mu_prm() { return prm1(); }
+  Ptr<UnivParams> GMGS::Kappa_prm() { return prm2(); }
+  const Ptr<UnivParams> GMGS::Mu_prm() const { return prm1(); }
+  const Ptr<UnivParams> GMGS::Kappa_prm() const { return prm2(); }
 
-  void GMGS::set_params(double mu, double kappa){
-    set_mu(mu); set_kappa(kappa); }
-
-  void GMGS::set_sigsq(Ptr<UnivParams> s){
-    assert(s->value()>0);
-    sigsq_ = s; }
-
-  void GMGS::set_mu(double m){ Mu_prm()->set(m); }
-  void GMGS::set_kappa(double s){ Kappa_prm()->set(s); }
-
-  double GMGS::ybar()const{return suf()->ybar();}
-  double GMGS::sample_var()const{return suf()->sample_var();}
-
-  double GMGS::mu()const{return Mu_prm()->value();}
-  double GMGS::kappa()const{return Kappa_prm()->value();}
-  double GMGS::sigsq()const{return sigsq_->value();}
-
-  void GMGS::mle(){
-    double n = suf()->n();
-    double m = n < 1 ? 0 : ybar();
-    double sigma_hat_squared = sample_var()*(n-1)/n;
-    double kappa = n<=1 ? 1.0 : sigsq() / sigma_hat_squared;
-    set_params(m,kappa);
+  void GMGS::set_params(double mu, double kappa) {
+    set_mu(mu);
+    set_kappa(kappa);
   }
 
-  double GMGS::Logp(double x, double &g, double &h, uint nd)const{
-    double m = mu();
-    double v = var();
-    double ans = dnorm(x, m, sqrt(v), 1);
-    if(nd>0) g = -(x-m)/v;
-    if(nd>1) h = -1.0/v;
-    return ans;
+  void GMGS::set_scaling_variance(const Ptr<UnivParams> &scaling_variance) {
+    scaling_variance_ = scaling_variance;
   }
 
-  double GMGS::Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const{
-    double X=x[0];
-    double G(0),H(0);
-    double ans = Logp(X,G,H,nd);
-    if(nd>0) g[0]=G;
-    if(nd>1) h(0,0)=H;
-    return ans;
-  }
+  double GMGS::mu() const {return prm1_ref().value();}
+  void GMGS::set_mu(double m) { Mu_prm()->set(m); }
 
-  double GMGS::Loglike(const Vector &mu_kappa, Vector &g, Matrix &h, uint nd) const {
-    if (mu_kappa.size() != 2 || mu_kappa[1] <= 0) {
-      report_error("Illegal argument passed to GaussianModelGivenSigma::Loglike.");
+  double GMGS::kappa() const {return prm2_ref().value();}
+  void GMGS::set_kappa(double s) { Kappa_prm()->set(s); }
+
+  double GMGS::scaling_variance() const {
+    if (!scaling_variance_) {
+      report_error("Scaling variance is not set.");
     }
-    double sigsq = this->sigsq();
-    if(sigsq<0) return BOOM::negative_infinity();
+    return scaling_variance_-> value();
+  }
+
+  double GMGS::sigsq() const {
+    return scaling_variance() / kappa();
+  }
+
+  double GMGS::Loglike(const Vector &mu_kappa,
+                       Vector &g,
+                       Matrix &h,
+                       uint nd) const {
+    if (mu_kappa.size() != 2) {
+      report_error("Wrong size argument passed to GaussianModelGivenSigma"
+                   "::Loglike.");
+    }
+    double sigsq = this->scaling_variance();
+    if (sigsq < 0) {
+      return negative_infinity();
+    }
 
     double mu = mu_kappa[0];
+    double kappa = mu_kappa[1];
+    if (kappa <= 0) {
+      return negative_infinity();
+    }
+
     const double log2pi = 1.8378770664093453;
     double n = suf()->n();
-    double sumsq = suf()->sumsq();
-    double sum = suf()->sum();
-    double SS = (sumsq + ( -2*sum + n*mu)*mu);
-    double k = mu_kappa[1];
-    double ans = -0.5*(n*(log2pi + log(sigsq) - log(k) + k*SS/sigsq));
+    double centered_sumsq = suf()->centered_sumsq(mu);
+    double ans = .5 * n * (-log2pi + log(kappa) - log(sigsq));
+    ans -= .5 * kappa * centered_sumsq / sigsq;
 
-    if(nd>0){
-      g[0] = k*(sum-n*mu)/sigsq;
-      g[1] = 0.5*(n/k - SS/sigsq);
-      if(nd>1){
-	h(0,0) = -n*k/sigsq;
-	h(1,0) = h(0,1) = (sum-n*mu)/sigsq;
-	h(1,1) = -0.5/(k*k);}}
-
+    if (nd > 0) {
+      double residual_sum = suf()->sum() - n * mu;
+      g[0] = kappa * residual_sum / sigsq;
+      g[1] = .5 * ((n / kappa) - (centered_sumsq / sigsq));
+      if (nd > 1) {
+        h(0, 0) = -n * kappa / sigsq;
+        h(1, 0) = h(0, 1) = residual_sum / sigsq;
+        h(1, 1) = -0.5 * n / square(kappa);
+      }
+    }
     return ans;
   }
 
-  double GMGS::var()const{return sigsq()/kappa();}
-  double GMGS::sim()const{ return rnorm(mu(), sqrt(var()));}
-
-  void GMGS::add_data_raw(double x){
-    NEW(DoubleData, dp)(x);
-    this->add_data(dp);
+  void GMGS::mle() {
+    double n = suf()->n();
+    double sample_mean = n < 1 ? 0 : ybar();
+    double sigma_hat_squared = sample_var() * (n - 1) / n;
+    double kappa = (n <= 1) ? 1.0 : scaling_variance() / sigma_hat_squared;
+    set_params(sample_mean, kappa);
   }
 
-}
+}  // namespace BOOM

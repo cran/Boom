@@ -20,52 +20,55 @@
 #include <cpputil/math_utils.hpp>
 #include <cpputil/report_error.hpp>
 #include <distributions.hpp>
-#include <Models/GaussianModelBase.hpp>
+#include <Models/GaussianModel.hpp>
 #include <Models/GammaModel.hpp>
 
 namespace BOOM{
 
   typedef GaussianVarSampler GVS;
-  GVS::GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g,
+  GVS::GaussianVarSampler(GaussianModel *model,
+                          const Ptr<GammaModelBase> &precision_prior,
                           RNG &seeding_rng)
     : PosteriorSampler(seeding_rng),
-      prior_(g),
-      model_(m),
-      sampler_(g)
+      prior_(precision_prior),
+      model_(model),
+      sampler_(prior_)
   {}
 
-  inline double sumsq(double nu, double sig){ return nu*sig*sig;}
+  inline double sumsq(double nu, double sig) {return nu*sig*sig;}
 
-  GVS::GaussianVarSampler(GaussianModelBase* m,
+  GVS::GaussianVarSampler(GaussianModel *model,
                           double prior_df,
                           double prior_sigma_guess,
                           RNG &seeding_rng)
     : PosteriorSampler(seeding_rng),
-      prior_(new GammaModel(prior_df/2.0, sumsq(prior_df,prior_sigma_guess)/2.0)),
-      model_(m),
+      prior_(new GammaModel(prior_df / 2.0,
+                            sumsq(prior_df, prior_sigma_guess) / 2.0)),
+      model_(model),
       sampler_(prior_)
   {}
 
-  void GVS::draw(){
+  void GVS::draw() {
     double n = model_->suf()->n();
     double sumsq = model_->suf()->centered_sumsq(model_->mu());
     double sigsq = sampler_.draw(rng(), n, sumsq);
     model_->set_sigsq(sigsq);
   }
 
-  double GVS::logpri()const{
+  double GVS::logpri() const {
     return sampler_.log_prior(model_->sigsq());
   }
 
-  void GVS::set_sigma_upper_limit(double max_sigma){
+  void GVS::set_sigma_upper_limit(double max_sigma) {
     sampler_.set_sigma_max(max_sigma);
   }
 
-  const Ptr<GammaModelBase> GVS::ivar()const{ return prior_;}
+  const Ptr<GammaModelBase> GVS::ivar() const { return prior_;}
 
   void GVS::find_posterior_mode(double) {
     double n = model_->suf()->n();
     double sumsq = model_->suf()->centered_sumsq(model_->mu());
     model_->set_sigsq(sampler_.posterior_mode(n, sumsq));
   }
-}
+
+}  // namespace BOOM

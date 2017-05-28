@@ -44,7 +44,7 @@ namespace BOOM{
 
   template<class T, class Indx>
   std::vector<T> simple_random_sample(const std::map<Indx,T> &c,
-				      unsigned int n){
+                                      unsigned int n){
     unsigned int N = c.size();
     std::vector<bool> in = SRS_indx(N,n);
     std::vector<T> ans(n);

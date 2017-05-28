@@ -35,8 +35,8 @@ namespace BOOM {
     // distribution, and then resampling with weight proportional to
     // the target density / proposal density.
     ImportanceResampler(
-        std::function<double(const Vector &)> log_target_density,
-        Ptr<DirectProposal> proposal);
+        const std::function<double(const Vector &)> &log_target_density,
+        const Ptr<DirectProposal> &proposal);
 
     // Args:
     //   number_of_draws: The number of draws to be simulated.  Some

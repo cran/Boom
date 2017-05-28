@@ -186,8 +186,8 @@ namespace BOOM{
     uint beta_size(bool include_zeros = false)const;
 
     // simulate an outcome
-    uint sim(Ptr<ChoiceData>)const;
-    uint sim(Ptr<ChoiceData>, Vector &eta)const;
+    uint sim(Ptr<ChoiceData> dp, RNG &rng = GlobalRng::rng)const;
+    uint sim(Ptr<ChoiceData>, Vector &eta, RNG &rng = GlobalRng::rng)const;
 
     // compute all choice probabilities
     Vector predict(Ptr<ChoiceData>)const;  // returns choice probabilities

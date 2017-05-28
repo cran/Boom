@@ -18,7 +18,8 @@ PlotDynamicDistribution(curves,
                         xlab = "Time",
                         ylim = range(curves, na.rm = TRUE),
                         ylab = "distribution",
-                        add=FALSE,
+                        add = FALSE,
+                        axes = TRUE,
                         ...)
 }
 \arguments{
@@ -52,6 +53,8 @@ PlotDynamicDistribution(curves,
 
   \item{add}{Logical.  If true then add the plot to the current plot.
     Otherwise a fresh plot will be created.}
+
+  \item{axes}{Logical.  Should axes be added to the plot?}
 
   \item{\dots}{Extra arguments to pass on to \code{\link{plot}} }
 

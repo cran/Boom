@@ -145,20 +145,20 @@ namespace BOOM{
 
   Vector Vector::one()const{ return Vector(size(), 1.0);}
 
-  Vector & Vector::randomize(){
+  Vector & Vector::randomize(RNG &rng){
     uint n = size();
     double *d(data());
-    for(uint i=0; i<n; ++i) d[i] = runif(0,1);
+    for(uint i=0; i<n; ++i) d[i] = runif_mt(rng, 0, 1);
     return *this;
   }
 
-  Vector & Vector::randomize_with_intercept(){
+  Vector & Vector::randomize_with_intercept(RNG &rng){
     uint n = size();
     if (n > 0) {
       double *d(data());
       d[0] = 1.0;
       for (uint i = 1; i < n; ++i) {
-        d[i] = runif(0,1);
+        d[i] = runif_mt(rng, 0,1);
       }
     }
     return *this;
@@ -665,7 +665,7 @@ namespace BOOM{
     Vector vector_transform(const ConstVectorView &x,
                             const std::function<double(double)> &f) {
       Vector ans(x.size());
-      std::transform(x.begin(), x.end(), ans.begin(), std::move(f));
+      std::transform(x.begin(), x.end(), ans.begin(), f);
       return ans;
     }
 

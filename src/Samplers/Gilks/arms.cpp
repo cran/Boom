@@ -80,18 +80,18 @@ namespace GilksArms{
   /* declarations for functions defined in this file */
 
   int arms_simple (BOOM::RNG &, int ninit, double *xl, double *xr,
-		   double (*myfunc)(double x, void *mydata), void *mydata,
-		   int dometrop, double *xprev, double *xsamp);
+                   double (*myfunc)(double x, void *mydata), void *mydata,
+                   int dometrop, double *xprev, double *xsamp);
 
   int arms (BOOM::RNG &, double *xinit, int ninit, double *xl, double *xr,
-	    double (*myfunc)(double x, void *mydata), void *mydata,
-	    double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
-	    int nsamp, double *qcent, double *xcent, int ncent,
-	    int *neval);
+            double (*myfunc)(double x, void *mydata), void *mydata,
+            double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
+            int nsamp, double *qcent, double *xcent, int ncent,
+            int *neval);
 
   int initial (double *xinit, int ninit, double xl, double xr, int npoint,
-	       FUNBAG *lpdf, ENVELOPE *env, double *convex, int *neval,
-	       METROPOLIS *metrop);
+               FUNBAG *lpdf, ENVELOPE *env, double *convex, int *neval,
+               METROPOLIS *metrop);
 
   void sample(BOOM::RNG &, ENVELOPE *env, POINT *p);
 
@@ -121,8 +121,8 @@ namespace GilksArms{
   /* *********************************************************************** */
 
   int arms_simple (BOOM::RNG & rng, int ninit, double *xl, double *xr,
-		   double (*myfunc)(double x, void *mydata), void *mydata,
-		   int dometrop, double *xprev, double *xsamp)
+                   double (*myfunc)(double x, void *mydata), void *mydata,
+                   int dometrop, double *xprev, double *xsamp)
 
     /* adaptive rejection metropolis sampling - simplified argument list */
     /* ninit        : number of starting values to be used */
@@ -145,7 +145,7 @@ namespace GilksArms{
     }
 
     err = arms(rng, xinit.data(),ninit,xl,xr,myfunc,mydata,&convex,npoint,dometrop,xprev,xsamp,
-	       nsamp,&qcent,&xcent,ncent,&neval);
+               nsamp,&qcent,&xcent,ncent,&neval);
 
     return err;
   }
@@ -153,10 +153,10 @@ namespace GilksArms{
   /* *********************************************************************** */
 
   int arms (BOOM::RNG &rng, double *xinit, int ninit, double *xl, double *xr,
-	    double (*myfunc)(double x, void *mydata), void *mydata,
-	    double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
-	    int nsamp, double *qcent, double *xcent,
-	    int ncent, int *neval)
+            double (*myfunc)(double x, void *mydata), void *mydata,
+            double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
+            int nsamp, double *qcent, double *xcent,
+            int ncent, int *neval)
 
     /* to perform derivative-free adaptive rejection sampling with metropolis step */
     /* *xinit       : starting values for x in ascending order */
@@ -188,8 +188,8 @@ namespace GilksArms{
     /* check requested envelope centiles */
     for(i=0; i<ncent; i++){
       if((qcent[i] < 0.0) || (qcent[i] > 100.0)){
-	/* percentage requesting centile is out of range */
-	return 1005;
+        /* percentage requesting centile is out of range */
+        return 1005;
       }
     }
 
@@ -214,15 +214,15 @@ namespace GilksArms{
 
     /* set up initial envelope */
     err = initial(xinit,ninit,*xl,*xr,npoint,&lpdf,env,convex,
-		  neval,metrop);
+                  neval,metrop);
     if(err)return err;
 
     /* finish setting up metropolis struct (can only do this after */
     /* setting up env) */
     if(metrop->on){
       if((*xprev < *xl) || (*xprev > *xr)){
-	/* previous markov chain iterate out of range */
-	return 1007;
+        /* previous markov chain iterate out of range */
+        return 1007;
       }
       metrop->xprev = *xprev;
       metrop->yprev = perfunc(&lpdf,env,*xprev);
@@ -236,11 +236,11 @@ namespace GilksArms{
       /* perform rejection (and perhaps metropolis) tests */
       i = test(rng, env,&pwork,&lpdf,metrop);
       if(i == 1){
-	/* point accepted */
-	xsamp[msamp++] = pwork.x;
+        /* point accepted */
+        xsamp[msamp++] = pwork.x;
       } else if (i != 0) {
-	/* envelope error - violation without metropolis */
-	return 2000;
+        /* envelope error - violation without metropolis */
+        return 2000;
       }
     } while (msamp < nsamp);
 
@@ -262,8 +262,8 @@ namespace GilksArms{
   /* *********************************************************************** */
 
   int initial (double *xinit, int ninit, double xl, double xr, int npoint,
-	       FUNBAG *lpdf, ENVELOPE *env, double *convex, int *neval,
-	       METROPOLIS *metrop)
+               FUNBAG *lpdf, ENVELOPE *env, double *convex, int *neval,
+               METROPOLIS *metrop)
 
     /* to set up initial envelope */
     /* xinit        : initial x-values */
@@ -298,8 +298,8 @@ namespace GilksArms{
 
     for(i=1; i<ninit; i++){
       if(xinit[i] <= xinit[i-1]){
-	/* data not ordered */
-	return 1004;
+        /* data not ordered */
+        return 1004;
       }
     }
 
@@ -334,13 +334,13 @@ namespace GilksArms{
     for(j=1, k=0; j<mpoint-1; j++){
       q++;
       if(j%2){
-	/* point on log density */
-	q->x = xinit[k++];
-	q->y = perfunc(lpdf,env,q->x);
-	q->f = 1;
+        /* point on log density */
+        q->x = xinit[k++];
+        q->y = perfunc(lpdf,env,q->x);
+        q->f = 1;
       } else {
-	/* intersection point */
-	q->f = 0;
+        /* intersection point */
+        q->f = 0;
       }
       q->pl = q-1;
       q->pr = q+1;
@@ -356,8 +356,8 @@ namespace GilksArms{
     q = env->p;
     for (j=0; j<mpoint; j=j+2, q=q+2){
       if(meet(q,env,metrop)){
-	/* envelope violation without metropolis */
-	return 2000;
+        /* envelope violation without metropolis */
+        return 2000;
       }
     }
 
@@ -436,21 +436,21 @@ namespace GilksArms{
       eyl = q->pl->ey;
       eyr = q->ey;
       if(fabs(yr - yl) < YEPS){
-	/* linear approximation was used in integration in function cumulate */
-	if(fabs(eyr - eyl) > EYEPS*fabs(eyr + eyl)){
-	  p->x = xl + ((xr - xl)/(eyr - eyl))
-	    * (-eyl + sqrt((1. - prop)*eyl*eyl + prop*eyr*eyr));
-	} else {
-	  p->x = xl + (xr - xl)*prop;
-	}
-	p->ey = ((p->x - xl)/(xr - xl)) * (eyr - eyl) + eyl;
-	p->y = logshift(p->ey, env->ymax);
+        /* linear approximation was used in integration in function cumulate */
+        if(fabs(eyr - eyl) > EYEPS*fabs(eyr + eyl)){
+          p->x = xl + ((xr - xl)/(eyr - eyl))
+            * (-eyl + sqrt((1. - prop)*eyl*eyl + prop*eyr*eyr));
+        } else {
+          p->x = xl + (xr - xl)*prop;
+        }
+        p->ey = ((p->x - xl)/(xr - xl)) * (eyr - eyl) + eyl;
+        p->y = logshift(p->ey, env->ymax);
       } else {
-	/* piece was integrated exactly in function cumulate */
-	p->x = xl + ((xr - xl)/(yr - yl))
-	  * (-yl + logshift(((1.-prop)*eyl + prop*eyr), env->ymax));
-	p->y = ((p->x - xl)/(xr - xl)) * (yr - yl) + yl;
-	p->ey = expshift(p->y, env->ymax);
+        /* piece was integrated exactly in function cumulate */
+        p->x = xl + ((xr - xl)/(yr - yl))
+          * (-yl + logshift(((1.-prop)*eyl + prop*eyr), env->ymax));
+        p->y = ((p->x - xl)/(xr - xl)) * (yr - yl) + yl;
+        p->ey = expshift(p->y, env->ymax);
       }
     }
 
@@ -483,20 +483,20 @@ namespace GilksArms{
     if(!(metrop->on) && (p->pl->pl != NULL) && (p->pr->pr != NULL)){
       /* perform squeezing test */
       if(p->pl->f){
-	ql = p->pl;
+        ql = p->pl;
       } else {
-	ql = p->pl->pl;
+        ql = p->pl->pl;
       }
       if(p->pr->f){
-	qr = p->pr;
+        qr = p->pr;
       } else {
-	qr = p->pr->pr;
+        qr = p->pr->pr;
       }
       ysqueez = (qr->y * (p->x - ql->x) + ql->y * (qr->x - p->x))
-	/(qr->x - ql->x);
+        /(qr->x - ql->x);
       if(y <= ysqueez){
-	/* accept point at squeezing step */
-	return 1;
+        /* accept point at squeezing step */
+        return 1;
       }
     }
 
@@ -510,16 +510,16 @@ namespace GilksArms{
       p->ey = expshift(p->y,env->ymax);
       p->f = 1;
       if(update(env,p,lpdf,metrop)){
-	/* envelope violation without metropolis */
-	return -1;
+        /* envelope violation without metropolis */
+        return -1;
       }
       /* perform rejection test */
       if(y >= ynew){
-	/* reject point at rejection step */
-	return 0;
+        /* reject point at rejection step */
+        return 0;
       } else {
-	/* accept point at rejection step */
-	return 1;
+        /* accept point at rejection step */
+        return 1;
       }
     }
 
@@ -646,14 +646,14 @@ namespace GilksArms{
     }
     if(q->pl->pl != NULL){
       if(meet(q->pl->pl->pl,env,metrop)){
-	/* envelope violation without metropolis */
-	return 1;
+        /* envelope violation without metropolis */
+        return 1;
       }
     }
     if(q->pr->pr != NULL){
       if(meet(q->pr->pr->pr,env,metrop)){
-	/* envelope violation without metropolis */
-	return 1;
+        /* envelope violation without metropolis */
+        return 1;
       }
     }
 
@@ -742,8 +742,8 @@ namespace GilksArms{
     if(irl && il && (gl<grl)){
       /* convexity on left exceeds current threshold */
       if(!(metrop->on)){
-	/* envelope violation without metropolis */
-	return 1;
+        /* envelope violation without metropolis */
+        return 1;
       }
       /* adjust left gradient */
       gl = gl + (1.0 + *(env->convex)) * (grl - gl);
@@ -752,8 +752,8 @@ namespace GilksArms{
     if(irl && ir && (gr>grl)){
       /* convexity on right exceeds current threshold */
       if(!(metrop->on)){
-	/* envelope violation without metropolis */
-	return 1;
+        /* envelope violation without metropolis */
+        return 1;
       }
       /* adjust right gradient */
       gr = gr + (1.0 + *(env->convex)) * (grl - gr);
@@ -762,16 +762,16 @@ namespace GilksArms{
     if(il && irl){
       dr = (gl - grl) * (q->pr->x - q->pl->x);
       if(dr < YEPS){
-	/* adjust dr to avoid numerical problems */
-	dr = YEPS;
+        /* adjust dr to avoid numerical problems */
+        dr = YEPS;
       }
     }
 
     if(ir && irl){
       dl = (grl - gr) * (q->pr->x - q->pl->x);
       if(dl < YEPS){
-	/* adjust dl to avoid numerical problems */
-	dl = YEPS;
+        /* adjust dl to avoid numerical problems */
+        dl = YEPS;
       }
     }
 

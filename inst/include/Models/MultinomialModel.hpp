@@ -101,7 +101,7 @@ namespace BOOM{
     double pdf(Ptr<Data> dp, bool logscale) const;
     void add_mixture_data(Ptr<Data>, double prob);
 
-    uint simdat()const;
+    uint simdat(RNG &rng = GlobalRng::rng)const;
    private:
     mutable Vector logp_;
     mutable bool logp_current_;

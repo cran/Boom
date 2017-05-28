@@ -23,9 +23,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							fac.c
+  /*                                                    fac.c
    *
-   *	Factorial function
+   *    Factorial function
    *
    *
    *

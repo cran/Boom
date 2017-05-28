@@ -46,18 +46,18 @@ namespace BOOM{
    public:
     // A new Configuration with all levels set to zero.
     // Args:
-    //   nlevels: The number of possible levels for a set of
-    //     experimental factors.
-    explicit Configuration(const std::vector<int> &nlevels);
+    //   factor_limits: The number of possible levels for a set of experimental
+    //     factors.
+    explicit Configuration(const std::vector<int> &factor_limits);
 
     // A new Configuration with levels set to specific values.
     // Args:
-    //   nlevels: The number of possible levels for a set of
-    //     experimental factors.
+    //   factor_limits: The number of possible levels for a set of experimental
+    //     factors.
     //   levels: A specific set of values for a specific experimental
-    //     configuration.  In each ordinate i, we must have levels[i]
-    //     >= 0 and levels[i] < nlevels[i].
-    Configuration(const std::vector<int> &nlevels,
+    //     configuration.  In each ordinate i, we must have levels[i] >= 0 and
+    //     levels[i] < factor_limits[i].
+    Configuration(const std::vector<int> &factor_limits,
                   const std::vector<int> &levels);
 
     // Advance this configuration to the next one.  Factors with high
@@ -103,7 +103,10 @@ namespace BOOM{
     // Args:
     //   nlevels: A vector giving the number of distinct values
     //     possible for each experimental factor.
-    ExperimentStructure(const std::vector<int> & nlevels);
+    //   context: Indicates whether this structure describes the contextual part
+    //     of an experiment.  This only affects the variable names.
+    explicit ExperimentStructure(const std::vector<int> & nlevels,
+                                 bool context = false);
 
     // Use this constructor if you want to specify the experiment
     // structure using the names of the factors and levels, where the
@@ -198,6 +201,10 @@ namespace BOOM{
 
     // Objects are sorted first by factor, then by level.
     bool operator<(const FactorDummy &rhs) const;
+    bool operator>(const FactorDummy &rhs) const {
+      bool less_or_equal = *this < rhs || *this == rhs;
+      return !less_or_equal;
+    }
 
     // The factor (the position in the input data) that this
     // FactorDummy measures.
@@ -665,9 +672,10 @@ namespace BOOM{
     // If the given effect is present then remove it.  If it is not
     // present do nothing.
     void remove_effect(const Effect &e);
+    void remove_intercept() {remove_effect(Effect());}
 
     // The number of columns in the design matrix corresponding to
-    // main effects.
+    // main effects.  The intercept is not a main effect.
     int number_of_main_effects() const;
 
     // Returns the number of factors considered by this object.  This
@@ -703,6 +711,7 @@ namespace BOOM{
     std::vector<std::vector<int> > second_order_interaction_positions(
         int first_factor, int second_factor) const;
 
+    // An accessor returning the i'th effect.
     const Effect & effect(int i) const;
 
     // Produce a row of a design matrix (or "model matrix")
@@ -761,6 +770,13 @@ namespace BOOM{
     // same thing as adding another column to the design matrix that
     // this object will produce.
     void add_effect(const ContextualEffect &effect);
+
+    // If the given effect is present then remove it.  If it is not
+    // present do nothing.
+    void remove_effect(const ContextualEffect &effect);
+    void remove_intercept() {
+      remove_effect(ContextualEffect());
+    }
 
     // Adds the effects in 'group' to the set of effects defining the
     // design matrix.  This adds one or more columns corresponding to

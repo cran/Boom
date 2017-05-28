@@ -22,13 +22,13 @@
 #include <distributions.hpp>
 #include <Models/SufstatAbstractCombineImpl.hpp>
 
-namespace BOOM{
-
-  typedef VariableSelectionPrior VSP;
+namespace BOOM {
+  namespace {
+    typedef VariableSelectionPrior VSP;
+  }  // namespace
 
   namespace ModelSelection {
-
-    Variable::Variable(uint pos, double prob, const string &name)
+    Variable::Variable(uint pos, double prob, const std::string &name)
       : pos_(pos),
         mod_(new BinomialModel(1u, prob)),
         name_(name)
@@ -43,7 +43,7 @@ namespace BOOM{
 
     Variable::~Variable() {}
 
-    ostream & Variable::print(ostream &out)const{
+    ostream & Variable::print(ostream &out) const {
       out << "Variable " << name_
           << " position " << pos_
           << " probability " << mod_->prob()
@@ -54,95 +54,92 @@ namespace BOOM{
     ostream & operator<<(ostream &out, const Variable &v) {
       return v.print(out); }
 
-    uint Variable::pos()const{return pos_;}
-    double Variable::prob()const{return mod_->prob();}
+    uint Variable::pos() const {return pos_;}
+    double Variable::prob() const {return mod_->prob();}
     void Variable::set_prob(double prob) {
       mod_->set_prob(prob); }
-    double Variable::logp(const Selector &inc)const{
+    double Variable::logp(const Selector &inc) const {
       return mod_->pdf(inc[pos_], true);}
     Ptr<BinomialModel> Variable::model() {
       return mod_;}
-    const Ptr<BinomialModel> Variable::model()const{
+    const Ptr<BinomialModel> Variable::model() const {
       return mod_;}
 
-    const string & Variable::name()const{
+    const std::string & Variable::name() const {
       return name_;
     }
 
-    //______________________________________________________________________
-    typedef MainEffect ME;
-    ME::MainEffect(uint pos, double prob, const string & name)
-      : Variable(pos,prob, name)
+    //=====================================================================
+    MainEffect::MainEffect(uint position, double prob, const std::string & name)
+      : Variable(position, prob, name)
     {}
 
-    ME * ME::clone()const{return new ME(*this);}
+    MainEffect * MainEffect::clone() const {return new MainEffect(*this);}
 
-    bool ME::observed()const{return true;}
-    bool ME::parents_are_present(const Selector &)const{
+    bool MainEffect::observed() const {return true;}
+    bool MainEffect::parents_are_present(const Selector &) const {
       return true;}
 
-    void ME::make_valid(Selector &inc)const{
+    void MainEffect::make_valid(Selector &inc) const {
       double p = prob();
       bool in = inc[pos()];
-      if ((p>=1.0 && !in) || (p<=0.0 && in)) {
+      if ((p >= 1.0 && !in) || (p <= 0.0 && in)) {
         inc.flip(pos());
       }
     }
 
-    void ME::add_to(VSP & vsp)const{
+    void MainEffect::add_to(VSP & vsp) const {
       vsp.add_main_effect(pos(), prob(), name());}
 
-    //______________________________________________________________________
-
-    typedef MissingMainEffect MME;
-
-    MME::MissingMainEffect(uint pos,
+    //=====================================================================
+    MissingMainEffect::MissingMainEffect(uint position,
                            double prob,
                            uint obs_ind_pos,
-                           const string &name)
-      : MainEffect(pos,prob, name),
+                           const std::string &name)
+      : MainEffect(position, prob, name),
         obs_ind_pos_(obs_ind_pos)
       {}
 
-    MME::MissingMainEffect(const MME & rhs)
+    MissingMainEffect::MissingMainEffect(const MissingMainEffect & rhs)
       : MainEffect(rhs),
         obs_ind_pos_(rhs.obs_ind_pos_)
     {}
 
-    MME * MME::clone()const{return new MME(*this);}
+    MissingMainEffect * MissingMainEffect::clone() const {
+      return new MissingMainEffect(*this);
+    }
 
-    double MME::logp(const Selector &inc)const{
+    double MissingMainEffect::logp(const Selector &inc) const {
       bool in = inc[pos()];
       bool oi_in = inc[obs_ind_pos_];
       if (oi_in) return Variable::logp(inc);
       return in ? BOOM::negative_infinity() : 0;
     }
 
-    void MME::make_valid(Selector &inc)const{
+    void MissingMainEffect::make_valid(Selector &inc) const {
       bool in = inc[pos()];
       double p = prob();
-      if (p<=0.0 && in) {
+      if (p <= 0.0 && in) {
         inc.drop(pos());
-      }else if (p >= 1.0 && !in) {
+      } else if (p  >=  1.0 && !in) {
         inc.add(pos());
         inc.add(obs_ind_pos_);
       }
     }
 
-    bool MME::observed()const{return false;}
+    bool MissingMainEffect::observed() const {return false;}
 
-    bool MME::parents_are_present(const Selector &g)const{
+    bool MissingMainEffect::parents_are_present(const Selector &g) const {
       return g[obs_ind_pos_];}
 
-    void MME::add_to(VSP & vsp)const{
+    void MissingMainEffect::add_to(VSP & vsp) const {
       vsp.add_missing_main_effect(pos(), prob(), obs_ind_pos_, name()); }
 
-    //______________________________________________________________________
-
-    Interaction::Interaction(uint pos, double prob,
+    //=====================================================================
+    Interaction::Interaction(uint position, double prob,
                              const std::vector<uint> &parents,
-                             const string &name)
-      : Variable(pos,prob, name),
+                             const std::string &name)
+      : Variable(position, prob, name),
         parent_pos_(parents)
     {}
 
@@ -151,12 +148,12 @@ namespace BOOM{
         parent_pos_(rhs.parent_pos_)
     {}
 
-    Interaction * Interaction::clone()const{
+    Interaction * Interaction::clone() const {
       return new Interaction(*this);}
 
-    uint Interaction::nparents()const{return parent_pos_.size();}
+    uint Interaction::nparents() const {return parent_pos_.size();}
 
-    double Interaction::logp(const Selector &inc)const{
+    double Interaction::logp(const Selector &inc) const {
       uint n = nparents();
       for (uint i = 0; i < n; ++i) {
         uint indx = parent_pos_[i];
@@ -165,12 +162,12 @@ namespace BOOM{
       return Variable::logp(inc);
     }
 
-    void Interaction::make_valid(Selector &g)const{
+    void Interaction::make_valid(Selector &g) const {
       double p = prob();
       bool in = g[pos()];
-      if (p<=0.0 && in) {
+      if (p <= 0.0 && in) {
         g.drop(pos());
-      }else if (p>=1.0 && !in) {
+      } else if (p >= 1.0 && !in) {
         g.add(pos());
         for (int i = 0; i < parent_pos_.size(); ++i) {
           g.add(parent_pos_[i]);
@@ -178,7 +175,7 @@ namespace BOOM{
       }
     }
 
-    bool Interaction::parents_are_present(const Selector &g)const{
+    bool Interaction::parents_are_present(const Selector &g) const {
       uint n = parent_pos_.size();
       for (uint i = 0; i < n; ++i) {
         if (!g[parent_pos_[i]]) return false;
@@ -186,12 +183,11 @@ namespace BOOM{
       return true;
     }
 
-    void Interaction::add_to(VSP & vsp)const{
+    void Interaction::add_to(VSP & vsp) const {
       vsp.add_interaction(pos(), prob(), parent_pos_, name());}
   }  // namespace ModelSelection
 
-  //______________________________________________________________________
-
+  //===========================================================================
   VsSuf::VsSuf() {}
 
   VsSuf::VsSuf(const VsSuf & rhs)
@@ -200,7 +196,7 @@ namespace BOOM{
       vars_(rhs.vars_)
   {}
 
-  VsSuf * VsSuf::clone()const{return new VsSuf(*this);}
+  VsSuf * VsSuf::clone() const {return new VsSuf(*this);}
 
   void VsSuf::add_var(VarPtr v) { vars_.push_back(v); }
 
@@ -230,9 +226,10 @@ namespace BOOM{
   }
 
   VsSuf * VsSuf::abstract_combine(Sufstat *s) {
-    return abstract_combine_impl(this,s); }
+    return abstract_combine_impl(this, s);
+  }
 
-  Vector VsSuf::vectorize(bool )const{
+  Vector VsSuf::vectorize(bool ) const {
     report_error("cannot vectorize VsSuf");
     return Vector(1, 0.0);
   }
@@ -248,7 +245,7 @@ namespace BOOM{
     return unvectorize(it, minimal);
   }
 
-  ostream & VsSuf::print(ostream &out)const{
+  ostream & VsSuf::print(ostream &out) const {
     return out << "VsSuf is hard to print!";
   }
 
@@ -288,19 +285,10 @@ namespace BOOM{
     }
   }
 
-  VSP * VSP::clone()const{ return new VSP(*this);}
+  VSP * VSP::clone() const { return new VSP(*this);}
 
-  // double VSP::loglike()const{
-  //   double ans = 0;
-  //   uint n = vars_.size();
-  //   for (uint i = 0; i < n; ++i) {
-  //     ans += vars_[i]->model()->loglike();
-  //   }
-  //   return ans;
-  // }
-
-  void VSP::check_size_eq(uint n, const string &fun)const{
-    if (vars_.size()==n) return;
+  void VSP::check_size_eq(uint n, const std::string &fun) const {
+    if (vars_.size() == n) return;
     ostringstream err;
     err << "error in VSP::" << fun << endl
         << "you passed a vector of size " << n
@@ -309,8 +297,8 @@ namespace BOOM{
     report_error(err.str());
   }
 
-  void VSP::check_size_gt(uint n, const string &fun)const{
-    if (vars_.size()>n) return;
+  void VSP::check_size_gt(uint n, const std::string &fun) const {
+    if (vars_.size() > n) return;
     ostringstream err;
     err << "error in VSP::" << fun << endl
         << "you tried to access a variable at position " << n
@@ -337,12 +325,12 @@ namespace BOOM{
     return ans;
   }
 
-  double VSP::prob(uint i)const{
+  double VSP::prob(uint i) const {
     check_size_gt(i, "prob");
     return vars_[i]->prob();
   }
 
-  void VSP::fill_pi()const{
+  void VSP::fill_pi() const {
     uint n = vars_.size();
     Vector tmp(n);
     for (uint i = 0; i < n; ++i) tmp[i] = vars_[i]->prob();
@@ -351,14 +339,16 @@ namespace BOOM{
 
   ParamVector VSP::parameter_vector() {
     fill_pi();
-    return ParamVector(1,pi_); }
+    return ParamVector(1, pi_);
+  }
 
   const ParamVector VSP::parameter_vector() const {
     fill_pi();
-    return ParamVector(1,pi_);}
+    return ParamVector(1, pi_);
+  }
 
   void VSP::unvectorize_params(const Vector &v, bool) {
-    uint n =v.size();
+    uint n = v.size();
     check_size_eq(n, "unvectorize_params");
     for (uint i = 0; i < n; ++i) {
       double p = v[i];
@@ -371,38 +361,39 @@ namespace BOOM{
     for (uint i = 0; i < n; ++i) vars_[i]->model()->mle();
   }
 
-  double VSP::pdf(Ptr<Data> dp, bool logscale)const{
+  double VSP::pdf(const Ptr<Data> &dp, bool logscale) const {
     Ptr<GlmCoefs> d(DAT(dp));
     double ans = logp(d->inc());
     return logscale ? ans : exp(ans);
   }
 
   VSP::VarPtr VSP::variable(uint i) { return vars_[i]; }
-  const VSP::VarPtr VSP::variable(uint i)const{
-    return vars_[i]; }
+  const VSP::VarPtr VSP::variable(uint i) const { return vars_[i]; }
 
   namespace {
-  inline void draw(const Ptr<ModelSelection::Variable> &v, Selector &g,
-                   RNG &rng) {
-    double u = runif_mt(rng, 0, 1);
-    uint pos = v->pos();
-    if (u < v->prob()) g.add(pos);
+    inline void draw(const Ptr<ModelSelection::Variable> &v, Selector &g,
+                     RNG &rng) {
+      double u = runif_mt(rng, 0, 1);
+      uint pos = v->pos();
+      if (u < v->prob()) {
+        g.add(pos);
+      }
     }
-  }
+  }  // namespace
 
-  Selector VSP::simulate(RNG &rng)const{
+  Selector VSP::simulate(RNG &rng) const {
     uint n = potential_nvars();
-    Selector ans(n,false);
-    // simulate main_effects
+    Selector ans(n, false);
+    // Simulate main_effects.
     uint nme = observed_main_effects_.size();
     for (uint i = 0; i < nme; ++i)
       draw(observed_main_effects_[i], ans, rng);
 
-    // simulate missing main effects
+    // Simulate missing main effects.
     uint nmis = missing_main_effects_.size();
     for (uint i = 0; i < nmis; ++i) {
       Ptr<MissingMainEffect> v = missing_main_effects_[i];
-      if (v->parents_are_present(ans)) draw(v,ans, rng);
+      if (v->parents_are_present(ans)) draw(v, ans, rng);
     }
 
     uint nint = interactions_.size();
@@ -413,59 +404,60 @@ namespace BOOM{
     return ans;
   }
 
-  uint VSP::potential_nvars()const{ return vars_.size();}
+  uint VSP::potential_nvars() const { return vars_.size();}
 
-  double VSP::logp(const Selector &inc)const{
+  double VSP::logp(const Selector &inc) const {
     const double neg_inf = BOOM::negative_infinity();
-    //    if (inc.nvars()==0) return neg_inf;
     uint n = vars_.size();
-    double ans=0;
+    double ans = 0;
     for (uint i = 0; i < n; ++i) {
       ans += vars_[i]->logp(inc);
-      if (ans<=neg_inf) {
+      if (ans <= neg_inf) {
         return ans;
       }
     }
     return ans;
   }
 
-  void VSP::make_valid(Selector &inc)const{
+  void VSP::make_valid(Selector &inc) const {
     int n = vars_.size();
     for (int i = 0; i < n; ++i) {
       vars_[i]->make_valid(inc);
     }
   }
 
-  void VSP::add_main_effect(uint pos, double prob, const string &name) {
-    NEW(MainEffect, me)(pos,prob, name);
+  void VSP::add_main_effect(uint position,
+                            double prob,
+                            const std::string &name) {
+    NEW(MainEffect, me)(position, prob, name);
     observed_main_effects_.push_back(me);
     VarPtr v(me);
     vars_.push_back(v);
     suf()->add_var(v);
   }
 
-  void VSP::add_missing_main_effect(uint pos,
+  void VSP::add_missing_main_effect(uint position,
                                     double prob,
                                     uint oi_pos,
-                                    const string &name) {
-    NEW(MissingMainEffect, mme)(pos, prob, oi_pos, name);
+                                    const std::string &name) {
+    NEW(MissingMainEffect, mme)(position, prob, oi_pos, name);
     suf()->add_var(mme);
     vars_.push_back(VarPtr(mme));
     missing_main_effects_.push_back(mme);
   }
 
-  void VSP::add_interaction(uint pos,
+  void VSP::add_interaction(uint position,
                             double prob,
                             const std::vector<uint> & parents,
-                            const string &name) {
-    NEW(Interaction, inter)(pos, prob, parents, name);
+                            const std::string &name) {
+    NEW(Interaction, inter)(position, prob, parents, name);
     VarPtr v(inter);
     vars_.push_back(v);
     suf()->add_var(v);
     interactions_.push_back(inter);
   }
 
-  ostream & VSP::print(ostream &out)const{
+  ostream & VSP::print(ostream &out) const {
     uint nv = vars_.size();
     for (uint i = 0; i < nv; ++i) {
       out << *(vars_[i]) << endl;
@@ -474,6 +466,7 @@ namespace BOOM{
   }
 
   ostream & operator<<(ostream &out, const VSP &vsp) {
-    return vsp.print(out);}
+    return vsp.print(out);
+  }
 
-}
+}  // namespace BOOM

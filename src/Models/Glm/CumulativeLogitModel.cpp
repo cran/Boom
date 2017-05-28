@@ -47,7 +47,7 @@ namespace BOOM{
     return dlogis(eta);
   }
 
-  double CLM::simulate_latent_variable()const{
-    return rlogis();}
+  double CLM::simulate_latent_variable(RNG &rng)const{
+    return rlogis_mt(rng);}
 
 }

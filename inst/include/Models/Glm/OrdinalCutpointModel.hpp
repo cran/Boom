@@ -126,7 +126,7 @@ namespace BOOM{
 
     uint maxscore() const; // maximum possible score allowed
 
-    Ptr<OrdinalRegressionData> sim();
+    Ptr<OrdinalRegressionData> sim(RNG &rng = GlobalRng::rng);
 
   private:
     // interface is complicated
@@ -136,7 +136,7 @@ namespace BOOM{
     Ptr<CatKey> simulation_key_;
 
     // Simulate latent variable from the link distribution.
-    virtual double simulate_latent_variable() const = 0;
+    virtual double simulate_latent_variable(RNG &rng = GlobalRng::rng) const = 0;
   };
 
   } // closes namespace BOOM

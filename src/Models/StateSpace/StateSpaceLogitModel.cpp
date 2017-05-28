@@ -21,36 +21,31 @@
 #include <Models/StateSpace/StateSpaceLogitModel.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/Constants.hpp>
 
 namespace BOOM {
   namespace {
     typedef StateSpaceLogitModel SSLM;
     typedef StateSpace::AugmentedBinomialRegressionData ABRD;
-  }
+  }  // namespace
 
   ABRD::AugmentedBinomialRegressionData()
       : state_model_offset_(0.0)
   {}
 
-  // Initial values for latent data are arbitrary, but must be legal
-  // values.
   ABRD::AugmentedBinomialRegressionData(
       double y, double n, const Vector &x)
-      : binomial_data_(1, new BinomialRegressionData(y, n, x)),
-        latent_continuous_values_(1, 0.0),
-        precisions_(1, 4.0 / n),
-        state_model_offset_(0.0)
-  {}
+      : state_model_offset_(0.0)
+  {
+    add_data(new BinomialRegressionData(y, n, x));
+  }
 
   ABRD::AugmentedBinomialRegressionData(
       const std::vector<Ptr<BinomialRegressionData>> &binomial_data)
-      : binomial_data_(binomial_data),
-        latent_continuous_values_(binomial_data.size(), 0.0),
-        precisions_(binomial_data.size(), 1.0),
-        state_model_offset_(0.0)
+      : state_model_offset_(0.0)
   {
-    for (int i = 0; i < precisions_.size(); ++i) {
-      precisions_[i] = 4.0 / binomial_data_[i]->n();
+    for (int i = 0; i < binomial_data.size(); ++i) {
+      add_data(binomial_data[i]);
     }
   }
 
@@ -76,10 +71,14 @@ namespace BOOM {
     return out;
   }
 
+  // Initial values for latent data are arbitrary, but must be legal
+  // values.
   void ABRD::add_data(const Ptr<BinomialRegressionData> &binomial_data) {
+    MultiplexedData::add_data(binomial_data);
     binomial_data_.push_back(binomial_data);
     latent_continuous_values_.push_back(0);
-    precisions_.push_back(4.0 / binomial_data->n());
+    precisions_.push_back(binomial_data->missing() == Data::observed ?
+                          4.0 / binomial_data->n() : 0);
   }
 
   void ABRD::set_latent_data(double value, double precision, int observation) {
@@ -99,22 +98,69 @@ namespace BOOM {
   }
 
   double ABRD::adjusted_observation(const GlmCoefs &coefficients) const {
+    if (missing() == Data::completely_missing
+        || binomial_data_.empty()) {
+      return negative_infinity();
+    }
     double total_precision = 0;
     double ans = 0;
     for (int i = 0; i < binomial_data_.size(); ++i) {
-      ans += precisions_[i] * (latent_continuous_values_[i]
-          - coefficients.predict(binomial_data_[i]->x()));
-      total_precision += precisions_[i];
+      if (binomial_data(i).missing() == Data::observed) {
+        ans += precisions_[i] *
+            (latent_continuous_values_[i] -
+             coefficients.predict(binomial_data_[i]->x()));
+        total_precision += precisions_[i];
+      }
+    }
+    if (total_precision <= 0 || !std::isfinite(total_precision)) {
+      return negative_infinity();
     }
     return ans / total_precision;
   }
 
   double ABRD::latent_data_overall_variance() const {
-    return 1.0 / sum(precisions_);
+    if (missing() == Data::observed && observed_sample_size() > 0) {
+      // This is the normal case, where all observations at a time point are
+      // observed.
+        return 1.0 / sum(precisions_);
+    } else if (missing() == Data::completely_missing
+               || observed_sample_size() == 0) {
+      // In the case of NO information about a time point, the observation
+      // variance is the variance of the standard logistic distribution, which
+      // is pi^2 / 3.
+        return Constants::pi_squared / 3.0;
+    } else {
+      // If neither of the preceding cases holds, then there is partial
+      // information, we just have to be careful to only include the observed
+      // cases.
+      double total_precision = 0.0;
+      for (int i = 0; i < binomial_data_.size(); ++i) {
+        if (binomial_data_[i]->missing() == Data::observed) {
+          total_precision += precisions_[i];
+        }
+      }
+      return 1.0 / total_precision;
+    }
   }
 
   void ABRD::set_state_model_offset(double offset) {
     state_model_offset_ = offset;
+  }
+
+  double ABRD::total_trials() const {
+    double ans = 0;
+    for (int i = 0; i < binomial_data_.size(); ++i) {
+      ans += binomial_data_[i]->n();
+    }
+    return ans;
+  }
+
+  double ABRD::total_successes() const {
+    double ans = 0;
+    for (int i = 0; i < binomial_data_.size(); ++i) {
+      ans += binomial_data_[i]->y();
+    }
+    return ans;
   }
 
   //======================================================================
@@ -150,6 +196,8 @@ namespace BOOM {
                     design.row(i));
       if (!(all_observed || observed[i])) {
         dp->set_missing_status(Data::missing_status::completely_missing);
+        dp->binomial_data_ptr(0)->set_missing_status(
+            Data::missing_status::completely_missing);
       }
       add_data(dp);
     }
@@ -167,6 +215,9 @@ namespace BOOM {
   }
 
   double SSLM::observation_variance(int t) const {
+    if (t > time_dimension()) {
+      return Constants::pi_squared / 3.0;
+    }
     return dat()[t]->latent_data_overall_variance();
   }
 
@@ -178,7 +229,9 @@ namespace BOOM {
   }
 
   bool SSLM::is_missing_observation(int t) const {
-    return dat()[t]->missing() != Data::observed;
+    return t > time_dimension()
+        || dat()[t]->missing() == Data::completely_missing
+        || dat()[t]->observed_sample_size() == 0;
   }
 
   void SSLM::observe_data_given_state(int t) {
@@ -188,7 +241,8 @@ namespace BOOM {
     }
   }
 
-  Vector SSLM::simulate_forecast(const Matrix &forecast_predictors,
+  Vector SSLM::simulate_forecast(RNG &rng,
+                                 const Matrix &forecast_predictors,
                                  const Vector &trials,
                                  const Vector &final_state) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
@@ -196,11 +250,11 @@ namespace BOOM {
     Vector state = final_state;
     int t0 = dat().size();
     for (int t = 0; t < ans.size(); ++t) {
-      state = simulate_next_state(state, t + t0);
+      state = simulate_next_state(rng, state, t + t0);
       double eta = observation_matrix(t + t0).dot(state)
           + observation_model_->predict(forecast_predictors.row(t));
       double probability = plogis(eta);
-      ans[t] = rbinom(lround(trials[t]), probability);
+      ans[t] = rbinom_mt(rng, lround(trials[t]), probability);
     }
     return ans;
   }
@@ -263,17 +317,18 @@ namespace BOOM {
       // y[t0+t].  That latent data is now used to update the Kalman
       // filter for the next time period.  It is important that we
       // discard the imputed state at this point.
-      sparse_scalar_kalman_update(latent_observation - regression_contribution,
-                                  ks.a,
-                                  ks.P,
-                                  ks.K,
-                                  ks.F,
-                                  ks.v,
-                                  missing,
-                                  observation_matrix(t + t0),
-                                  latent_variance,
-                                  *state_transition_matrix(t + t0),
-                                  *state_variance_matrix(t + t0));
+      sparse_scalar_kalman_update(
+          latent_observation - regression_contribution,
+          ks.a,
+          ks.P,
+          ks.K,
+          ks.F,
+          ks.v,
+          missing,
+          observation_matrix(t + t0),
+          latent_variance,
+          *state_transition_matrix(t + t0),
+          *state_variance_matrix(t + t0));
     }
     return ans;
   }

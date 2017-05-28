@@ -23,9 +23,9 @@
 
 namespace BOOM {
   namespace Cephes {
-  /*							polylog.c
+  /*                                                    polylog.c
    *
-   *	Polylogarithms
+   *    Polylogarithms
    *
    *
    *
@@ -220,7 +220,7 @@ namespace BOOM {
       s = 2.0 * s;
       q = polylog (n, 1.0 / x);
       if (n & 1)
-	q = -q;
+        q = -q;
       s = s - q;
       s = s - pow (w, (double) n) / fac (n);
       return s;
@@ -229,7 +229,7 @@ namespace BOOM {
     if (n == 2)
     {
       if (x < 0.0 || x > 1.0)
-	return (spence (1.0 - x));
+        return (spence (1.0 - x));
     }
 
 
@@ -283,11 +283,11 @@ namespace BOOM {
     {
       if (x >= 0.875)
       {
-	u = 1.0 - x;
-	s = polevl(u, A4, 12) / p1evl(u, B4, 12);
-	s =  s * u * u - 1.202056903159594285400 * u;
-	s +=  1.0823232337111381915160;
-	return s;
+        u = 1.0 - x;
+        s = polevl(u, A4, 12) / p1evl(u, B4, 12);
+        s =  s * u * u - 1.202056903159594285400 * u;
+        s +=  1.0823232337111381915160;
+        return s;
       }
       goto pseries;
     }
@@ -342,7 +342,7 @@ namespace BOOM {
       h = h * p;
       s = s + h;
       if (fabs(h/s) < MACHEP)
-	break;
+        break;
       j += 2;
     }
     return s;

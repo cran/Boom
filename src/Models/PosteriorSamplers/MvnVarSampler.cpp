@@ -21,69 +21,77 @@
 #include <distributions.hpp>
 namespace BOOM{
 
-  MvnVarSampler::MvnVarSampler(MvnModel *m, RNG &seeding_rng)
-    : PosteriorSampler(seeding_rng),
-      mvn_(m),
-      pdf_(new UnivParams(0.0))
-  {
-    SpdMatrix sumsq = m->Sigma().Id();
-    sumsq.set_diag(0.0);
-    pss_ = new SpdParams(sumsq);
-  }
-
-  MvnVarSampler::MvnVarSampler(MvnModel *m, double df, const SpdMatrix &sumsq,
+  MvnVarSampler::MvnVarSampler(MvnModel *m,
+                               double df,
+                               const SpdMatrix &variance_estimate,
                                RNG &seeding_rng)
-    : PosteriorSampler(seeding_rng),
-      mvn_(m),
-      pdf_(new UnivParams(df)),
-      pss_(new SpdParams(sumsq))
+      : PosteriorSampler(seeding_rng),
+        model_(m),
+        prior_(new WishartModel(df, variance_estimate))
   {}
 
-  MvnVarSampler::MvnVarSampler(MvnModel *m, const WishartModel &siginv_prior,
+  MvnVarSampler::MvnVarSampler(MvnModel *m,
+                               const Ptr<WishartModel> &siginv_prior,
                                RNG &seeding_rng)
     : PosteriorSampler(seeding_rng),
-      mvn_(m),
-      pdf_(siginv_prior.Nu_prm()),
-      pss_(siginv_prior.Sumsq_prm())
+      model_(m),
+      prior_(siginv_prior)
   {}
 
-  double MvnVarSampler::logpri()const{
-    const SpdMatrix & siginv(mvn_->siginv());
-    return dWish(siginv, pss_->var(), pdf_->value(), true);
+  double MvnVarSampler::logpri() const {
+    return prior_->logp(model_->siginv());
   }
 
-  void MvnVarSampler::draw(){
-    Ptr<MvnSuf> s = mvn_->suf();
-    double df = pdf_->value() + s->n();
-    SpdMatrix S = s->center_sumsq(mvn_->mu());
-    S += pss_->value();
-    S = rWish(df, S.inv());
-    Ptr<SpdParams> sp = mvn_->Sigma_prm();
-    sp->set_ivar(S);
+  void MvnVarSampler::draw() {
+    Ptr<MvnSuf> suf = model_->suf();
+    model_->set_siginv(draw_precision(
+        rng(), suf->n(), suf->center_sumsq(model_->mu()), *prior_));
+  }
+
+  SpdMatrix MvnVarSampler::draw_precision(
+      RNG &rng,
+      double data_sample_size,
+      const SpdMatrix &data_centered_sum_of_squares,
+      const WishartModel &precision_prior) {
+    return rWish_mt(
+        rng,
+        precision_prior.nu() + data_sample_size,
+        (data_centered_sum_of_squares + precision_prior.sumsq()).inv(),
+        false);
+  }
+
+  SpdMatrix MvnVarSampler::draw_variance(
+      RNG &rng,
+      double data_sample_size,
+      const SpdMatrix &data_centered_sum_of_squares,
+      const WishartModel &precision_prior) {
+    return rWish_mt(
+        rng,
+        precision_prior.nu() + data_sample_size,
+        (data_centered_sum_of_squares + precision_prior.sumsq()).inv(),
+        true);
   }
 
   //======================================================================
 
-  MvnConjVarSampler::MvnConjVarSampler(MvnModel *m, RNG &seeding_rng)
-      : MvnVarSampler(m, seeding_rng) {}
-
-  MvnConjVarSampler::MvnConjVarSampler(MvnModel *m, double df, const SpdMatrix &sumsq,
+  MvnConjVarSampler::MvnConjVarSampler(MvnModel *m,
+                                       double df,
+                                       const SpdMatrix &sumsq,
                                        RNG &seeding_rng)
       : MvnVarSampler(m, df, sumsq, seeding_rng) {}
 
   MvnConjVarSampler::MvnConjVarSampler(MvnModel *m,
-                                       const WishartModel &siginv_prior,
+                                       const Ptr<WishartModel> &prior,
                                        RNG &seeding_rng)
-      : MvnVarSampler(m, siginv_prior, seeding_rng) {}
+      : MvnVarSampler(m, prior, seeding_rng) {}
 
   void MvnConjVarSampler::draw(){
-    Ptr<MvnSuf> s = mvn()->suf();
-    double df = pdf()->value() + s->n() - 1;
-    SpdMatrix S = s->center_sumsq(s->ybar());
-    S += pss()->value();
-    S = rWish(df, S.inv());
-    Ptr<SpdParams> sp = mvn()->Sigma_prm();
-    sp->set_ivar(S);
+    Ptr<MvnSuf> suf = model()->suf();
+    model()->set_siginv(MvnVarSampler::draw_precision(
+        rng(),
+        suf->n() - 1,
+        suf->center_sumsq(suf->ybar()),
+        *prior()));
   }
 
 } // namespace BOOM

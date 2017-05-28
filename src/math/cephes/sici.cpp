@@ -24,9 +24,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							sici.c
+  /*                                                    sici.c
    *
-   *	Sine and cosine integrals
+   *    Sine and cosine integrals
    *
    *
    *
@@ -244,7 +244,7 @@ namespace BOOM {
     if( sign )
       s = -s;
     *si = s;
-    *ci = eulers_constant + log(x) + c;	/* real part if x < 0 */
+    *ci = eulers_constant + log(x) + c; /* real part if x < 0 */
     return(0);
 
     /* The auxiliary functions are:

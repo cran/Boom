@@ -23,9 +23,9 @@
 
 namespace BOOM {
   namespace Cephes {
-  /*							fresnl.c
+  /*                                                    fresnl.c
    *
-   *	Fresnel integral
+   *    Fresnel integral
    *
    *
    *
@@ -199,8 +199,8 @@ namespace BOOM {
         goto done;
       }
 
-      /*		Asymptotic power series auxiliary functions
-       *		for large argument
+      /*                Asymptotic power series auxiliary functions
+       *                for large argument
        */
       x2 = x * x;
       t = PI * x2;

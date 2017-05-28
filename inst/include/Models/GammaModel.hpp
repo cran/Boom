@@ -48,7 +48,7 @@ namespace BOOM {
     double sum() const;
     double sumlog() const;
     double n() const;
-    ostream & display(ostream &out) const;
+    ostream & display(ostream &out) const override;
 
     virtual void combine(Ptr<GammaSuf> s);
     virtual void combine(const GammaSuf & s);
@@ -93,7 +93,7 @@ namespace BOOM {
     double pdf(const Data * dp, bool logscale) const override;
 
     double Logp(double x, double &g, double &h, uint nd) const override ;
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
   };
   //======================================================================
 

@@ -54,16 +54,16 @@ namespace BOOM{
       const double * unvectorize(const double *dp, bool &ok); //
       bool problem()const{return out_of_sync;}
       int io(const string &dname, const string &fname, IO io_prm,
-	      const string &sfx);
+              const string &sfx);
 
     };
 
 
     class SubjectPrior
       : public default_param_policy<constrained_mvn_params>,
-	public default_sufstat_policy<mvn_suf>,
-	public default_prior_policy,
-	public basic_prior_details<Subject>
+        public default_sufstat_policy<mvn_suf>,
+        public default_prior_policy,
+        public basic_prior_details<Subject>
     {
       //  theta[i] ~ N(0, R)
     public:
@@ -91,9 +91,9 @@ namespace BOOM{
     //======================================================================
     class UniformCorrelationPrior
       : public default_param_policy<null_params>,
-	public default_sufstat_policy<null_suf>,
-	public default_prior_policy,
-	public slice_sampling_prior<SubjectPrior>
+        public default_sufstat_policy<null_suf>,
+        public default_prior_policy,
+        public slice_sampling_prior<SubjectPrior>
     {
       // p(R) \propto 1
     public:
@@ -104,3 +104,4 @@ namespace BOOM{
   }
 }
 #endif // BOOM_SUBJECT_PRIOR_HPP
+g

@@ -38,18 +38,21 @@
 namespace BOOM{
 
   namespace StateSpace {
+    // A data type representing one or more RegressionData observations at the
+    // same time point.
     class MultiplexedRegressionData
-        : public Data {
+        : public MultiplexedData {
      public:
       MultiplexedRegressionData();
       MultiplexedRegressionData(double y, const Vector &x);
       MultiplexedRegressionData(const std::vector<Ptr<RegressionData>> &data);
       MultiplexedRegressionData * clone() const override;
       std::ostream & display(std::ostream &out) const override;
-      void add_data(Ptr<RegressionData> dp) {regression_data_.push_back(dp);}
+
+      // Add a RegressionData observation to this data point.  If dp
+      void add_data(const Ptr<RegressionData> &dp);
 
       double adjusted_observation(const GlmCoefs &coefficients) const;
-      int sample_size() const {return regression_data_.size();}
       const RegressionData &regression_data(int i) const;
       Ptr<RegressionData> regression_data_ptr(int i);
 
@@ -57,6 +60,9 @@ namespace BOOM{
       void set_state_model_offset(double offset) {
         state_model_offset_ = offset;
       }
+
+      // The total number of data points, both missing and observed.
+      int total_sample_size() const override {return regression_data_.size();}
 
      private:
       std::vector<Ptr<RegressionData>> regression_data_;
@@ -110,8 +116,8 @@ namespace BOOM{
 
     // Simulate the next nrow(newX) time periods, given current
     // parameters and state.
-    Vector simulate_forecast(const Matrix &newX, const Vector &final_state);
-    Vector simulate_forecast(const Matrix &newX);
+    Vector simulate_forecast(RNG &rng, const Matrix &newX, const Vector &final_state);
+    Vector simulate_forecast(RNG &rng, const Matrix &newX);
 
     // Contribution of the regression model to the overall mean of y at each
     // time point.  In the case of multiplexed data, the average regression
@@ -134,10 +140,13 @@ namespace BOOM{
     void add_data(Ptr<Data> dp) override;
 
     // Promotes dp to a MultiplexedRegressionData containing a single
-    // observation, then calls add_data(MultiplexedRegressionData).
-    void add_data(Ptr<RegressionData> dp);
+    // observation, then calls add_multiplexed_data.
+    void add_regression_data(const Ptr<RegressionData> &dp);
 
-    void add_data(Ptr<StateSpace::MultiplexedRegressionData> dp) override;
+    // Adds dp to the vector of data, as the most recent observation, and adds
+    // the regression data in 'dp' to the underlying regression model.
+    void add_multiplexed_data(
+        const Ptr<StateSpace::MultiplexedRegressionData> &dp);
 
    private:
     // The regression model holds the regression coefficients and the

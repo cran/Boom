@@ -43,9 +43,9 @@ namespace BOOM{
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     ostream &print(ostream &out)const override;
   private:
     Matrix sumlog_;
@@ -87,7 +87,7 @@ namespace BOOM{
     double loglike(const Vector &Nu_columns)const override;
     double dloglike(const Vector &Nu_columns, Vector &g)const override;
 
-    Matrix sim()const;
+    Matrix sim(RNG &rng = GlobalRng::rng)const;
   };
 }
 

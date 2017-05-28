@@ -194,7 +194,13 @@ namespace BOOM{
 
   // If r_int_vector is an R vector of integers then it is converted
   // to a std::vector<int>.  Otherwise an exception is thrown.
-  std::vector<int> ToIntVector(SEXP r_int_vector);
+  // Args:
+  //   r_int_vector:  An R vector of integers.
+  //   subtract_one: If 'true' then subtract one from each entry in r_int_vector
+  //     before returning.  This is useful for converting from R's unit offset
+  //     counting system to C's zero-offset system if r_int_vector is a
+  //     collection of positions in another vector.
+  std::vector<int> ToIntVector(SEXP r_int_vector, bool subtract_one = false);
 
   // If r_int_matrix is an R matrix of integers then it is converted
   // to a std::vector<std::vector<int>>.  Otherwise an exception is
@@ -215,7 +221,13 @@ namespace BOOM{
   SEXP ToRVector(const Vector &boom_vector);
   SEXP ToRMatrix(const Matrix &boom_matrix);
   SEXP ToRArray(const ConstArrayView &boom_array);
-  SEXP ToRIntVector(const std::vector<int> &ints);
+
+  // Convert a std::vector<int> to an R vector of integers.  A common case is
+  // when the first argument contains a vector of positions in the C++
+  // zero-offset system for indexing arrays.  In that case you can set add_one =
+  // true to add 1 to each element of ints, so that it will correspond to R's
+  // unit-offset indexing scheme.
+  SEXP ToRIntVector(const std::vector<int> &ints, bool add_one = false);
 
   // This version produces an R matrix with row names and column
   // names.  A zero-length vector indicates that no names are desired

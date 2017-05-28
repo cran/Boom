@@ -19,6 +19,7 @@
 #ifndef BOOM_VECTOR_MODEL_HPP
 #define BOOM_VECTOR_MODEL_HPP
 #include <Models/ModelTypes.hpp>
+#include <distributions/rng.hpp>
 
 namespace BOOM {
 
@@ -28,7 +29,7 @@ namespace BOOM {
    public:
     virtual double logp(const Vector &x) const = 0;
     VectorModel *clone() const override = 0;
-    virtual Vector sim() const = 0;
+    virtual Vector sim(RNG &rng = GlobalRng::rng) const = 0;
   };
 
   class LocationScaleVectorModel : virtual public VectorModel {

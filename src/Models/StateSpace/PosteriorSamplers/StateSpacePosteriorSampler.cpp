@@ -35,15 +35,20 @@ namespace BOOM{
 
   void SSPS::draw(){
     if (!latent_data_initialized_) {
-      model_->impute_state();
+      model_->impute_state(rng());
       latent_data_initialized_ = true;
+      impute_nonstate_latent_data();
     }
-    impute_nonstate_latent_data();
     model_->observation_model()->sample_posterior();
     for(int s = 0; s < model_->nstate(); ++s) {
       model_->state_model(s)->sample_posterior();
     }
-    model_->impute_state();
+    // The complete data sufficient statistics for the observation model and the
+    // state models are updated when calling impute_state.  The non-state latent
+    // data should be imputed immediately before that, so the complete data
+    // sufficient statistics reflect all the latent data correctly.
+    impute_nonstate_latent_data();
+    model_->impute_state(rng());
     // End with a call to impute_state() so that the internal state of
     // the Kalman filter matches up with the parameter draws.
   }

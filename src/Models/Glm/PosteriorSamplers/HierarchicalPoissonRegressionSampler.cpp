@@ -145,7 +145,7 @@ namespace BOOM {
             siginv_wishart_prior)),
         sigma_given_beta_sampler_(new MvnVarSampler(
             model->data_parent_model(),
-            *siginv_wishart_prior)),
+            siginv_wishart_prior)),
         mu_given_beta_sampler_(new MvnMeanSampler(
             model->data_parent_model(),
             mu_prior))

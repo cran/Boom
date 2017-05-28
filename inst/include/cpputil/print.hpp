@@ -31,7 +31,7 @@ namespace BOOM{
    if(l.empty()){
      out << "empty list" << std::endl;
    }else for(typename std::list<T>::iterator it = l.begin();
- 	    it!=l.end(); ++it){ out << *it << std::endl;}
+            it!=l.end(); ++it){ out << *it << std::endl;}
    return out;}
 
  template <class T>

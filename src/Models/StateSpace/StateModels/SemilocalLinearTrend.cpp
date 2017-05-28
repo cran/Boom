@@ -168,9 +168,9 @@ namespace BOOM{
                  "be part of an EM algorithm.");
   }
 
-  void SLLT::simulate_state_error(VectorView eta, int t) const {
-    eta[0] = rnorm(0, level_->sigma());
-    eta[1] = rnorm(0, slope_->sigma());
+  void SLLT::simulate_state_error(RNG &rng, VectorView eta, int t) const {
+    eta[0] = rnorm_mt(rng, 0, level_->sigma());
+    eta[1] = rnorm_mt(rng, 0, slope_->sigma());
     eta[2] = 0;
   }
 
@@ -232,10 +232,10 @@ namespace BOOM{
     return ans;
   }
 
-  void SLLT::simulate_initial_state(VectorView state) const {
+  void SLLT::simulate_initial_state(RNG &rng, VectorView state) const {
     check_dim(state);
-    state[0] = rnorm(initial_level_mean_, sqrt(initial_state_variance_(0,0)));
-    state[1] = rnorm(initial_slope_mean_, sqrt(initial_state_variance_(1,1)));
+    state[0] = rnorm_mt(rng, initial_level_mean_, sqrt(initial_state_variance_(0,0)));
+    state[1] = rnorm_mt(rng, initial_slope_mean_, sqrt(initial_state_variance_(1,1)));
     state[2] = slope_->mu();
   }
 

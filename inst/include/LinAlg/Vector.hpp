@@ -27,6 +27,7 @@
 #include <boost/operators.hpp>
 #include <uint.hpp>
 #include <functional>
+#include <distributions/rng.hpp>
 
 namespace BOOM{
   class SpdMatrix;
@@ -99,11 +100,9 @@ namespace BOOM{
 
     Vector zero()const;  // returns a same sized Vector filled with 0's
     Vector one()const;   // returns a same sized Vector filled with 1's
-    Vector & randomize();    // fills the Vector with U(0,1) random numbers
-    template <class RNG>
-    Vector & randomize(RNG f);
+    Vector & randomize(RNG &rng = GlobalRng::rng); // fills the Vector with U(0,1) random numbers
     // Fill the Vector with random numbers, but leave element 0 as 1.0.
-    Vector & randomize_with_intercept();
+    Vector & randomize_with_intercept(RNG &rng = GlobalRng::rng);
 
     //-------------- STL vector stuff ---------------------
     double *data();
@@ -208,13 +207,6 @@ namespace BOOM{
     dVector::insert(end(), v.begin(), v.end());
     return *this;
   }
-
-  template <class RNG>
-      Vector & Vector::randomize(RNG f){
-    for(uint i=0; i<size(); ++i) (*this)[i] = f();
-    return *this;
-  }
-
 
   //======================= Vector functions ======================
   void permute_Vector(Vector &v, const std::vector<uint> &perm);

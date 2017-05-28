@@ -31,8 +31,9 @@ namespace BOOM{
   MDD::MultiplexedDoubleData() {}
 
   MDD::MultiplexedDoubleData(double y)
-      : data_(1, new DoubleData(y))
-  {}
+  {
+    add_data(new DoubleData(y));
+  }
 
   MDD * MDD::clone() const { return new MDD(*this); }
 
@@ -44,26 +45,31 @@ namespace BOOM{
   }
 
   void MDD::add_data(const Ptr<DoubleData> &data_point) {
+    MultiplexedData::add_data(data_point);
     data_.push_back(data_point);
   }
 
   double MDD::adjusted_observation() const {
-    if (data_.empty()) {
+    if (data_.empty() ||
+        missing() == Data::completely_missing ||
+        observed_sample_size() == 0) {
       return negative_infinity();
     }
     double ans = 0;
     for (int i = 0; i < data_.size(); ++i) {
-      ans += data_[i]->value();
+      if (data_[i]->missing() == Data::observed) {
+        ans += data_[i]->value();
+      }
     }
-    return ans / data_.size();
-  }
-
-  int MDD::sample_size() const {
-    return data_.size();
+    return ans / observed_sample_size();
   }
 
   const DoubleData & MDD::double_data(int i) const {
     return *(data_[i]);
+  }
+
+  Ptr<DoubleData> MDD::double_data_ptr(int i) {
+    return data_[i];
   }
 
   void MDD::set_value(double value, int i) {
@@ -101,6 +107,7 @@ namespace BOOM{
       NEW(MDD, dp)(y[i]);
       if(!y_is_observed.empty() && !y_is_observed[i]) {
         dp->set_missing_status(Data::completely_missing);
+        dp->double_data_ptr(0)->set_missing_status(Data::completely_missing);
       }
       add_data(dp);
     }
@@ -126,10 +133,11 @@ namespace BOOM{
       return sigsq;
     }
     const Ptr<MDD> &data_point(dat()[t]);
-    if (is_missing_observation(t) || data_point->sample_size() <= 1) {
+    if (is_missing_observation(t) ||
+        data_point->observed_sample_size() <= 1) {
       return sigsq;
     } else {
-      return sigsq / data_point->sample_size();
+      return sigsq / data_point->observed_sample_size();
     }
   }
 
@@ -138,7 +146,8 @@ namespace BOOM{
   }
 
   bool SSM::is_missing_observation(int t) const {
-    return dat()[t]->missing() != Data::observed;
+    return dat()[t]->missing() == Data::completely_missing
+        || dat()[t]->observed_sample_size() == 0;
   }
 
   ZeroMeanGaussianModel* SSM::observation_model() {
@@ -154,9 +163,11 @@ namespace BOOM{
     if (!is_missing_observation(t)) {
       const Ptr<MDD> &data_point(dat()[t]);
       double mu = observation_matrix(t).dot(state(t));
-      for (int j = 0; j < data_point->sample_size(); ++j) {
-        double residual = data_point->double_data(j).value() - mu;
-        observation_model_->suf()->update_raw(residual);
+      for (int j = 0; j < data_point->total_sample_size(); ++j) {
+        if (data_point->double_data(j).missing() == Data::observed) {
+          double residual = data_point->double_data(j).value() - mu;
+          observation_model_->suf()->update_raw(residual);
+        }
       }
     }
   }
@@ -189,21 +200,22 @@ namespace BOOM{
     return ans;
   }
 
-  Vector SSM::simulate_forecast(int n, const Vector &final_state) {
+  Vector SSM::simulate_forecast(RNG &rng, int n, const Vector &final_state) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vector ans(n);
     int t0 = time_dimension();
     Vector state = final_state;
     for(int t = 0; t < n; ++t) {
-      state = simulate_next_state(state, t + t0);
-      ans[t] = rnorm(observation_matrix(t + t0).dot(state),
-                     sqrt(observation_variance(t + t0)));
+      state = simulate_next_state(rng, state, t + t0);
+      ans[t] = rnorm_mt(rng,
+                        observation_matrix(t + t0).dot(state),
+                        sqrt(observation_variance(t + t0)));
     }
     return ans;
   }
 
   Vector SSM::simulate_forecast_given_observed_data(
-      int n, const Vector &observed_data) {
+      RNG &rng, int n, const Vector &observed_data) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vector ans(n);
     int t0 = observed_data.size();
@@ -212,9 +224,10 @@ namespace BOOM{
     //  state.
     Vector state(rmvn(ks.a, ks.P));
     for (int t = 0; t < n; ++t) {
-      ans[t] = rnorm(observation_matrix(t + t0).dot(state),
-                     sqrt(observation_variance(t + t0)));
-      state = simulate_next_state(state, t + t0 + 1);
+      ans[t] = rnorm_mt(rng,
+                        observation_matrix(t + t0).dot(state),
+                        sqrt(observation_variance(t + t0)));
+      state = simulate_next_state(rng, state, t + t0 + 1);
     }
     StateSpaceModelBase::set_state_model_behavior(StateModel::MIXTURE);
     return ans;

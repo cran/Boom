@@ -79,14 +79,21 @@ namespace BOOM{
     typedef Ptr<Variable> VarPtr;
   public:
     VariableSelectionPrior();
-    VariableSelectionPrior(uint n, double pi=1.0);
-    VariableSelectionPrior(const Vector &pi);
+
+    // A prior for coefficients of dimension n, with marginal inclusion
+    // probability.
+    VariableSelectionPrior(uint n, double inclusion_probability = 1.0);
+
+    // Args:
+    //   marginal_inclusion_probabilities: Each entry gives the marginal
+    //     inclusion probability for the corresponding regression coefficient.
+    VariableSelectionPrior(const Vector &marginal_inclusion_probabilities);
+
     VariableSelectionPrior(const VariableSelectionPrior &rhs);
     VariableSelectionPrior * clone()const override;
 
-    //    double loglike()const;
-    virtual void mle();
-    virtual double pdf(Ptr<Data> dp, bool logscale)const;
+    void mle();
+    double pdf(const Ptr<Data> &dp, bool logscale) const;
     double logp(const Selector &inc)const;
     void make_valid(Selector &inc)const;
     const VarPtr variable(uint i)const;
@@ -95,18 +102,18 @@ namespace BOOM{
     Selector simulate(RNG &rng)const;
     uint potential_nvars()const;
 
-    void add_main_effect(uint pos, double prob, const string & vname="");
+    void add_main_effect(uint pos, double prob, const std::string & vname="");
     // a fully observed main effect has probability "prob" to be
     // present.
     void add_missing_main_effect(uint pos, double prob, uint oi_pos,
-                                 const string & vname="");
+                                 const std::string & vname="");
     // A missing main effect has probability prob of being present if
     // its observation indicator is present.  If the observation
     // indicator is absent then the inclusion probability is 0.
 
     void add_interaction(uint pos, double prob,
                          const std::vector<uint> & parents,
-                         const string &vname="");
+                         const std::string &vname="");
     // an interaction has probability "prob" to be present if all of
     // its parents are also present.  If any of its parents are absent
     // then the interaction has inclusion probability 0.
@@ -134,8 +141,8 @@ namespace BOOM{
 
     mutable Ptr<VectorParams> pi_;  // for managing io
     void fill_pi()const;
-    void check_size_eq(uint n, const string &fun)const;
-    void check_size_gt(uint n, const string &fun)const;
+    void check_size_eq(uint n, const std::string &fun)const;
+    void check_size_gt(uint n, const std::string &fun)const;
   };
 
   ostream & operator<<(ostream &out, const VariableSelectionPrior &);

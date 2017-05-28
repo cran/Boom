@@ -124,8 +124,10 @@ namespace BOOM {
     //   n:  The number of trials to simulate.
     // Returns:
     //   Aggregated data for the all the requested observations.
-    ZeroInflatedPoissonSuf simulate_sufficient_statistics(const Vector &x,
-                                                          int64_t n) const;
+    ZeroInflatedPoissonSuf simulate_sufficient_statistics(
+        const Vector &x,
+        int64_t n,
+        RNG &rng = GlobalRng::rng) const;
   };
 
 } // namespace BOOM

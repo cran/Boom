@@ -65,9 +65,10 @@ namespace BOOM{
       explicit NormalPrior(SEXP prior);
       virtual ~NormalPrior() {}
       virtual std::ostream & print(std::ostream &out) const;
-      double mu()const {return mu_;}
-      double sigma()const {return sigma_;}
-      double initial_value()const {return initial_value_;}
+      double mu() const {return mu_;}
+      double sigma() const {return sigma_;}
+      double sigsq() const {return sigma_ * sigma_;}
+      double initial_value() const {return initial_value_;}
       bool fixed() const {return fixed_;}
 
      private:
@@ -215,6 +216,16 @@ namespace BOOM{
       SpdMatrix Sigma_;
     };
 
+    //----------------------------------------------------------------------
+    class InverseWishartPrior {
+     public:
+      InverseWishartPrior(SEXP r_prior);
+      double variance_guess_weight() const {return variance_guess_weight_;}
+      const SpdMatrix & variance_guess() const {return variance_guess_;}
+     private:
+      double variance_guess_weight_;
+      SpdMatrix variance_guess_;
+    };
     //----------------------------------------------------------------------
     class NormalInverseWishartPrior {
      public:

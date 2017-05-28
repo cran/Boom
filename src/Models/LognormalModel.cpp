@@ -94,8 +94,8 @@ namespace BOOM {
     return dlnorm(x, mu(), sigma(), true);
   }
 
-  double LognormalModel::sim() const {
-    return exp(rnorm(mu(), sigma()));
+  double LognormalModel::sim(RNG &rng) const {
+    return exp(rnorm_mt(rng, mu(), sigma()));
   }
 
 }  // namespace BOOM

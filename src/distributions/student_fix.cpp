@@ -23,7 +23,7 @@
 namespace BOOM{
 
   double dstudent(double x, double mu, double sigma, double df,
- 		  bool logscale){
+                  bool logscale){
 
     /* univariate student density where x = z/w + mu, where z~N(0,
        sigsq) and w^2~Gamma(df/2, df/2) (i.e. w^2 has been divided by

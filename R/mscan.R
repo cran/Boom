@@ -1,5 +1,5 @@
 mscan <- function(fname, nc = 0, header = FALSE, burn = 0,
-                  thin = 0, sep = "", ...) {
+                  thin = 0, nlines = 0L, sep = "", ...) {
   ## Quickly scan a matrix of homogeneous data from a file.
   ##
   ## Args:
@@ -12,6 +12,9 @@ mscan <- function(fname, nc = 0, header = FALSE, burn = 0,
   ##     discard.
   ##   thin: An integer.  If thin > 1 then keep every thin'th line.  This is
   ##     useful for reading in very large files of MCMC output, for example.
+  ##   nlines: If positive, the number of data lines to scan from the data file
+  ##     (e.g. for an MCMC algorithm that is only partway done).  Otherwise the
+  ##     entire file will be read.
   ##   sep:  Field separator in the data file.
   ##   ...:  Extra arguments passed to 'scan'.
   ##
@@ -51,7 +54,7 @@ mscan <- function(fname, nc = 0, header = FALSE, burn = 0,
     single.line <- scan(fname, skip = skip, nlines = 1, sep = sep, ...)
     nc <- length(single.line)
   }
-  ans <- matrix(scan(fname, skip = skip, sep = sep, ...),
+  ans <- matrix(scan(fname, skip = skip, sep = sep, nlines = nlines, ...),
                 ncol = nc,
                 byrow = TRUE)
   if (burn > 0) ans <- ans[-(1:burn), , drop = FALSE]

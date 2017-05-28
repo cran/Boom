@@ -80,8 +80,8 @@ namespace BOOM {
     return ans;
   }
 
-  double UniformShrinkagePriorModel::sim() const {
-    return rusp(median());
+  double UniformShrinkagePriorModel::sim(RNG &rng) const {
+    return rusp_mt(rng, median());
   }
 
 }  // namespace BOOM

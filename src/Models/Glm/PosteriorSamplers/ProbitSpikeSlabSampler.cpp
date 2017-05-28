@@ -89,7 +89,7 @@ namespace BOOM{
   bool PSSS::keep_flip(double logp_old, double logp_new)const{
     if(!std::isfinite(logp_new)) return false;
     double pflip = logit_inv(logp_new - logp_old);
-    double u = runif(0,1);
+    double u = runif_mt(rng(), 0, 1);
     return u < pflip ? true : false;
   }
 

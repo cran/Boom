@@ -94,32 +94,32 @@ namespace BOOM {
   }
 
   void DPMCGS::draw() {
-    draw_cluster_membership_indicators();
     draw_parameters();
+    draw_cluster_membership_indicators();
   }
 
   void DPMCGS::draw_cluster_membership_indicators() {
     const std::vector<Ptr<VectorData> > &data(model_->dat());
-    if (cluster_indicators_.empty()) {
+    if (model_->cluster_indicators().empty()) {
       // If this is the first time we've been down this code path then
       // cluster_indicators_ will be empty.  Fill it with -1's which
       // are the signal that a data point is currently unassigned.
-      cluster_indicators_.resize(data.size(), -1);
+      model_->initialize_cluster_indicators(data.size());
       for (int i = 0; i < data.size(); ++i) {
         // Then assign each data point to cluster 0.
         assign_data_to_cluster(data[i]->value(), 0);
-        cluster_indicators_[i] = 0;
+        model_->set_cluster_indicator(i, 0);
       }
     }
 
     for (int i = 0; i < data.size(); ++i) {
       const Vector &y(data[i]->value());
-      remove_data_from_cluster(y, cluster_indicators_[i]);
-      cluster_indicators_[i] = -1;
+      remove_data_from_cluster(y, model_->cluster_indicators(i));
+      model_->set_cluster_indicator(i, -1);
       Vector prob = cluster_membership_probability(y);
       int cluster_number = rmulti_mt(rng(), prob);
       model_->assign_data_to_cluster(y, cluster_number);
-      cluster_indicators_[i] = cluster_number;
+      model_->set_cluster_indicator(i, cluster_number);
     }
   }
 
@@ -184,12 +184,21 @@ namespace BOOM {
   }
 
   void DPMCGS::remove_data_from_cluster(const Vector &y, int cluster) {
+    if (cluster == model_->number_of_clusters()) {
+      std::cout << "Unexpected assignment to new cluster in prior sampler!"
+                << std::endl;
+    } else if (cluster > model_->number_of_clusters()) {
+      std::cout << "Unexpected assignment to crazy cluster in prior sampler!"
+                << std::endl;
+    }
     bool empty = (model_->cluster(cluster).suf()->n() == 1);
     model_->remove_data_from_cluster(y, cluster);
+    // Remap cluster indicies if empty
     if (empty) {
-      for (int i = 0; i < cluster_indicators_.size(); ++i) {
-        if (cluster_indicators_[i] >= cluster) {
-          --cluster_indicators_[i];
+      for (int i = 0; i < model_->cluster_indicators().size(); ++i) {
+        const int current_indicator = model_->cluster_indicators(i);
+        if (current_indicator >= cluster) {
+          model_->set_cluster_indicator(i, current_indicator - 1);
         }
       }
     }

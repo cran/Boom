@@ -25,8 +25,8 @@
 
 namespace BOOM{
   inline bool ask_to_continue(const std::string & msg="",
-			      std::ostream &out = std::cerr,
-			      std::istream &in = std::cin){
+                              std::ostream &out = std::cerr,
+                              std::istream &in = std::cin){
 
     out << msg << " Continue? [y/n] ";
     char c='a';

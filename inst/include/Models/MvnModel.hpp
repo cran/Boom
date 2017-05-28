@@ -84,8 +84,7 @@ namespace BOOM{
     void set_conjugate_prior(Ptr<MvnGivenSigma>, Ptr<WishartModel>);
     void set_conjugate_prior(Ptr<MvnConjSampler>);
 
-    Vector sim()const override;
-    Vector sim(RNG &rng)const;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
   };
   //------------------------------------------------------------
 }

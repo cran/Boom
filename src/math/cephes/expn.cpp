@@ -23,9 +23,9 @@
 
 namespace BOOM {
   namespace Cephes {
-  /*							expn.c
+  /*                                                    expn.c
    *
-   *		Exponential integral En
+   *            Exponential integral En
    *
    *
    *
@@ -68,7 +68,7 @@ namespace BOOM {
    *
    */
 
-  /*							expn.c	*/
+  /*                                                    expn.c  */
 
   /* Cephes Math Library Release 2.8:  June, 2000
      Copyright 1985, 2000 by Stephen L. Moshier */
@@ -107,8 +107,8 @@ namespace BOOM {
     if( n == 0 )
       return( exp(-x)/x );
 
-    /*							expn.c	*/
-    /*		Expansion for large n		*/
+    /*                                                  expn.c  */
+    /*          Expansion for large n           */
 
     if( n > 5000 )
     {
@@ -125,9 +125,9 @@ namespace BOOM {
     if( x > 1.0 )
       goto cfrac;
 
-    /*							expn.c	*/
+    /*                                                  expn.c  */
 
-    /*		Power series expansion		*/
+    /*          Power series expansion          */
 
     psi = eulers_constant - log(x);
     for( i=1; i<n; i++ )
@@ -162,8 +162,8 @@ namespace BOOM {
     ans = (std::pow(z, r) * psi / ::tgamma(t)) - ans;
     goto done;
 
-    /*							expn.c	*/
-    /*		continued fraction		*/
+    /*                                                  expn.c  */
+    /*          continued fraction              */
  cfrac:
     k = 1;
     pkm2 = 1.0;

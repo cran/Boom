@@ -39,9 +39,15 @@ namespace BOOM {
     // Returns:
     //   The R design matrix corresponding to the inputs.
     SEXP BuildDesignMatrix(
-      SEXP r_formula_rhs,
-      SEXP r_data_frame_containing_only_factors,
-      SEXP r_add_intercept);
+        SEXP r_formula_rhs,
+        SEXP r_data_frame_containing_only_factors,
+        SEXP r_add_intercept);
+
+    SEXP BuildContextualDesignMatrix(
+        SEXP r_formula_rhs,
+        SEXP r_experiment_data_only_factors,
+        SEXP r_context_data_only_factors,
+        SEXP r_add_intercept);
 
     // Args:
     //   r_formula_rhs: The right hand side of an R model formula.

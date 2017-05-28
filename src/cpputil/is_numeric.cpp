@@ -39,19 +39,19 @@ namespace BOOM{
       if(last_was_e && !is_sign(c)) return false;
 
       if(is_e(c)){
-	++ne;
-	if(ne>1) return false;
-	last_was_e=true;
-	continue;
+        ++ne;
+        if(ne>1) return false;
+        last_was_e=true;
+        continue;
       }else if(is_dot(c)){
-	++ndot;
-	if(ndot>1) return false;
+        ++ndot;
+        if(ndot>1) return false;
       }else if(is_sign(c)){
-	if(i>0 && last_was_e==false ) return false;
+        if(i>0 && last_was_e==false ) return false;
       }else if(!isdigit(c)){
-	return false;
+        return false;
       }else{
-	++ndigits;
+        ++ndigits;
       }
       last_was_e=false;
     }

@@ -138,10 +138,10 @@ namespace BOOM {
     }
   }
 
-  void DRSM::simulate_state_error(VectorView eta, int t)const{
+  void DRSM::simulate_state_error(RNG &rng, VectorView eta, int t)const{
     check_size(eta.size());
     for (int i = 0; i < eta.size(); ++i) {
-      eta[i] = rnorm(0, coefficient_transition_model_[i]->sigma());
+      eta[i] = rnorm_mt(rng, 0, coefficient_transition_model_[i]->sigma());
     }
   }
 

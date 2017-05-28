@@ -63,10 +63,10 @@ namespace BOOM{
     report_error("RegressionStateModel cannot be part of an EM algorithm.");
   }
 
-  void RegressionStateModel::simulate_state_error(VectorView eta, int t) const {
+  void RegressionStateModel::simulate_state_error(RNG &, VectorView eta, int t) const {
     eta[0] = 0; }
 
-  void RegressionStateModel::simulate_initial_state(VectorView eta) const {
+  void RegressionStateModel::simulate_initial_state(RNG &, VectorView eta) const {
     eta[0] = 1;}
 
   Ptr<SparseMatrixBlock>

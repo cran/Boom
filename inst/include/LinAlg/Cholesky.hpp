@@ -21,32 +21,54 @@
 #include <LinAlg/Matrix.hpp>
 #include <LinAlg/SpdMatrix.hpp>
 
-namespace BOOM{
-    class Chol{
-    public:
-      Chol(const Matrix &A);
-      uint nrow()const;
-      uint ncol()const;
-      uint dim()const;
-      Matrix getL()const;
-      Matrix getLT()const;
-      Matrix solve(const Matrix &B)const;
-      Vector solve(const Vector &b)const;
-      SpdMatrix inv()const;  // inverse of A
-      SpdMatrix original_matrix()const;
-      double det()const;     // det(A)
-      double logdet()const;  // log(det(A))
-      bool is_pos_def()const{return pos_def;}
-      Chol & operator *= (double a);
-     private:
-      Matrix dcmp;
-      bool pos_def;
-      bool zeros_;  // true if upper diagonal has been zeroed out;
-      void check()const;
-    };
+namespace BOOM {
+  class Chol {
+   public:
+    // Compute and store the Cholesky factor of the matrix 'A'.
+    Chol(const Matrix &A);
 
-  Chol operator*(double a, const Chol &C);
-  Chol operator*(const Chol &C, double a);
+    // All three of these return the number of rows in the represented matrix
+    // (which is the same as the number of columns).
+    uint nrow()const;
+    uint ncol()const;
+    uint dim()const;
 
-}
-#endif// BOOM_CHOL_HPP
+    // The lower Cholesky triange of A.
+    Matrix getL()const;
+
+    // The upper Cholesky triange of A.
+    Matrix getLT()const;
+
+    // The (inverse of A) times B.
+    Matrix solve(const Matrix &B)const;
+
+    // The (inverse of A) times b.
+    Vector solve(const Vector &b)const;
+
+    // The inverse of A.
+    SpdMatrix inv()const;  // inverse of A
+
+    // The original (represented) matrix.
+    SpdMatrix original_matrix()const;
+
+    // Determinant of A.
+    double det()const;
+
+    // Natural log of the determinant of A.
+    double logdet()const;
+
+    // Returns true if A is positive definite.  Computing a cholesky
+    // decomposition is a fast way to determine if a matrix is positive
+    // definite.  If the result is false, then other computations are not to be
+    // trusted, and may result in errors or exceptions.
+    bool is_pos_def() const {return pos_def_;}
+
+   private:
+    Matrix dcmp_;
+    bool pos_def_;
+    void check()const;
+  };
+
+}  // namespace BOOM
+
+#endif  // BOOM_CHOL_HPP

@@ -51,16 +51,16 @@ namespace BOOM {
     }
   }
 
-  double TruncatedGammaModel::sim() const {
+  double TruncatedGammaModel::sim(RNG &rng) const {
     static const double threshold = log(.1);
     if (lognc_ > threshold) {
       double ans = negative_infinity();
       do {
-        ans = GammaModel::sim();
+        ans = GammaModel::sim(rng);
       } while (ans < lower_truncation_point_ || ans > upper_truncation_point_);
       return ans;
     } else {
-      double u = runif_mt(GlobalRng::rng, plo_, phi_);
+      double u = runif_mt(rng, plo_, phi_);
       return qgamma(u, alpha(), beta());
     }
   }

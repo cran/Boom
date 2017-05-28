@@ -37,7 +37,7 @@
      const VB &shorter(y_is_longer ? x:y);   // if tied, shorter=y
      for(uint i = shorter.size(); i<longer.size(); ++i){
        if(longer[i]){ // longer > shorter
- 	return y_is_longer ? true : false;  // y_is_longer
+        return y_is_longer ? true : false;  // y_is_longer
        }
      }
      for(uint i=shorter.size()-1; /* */; --i){
@@ -46,7 +46,7 @@
      }
      // made it through entire check with no conclusion... must be equal
      return or_equal; // i.e. if x<=y is desired answer is true.  if
- 		     // x<y is desired must be false
+                     // x<y is desired must be false
    }
 
 

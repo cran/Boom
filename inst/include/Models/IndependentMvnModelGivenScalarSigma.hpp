@@ -77,7 +77,7 @@ namespace BOOM {
     const SpdMatrix &Sigma()const override;
     const SpdMatrix &siginv()const override;
     double ldsi()const override;
-    Vector sim()const override;
+    Vector sim(RNG &rng = GlobalRng::rng)const override;
 
     // unscaled_variance_diagonal() * sigsq() is the diagonal of
     // Sigma().

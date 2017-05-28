@@ -194,7 +194,7 @@ namespace BOOM{
   double BM::pdf(const Data * dp, bool logscale)const{
     return pdf(DAT(dp)->value(), logscale);}
 
-  uint BM::sim()const{ return rbinom(n_, prob()); }
+  uint BM::sim(RNG &rng)const{ return rbinom_mt(rng, n_, prob()); }
 
   void BM::add_mixture_data(Ptr<Data> dp, double prob){
     suf()->add_mixture_data(DAT(dp)->value(), prob);

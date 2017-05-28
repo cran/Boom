@@ -80,9 +80,9 @@ namespace BOOM{
     // The state error simulation is conditional on the value of the
     // latent variance weights.  It needs to be that way so that
     // latent data imputation can work properly.
-    void simulate_state_error(VectorView eta, int t) const override;
-    void simulate_marginal_state_error(VectorView eta, int t) const;
-    void simulate_conditional_state_error(VectorView eta, int t) const;
+    void simulate_state_error(RNG &rng, VectorView eta, int t) const override;
+    void simulate_marginal_state_error(RNG &rng, VectorView eta, int t) const;
+    void simulate_conditional_state_error(RNG &rng, VectorView eta, int t) const;
 
     Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;

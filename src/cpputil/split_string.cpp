@@ -17,10 +17,10 @@ namespace BOOM{
       sz e = s.find_first_of(ws,b);
       assert(e>=b);
       if(e==string::npos){
-	ans.push_back(s.substr(b));
-	return ans;
+        ans.push_back(s.substr(b));
+        return ans;
       }else{
-	ans.push_back(s.substr(b,e-b));
-	b = s.find_first_not_of(ws, e);
-	if(b==string::npos) return ans;}}}
+        ans.push_back(s.substr(b,e-b));
+        b = s.find_first_not_of(ws, e);
+        if(b==string::npos) return ans;}}}
 }

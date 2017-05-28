@@ -29,36 +29,45 @@
 
 namespace BOOM{
 
-  //------------------------------------------------------------
-
+  // A Gaussian model parameterized as N(mu0, sigma^2/kappa), where sigma^2 is
+  // owned by another model.  This model is the conjugate prior for the mean of
+  // a normal distribution, conditional on its variance (sigma^2).
   class GaussianModelGivenSigma
-    : public ParamPolicy_2<UnivParams, UnivParams>,
-      public PriorPolicy,
-      public SufstatDataPolicy<DoubleData, GaussianSuf>,
-      public DiffDoubleModel,
-      public NumOptModel
-  {
-    // mu ~ N(mu0, sigma^2/kappa)
-    // parameters are mu0 and kappa
-    // conjugate prior is normal for mu0 and gamma for kappa
-
+    : public GaussianModelBase,
+      public ParamPolicy_2<UnivParams, UnivParams>,
+      public PriorPolicy {
   public:
-    GaussianModelGivenSigma(Ptr<UnivParams> sigsq, double mu0=0,
-			    double kappa=1);
+    // Args:
+    //   scaling_variance: The 'sigma^2' parameter that scales the variance of
+    //     this distribution.  If left as nullptr then 'set_scaling_variance'
+    //     will have to be called before this model is used.
+    //   mean: The mean of the distribution.  This is 'mu0' in the class
+    //     comment.
+    //   sample_size: The denominator of the variance of this distribution.
+    //     This is 'kappa' in the class comment.
+    GaussianModelGivenSigma(const Ptr<UnivParams> &scaling_variance = nullptr,
+                            double mean = 0,
+                            double sample_size = 1);
     GaussianModelGivenSigma * clone()const override;
 
-    void set_sigsq(Ptr<UnivParams>);
+    // Sets the parameter in the numerator of the variance of the normal
+    // distribution.
+    void set_scaling_variance(const Ptr<UnivParams> &sigsq);
+
     void set_params(double mu0, double kappa);
     void set_mu(double mu0);
     void set_kappa(double kappa);
 
-    double ybar()const;
-    double sample_var()const;
+    double mu() const override;
 
-    double mu()const;
-    double kappa()const;
-    double sigsq()const;
-    double var()const;
+    // Note that sigsq() is the variance of the distribution, as promised by
+    // GaussianModelBase.  It is not the scaling variance.
+    double sigsq() const override;
+
+    double scaling_variance() const;
+
+    // The sample_size parameter in the denominator of the variance.
+    double kappa() const;
 
     Ptr<UnivParams> Mu_prm();
     Ptr<UnivParams> Kappa_prm();
@@ -66,21 +75,10 @@ namespace BOOM{
     const Ptr<UnivParams> Kappa_prm()const;
 
     void mle() override;
-
-    double Logp(double x, double &g, double &h, uint nd)const override;
-    double Logp(const Vector & x, Vector &g, Matrix &h, uint nd)const;
-    double Loglike(const Vector &mu_kappa, Vector &g, Matrix &h, uint nd)const override;
-
-    void set_semi_conj_prior(double mu0, double v_mu0,
-			     double pdf, double sigma_guess);
-    void set_conj_prior(double mu0, double mu_n,
-			double pdf, double pss);
-    double sim()const override;
-
-    void add_data_raw(double x);
-
+    double Loglike(const Vector &mu_kappa, Vector &g, Matrix &h,
+                   uint nderiv) const override;
   private:
-    Ptr<UnivParams> sigsq_;
+    Ptr<UnivParams> scaling_variance_;
   };
 
 }

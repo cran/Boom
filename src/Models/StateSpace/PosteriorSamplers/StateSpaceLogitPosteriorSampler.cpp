@@ -62,20 +62,23 @@ namespace BOOM {
       Ptr<AugmentedData> dp = data[t];
       double state_contribution = model_->observation_matrix(t).dot(
           model_->state(t));
-      for (int j = 0; j < dp->sample_size(); ++j) {
+      for (int j = 0; j < dp->total_sample_size(); ++j) {
         const BinomialRegressionData &observation(dp->binomial_data(j));
-        double precision_weighted_sum = 0;
-        double total_precision = 0;
-        double regression_contribution =
-            model_->observation_model()->predict(observation.x());
-        std::tie(precision_weighted_sum, total_precision) =
-            data_imputer_.impute(rng(),
-                                 observation.n(),
-                                 observation.y(),
-                                 state_contribution + regression_contribution);
-        dp->set_latent_data(precision_weighted_sum / total_precision,
-                            total_precision,
-                            j);
+        if (observation.missing() == Data::observed) {
+          double precision_weighted_sum = 0;
+          double total_precision = 0;
+          double regression_contribution =
+              model_->observation_model()->predict(observation.x());
+          std::tie(precision_weighted_sum, total_precision) =
+              data_imputer_.impute(
+                  rng(),
+                  observation.n(),
+                  observation.y(),
+                  state_contribution + regression_contribution);
+          dp->set_latent_data(precision_weighted_sum / total_precision,
+                              total_precision,
+                              j);
+        }
       }
       dp->set_state_model_offset(state_contribution);
     }
@@ -87,14 +90,16 @@ namespace BOOM {
 
   void SSLPS::update_complete_data_sufficient_statistics(int t) {
     Ptr<AugmentedData> dp = model_->dat()[t];
-    for (int j = 0; j < dp->sample_size(); ++j) {
-      double precision_weighted_mean =
-          dp->latent_data_value(j) - dp->state_model_offset();
-      double precision = 1.0 / dp -> latent_data_variance(j);
-      observation_model_sampler_->update_complete_data_sufficient_statistics(
-          precision_weighted_mean * precision,
-          precision,
-          model_->data(t, j).x());
+    for (int j = 0; j < dp->total_sample_size(); ++j) {
+      if (dp->binomial_data(j).missing() == Data::observed) {
+        double precision_weighted_mean =
+            dp->latent_data_value(j) - dp->state_model_offset();
+        double precision = 1.0 / dp -> latent_data_variance(j);
+        observation_model_sampler_->update_complete_data_sufficient_statistics(
+            precision_weighted_mean * precision,
+            precision,
+            model_->data(t, j).x());
+      }
     }
   }
 }   // namespace BOOM

@@ -31,7 +31,9 @@ namespace BOOM{
 
       ======================================================================*/
   public:
-    ArmsSampler(Target, const Vector & initial_value, bool LogConvex=false);
+    ArmsSampler(const Target &target,
+                const Vector &initial_value,
+                bool log_convex=false);
 
     void find_limits();
     Vector draw(const Vector &old) override;
@@ -42,12 +44,12 @@ namespace BOOM{
     void set_lower_limits(const Vector &lo);
     void set_upper_limits(const Vector &hi);
   private:
-    Target f;
-    Vector x;
-    Vector lower_limits;
-    Vector upper_limits;
-    uint which;
-    uint ninit;
-    bool log_convex;  // set false if not sure;
+    Target target_;
+    Vector x_;
+    Vector lower_limits_;
+    Vector upper_limits_;
+    uint which_;
+    uint ninit_;
+    bool log_convex_;  // set false if not sure;
   };
 }

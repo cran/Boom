@@ -59,6 +59,11 @@ namespace BOOM {
     // object containing a subordinate data set.  This data will be created and
     // assigned to the model by the call to
     // clear_complete_data_sufficient_statistics().
+    //
+    // To make the mapping easier to keep track of, individual observations with
+    // missing values _will_ be present in subordinate_data_, but those
+    // observations will not be added to the observation model, which is not
+    // aware of how to handle missing data.
     std::vector<std::vector<Ptr<RegressionData>>> subordinate_data_;
   };
 

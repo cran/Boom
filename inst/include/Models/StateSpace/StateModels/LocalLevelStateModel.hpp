@@ -37,8 +37,8 @@ namespace BOOM{
 
     uint state_dimension() const override;
     uint state_error_dimension() const override {return 1;}
-    void simulate_state_error(VectorView eta, int t)const override;
-    void simulate_initial_state(VectorView eta)const override;
+    void simulate_state_error(RNG &rng, VectorView eta, int t)const override;
+    void simulate_initial_state(RNG &rng, VectorView eta)const override;
 
     Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;
@@ -54,8 +54,6 @@ namespace BOOM{
     void set_initial_state_mean(const Vector & m);
     void set_initial_state_variance(const SpdMatrix &v);
     void set_initial_state_variance(double v);
-
-    void set_sigsq(double sigsq) override;
 
     void update_complete_data_sufficient_statistics(
         int t,

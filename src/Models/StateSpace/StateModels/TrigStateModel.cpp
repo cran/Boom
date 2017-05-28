@@ -61,8 +61,8 @@ namespace BOOM {
         state_error_variance.diag() + pow(state_error_mean, 2));
   }
 
-  void TrigStateModel::simulate_state_error(VectorView eta, int t) const {
-    eta = sim();
+  void TrigStateModel::simulate_state_error(RNG &rng, VectorView eta, int t) const {
+    eta = sim(rng);
   }
 
   SparseVector TrigStateModel::observation_matrix(int t) const {

@@ -39,7 +39,7 @@ namespace BOOM{
                  "this StateModel subclass.");
   }
 
-  void StateModel::simulate_initial_state(VectorView eta)const{
+  void StateModel::simulate_initial_state(RNG &rng, VectorView eta)const{
     if(eta.size() != state_dimension()){
       std::ostringstream err;
       err << "output vector 'eta' has length " << eta.size()
@@ -47,7 +47,7 @@ namespace BOOM{
           << state_dimension();
       report_error(err.str());
     }
-    eta = rmvn(initial_state_mean(), initial_state_variance());
+    eta = rmvn_mt(rng, initial_state_mean(), initial_state_variance());
   }
 
   void StateModel::observe_initial_state(const ConstVectorView &state){}

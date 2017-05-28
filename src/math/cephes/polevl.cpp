@@ -22,10 +22,10 @@
 namespace BOOM {
   namespace Cephes {
 
-/*							polevl.c
- *							p1evl.c
+/*                                                      polevl.c
+ *                                                      p1evl.c
  *
- *	Evaluate polynomial
+ *      Evaluate polynomial
  *
  *
  *
@@ -89,7 +89,7 @@ Direct inquiries to 30 Frost Street, Cambridge, MA 02140
     }
 
 
-/*							p1evl()	*/
+/*                                                      p1evl() */
 /*                                          N
  * Evaluate polynomial when coefficient of x  is 1.0.
  * Otherwise same as polevl.

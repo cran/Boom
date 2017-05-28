@@ -35,64 +35,69 @@ namespace BOOM{
     return obj->eval();
   }
 
-  ARMS::ArmsSampler(Target target, const Vector & initial_value, bool lc)
-    : f(target),
-      x(initial_value),
-      lower_limits(initial_value),
-      upper_limits(initial_value),
-      ninit(4),
-      log_convex(lc)
+  ARMS::ArmsSampler(const Target &target,
+                    const Vector & initial_value,
+                    bool log_convex)
+    : target_(target),
+      x_(initial_value),
+      lower_limits_(initial_value),
+      upper_limits_(initial_value),
+      ninit_(4),
+      log_convex_(log_convex)
   {
     find_limits();
   }
 
   void ARMS::find_limits(){
-    max_nd0(x, f);
-    lower_limits = x-1.0;
-    upper_limits = x+1.0;  // these get adjusted later
+    max_nd0(x_, target_);
+    lower_limits_ = x_ - 1.0;
+    upper_limits_ = x_ + 1.0;  // these get adjusted later
   }
 
   Vector ARMS::draw(const Vector &old){
     using std::endl;
-    x=old;
-    for(uint i=0; i<x.size(); ++i){
-      which = i;
-      double lo = lower_limits[i];
-      double hi = upper_limits[i];
-      double now = x[i];
+    x_ = old;
+    for (uint i = 0; i < x_.size(); ++i) {
+      which_ = i;
+      double lo = lower_limits_[i];
+      double hi = upper_limits_[i];
+      double now = x_[i];
       double ans = now;
       void * this_ptr(this);
-      int err = GilksArms::arms_simple(rng(), ninit, &lo, &hi, localfun, this_ptr,
-				       !log_convex, &now, &ans);
-      if(err){
-	std::ostringstream msg;
-	msg << "Error signal recieved in ARMS::draw "
-	    << "ninit = " << ninit << endl
-	    << "lo    = " << lo << endl
-	    << "hi    = " << hi << endl
-	    << "log_convex = " << log_convex << endl
-	    << "now   = " << now << endl
-	    << "ans   = " << ans <<endl;
-	report_error(msg.str());
+      int err =
+          GilksArms::arms_simple(rng(), ninit_, &lo, &hi, localfun, this_ptr,
+                                 static_cast<int>(!log_convex_), &now, &ans);
+      if (err) {
+        std::ostringstream msg;
+        msg << "Error signal recieved in ARMS::draw "
+            << "ninit_ = " << ninit_ << endl
+            << "lo    = " << lo << endl
+            << "hi    = " << hi << endl
+            << "log_convex_ = " << log_convex_ << endl
+            << "now   = " << now << endl
+            << "ans   = " << ans <<endl;
+        report_error(msg.str());
       }
       double width = hi-lo;
-      if( fabs(hi-ans) < 1.0) upper_limits[i] += .5*width;
-      if( fabs(ans-lo) < 1.0) lower_limits[i] -= .5*width;
-      x[which]=ans;
+      if (fabs(hi - ans) < 1.0) upper_limits_[i] += .5 * width;
+      if (fabs(ans - lo) < 1.0) lower_limits_[i] -= .5 * width;
+      x_[which_] = ans;
     }
-    return x;
+    return x_;
   }
 
-  double ARMS::logp(const Vector &v)const{ return f(v);}
-  double ARMS::eval()const{return logp(x);}
-  void ARMS::set(double y){x[which]=y;}
-  void ARMS::set_limits(const Vector &lo, const Vector &hi){
-    lower_limits = lo;
-    upper_limits = hi;
+  double ARMS::logp(const Vector &v) const { return target_(v);}
+  double ARMS::eval() const {return logp(x_);}
+  void ARMS::set(double y) {x_[which_] = y;}
+  void ARMS::set_limits(const Vector &lo, const Vector &hi) {
+    lower_limits_ = lo;
+    upper_limits_ = hi;
   }
-  void ARMS::set_lower_limits(const Vector &lo){
-    lower_limits = lo;}
-  void ARMS::set_upper_limits(const Vector &hi){
-    upper_limits=hi;}
+  void ARMS::set_lower_limits(const Vector &lo) {
+    lower_limits_ = lo;
+  }
+  void ARMS::set_upper_limits(const Vector &hi) {
+    upper_limits_ = hi;
+  }
 
 }

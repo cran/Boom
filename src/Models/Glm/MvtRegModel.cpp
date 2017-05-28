@@ -29,14 +29,14 @@ namespace BOOM{
 
   MVTR::MvtRegModel(uint xdim, uint ydim)
     : ParamPolicy(new MatrixParams(xdim,ydim),
-		  new SpdParams(ydim),
-		  new UnivParams(default_df))
+                  new SpdParams(ydim),
+                  new UnivParams(default_df))
   {}
 
   MVTR::MvtRegModel(const Matrix &X,const Matrix &Y, bool add_intercept)
     : ParamPolicy(new MatrixParams(X.ncol() + add_intercept,Y.ncol()),
-		  new SpdParams(Y.ncol()),
-		  new UnivParams(default_df))
+                  new SpdParams(Y.ncol()),
+                  new UnivParams(default_df))
   {
     Matrix XX(add_intercept? cbind(1.0,X) : X);
     QR qr(XX);
@@ -58,8 +58,8 @@ namespace BOOM{
 
   MVTR::MvtRegModel(const Matrix &B, const SpdMatrix &Sigma, double nu)
     : ParamPolicy(new MatrixParams(B),
-		  new SpdParams(Sigma),
-		  new UnivParams(nu))
+                  new SpdParams(Sigma),
+                  new UnivParams(nu))
   {}
 
   MVTR::MvtRegModel(const MvtRegModel &rhs)
@@ -128,23 +128,21 @@ namespace BOOM{
 
   Vector MVTR::predict(const Vector &x)const{ return x*Beta(); }
 
-  MvRegData * MVTR::simdat()const{
-    Vector x = simulate_fake_x();
-    return this->simdat(x);
+  MvRegData * MVTR::simdat(RNG &rng)const{
+    Vector x = simulate_fake_x(rng);
+    return this->simdat(x, rng);
   }
 
-  MvRegData * MVTR::simdat(const Vector &x)const{
-    Vector Y = rmvt(predict(x), Sigma(), nu());
+  MvRegData * MVTR::simdat(const Vector &x, RNG &rng)const{
+    Vector Y = rmvt_mt(rng, predict(x), Sigma(), nu());
     return new MvRegData(Y,x);
   }
 
-  Vector MVTR::simulate_fake_x()const{
+  Vector MVTR::simulate_fake_x(RNG &rng)const{
     uint p = xdim();
     Vector x(p);
     x[0] = 1.0;
-    for(uint i=0; i<p; ++i) x[i] = rnorm();
+    for(uint i=0; i<p; ++i) x[i] = rnorm_mt(rng);
     return x;
   }
-
-
 }

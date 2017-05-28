@@ -95,6 +95,7 @@ namespace BOOM{
     double loglike(const Vector &scalar_lambda_vector)const override;
     void mle() override;
     PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> mark_generator

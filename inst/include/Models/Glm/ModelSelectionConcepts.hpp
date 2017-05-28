@@ -49,7 +49,7 @@ namespace BOOM{
 
       friend void intrusive_ptr_add_ref(Variable *v){v->up_count();}
       friend void intrusive_ptr_release(Variable *v){
-	v->down_count(); if(v->ref_count()==0) delete v;}
+        v->down_count(); if(v->ref_count()==0) delete v;}
     private:
       uint pos_;
       Ptr<BinomialModel> mod_;

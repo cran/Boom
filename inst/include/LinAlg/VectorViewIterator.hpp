@@ -31,13 +31,13 @@ namespace BOOM{
    public:
     typedef VectorViewIterator VVI;
     VectorViewIterator(double *p, double *b, int s)
-	: pos(p),
-	  beg(b),
-	  stride(s){}
+        : pos(p),
+          beg(b),
+          stride(s){}
     VectorViewIterator(const VVI &rhs)
-	: pos(rhs.pos),
-	  beg(rhs.beg),
-	  stride(rhs.stride){}
+        : pos(rhs.pos),
+          beg(rhs.beg),
+          stride(rhs.stride){}
     VVI & operator=(const VVI & rhs){
       if(&rhs !=this){
         pos = rhs.pos;

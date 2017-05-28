@@ -100,13 +100,13 @@ namespace BOOM {
     return ans;
   }
 
-  Vector IMMGS::sim() const {
+  Vector IMMGS::sim(RNG &rng) const {
     Vector ans(dim());
     double sigma = sqrt(sigsq());
     const Vector &v(unscaled_variance_diagonal());
     const Vector &mu(this->mu());
     for (int i = 0; i < dim(); ++i) {
-      ans[i] = rnorm(mu[i], sigma * sqrt(v[i]));
+      ans[i] = rnorm_mt(rng, mu[i], sigma * sqrt(v[i]));
     }
     return ans;
   }

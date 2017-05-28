@@ -135,7 +135,7 @@ namespace BOOM{
     mixing_dist_->Pi_prm()->add_observer([this]() {this->observe_pi();});
     logpi_current_ = false;
     ParamPolicy::set_models(mixture_components_.begin(),
-			    mixture_components_.end());
+                            mixture_components_.end());
     ParamPolicy::add_model(mixing_dist_);
   }
 
@@ -248,7 +248,7 @@ namespace BOOM{
 
     for (uint i=0; i<n; ++i) {
       for (uint s=0; s<S; ++s) {
-	wsp[s] = log_pi[s] + mixture_component(s)->pdf(d[i].get(), true);
+        wsp[s] = log_pi[s] + mixture_component(s)->pdf(d[i].get(), true);
       }
       ans += lse(wsp);
     }

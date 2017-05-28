@@ -54,7 +54,7 @@ namespace BOOM{
   // This function is supposed to draw a random correlation matrix
   // from the uniform distribution on the space of all correlation
   // matrices.  It is broken
-    CM random_cor(uint n){
+    CM random_cor_mt(RNG &rng, uint n){
       CM R(n);
       for(int k = 0; k < 1; ++k){
         for(int i = 0; i < n-1; ++i){
@@ -77,7 +77,7 @@ namespace BOOM{
             double lo = (-b - d)/(2*a);
             double hi = (-b + d)/(2*a);
             if(a < 0) std::swap(lo, hi);
-            double r = runif(lo, hi);
+            double r = runif_mt(rng, lo, hi);
             R(i,j) = r;
             R(j,i) = r;
           }

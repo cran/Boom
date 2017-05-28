@@ -199,6 +199,6 @@ namespace BOOM {
     set_ab(suf()->lo(), suf()->hi());
   }
 
-  double UM::sim() const { return runif(lo(), hi()); }
+  double UM::sim(RNG &rng) const { return runif_mt(rng, lo(), hi()); }
 
 }  // namespace BOOM

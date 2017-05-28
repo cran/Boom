@@ -26,25 +26,25 @@ namespace BOOM{
       ------------------------------------------------------------*/
 
    bool less(const std::vector<bool> & x,
- 	    const std::vector<bool> &y,
- 	    bool or_equal);
+            const std::vector<bool> &y,
+            bool or_equal);
 
    bool less(const std::vector<bool> & x,
- 	    const std::vector<bool> &y);
+            const std::vector<bool> &y);
 
    inline bool operator<(const std::vector<bool> & x,
- 			const std::vector<bool> &y){return less(x,y);}
+                        const std::vector<bool> &y){return less(x,y);}
    bool operator==(const std::vector<bool> & x, const std::vector<bool> &y);
    inline bool operator<=(const std::vector<bool> & x,
- 			 const std::vector<bool> &y){return less(x,y,false);}
+                         const std::vector<bool> &y){return less(x,y,false);}
 
    inline bool operator>(const std::vector<bool> & x,
- 			const std::vector<bool> &y){return !(x<=y); }
+                        const std::vector<bool> &y){return !(x<=y); }
    inline bool operator>=(const std::vector<bool> & x,
- 			 const std::vector<bool> &y){return !(x<y);}
+                         const std::vector<bool> &y){return !(x<y);}
 
    inline bool operator!=(const std::vector<bool> & x,
- 			 const std::vector<bool> &y){return !(x==y);}
+                         const std::vector<bool> &y){return !(x==y);}
 
 
  }

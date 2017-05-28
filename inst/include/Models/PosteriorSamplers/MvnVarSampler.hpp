@@ -32,30 +32,44 @@ namespace BOOM{
   public:
     MvnVarSampler(MvnModel *, double df, const SpdMatrix & SS,
                   RNG &seeding_rng = GlobalRng::rng);
-    MvnVarSampler(MvnModel *, const WishartModel &siginv_prior,
+    MvnVarSampler(MvnModel *, const Ptr<WishartModel> &siginv_prior,
                   RNG &seeding_rng = GlobalRng::rng);
-    MvnVarSampler(MvnModel *, RNG &seeding_rng = GlobalRng::rng);
     double logpri() const override;
     void draw() override;
+
+    // Returns a draw of the precision matrix for an MvnModel.
+    static SpdMatrix draw_precision(
+        RNG &rng,
+        double data_sample_size,
+        const SpdMatrix &data_centered_sum_of_squares,
+        const WishartModel &precision_prior);
+
+    // Returns a draw of the variance matrix for an MvnModel.
+    static SpdMatrix draw_variance(
+        RNG &rng,
+        double data_sample_size,
+        const SpdMatrix &data_centered_sum_of_squares,
+        const WishartModel &precision_prior);
+
   private:
-    MvnModel *mvn_;
-    Ptr<UnivParams> pdf_;
-    Ptr<SpdParams> pss_;
+    MvnModel *model_;
+    Ptr<WishartModel> prior_;
    protected:
-    MvnModel * mvn(){return mvn_;}
-    const SpdParams * pss()const{return pss_.get();}
-    const UnivParams * pdf()const{return pdf_.get();}
+    MvnModel *model() {return model_;}
+    const WishartModel *prior() const {return prior_.get();}
   };
 
   class MvnConjVarSampler : public MvnVarSampler{
     // assumes y~N(mu, Sigma), with mu|Sigma \norm(mu0, Sigma/kappa)
     // and Sigma^-1~W(df, SS)
   public:
-    MvnConjVarSampler(MvnModel *, double df, const SpdMatrix & SS,
+    MvnConjVarSampler(MvnModel *,
+                      double df,
+                      const SpdMatrix & SS,
                       RNG &seeding_rng = GlobalRng::rng);
-    MvnConjVarSampler(MvnModel *, const WishartModel &siginv_prior,
+    MvnConjVarSampler(MvnModel *,
+                      const Ptr<WishartModel> &siginv_prior,
                       RNG &seeding_rng = GlobalRng::rng);
-    MvnConjVarSampler(MvnModel *, RNG &seeding_rng = GlobalRng::rng);
     void draw() override;
   };
 

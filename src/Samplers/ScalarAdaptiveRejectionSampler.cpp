@@ -25,7 +25,7 @@
 namespace BOOM {
 
   ScalarAdaptiveRejectionSampler::ScalarAdaptiveRejectionSampler(
-      std::function<double(double)> logf)
+      const std::function<double(double)> &logf)
       : log_density_(logf)
   {}
 

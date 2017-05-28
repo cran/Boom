@@ -22,17 +22,18 @@
 #include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
-  class GaussianModelBase;
+  class GaussianModel;
   class GammaModelBase;
 
   // draws sigma given mu
   class GaussianVarSampler : public PosteriorSampler{
    public:
-    GaussianVarSampler(GaussianModelBase * m,
+    GaussianVarSampler(GaussianModel *model,
                        double prior_df,
                        double prior_sigma_guess,
                        RNG &seeding_rng = GlobalRng::rng);
-    GaussianVarSampler(GaussianModelBase * m, Ptr<GammaModelBase> g,
+    GaussianVarSampler(GaussianModel *model,
+                       const Ptr<GammaModelBase> &precision_prior,
                        RNG &seeding_rng = GlobalRng::rng);
     void draw() override;
     double logpri()const override;
@@ -50,7 +51,7 @@ namespace BOOM{
     const Ptr<GammaModelBase> ivar()const;
    private:
     Ptr<GammaModelBase> prior_;
-    GaussianModelBase * model_;
+    GaussianModel * model_;
     GenericGaussianVarianceSampler sampler_;
   };
 

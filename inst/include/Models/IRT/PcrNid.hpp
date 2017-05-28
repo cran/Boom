@@ -28,27 +28,27 @@ namespace BOOM{
     {
 
       /*------------------------------------------------------------
-	An item with maxscore()==M yields log score probabilities = C
-	+ X*beta where C is a normalizing constant X[0..M, 0..M] is an
-	(M+1)x(M+2) matrix and beta[0..M+1] is an M+2 vector as follows
-	(for M==4)
+        An item with maxscore()==M yields log score probabilities = C
+        + X*beta where C is a normalizing constant X[0..M, 0..M] is an
+        (M+1)x(M+2) matrix and beta[0..M+1] is an M+2 vector as follows
+        (for M==4)
 
-	X:                             beta:
-	1  0  0  0  0  1*theta         a*(d0-b)
-	0  1  0  0  0  2*theta         a*(d0+d1-2b)
-	0  0  1  0  0  3*theta         a*(d0+d1+d2-3b)
-	0  0  0  1  0  4*theta         a*(d0+d1+d2+d3-4b)
-	0  0  0  0  1  5*theta         a*(-5b)        // sum of d's is 0
-	                               a
+        X:                             beta:
+        1  0  0  0  0  1*theta         a*(d0-b)
+        0  1  0  0  0  2*theta         a*(d0+d1-2b)
+        0  0  1  0  0  3*theta         a*(d0+d1+d2-3b)
+        0  0  0  1  0  4*theta         a*(d0+d1+d2+d3-4b)
+        0  0  0  0  1  5*theta         a*(-5b)        // sum of d's is 0
+                                       a
 
-	------------------------------------------------------------*/
+        ------------------------------------------------------------*/
 
     public:
       PcrNid(const string & Id, uint Mscore, uint which_sub,
-			 uint Nscales, const string &Name="");
+                         uint Nscales, const string &Name="");
       PcrNid(const string & Id, uint Mscore, uint which_sub,
-			 uint Nscales, double a, double b, const Vector &d,
-			 const string &Name="");
+                         uint Nscales, double a, double b, const Vector &d,
+                         const string &Name="");
       PcrNid(const PcrNid &rhs);
       PcrNid * clone()const override;
 

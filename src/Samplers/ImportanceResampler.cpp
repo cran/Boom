@@ -24,8 +24,8 @@
 namespace BOOM {
 
   ImportanceResampler::ImportanceResampler(
-      std::function<double(const Vector &)> log_target_density,
-      Ptr<DirectProposal> proposal)
+      const std::function<double(const Vector &)> &log_target_density,
+      const Ptr<DirectProposal> &proposal)
       : log_target_density_(log_target_density),
         proposal_(proposal)
   {}

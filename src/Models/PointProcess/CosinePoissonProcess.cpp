@@ -59,11 +59,12 @@ namespace BOOM {
   }
 
   PointProcess CosinePoissonProcess::simulate(
+      RNG &rng,
       const DateTime &t0,
       const DateTime &t1,
       std::function<Data*()> mark_generator) const {
     BoundedPoissonProcessSimulator simulator(this, 2 * lambda());
-    return simulator.simulate(t0, t1, mark_generator);
+    return simulator.simulate(rng, t0, t1, mark_generator);
   }
 
 }  // namespace BOOM

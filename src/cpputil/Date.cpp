@@ -546,16 +546,16 @@ namespace BOOM{
   std::ostream & Date::display(std::ostream &out)const{
     if(df==script){
       if(po == mdy){
- 	display_month(out);
- 	out << " " << day() <<"," << year();
+        display_month(out);
+        out << " " << day() <<"," << year();
       }else if(po==dmy){
- 	out << day() <<" ";
- 	display_month(out);
- 	out << ", " << year();
+        out << day() <<" ";
+        display_month(out);
+        out << ", " << year();
       }else if(po==ymd){
- 	out << year() <<", ";
- 	display_month(out);
- 	out << day();
+        out << year() <<", ";
+        display_month(out);
+        out << day();
       }
       return out;
     }
@@ -646,7 +646,7 @@ namespace BOOM{
     if(m>12) swap(d,m);
 
     assert(m<=12 && m>=1 && d>=1
- 	   && d<= Date::days_in_month(MonthNames(m), Date::is_leap_year(y)));
+           && d<= Date::days_in_month(MonthNames(m), Date::is_leap_year(y)));
     return Date(m,d,y);
   }
 
@@ -662,30 +662,30 @@ namespace BOOM{
 
   MonthNames str2month(const std::string &m){
     if( m=="January" || m=="january"|| m=="Jan" ||  m=="jan"
- 	|| m=="01" || m=="1")
+        || m=="01" || m=="1")
       return Jan;
     if( m=="February" ||  m=="february" ||  m=="Feb" ||  m=="feb"
- 	|| m=="02" || m=="2")
+        || m=="02" || m=="2")
       return Feb;
     if( m=="March" ||  m=="march" ||  m=="Mar" ||  m=="mar"
- 	|| m=="03" || m=="3")
+        || m=="03" || m=="3")
       return Mar;
     if( m=="April" ||  m=="april" ||  m=="Apr" ||  m=="apr"
- 	|| m=="04" || m=="4")
+        || m=="04" || m=="4")
       return Apr;
     if( m=="May" ||  m=="may" || m=="05" || m=="5")
       return May;
     if( m=="June" ||  m=="june" ||  m=="Jun" ||  m=="jun"
- 	|| m=="06" || m=="6")
+        || m=="06" || m=="6")
       return Jun;
     if( m=="July" ||  m=="july" ||  m=="Jul" ||  m=="jul"
- 	|| m=="07" || m=="7")
+        || m=="07" || m=="7")
       return Jul;
     if( m=="August" ||  m=="august" ||  m=="Aug" ||  m=="aug"
- 	|| m=="08" || m=="8")
+        || m=="08" || m=="8")
       return Aug;
     if( m=="September" ||  m=="september" ||  m=="Sep" ||  m=="sep"
- 	|| m=="09" || m=="9")
+        || m=="09" || m=="9")
       return Sep;
     if(m=="October" || m=="october" ||  m=="Oct" ||  m=="oct" || m=="10")
       return Oct;

@@ -46,12 +46,20 @@ namespace BOOM {
     const GlmModel *observation_model() const override = 0;
     GlmModel *observation_model() override = 0;
 
-    virtual const GlmBaseData &data(int time, int observation = 0) const = 0;
+    // The number of observed and missing observations at the specified time
+    // point.
+    virtual int total_sample_size(int time) const = 0;
+
+    virtual const GlmBaseData &data(int time, int observation) const = 0;
 
     // If the model has a regression contribution, then the return
     // vector gives the contribution of the regression component at
     // each time point, on the "linear predictor" scale.  I.e. the
     // return value is x * beta at each time point.
+    //
+    // In the case of multiplexed data, the value at each time point is the
+    // average of the regression contributions to each of the sub-observations
+    // at that time point.
     Vector regression_contribution() const override;
 
    private:

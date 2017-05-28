@@ -51,8 +51,7 @@ namespace BOOM{
     Matrix(uint nr, uint nc, double x=0.0);
     Matrix(uint nr, uint nc, const double *m, bool byrow=false);
     Matrix(uint nr, uint nc, const std::vector<double> &v, bool byrow=false);
-    Matrix(const std::string &s, std::string row_delim = "|");
-
+    Matrix(const std::string &s, const std::string &row_delim = "|");
 
     template <class FwdIt>
     Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
@@ -347,8 +346,8 @@ namespace BOOM{
     template <class FwdIt>
     Matrix::Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc)
       : V(Beg, End),
-	nr_(nr),
-	nc_(nc)
+        nr_(nr),
+        nc_(nc)
     {
       assert(V.size()==nr*nc);
     }

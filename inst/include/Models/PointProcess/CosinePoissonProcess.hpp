@@ -52,6 +52,7 @@ namespace BOOM {
     double frequency() const;
 
     PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> mark_generator

@@ -245,10 +245,10 @@ namespace BOOM{
     return ans;
   }
 
-  Vector IndependentMvnModel::sim()const{
+  Vector IndependentMvnModel::sim(RNG &rng)const{
     Vector ans(mu());
     for(int i = 0; i < ans.size(); ++i){
-      ans += rnorm(0, sigma(i));
+      ans += rnorm_mt(rng, 0, sigma(i));
     }
     return ans;
   }

@@ -41,7 +41,7 @@ namespace BOOM{
     uint state_dimension() const override {return 2;}
     uint state_error_dimension() const override {return 2;}
 
-    void simulate_state_error(VectorView eta, int t) const override;
+    void simulate_state_error(RNG &rng, VectorView eta, int t) const override;
 
     Ptr<SparseMatrixBlock> state_transition_matrix(int t) const override;
     Ptr<SparseMatrixBlock> state_variance_matrix(int t) const override;

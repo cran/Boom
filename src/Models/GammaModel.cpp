@@ -170,8 +170,8 @@ namespace BOOM {
      return ans;
   }
 
-  double GammaModelBase::sim() const {
-    return rgamma(alpha(), beta());
+  double GammaModelBase::sim(RNG &rng) const {
+    return rgamma_mt(rng, alpha(), beta());
   }
 
   void GammaModelBase::add_mixture_data(Ptr<Data> dp, double prob) {

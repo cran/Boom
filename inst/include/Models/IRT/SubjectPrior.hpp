@@ -43,9 +43,9 @@ namespace BOOM{
     //------------------------------------------------------------
     class MvnSubjectPrior
       : public SubjectPrior,
-	public CompositeParamPolicy,
-	public IID_DataPolicy<Subject>,
-	public PriorPolicy
+        public CompositeParamPolicy,
+        public IID_DataPolicy<Subject>,
+        public PriorPolicy
     {
     public:
       explicit MvnSubjectPrior(Ptr<MvnModel> Mvn);

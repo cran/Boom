@@ -146,7 +146,7 @@ namespace BOOM{
 
   WeightedMvnModel::WeightedMvnModel(uint p, double mu, double sigma)
     : ParamPolicy(new VectorParams(Vector(p, mu)),
-		  new SpdParams(Id(p)*(sigma*sigma))),
+                  new SpdParams(Id(p)*(sigma*sigma))),
       DataPolicy(new WMS(p)),
     PriorPolicy()
   {}

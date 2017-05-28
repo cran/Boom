@@ -64,8 +64,8 @@ namespace BOOM{
     double logp_new = mlm_->loglike(bstar)
         + dmvn(bstar, mu, ivar, 0, true);
     double log_alpha = logp_new - logp_old;
-    double logu = log(runif(0,1));
-    while(!std::isfinite(logu)) logu = log(runif(0,1));
+    double logu = log(runif_mt(rng(), 0, 1));
+    while(!std::isfinite(logu)) logu = log(runif_mt(rng(), 0, 1));
     if(logu > log_alpha){
       // Reject the draw.  Do nothing here.
     }else{  // Accept the draw

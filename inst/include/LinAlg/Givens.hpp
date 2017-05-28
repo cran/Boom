@@ -43,6 +43,6 @@ namespace BOOM{
     Matrix & operator*(const GivensRotation &G, Matrix &A);
     Matrix & operator*(Matrix &A,const GivensRotation &G);
     Matrix triangulate(const Matrix &U, const Selector &inc,
-		       bool chop_zero_rows=false);
+                       bool chop_zero_rows=false);
 }
 #endif// BOOM_GIVENS_HPP

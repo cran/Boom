@@ -26,14 +26,15 @@ namespace BOOM{
 
   class ScalarLogpostTF{
   public:
-    ScalarLogpostTF(LoglikeModel * m, Ptr<DoubleModel> pri);
-    double operator()(const Vector &z)const;  // z is really a scalar
-    double operator()(double z)const;
-  protected:
+    ScalarLogpostTF(LoglikeModel *loglike,
+                    const Ptr<DoubleModel> &prior);
+    double operator()(const Vector &z) const;  // z is really a scalar
+    double operator()(double z) const;
+
   private:
-    Target loglike;
-    Ptr<DoubleModel> pri;
+    Target loglike_;
+    Ptr<DoubleModel> prior_;
   };
-}
+}  // namespace BOOM
 
 #endif// BOOM_SCALAR_LOGPOST_TF_HPP

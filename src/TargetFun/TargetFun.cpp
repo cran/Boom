@@ -94,7 +94,7 @@ namespace BOOM {
   //======================================================================
 
   ScalarTargetFunAdapter::ScalarTargetFunAdapter(
-      std::function<double(const Vector &)> F,
+      const std::function<double(const Vector &)> &F,
       Vector *X,
       uint position)
     : f_(F),
@@ -109,7 +109,7 @@ namespace BOOM {
 
   //======================================================================
   dScalarTargetFunAdapter::dScalarTargetFunAdapter(
-      Ptr<dScalarEnabledTargetFun> f,
+      const Ptr<dScalarEnabledTargetFun> &f,
       Vector *x,
       uint position)
       : f_(f), x_(x), position_(position)

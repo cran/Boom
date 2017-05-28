@@ -124,7 +124,7 @@ namespace BOOM{
     Ptr<UnivParams> Kappa_prm();
     double diagonal_weight() const;
 
-    Vector sim() const override;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
 
     // An observer to be called whenever the underlying regression
     // model changes its residual variance parameter, or its data.

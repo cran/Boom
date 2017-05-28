@@ -232,18 +232,18 @@ namespace BOOM{
   double TRegressionModel::pdf(Ptr<Data> dp, bool logscale)const{
     return pdf(dp.dcast<DataType>(), logscale);}
 
-  Ptr<RegressionData>  TRegressionModel::simdat()const{
+  Ptr<RegressionData>  TRegressionModel::simdat(RNG &rng)const{
     uint p = Beta().size();
     Vector x(p);
-    for(uint i=0; i<p; ++i) x[i] = rnorm();
-    return simdat(x);
+    for(uint i=0; i<p; ++i) x[i] = rnorm_mt(rng);
+    return simdat(x, rng);
   }
 
-  Ptr<RegressionData> TRegressionModel::simdat(const Vector &x)const{
+  Ptr<RegressionData> TRegressionModel::simdat(const Vector &x, RNG &rng)const{
     double nu = this->nu();
-    double w = rgamma(nu/2, nu/2);
+    double w = rgamma_mt(rng, nu/2, nu/2);
     double yhat = predict(x);
-    double z = rnorm(0, sigma()/sqrt(w));
+    double z = rnorm_mt(rng, 0, sigma()/sqrt(w));
     double y = yhat +z;
     NEW(RegressionData, d)(y,x);
     return d;

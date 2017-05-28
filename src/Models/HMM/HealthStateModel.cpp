@@ -108,11 +108,11 @@ namespace BOOM{
     return mark_.size();
   }
 
-  double HealthStateModel::impute_latent_data(){
+  double HealthStateModel::impute_latent_data(RNG &rng){
     double ans = 0;
     for(int i = 0; i < nseries(); ++i){
       ans += fwd(dat(i));
-      bkwd(dat(i));
+      bkwd(rng, dat(i));
     }
     return ans;
   }
@@ -155,7 +155,7 @@ namespace BOOM{
   // case of a treatment switch, a random draw of the treatment
   // mixture indicator determines the treatment group to which the
   // transition is assigned.
-  void HealthStateModel::bkwd(const TimeSeries<HealthStateData> &series){
+  void HealthStateModel::bkwd(RNG &rng, const TimeSeries<HealthStateData> &series){
     int n = series.length();
     uint s = rmulti(pi_);
     mix_[s]->add_data(series.back()->shared_value());
@@ -164,7 +164,7 @@ namespace BOOM{
       pi_ = P_[i].col(s);
       uint r = rmulti(pi_);
       mix_[r]->add_data(series[i-1]->shared_value());
-      uint which_treatment = sample_treatment(series[i], r, s);
+      uint which_treatment = sample_treatment(rng, series[i], r, s);
       mark_[which_treatment]->suf()->add_transition(r,s);
       s = r;
     }
@@ -175,8 +175,10 @@ namespace BOOM{
 
   // Take a random draw of the treatment mixture indicator given
   // treatment transitions.
-  int HealthStateModel::sample_treatment(Ptr<HealthStateData> data,
-                                         uint r, uint s){
+  int HealthStateModel::sample_treatment(RNG &rng,
+                                         Ptr<HealthStateData> data,
+                                         uint r,
+                                         uint s) {
     int last_treatment = data->treatment();
     double prior_last = data->final_treatment_fraction();
     if(prior_last >= 1.0) return last_treatment;
@@ -188,7 +190,7 @@ namespace BOOM{
     double post_last = prior_last * mark_[last_treatment]->Q()(r,s);
     double first_prob = post_first / (post_first + post_last);
 
-    if(runif() < first_prob) return first_treatment;
+    if(runif_mt(rng) < first_prob) return first_treatment;
     return last_treatment;
   }
 

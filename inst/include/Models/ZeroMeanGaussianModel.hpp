@@ -35,7 +35,7 @@ namespace BOOM {
     ZeroMeanGaussianModel(const std::vector<double> &);
     ZeroMeanGaussianModel * clone() const override;
 
-    void set_sigsq(double sigsq) override;
+    void set_sigsq(double sigsq);
 
     Ptr<UnivParams> Sigsq_prm();
     const Ptr<UnivParams> Sigsq_prm()const;

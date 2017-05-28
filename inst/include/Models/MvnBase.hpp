@@ -140,7 +140,7 @@ namespace BOOM{
     virtual const SpdMatrix & Sigma() const = 0;
     virtual const SpdMatrix & siginv() const = 0;
     virtual double ldsi() const = 0;
-    Vector sim() const override;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
   };
 
   //____________________________________________________________

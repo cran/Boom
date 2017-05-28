@@ -31,11 +31,11 @@ namespace BOOM{
     void add_subject(SubjectSet &Sub, Ptr<Subject> s){
       SubjectLess sl;
       SubjectSet::iterator it =
-	std::lower_bound(Sub.begin(), Sub.end(), s, sl);
+        std::lower_bound(Sub.begin(), Sub.end(), s, sl);
       if(it==Sub.end()) Sub.push_back(s);
       else{
-	Ptr<Subject> s2(*it);
-	if(s2 != s) Sub.insert(it,s);
+        Ptr<Subject> s2(*it);
+        if(s2 != s) Sub.insert(it,s);
       }
     }
 

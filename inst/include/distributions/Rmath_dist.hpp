@@ -205,7 +205,7 @@ namespace BOOM{
   /* Non-central F Distribution */
 
   double pnf(double x, double dfn, double dfd, double lam,
-	     bool low=true, bool log=false);
+             bool low=true, bool log=false);
 
   /* Non-central Student t Distribution */
 

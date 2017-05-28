@@ -74,10 +74,10 @@ namespace BOOM{
   //=====================================================================
   typedef TimeSeries<MarkovData> MarkovDataSeries ;
   Ptr<MarkovDataSeries> make_markov_data(const std::vector<uint> &raw_data,
-					 bool full_range=true);
+                                         bool full_range=true);
   Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> & raw_data);
   Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> & raw_data,
-					 const std::vector<string> &order);
+                                         const std::vector<string> &order);
 
   //=====================================================================
   const bool debug_markov_update_suf(false);
@@ -107,9 +107,9 @@ namespace BOOM{
 
     Vector vectorize(bool minimal=true)const override;
     Vector::const_iterator unvectorize(Vector::const_iterator &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
     Vector::const_iterator unvectorize(const Vector &v,
-					    bool minimal=true) override;
+                                            bool minimal=true) override;
   private:
     Matrix trans_; // transition counts
     Vector init_; // initial count, typically one 1 and rest 0's

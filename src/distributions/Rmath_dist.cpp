@@ -260,7 +260,7 @@ namespace BOOM{
 
   /* Non-central F Distribution */
   double pnf(double x, double dfn, double dfd, double lam, bool low,
- 	     bool log){ return Rmath::pnf(x,dfn,dfd,lam,low,log);}
+             bool log){ return Rmath::pnf(x,dfn,dfd,lam,low,log);}
 
   /* Non-central Student t Distribution */
   double pnt(double x, double df, double mu, bool low, bool log){

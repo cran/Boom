@@ -19,14 +19,9 @@
 #include <sstream>
 
 namespace BOOM{
-  void intrusive_ptr_add_ref(Sufstat *m){ m->up_count(); }
-  void intrusive_ptr_release(Sufstat *m){ m->down_count();
-    if(m->ref_count()==0) delete m; }
-
   Vector vectorize(const std::vector<Ptr<Sufstat> > &v, bool minimal){
-    uint N = v.size();
     Vector ans;
-    for(uint i=0; i<N; ++i){
+    for(uint i = 0; i < v.size(); ++i){
       Vector tmp = v[i]->vectorize(minimal);
       ans.concat(tmp);
     }
@@ -36,8 +31,8 @@ namespace BOOM{
   void unvectorize(std::vector<Ptr<Sufstat> >  &svec,
                    const Vector &v,
                    bool minimal){
-    Vector::const_iterator it=v.begin();
-    for(uint i=0; i<svec.size(); ++i){
+    Vector::const_iterator it = v.begin();
+    for(uint i = 0; i < svec.size(); ++i){
       it = svec[i]->unvectorize(it, minimal);
     }
   }

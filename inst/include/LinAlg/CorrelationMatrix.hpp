@@ -55,6 +55,6 @@ namespace BOOM{
 
     CorrelationMatrix var2cor(const SpdMatrix &v);
     SpdMatrix cor2var(const CorrelationMatrix &cor, const Vector &sd);
-    CorrelationMatrix random_cor(uint n);
+    CorrelationMatrix random_cor_mt(RNG &rng, uint n);
 }
 #endif // NEW_LA_CORRELATION_MATRIX_H

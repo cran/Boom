@@ -135,9 +135,8 @@ namespace BOOM{
     current_ = true;
   }
 
-
-  Vector MvnGivenX::sim()const{
-    return rmvn(mu(), Sigma());
+  Vector MvnGivenX::sim(RNG &rng)const{
+    return rmvn_mt(rng, mu(), Sigma());
   }
 
 //______________________________________________________________________

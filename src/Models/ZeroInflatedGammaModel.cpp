@@ -115,9 +115,9 @@ namespace BOOM {
     return log_probability_of_positive_ + gamma_->logp(x);
   }
 
-  double ZIGM::sim() const {
-    if (runif() < positive_probability()) {
-      return gamma_->sim();
+  double ZIGM::sim(RNG &rng) const {
+    if (runif_mt(rng) < positive_probability()) {
+      return gamma_->sim(rng);
     }
     return 0;
   }

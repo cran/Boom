@@ -339,14 +339,14 @@ namespace BOOM{
     return nch*psub_ + pch_;
   }
 
-  uint MLM::sim(Ptr<ChoiceData> dp, Vector &prob) const {
+  uint MLM::sim(Ptr<ChoiceData> dp, Vector &prob, RNG &rng) const {
     predict(dp, prob);
-    return rmulti(prob);
+    return rmulti_mt(rng, prob);
   }
 
-  uint MLM::sim(Ptr<ChoiceData> dp) const {
+  uint MLM::sim(Ptr<ChoiceData> dp, RNG &rng) const {
     Vector prob = predict(dp);
-    return rmulti(prob);
+    return rmulti_mt(rng, prob);
   }
 
   Vector & MLM::predict(Ptr<ChoiceData> dp, Vector &ans) const {

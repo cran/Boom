@@ -58,10 +58,6 @@ namespace BOOM{
     return logscale ? ans : exp(ans);
   }
 
-  Vector MvnModel::sim()const{
-    return sim(GlobalRng::rng);
-  }
-
   Vector MvnModel::sim(RNG &rng)const{
     return rmvn_L_mt(rng, mu(), Sigma_chol());
   }

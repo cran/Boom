@@ -21,6 +21,7 @@
 
 #include <vector>
 #include <Models/Policies/CompositeParamPolicy.hpp>
+#include <Models/Policies/PriorPolicy.hpp>
 
 namespace BOOM {
 

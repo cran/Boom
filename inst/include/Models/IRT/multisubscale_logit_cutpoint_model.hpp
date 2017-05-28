@@ -26,8 +26,8 @@
 namespace BOOM{
   namespace IRT{
         class MultisubscaleLogitCutpointModel
-	  : public OrdinalCutpointModel,
-	    public ItemDataPolicy<OrdinalRegressionData>
+          : public OrdinalCutpointModel,
+            public ItemDataPolicy<OrdinalRegressionData>
     {
     public:
       // don't forget to call model_selection(false)
@@ -53,7 +53,8 @@ namespace BOOM{
       const DataPolicy::DatasetType & dat()const{return DataPolicy::dat();}
     };
 
-    Ptr<MultisubscaleLogitCutpointModel> random_mlcm(const Selector &subs, uint Maxscore);
+    Ptr<MultisubscaleLogitCutpointModel> random_mlcm(
+        RNG &rng, const Selector &subs, uint Maxscore);
 
   }
 }

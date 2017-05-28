@@ -125,6 +125,7 @@ namespace BOOM{
     void set_weekend_hourly_pattern(const Vector &pattern);
 
     PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> mark_generator

@@ -31,7 +31,7 @@ namespace BOOM{
                         double lower = 0, double upper = infinity());
     double logp(double x) const override;
     double dlogp(double x, double &derivative) const override;
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
 
    private:
     double lower_truncation_point_;

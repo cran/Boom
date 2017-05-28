@@ -664,6 +664,7 @@ namespace BOOM{
 
   //----------------------------------------------------------------------
   PointProcess PoissonClusterProcess::simulate(
+      RNG &rng,
       const DateTime &t0, const DateTime &t1,
       std::function<Data*()> primary_event_simulator,
       std::function<Data*()> secondary_event_simulator)const{
@@ -691,7 +692,7 @@ namespace BOOM{
       PoissonProcess *process = all_processes[p];
       std::function<Data*()>* mark_generator = &secondary_event_simulator;
       if(primary(process)) mark_generator = &primary_event_simulator;
-      PointProcess data = process->simulate(t0, t1, *mark_generator);
+      PointProcess data = process->simulate(rng, t0, t1, *mark_generator);
 
       for(int i = 0; i < data.number_of_events(); ++i){
         event_map[data.event(i)] = process;

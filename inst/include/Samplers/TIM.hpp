@@ -51,7 +51,10 @@ namespace BOOM{
     //     logf returns the log of the un-normalized target distribution
     //     at theta.
     //   nu:  The degrees of freedom parameter to use for the
-    TIM(std::function<double(const Vector &, Vector &, Matrix &, int)> logf,
+    TIM(const std::function<double(const Vector &,
+                                   Vector &,
+                                   Matrix &,
+                                   int)> &logf,
         double nu = 3, RNG *rng = 0);
 
     TIM(const BOOM::Target & logf,

@@ -83,7 +83,7 @@ namespace BOOM{
     double pdf(Ptr<DataType>, bool)const;
 
     double Logp(const Vector &x, Vector &g, Matrix &h, uint nd)const override;
-    Vector sim()const override;
+    Vector sim(RNG &rng = GlobalRng::rng)const override;
 
     // overloads required to conform with the MvnBase interface The
     // 'Sigma' here refers to the vaiance, not the Sigma paramter.

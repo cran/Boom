@@ -214,7 +214,7 @@ namespace BOOM {
   class ScalarAdaptiveRejectionSampler : public ScalarSampler {
    public:
     explicit ScalarAdaptiveRejectionSampler(
-        std::function<double(double)> log_density);
+        const std::function<double(double)> &log_density);
 
     void set_lower_limit(double lo) {
       log_density_approximation_.set_lower_limit(lo);

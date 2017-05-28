@@ -169,8 +169,8 @@ namespace BOOM {
         const Vector &, Vector &, Matrix &, uint)> Target;
     typedef std::function<Vector(const Vector &)> Mapping;
 
-    Transformation(Target log_density_old_parameterization,
-                   Mapping inverse_mapping,
+    Transformation(const Target &log_density_old_parameterization,
+                   const Mapping &inverse_mapping,
                    Jacobian *jacobian);
     double operator()(const Vector &new_parameterization,
                       Vector &gradient,

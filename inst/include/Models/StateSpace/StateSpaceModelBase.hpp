@@ -30,6 +30,33 @@
 
 namespace BOOM{
 
+  namespace StateSpace {
+    class MultiplexedData : public Data {
+     public:
+      MultiplexedData();
+
+      // The observed sample size is the number of fully observed data points at
+      // the time period described by this object.
+      int observed_sample_size() const {return observed_sample_size_;}
+
+      // The total_sample_size is the number of observed and missing data points
+      // at the time period described by this object.
+      virtual int total_sample_size() const = 0;
+
+     protected:
+      // Adjusts the missing status and observation count of the aggregate
+      // multiplexed data object to reflect the missing status of dp.
+      //
+      // Child classes should call this function to update their missing-data
+      // status and observation count in light of the new observation, but
+      // actually storing the data is left to the class descendants.
+      void add_data(const Ptr<Data> &dp);
+
+     private:
+      int observed_sample_size_;
+    };
+  }  // namespace StateSpace
+
   class StateSpaceModelBase : virtual public Model {
    public:
     StateSpaceModelBase();
@@ -179,7 +206,7 @@ namespace BOOM{
     //  2. Subtract the expected value of the state given the
     //     simulated y.
     //  3. Add the expected value of the state given the observed y.
-    virtual void impute_state();
+    virtual void impute_state(RNG &rng);
 
     // Update the complete data sufficient statistics for the
     // observation model based on the posterior distribution of the
@@ -269,7 +296,7 @@ namespace BOOM{
     // The simulated value is returned in the vector view function argument.
     // The initial state refers to the state at time 0 (other implementations
     // sometimes assume the initial state is at time -1).
-    virtual void simulate_initial_state(VectorView v) const;
+    virtual void simulate_initial_state(RNG &rng, VectorView v) const;
 
     // Simulates the value of the state vector for the current time
     // period, t, given the value of state at the previous time
@@ -278,10 +305,28 @@ namespace BOOM{
     //   last:  Value of state at time t-1.
     //   next:  VectorView to be filled with state at time t.
     //   t:  The time index of 'next'.
-    void simulate_next_state(const ConstVectorView last,
+    void simulate_next_state(RNG &rng,
+                             const ConstVectorView last,
                              VectorView next,
                              int t) const;
-    Vector simulate_next_state(const Vector &current_state, int t) const;
+    Vector simulate_next_state(RNG &rng,
+                               const Vector &current_state,
+                               int t) const;
+
+    // Returns a draw of the predictive distribution of 'state' over the next
+    // 'horizon' time periods.  If any state models depend on external data,
+    // they must have access to that data over the forecast horizon.
+    //
+    // Args:
+    //   rng:  The random number generator to use for the simulation.
+    //   horizon:  The number of time periods into the future to forecast.
+    // Returns:
+    //   A matrix with 'horizon + 1' columns, where column t contains the
+    //   simulated state t periods after the final state at time
+    //   time_dimension().  That means column zero contains final_state().  The
+    //   matrix values are simulatinos from the predictive distribution of the
+    //   state given data to time_dimension().
+    Matrix simulate_state_forecast(RNG &rng, int horizon) const;
 
     // Simulates the error for the state at time t+1.  (Using the
     // notation of Durbin and Koopman, this uses the model matrices
@@ -290,7 +335,7 @@ namespace BOOM{
     // Returns a vector of size state_dimension().  If the model
     // matrices are not full rank then some elements of this vector
     // will be deterministic functions of other elements.
-    virtual Vector simulate_state_error(int t) const;
+    virtual Vector simulate_state_error(RNG &rng, int t) const;
 
     //------- Accessors for getting at state comopnents -----------
     ConstVectorView final_state() const;
@@ -563,9 +608,9 @@ namespace BOOM{
     // Simulate fake data from the model, given current model
     // parameters, as part of Durbin and Koopman's state-simulation
     // algorithm.
-    void simulate_forward();
+    void simulate_forward(RNG &rng);
 
-    double simulate_adjusted_observation(int t);
+    double simulate_adjusted_observation(RNG &rng, int t);
 
     // Given a vector of LightKalmanStorage obtained using the Kalman
     // filter, run the Durbin and Koopman 'fast disturbance smoother'.

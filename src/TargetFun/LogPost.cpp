@@ -22,72 +22,78 @@
 
 namespace BOOM{
 
-
-
-  LogPostTF::LogPostTF(Target m, Ptr<VectorModel> p)
-    : loglike(m),
-      pri(p)
+  LogPostTF::LogPostTF(const Target &loglike, const Ptr<VectorModel> &prior)
+    : loglike_(loglike),
+      prior_(prior)
   {}
 
   //--------------------------------------------------
-  dLogPostTF::dLogPostTF(dLoglikeTF m, Ptr<dVectorModel> p)
-    : LogPostTF(m,p),
-      dloglike(m),
-      dpri(p)
+  dLogPostTF::dLogPostTF(const dLoglikeTF &loglike,
+                         const Ptr<dVectorModel> &prior)
+    : LogPostTF(loglike, prior),
+      dloglike_(loglike),
+      dprior_(prior)
   {}
 
-  dLogPostTF::dLogPostTF(Target m, dTarget dm, Ptr<dVectorModel> p)
-    : LogPostTF(m,p),
-      dloglike(dm),
-      dpri(p)
+  dLogPostTF::dLogPostTF(const Target &loglike,
+                         const dTarget &dloglike,
+                         const Ptr<dVectorModel> &prior)
+    : LogPostTF(loglike, prior),
+      dloglike_(dloglike),
+      dprior_(prior)
   {}
 
 
   //--------------------------------------------------
-  d2LogPostTF::d2LogPostTF(d2LoglikeTF m, Ptr<d2VectorModel> p)
-    : dLogPostTF(m,p),
-      d2loglike(m),
-      d2pri(p)
+  d2LogPostTF::d2LogPostTF(const d2LoglikeTF &loglike,
+                           const Ptr<d2VectorModel> &prior)
+    : dLogPostTF(loglike, prior),
+      d2loglike_(loglike),
+      d2prior_(prior)
   {}
 
 
-  d2LogPostTF::d2LogPostTF(Target m, dTarget dm, d2Target d2m,
-			   Ptr<d2VectorModel> p)
-    : dLogPostTF(m, dm,p),
-      d2loglike(d2m),
-      d2pri(p)
+  d2LogPostTF::d2LogPostTF(const Target &loglike,
+                           const dTarget &dloglike,
+                           const d2Target &d2loglike,
+                           const Ptr<d2VectorModel> &prior)
+    : dLogPostTF(loglike, dloglike, prior),
+      d2loglike_(d2loglike),
+      d2prior_(prior)
   {}
 
   //--------------------------------------------------
 
   double LogPostTF::operator()(const Vector &z)const{
-    double ans = pri->logp(z);
-    if(ans==BOOM::negative_infinity()) return ans;
-    ans += loglike(z);
+    double ans = prior_->logp(z);
+    if (ans == BOOM::negative_infinity()) {
+      return ans;
+    }
+    ans += loglike_(z);
     return ans;
   }
 
   //----------------------------------------------------------------------
 
-  double dLogPostTF::operator()(const Vector &x, Vector &g)const{
-    g=0.0;
+  double dLogPostTF::operator()(const Vector &x, Vector &g) const {
+    g = 0.0;
     Vector g1 = g;
-    double ans = dloglike(x,g);
-    ans += dpri->dlogp(x, g1);
-    g+=g1;
+    double ans = dloglike_(x, g);
+    ans += dprior_->dlogp(x, g1);
+    g += g1;
     return ans;
   }
 
   //----------------------------------------------------------------------
   double d2LogPostTF::operator()(const Vector &x, Vector &g, Matrix &h)const{
-    g=0.0;
+    g = 0.0;
     Vector g1 = g;
-    h=0.0;
+    h = 0.0;
     Matrix h1 = h;
-    double ans = d2loglike(x, g, h);  // derivatives wrt x
-    ans += d2pri->d2logp(x, g1, h1);       // derivatives wrt x
-    g+=g1;
-    h+=h1;
+    double ans = d2loglike_(x, g, h);         // derivatives wrt x
+    ans += d2prior_->d2logp(x, g1, h1);       // derivatives wrt x
+    g += g1;
+    h += h1;
     return ans;
   }
 

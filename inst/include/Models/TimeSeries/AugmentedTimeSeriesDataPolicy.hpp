@@ -123,7 +123,7 @@ namespace BOOM{
     if(n==0){
       ostringstream err;
       err << "You need at least one data series before you add a data point."
-	  << endl;
+          << endl;
       report_error(err.str());
     }
     this->dat(n-1).add_1(dp);
@@ -151,9 +151,9 @@ namespace BOOM{
 
     ostringstream err;
     err << "data value: " << *dp << " could not be cast to an augmented "
-	<< "time series, an element of the augmented time series, or "
-	<< "the initial data for an augmented time series."
-	<< endl;
+        << "time series, an element of the augmented time series, or "
+        << "the initial data for an augmented time series."
+        << endl;
     report_error(err.str());
   }
 

@@ -105,8 +105,8 @@ namespace BOOM{
         const ConstSubMatrix &state_error_variance);
 
     // Simulates the state eror at time t, for moving to time t+1.
-    virtual void simulate_state_error(VectorView eta, int t) const = 0;
-    virtual void simulate_initial_state(VectorView eta) const;
+    virtual void simulate_state_error(RNG &rng, VectorView eta, int t) const = 0;
+    virtual void simulate_initial_state(RNG &rng, VectorView eta) const;
 
     virtual Ptr<SparseMatrixBlock> state_transition_matrix(int t) const = 0;
 

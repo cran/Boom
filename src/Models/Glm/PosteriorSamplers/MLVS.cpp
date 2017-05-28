@@ -121,10 +121,10 @@ namespace BOOM {
     mod_->set_beta(Beta);
   }
 
-  inline bool keep_flip(double logp_old, double logp_new) {
+  inline bool keep_flip(RNG &rng, double logp_old, double logp_new) {
     if (!std::isfinite(logp_new)) return false;
     double pflip = logit_inv(logp_new - logp_old);
-    double u = runif (0,1);
+    double u = runif_mt(rng, 0, 1);
     return u < pflip ? true : false;
   }
 
@@ -148,7 +148,7 @@ namespace BOOM {
       uint I = flips[i];
       inc.flip(I);
       double logp_new = log_model_prob(inc);
-      if ( keep_flip(logp, logp_new)) logp = logp_new;
+      if ( keep_flip(rng(), logp, logp_new)) logp = logp_new;
       else inc.flip(I);  // reject the flip, so flip back
     }
     mod_->coef().set_inc(inc);

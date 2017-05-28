@@ -65,7 +65,7 @@ namespace BOOM {
     double sd() const {return sqrt(variance());}
 
     double Logp(double x, double &d1, double &d2, uint nderiv) const override;
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
 
    private:
   };

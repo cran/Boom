@@ -5,7 +5,8 @@
 \description{Quickly scan a matrix from a file.}
 
 \usage{
-  mscan(fname, nc = 0, header = FALSE, burn = 0, thin = 0, sep = "", \dots)
+  mscan(fname, nc = 0, header = FALSE, burn = 0, thin = 0, nlines = 0L,
+        sep = "", \dots)
 }
 
 \arguments{
@@ -16,10 +17,12 @@
   \item{header}{logical indicating whether the file contains a header row.}
   \item{burn}{An integer giving the number of initial lines of the matrix to discard.}
   \item{thin}{An integer.  If thin > 1 then keep every thin\'th line.  This is
-   useful for reading in very large files of MCMC output, for example.}
+    useful for reading in very large files of MCMC output, for example.}
+  \item{nlines}{If positive, the number of data lines to scan from the data file
+    (e.g. for an MCMC algorithm that is only partway done).  Otherwise the
+    entire file will be read.}
   \item{sep}{ Field separator in the data file.}
   \item{\dots}{Extra arguments passed to 'scan'.}
-
 }
 
 \value{

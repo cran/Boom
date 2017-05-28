@@ -58,13 +58,23 @@ namespace BOOM{
     return out;
   }
 
+  void MRD::add_data(const Ptr<RegressionData> &dp) {
+    MultiplexedData::add_data(dp);
+    regression_data_.push_back(dp);
+  }
+
   double MRD::adjusted_observation(const GlmCoefs &coefficients) const {
+    if (missing() == Data::completely_missing || observed_sample_size() == 0) {
+      return negative_infinity();
+    }
     double ans = 0;
     for (int i = 0; i < regression_data_.size(); ++i) {
       const RegressionData &observation(regression_data(i));
-      ans += observation.y() - coefficients.predict(observation.x());
+      if (observation.missing() == Data::observed) {
+        ans += observation.y() - coefficients.predict(observation.x());
+      }
     }
-    return ans / sample_size();
+    return ans / observed_sample_size();
   }
 
   const RegressionData &MRD::regression_data(int i) const {
@@ -110,7 +120,7 @@ namespace BOOM{
     for (int i = 0; i < n; ++i) {
       NEW(RegressionData, dp)(y[i], X.row(i));
       if (!(observed.empty()) && !observed[i]) {
-        dp->set_missing_status(Data::partly_missing);
+        dp->set_missing_status(Data::missing_status::completely_missing);
       }
       add_data(dp);
     }
@@ -135,28 +145,28 @@ namespace BOOM{
   void SSRM::add_data(Ptr<Data> dp) {
     Ptr<RegressionData> regression_data = dp.dcast<RegressionData>();
     if (!!regression_data) {
-      add_data(regression_data);
+      add_regression_data(regression_data);
       return;
     }
 
     Ptr<MRD> multiplexed_data = dp.dcast<MRD>();
     if (!!multiplexed_data) {
-      add_data(multiplexed_data);
+      add_multiplexed_data(multiplexed_data);
       return;
     }
     report_error("Could not cast to an appropriate data type.");
   }
 
-  void SSRM::add_data(Ptr<RegressionData> dp) {
+  void SSRM::add_regression_data(const Ptr<RegressionData> &dp) {
     NEW(MRD, multiplexed_data)();
     multiplexed_data->add_data(dp);
     multiplexed_data->set_missing_status(dp->missing());
     add_data(multiplexed_data);
   }
 
-  void SSRM::add_data(Ptr<MRD> dp) {
+  void SSRM::add_multiplexed_data(const Ptr<MRD> &dp) {
     DataPolicy::add_data(dp);
-    for (int i = 0; i < dp->sample_size(); ++i) {
+    for (int i = 0; i < dp->total_sample_size(); ++i) {
       regression_model()->add_data(dp->regression_data_ptr(i));
     }
   }
@@ -167,7 +177,7 @@ namespace BOOM{
     if (t >= data.size()) {
       return sigsq;
     } else {
-      int n = data[t]->sample_size();
+      int n = data[t]->observed_sample_size();
       if (n == 0) ++n;
       return sigsq / n;
     }
@@ -178,17 +188,20 @@ namespace BOOM{
   }
 
   bool SSRM::is_missing_observation(int t) const {
-    return dat()[t]->missing() != Data::observed;
+    return dat()[t]->missing() == Data::completely_missing
+        || dat()[t]->observed_sample_size() == 0;
   }
 
   void SSRM::observe_data_given_state(int t) {
     if (!is_missing_observation(t)) {
       Ptr<MRD> dp(dat()[t]);
       double state_mean = observation_matrix(t).dot(state(t));
-      for (int i = 0; i < dp->sample_size(); ++i) {
+      for (int i = 0; i < dp->total_sample_size(); ++i) {
         const RegressionData &observation(dp->regression_data(i));
-        regression_->suf()->add_mixture_data(
-            observation.y() - state_mean, observation.x(), 1.0);
+        if (observation.missing() == Data::observed) {
+          regression_->suf()->add_mixture_data(
+              observation.y() - state_mean, observation.x(), 1.0);
+        }
       }
     }
   }
@@ -217,29 +230,31 @@ namespace BOOM{
   }
 
   // TODO(stevescott):  test simulate_forecast
-  Vector SSRM::simulate_forecast(const Matrix &newX,
+  Vector SSRM::simulate_forecast(RNG &rng,
+                                 const Matrix &newX,
                                  const Vector &final_state) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     Vector ans(nrow(newX));
     int t0 = time_dimension();
     Vector state = final_state;
     for (int t = 0; t < ans.size(); ++t) {
-      state = simulate_next_state(state, t + t0);
-      ans[t] = rnorm(observation_matrix(t + t0).dot(state),
-                     sqrt(observation_variance(t + t0)));
+      state = simulate_next_state(rng, state, t + t0);
+      ans[t] = rnorm_mt(rng,
+                        observation_matrix(t + t0).dot(state),
+                        sqrt(observation_variance(t + t0)));
       ans[t] += regression_->predict(newX.row(t));
     }
     return ans;
   }
 
-  Vector SSRM::simulate_forecast(const Matrix &newX) {
+  Vector SSRM::simulate_forecast(RNG &rng, const Matrix &newX) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
     ScalarKalmanStorage kalman_storage = filter();
     // The Kalman filter produces the forecast distribution for the
     // next time period.  Since the observed data goes from 0 to t-1,
     // kalman_storage contains the forecast distribution for time t.
     Vector final_state = rmvn_robust(kalman_storage.a, kalman_storage.P);
-    return simulate_forecast(newX, final_state);
+    return simulate_forecast(rng, newX, final_state);
   }
 
   Vector SSRM::one_step_holdout_prediction_errors(
@@ -282,11 +297,13 @@ namespace BOOM{
     for (int time = 0; time < data.size(); ++time) {
       Ptr<MRD> dp = data[time];
       double average_contribution = 0;
-      for (int j = 0; j < data[time]->sample_size(); ++j) {
+      for (int j = 0; j < data[time]->total_sample_size(); ++j) {
         average_contribution +=
             regression_model()->predict(dp->regression_data(j).x());
       }
-      ans[time] = average_contribution /= dp->sample_size();
+      ans[time] = dp->total_sample_size() > 0 ?
+          average_contribution /= dp->total_sample_size()
+          : 0;
     }
     return ans;
   }

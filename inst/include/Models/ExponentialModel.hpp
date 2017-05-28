@@ -96,7 +96,7 @@ namespace BOOM {
     double Logp(double x, double &g, double &h, const uint lev) const override ;
     void mle() override;
 
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
     void add_mixture_data(Ptr<Data>, double prob) override;
   };
 }  // namespace BOOM

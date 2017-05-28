@@ -59,7 +59,7 @@ namespace BOOM {
     // In the case of multiplexed data each binomial observation y_jt gets
     // imputed as above, with a corresponding zbar_jt and V_jt.
     class AugmentedBinomialRegressionData
-        : public Data {
+        : public MultiplexedData {
      public:
       // Constructs an empty data point.  Observations can be added later using
       // add_data().
@@ -102,7 +102,13 @@ namespace BOOM {
         return *(binomial_data_[observation]);
       }
 
-      int sample_size() const {return binomial_data_.size();}
+      Ptr<BinomialRegressionData> binomial_data_ptr(int observation) {
+        return binomial_data_[observation];
+      }
+
+      double total_trials() const;
+      double total_successes() const;
+      int total_sample_size() const override {return binomial_data_.size();}
 
      private:
       std::vector<Ptr<BinomialRegressionData>> binomial_data_;
@@ -137,6 +143,10 @@ namespace BOOM {
 
     StateSpaceLogitModel(const StateSpaceLogitModel &rhs);
     StateSpaceLogitModel * clone() const override;
+
+    int total_sample_size(int time) const override {
+      return dat()[time]->total_sample_size();
+    }
 
     const BinomialRegressionData & data(int t, int observation) const override {
       return dat()[t]->binomial_data(observation);
@@ -181,7 +191,8 @@ namespace BOOM {
     //     forecast period.
     //   final_state: A draw of the value of the state vector at the
     //     final time period in the training data.
-    Vector simulate_forecast(const Matrix &forecast_predictors,
+    Vector simulate_forecast(RNG &rng,
+                             const Matrix &forecast_predictors,
                              const Vector &trials,
                              const Vector &final_state);
 

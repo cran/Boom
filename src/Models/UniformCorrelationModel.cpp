@@ -50,7 +50,7 @@ namespace BOOM{
 
   uint UCM::dim()const{return dim_;}
 
-  CorrelationMatrix UCM::sim()const{
-    return random_cor(dim());
+  CorrelationMatrix UCM::sim(RNG &rng)const{
+    return random_cor_mt(rng, dim());
   }
 }

@@ -37,8 +37,8 @@ namespace BOOM {
   class RejectionSampler {
    public:
     typedef std::function<double(const Vector &)> Target;
-    RejectionSampler(Target log_target_density,
-                     Ptr<DirectProposal> proposal);
+    RejectionSampler(const Target &log_target_density,
+                     const Ptr<DirectProposal> &proposal);
 
     // Returns a draw from the target distribution.  If the number of
     // rejected proposal exceeds a limit set by set_rejection_limit(),

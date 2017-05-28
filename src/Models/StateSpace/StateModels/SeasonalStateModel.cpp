@@ -127,7 +127,7 @@ namespace BOOM{
     return nseasons_ - 1;
   }
 
-  void SSM::simulate_state_error(VectorView state_error, int t)const{
+  void SSM::simulate_state_error(RNG &rng, VectorView state_error, int t)const{
     if(initial_state_mean_.size() != state_dimension()
        || initial_state_variance_.nrow() != state_dimension()){
       ostringstream err;
@@ -144,7 +144,7 @@ namespace BOOM{
     if(new_season(t+1)){
       // If next time period is the start of a new season, then an
       // update is needed.  Otherwise, the state error is zero.
-      state_error[0] = rnorm(0, sigma());
+      state_error[0] = rnorm_mt(rng, 0, sigma());
     }
   }
 

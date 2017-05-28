@@ -31,7 +31,8 @@ namespace BOOM {
   // are described by a Dirichlet process mixture of normals.  The
   // prior (base measure) is a normal inverse Wishart model.
   class DirichletProcessMvnModel
-      : public CompositeParamPolicy,
+      : public VectorModel,
+        public CompositeParamPolicy,
         public IID_DataPolicy<VectorData>,
         public PriorPolicy {
    public:
@@ -70,6 +71,9 @@ namespace BOOM {
     // in an empty cluster then the cluster is removed.
     void remove_data_from_cluster(const Vector &y, int cluster);
 
+    // Change value of data currently used in model.
+    void update_cluster(const Vector &old_y, const Vector &new_y, int cluster);
+
     // It is an error to try to obtain a cluster >= number_of_clusters().
     const MvnModel & cluster(int i) const;
 
@@ -91,10 +95,39 @@ namespace BOOM {
     // mixture components.
     double log_likelihood() const;
 
+    // Calculates probability of single data point.
+    double logp(const Vector &x) const override;
+
+    // Simulates data from model.
+    // TODO(user): add ownership of mean and precision base measures to model
+    //                so that simulation possible.
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
+
     // Returns:
     //   A vector of length equal to the number of mixture components.
     //   Elements give the number of observations in each component.
     Vector allocation_counts() const;
+
+    // Vector of all cluster indicators.
+    const std::vector<int> &cluster_indicators() const {
+      return cluster_indicators_;
+    }
+
+    // Cluster indicator for i-th observation.
+    const int &cluster_indicators(int i) const {
+      return cluster_indicators_.at(i);
+    }
+
+    // Set cluster indicator for i-th observation.
+    void set_cluster_indicator(int i, int k) {
+      cluster_indicators_[i] = k;
+    }
+
+    // Initialize vector of cluster indicators.
+    void initialize_cluster_indicators(int s) {
+       cluster_indicators_.clear();
+       cluster_indicators_.resize(s, -1);
+    }
 
    private:
     // Clears the ParamPolicy and re-registers all models with it.
@@ -110,6 +143,11 @@ namespace BOOM {
     Ptr<UnivParams> alpha_;
 
     std::vector<Ptr<MvnModel> > mixture_components_;
+
+    // Cluster indicators augmented by sampler (not used in likelihood
+    // calculations).
+    // cluster_indicators_[i] == -1 means observation i is unassigned.
+    std::vector<int> cluster_indicators_;
 
     // Dimension of the data being modeled.
     int dim_;

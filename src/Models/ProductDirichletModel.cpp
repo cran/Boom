@@ -176,10 +176,10 @@ namespace BOOM{
     return ans;
   }
 
-  Matrix PDM::sim()const{
+  Matrix PDM::sim(RNG &rng)const{
     uint d = dim();
     Matrix ans(d,d);
-    for(uint i=0; i<d; ++i) ans.row(i) = rdirichlet(Nu().row(i));
+    for(uint i=0; i<d; ++i) ans.row(i) = rdirichlet_mt(rng, Nu().row(i));
     return ans;
   }
 

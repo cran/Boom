@@ -87,9 +87,9 @@ namespace BOOM{
     if(lo> knots_.front() || hi < knots_.back()){
       std::ostringstream err;
       err << "in NaturalSpline constructor:" << endl
-	  << "boundary knots must be outside interior knots:"<<endl
-	  << "you supplied: " << endl
-	  << "[" << lo << "] " << knots_ << " [" << hi <<"]" <<endl;
+          << "boundary knots must be outside interior knots:"<<endl
+          << "you supplied: " << endl
+          << "[" << lo << "] " << knots_ << " [" << hi <<"]" <<endl;
       report_error(err.str());
     }
     if(lo>hi) std::swap(hi,lo);
@@ -150,7 +150,7 @@ namespace BOOM{
     if (curs > nknots() - order_) {
       int lastLegit = nknots() - order_;
       if (x == knots_[lastLegit]) {
-	boundary = true; curs = lastLegit;
+        boundary = true; curs = lastLegit;
       }
     }
   }
@@ -207,16 +207,16 @@ namespace BOOM{
     if(j<0 || j> nk) {
       std::ostringstream err;
       err << "a bad bad thing happened in NS::minimal_basis()" << endl
-	  << " you can't have x inside the left or right " << order_
-	  << " knots." << endl
-	  << "x = " << x << endl;
+          << " you can't have x inside the left or right " << order_
+          << " knots." << endl
+          << "x = " << x << endl;
       report_error(err.str());
     }
     if(nd>0){
       for(int ii=0; ii<order_; ++ii){
-	a = 0;
-	a[ii]=1;
-	wsp[ii] = eval_derivs(x,nd);
+        a = 0;
+        a[ii]=1;
+        wsp[ii] = eval_derivs(x,nd);
       }
     }else{
       basis_funcs(x,wsp);
@@ -243,9 +243,9 @@ namespace BOOM{
     for (int j = 1; j <= ordm1_; j++) {
       double saved = 0.;
       for (int r = 0; r < j; r++) {
-	double term = b[r]/(rdel[r] + ldel[j - 1 - r]);
-	b[r] = saved + rdel[r] * term;
-	saved = ldel[j - 1 - r] * term;
+        double term = b[r]/(rdel[r] + ldel[j - 1 - r]);
+        b[r] = saved + rdel[r] * term;
+        saved = ldel[j - 1 - r] * term;
       }
       b[j] = saved;
     }
@@ -277,38 +277,15 @@ namespace BOOM{
     }
     while(nder--) {
       for(inner = outer, apt = a.data(), lpt = ti - outer; inner--; apt++, lpt++)
-	*apt = outer * (*(apt + 1) - *apt)/(*(lpt + outer) - *lpt);
+        *apt = outer * (*(apt + 1) - *apt)/(*(lpt + outer) - *lpt);
       outer--;
     }
     diff_table(x, outer);
     while(outer--)
       for(apt = a.data(), lpt = ldel.data() + outer, rpt = rdel.data(), inner = outer + 1;
-	  inner--; lpt--, rpt++, apt++)
-	*apt = (*(apt + 1) * *lpt + *apt * *rpt)/(*rpt + *lpt);
+          inner--; lpt--, rpt++, apt++)
+        *apt = (*(apt + 1) * *lpt + *apt * *rpt)/(*rpt + *lpt);
     return a[0];
   }
 
-  //____________________________________________________________
-
-//   Matrix spline_basis_matrix(const Vector &x, uint nknots){
-//     Vector y(x);
-//     std::sort(y.begin(), y.end());
-//     uint n = y.size();
-//     double lo = y.front();
-//     double hi = y.back();
-
-//     Vector knots;
-//     for(uint i=0; i<nknots; ++i){
-//       ///////////
-//     }
-
-//     NaturalSpline s(knots, lo, hi);
-
-//     Matrix ans(y.size(), nknots+1);
-//     for(uint i=0; i<n; ++i){
-//       ans.row(i) = s(y[i]);
-//     }
-//     return ans;
-//   }
-
-}
+}  // namespace BOOM

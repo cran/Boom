@@ -25,9 +25,9 @@
 #include <stdexcept>
 
 namespace BOOM {
-  SliceSampler::SliceSampler(Func F, bool Unimodal)
+  SliceSampler::SliceSampler(const Func &log_density, bool Unimodal)
       : unimodal_(Unimodal),
-        logp_(F)
+        logp_(log_density)
   {
     hi_ = lo_ = scale_ = 1.0;
   }

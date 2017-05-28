@@ -124,13 +124,18 @@ namespace BOOM{
     return ans;
   }
 
-  ExperimentStructure::ExperimentStructure(const std::vector<int> & nlevels)
+  ExperimentStructure::ExperimentStructure(const std::vector<int> & nlevels,
+                                           bool context)
       : nlevels_(nlevels)
   {
     int nfactors = nlevels.size();
     for (int i = 0; i < nfactors; ++i) {
       std::ostringstream factor_name_builder;
-      factor_name_builder << "X" << i;
+      if (context) {
+        factor_name_builder << "Context" << i;
+      } else {
+        factor_name_builder << "X" << i;
+      }
       factor_names_.push_back(factor_name_builder.str());
 
       std::vector<std::string> current_level_names;
@@ -176,14 +181,15 @@ namespace BOOM{
     return ans;
   }
 
-  const string & ExperimentStructure::level_name(int factor, int level)  const {
+  const std::string & ExperimentStructure::level_name(
+      int factor, int level)  const {
     return level_names_[factor][level];
   }
 
-  string ExperimentStructure::full_level_name(
+  std::string ExperimentStructure::full_level_name(
       int factor,
       int level, const
-      string &separator) const {
+      std::string &separator) const {
     std::ostringstream name;
     name << factor_names_[factor]
          << separator
@@ -247,7 +253,7 @@ namespace BOOM{
   }
 
   //======================================================================
-  FactorDummy::FactorDummy(int factor, int level, const string &name)
+  FactorDummy::FactorDummy(int factor, int level, const std::string &name)
     : factor_(factor),
       level_(level),
       name_(name)
@@ -261,7 +267,7 @@ namespace BOOM{
     return factor_ < 0 || level_ < 0 ? false : levels[factor_] == level_;
   }
 
-  const string & FactorDummy::name() const { return name_; }
+  const std::string & FactorDummy::name() const { return name_; }
 
   bool FactorDummy::operator==(const FactorDummy &rhs) const {
     return (factor_ == rhs.factor_) && (level_ == rhs.level_);
@@ -338,10 +344,10 @@ namespace BOOM{
     return true;
   }
 
-  string Effect::name() const {
+  std::string Effect::name() const {
     int nterms = factors_.size();
     if (nterms == 0) return "Intercept";
-    string ans = factors_[0].name();
+    std::string ans = factors_[0].name();
     for (int i = 1; i < nterms; ++i) {
       ans += ":";
       ans += factors_[i].name();
@@ -1049,11 +1055,13 @@ namespace BOOM{
 
    int RowBuilder::dimension() const { return effects_.size(); }
 
-   std::vector<string> RowBuilder::variable_names() const {
-     std::vector<string> ans;
+   std::vector<std::string> RowBuilder::variable_names() const {
+     std::vector<std::string> ans;
      int neffects = effects_.size();
      ans.reserve(neffects);
-     for (int i = 0; i < neffects; ++i) { ans.push_back(effects_[i].name()); }
+     for (int i = 0; i < neffects; ++i) {
+       ans.push_back(effects_[i].name());
+     }
      return ans;
    }
 
@@ -1063,8 +1071,8 @@ namespace BOOM{
        const ExperimentStructure &context,
        int interaction_order)
    {
-     ContextualEffect Intercept;
-     contextual_effects_.push_back(Intercept);
+     ContextualEffect intercept;
+     contextual_effects_.push_back(intercept);
      if (interaction_order == 0) return;
      if (interaction_order > xp.nfactors() + context.nfactors()) {
        interaction_order = xp.nfactors() + context.nfactors();
@@ -1117,9 +1125,17 @@ namespace BOOM{
      }
    }
 
-   void ContextualRowBuilder::add_effect(const ContextualEffect &e) {
-     contextual_effects_.push_back(e);
-   }
+  void ContextualRowBuilder::add_effect(const ContextualEffect &e) {
+    contextual_effects_.push_back(e);
+  }
+
+  void ContextualRowBuilder::remove_effect(const ContextualEffect &effect) {
+    std::vector<ContextualEffect>::iterator it = std::find(
+        contextual_effects_.begin(), contextual_effects_.end(), effect);
+    if (it != contextual_effects_.end()) {
+      contextual_effects_.erase(it);
+    }
+  }
 
   void ContextualRowBuilder::add_effect_group(
       const ContextualEffectGroup &group) {
@@ -1133,11 +1149,9 @@ namespace BOOM{
      return contextual_effects_.size();
    }
 
-   std::vector<string> ContextualRowBuilder::variable_names() const {
-     std::vector<string> ans;
-     int neffects = contextual_effects_.size();
-     ans.reserve(neffects);
-     for (int i = 0; i < neffects; ++i) {
+   std::vector<std::string> ContextualRowBuilder::variable_names() const {
+     std::vector<std::string> ans;
+     for (int i = 0; i < contextual_effects_.size(); ++i) {
        ans.push_back(contextual_effects_[i].name());
      }
      return ans;
@@ -1259,6 +1273,7 @@ namespace {
     int max_second_factor_level = find_max_observed_level(
         second_factor, second_factor_is_contextual);
 
+    // Create a 'matrix' of int's filled with -1's.
     std::vector<std::vector<int> > ans;
     for (int i = 0; i < max_first_factor_level; ++i) {
       ans.push_back(std::vector<int>(max_second_factor_level, -1));

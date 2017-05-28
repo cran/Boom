@@ -26,7 +26,8 @@ namespace BOOM{
   class MetropolisHastings : public Sampler{
    public:
     typedef std::function<double(const Vector &)> Target;
-    MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop,
+    MetropolisHastings(const Target & target,
+                       const Ptr<MH_Proposal> &prop,
                        RNG *rng = 0);
     Vector draw(const Vector & old) override;
     virtual double logp(const Vector &x)const;
@@ -45,7 +46,7 @@ namespace BOOM{
    public:
     typedef std::function<double(double)> ScalarTarget;
     ScalarMetropolisHastings(const ScalarTarget &f,
-                             Ptr<MH_ScalarProposal> prop,
+                             const Ptr<MH_ScalarProposal> &prop,
                              RNG *rng = 0);
     double draw(double old) override;
     virtual double logp(double x)const;

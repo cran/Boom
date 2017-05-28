@@ -34,25 +34,25 @@ namespace BOOM{
 
     // user supplies sufficient statistics
     PartRegSampler(uint Npart,
-		   const SpdMatrix & xtx,
-		   const Vector & xty,
-		   double yty,
-		   const Vector & prior_mean,
-		   const SpdMatrix & prior_ivar_,
-		   double prior_df,
-		   double prior_sigma_guess,
-		   double inc_prob);
+                   const SpdMatrix & xtx,
+                   const Vector & xty,
+                   double yty,
+                   const Vector & prior_mean,
+                   const SpdMatrix & prior_ivar_,
+                   double prior_df,
+                   double prior_sigma_guess,
+                   double inc_prob);
 
     // user supplies sufficient statistics
     PartRegSampler(uint Npart,
-		   const SpdMatrix & xtx,
-		   const Vector & xty,
-		   double yty,
-		   const Vector & prior_mean,
-		   const SpdMatrix & prior_ivar_,
-		   double prior_df,
-		   double prior_sigma_guess,
-		   const Vector &inc_probs);
+                   const SpdMatrix & xtx,
+                   const Vector & xty,
+                   double yty,
+                   const Vector & prior_mean,
+                   const SpdMatrix & prior_ivar_,
+                   double prior_df,
+                   double prior_sigma_guess,
+                   const Vector &inc_probs);
 
     void draw_model_indicators(uint ntimes=1);
     void draw_params();  // to be called after "draw_models"
@@ -76,6 +76,7 @@ namespace BOOM{
     double empirical_prob(const Selector &g)const;
 
   private:
+    RNG rng_;
     const Ptr<NeRegSuf> suf_;
 
     const Vector prior_mean_;         // This stuff defines the prior

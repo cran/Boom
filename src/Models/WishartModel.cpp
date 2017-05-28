@@ -173,7 +173,9 @@ namespace BOOM{
   void WM::set_nu(double Nu) {ParamPolicy::prm1_ref().set(Nu);}
   void WM::set_sumsq(const SpdMatrix &S) {ParamPolicy::prm2_ref().set(S);}
 
-  SpdMatrix WishartModel::simdat() { return rWish(nu(), sumsq()); }
+  SpdMatrix WishartModel::simdat(RNG &rng) {
+    return rWish_mt(rng, nu(), sumsq());
+  }
 
   double WishartModel::Loglike(const Vector &sumsq_triangle_nu,
                                Vector &g, uint nd) const {

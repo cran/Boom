@@ -544,30 +544,30 @@ namespace BOOM{
   }
 
   // TODO(stevescott):  test
-  void ASSR::simulate_initial_state(VectorView state0)const{
+  void ASSR::simulate_initial_state(RNG &rng, VectorView state0)const{
     // First, simulate the initial state of the client state vector.
     VectorView client_state(state0, 0, state0.size()-2);
-    StateSpaceModelBase::simulate_initial_state(client_state);
+    StateSpaceModelBase::simulate_initial_state(rng, client_state);
 
     // Next simulate the initial value of the first latent weekly
     // observation.
     double mu = StateSpaceModelBase::observation_matrix(0).dot(client_state);
-    state0[state_dimension() - 2] = rnorm(mu, regression_->sigma());
+    state0[state_dimension() - 2] = rnorm_mt(rng, mu, regression_->sigma());
 
     // Finally, the initial state of the cumulator variable is zero.
     state0[state_dimension() - 1] = 0;
   }
 
-  Vector ASSR::simulate_state_error(int t)const{
+  Vector ASSR::simulate_state_error(RNG &rng, int t)const{
     int state_dim = state_dimension();
     Vector ans(state_dim, 0);
     VectorView client_state_error(ans, 0, state_dim - 2);
-    client_state_error = StateSpaceModelBase::simulate_state_error(t);
+    client_state_error = StateSpaceModelBase::simulate_state_error(rng, t);
 
     // TODO(stevescott):  check this
     ans[state_dim - 2] =
         StateSpaceModelBase::observation_matrix(t).dot(client_state_error)
-        + rnorm(0, regression_->sigma());
+        + rnorm_mt(rng, 0, regression_->sigma());
     ans.back() = 0;
 
     return ans;

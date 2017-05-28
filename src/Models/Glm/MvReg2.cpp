@@ -309,12 +309,12 @@ namespace BOOM{
       double w = dp->weight();
       sumw_ += w;
       if(w==1.0){
-	X.set_row(i, dp->x());
-	Y.set_row(i, dp->y());
+        X.set_row(i, dp->x());
+        Y.set_row(i, dp->y());
       }else{
-	double rootw = sqrt(w);
-	X.set_row(i,dp->x() * rootw);
-	Y.set_row(i,dp->y() * rootw);
+        double rootw = sqrt(w);
+        X.set_row(i,dp->x() * rootw);
+        Y.set_row(i,dp->y() * rootw);
       }
     }
     refresh(X,Y);
@@ -455,21 +455,21 @@ namespace BOOM{
 
   Vector MvReg::predict(const Vector &x)const{ return x* Beta(); }
 
-  MvRegData * MvReg::simdat()const{
-    Vector x = simulate_fake_x();
-    return simdat(x);
+  MvRegData * MvReg::simdat(RNG &rng)const{
+    Vector x = simulate_fake_x(rng);
+    return simdat(x, rng);
   }
 
-  MvRegData * MvReg::simdat(const Vector &x)const{
+  MvRegData * MvReg::simdat(const Vector &x, RNG &rng)const{
     Vector mu = predict(x);
-    Vector y = rmvn(mu, Sigma());
+    Vector y = rmvn_mt(rng, mu, Sigma());
     return new MvRegData(y,x);
   }
 
-  Vector MvReg::simulate_fake_x()const{
+  Vector MvReg::simulate_fake_x(RNG &rng)const{
     uint p = xdim();
     Vector x(p, 1.0);
-    for(uint i=1; i<p; ++i) x[i]=rnorm();
+    for(uint i=1; i<p; ++i) x[i]=rnorm_mt(rng);
     return x;
   }
 

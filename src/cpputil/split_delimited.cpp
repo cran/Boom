@@ -19,10 +19,10 @@ namespace BOOM{
     while(!done){
       sz e = s.find_first_of(delims, b);
       if(e==std::string::npos){
-	done=true;
-	ans.push_back(s.substr(b));
+        done=true;
+        ans.push_back(s.substr(b));
       }else{
-	ans.push_back(s.substr(b,e-b));
+        ans.push_back(s.substr(b,e-b));
       }
       b=e+1;
     }

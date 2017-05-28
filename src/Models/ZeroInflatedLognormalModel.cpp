@@ -74,9 +74,9 @@ namespace BOOM {
     return log_probability_of_positive_ + dlnorm(x, mu(), sigma(), true);
   }
 
-  double ZILM::sim() const {
-    if (runif() < positive_probability()) {
-      return exp(rnorm(mu(), sigma()));
+  double ZILM::sim(RNG &rng) const {
+    if (runif_mt(rng) < positive_probability()) {
+      return exp(rnorm_mt(rng, mu(), sigma()));
     }
     return 0;
   }

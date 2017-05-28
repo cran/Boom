@@ -24,7 +24,7 @@ namespace BOOM{
 
   template <class T>
   void permute_std_vector(std::vector<T> &v,
- 			  const std::vector<uint> &perm);{
+                          const std::vector<uint> &perm);{
     std::vector<T> w(v.size());
     for(uint i=0; i<v.size(); ++i) w[i] = v[perm[i]];
     std::swap(v,w); }

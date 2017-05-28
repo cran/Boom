@@ -40,18 +40,18 @@ namespace BOOM{
 
     // each column of beta_subject corresponds to a different choice.
     MultinomialProbitModel(const Matrix & beta_subject,
-			   const Vector & beta_choice,
-			   const SpdMatrix & utility_covariance);
+                           const Vector & beta_choice,
+                           const SpdMatrix & utility_covariance);
 
 //     // the function make_catdat_ptrs can make a ResponseVector out of a
 //     // vector of strings or uints
 //     MultinomialProbitModel(ResponseVector responses,
-// 			  const Matrix &Xsubject_info,
-// 			  const Arr3 &Xchoice_info);
+//                        const Matrix &Xsubject_info,
+//                        const Arr3 &Xchoice_info);
 //     // dim(Xchoice_info) = [#obs, #choices, #choice x's]
 
 //     MultinomialProbitModel(ResponseVector responses,    // no choice information
-// 			  const Matrix &Xsubject_info);
+//                        const Matrix &Xsubject_info);
 
     MultinomialProbitModel(const std::vector<Ptr<ChoiceData> > &);
     MultinomialProbitModel(const MultinomialProbitModel &rhs);

@@ -22,8 +22,8 @@
 
 namespace BOOM {
   JacobianChecker::JacobianChecker(
-      std::function<Vector(const Vector &) > inverse_transformation,
-      std::shared_ptr<Jacobian> analytic_jacobian,
+      const std::function<Vector(const Vector &)> &inverse_transformation,
+      const std::shared_ptr<Jacobian> &analytic_jacobian,
       double epsilon)
       : inverse_transformation_(inverse_transformation),
         numeric_jacobian_(inverse_transformation_),
@@ -50,7 +50,7 @@ namespace BOOM {
     class SubFunction {
      public:
       typedef std::function<Vector(const Vector &) > Mapping;
-      SubFunction(Mapping inverse_mapping, int position)
+      SubFunction(const Mapping &inverse_mapping, int position)
           : inverse_mapping_(inverse_mapping),
             position_(position)
       {}
@@ -140,7 +140,7 @@ namespace BOOM {
   namespace {
     class LogDet {
      public:
-      LogDet(std::shared_ptr<Jacobian> analytic_jacobian)
+      LogDet(const std::shared_ptr<Jacobian> &analytic_jacobian)
           : analytic_jacobian_(analytic_jacobian) {}
 
       double operator()(const Vector &new_parameterization) {

@@ -32,12 +32,14 @@ namespace BOOM {
     BoundedPoissonProcessSimulator(const PoissonProcess *process_to_simulate,
                                    double max_event_rate);
     PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> mark_generator = NullDataGenerator()) const;
    private:
     const PoissonProcess *process_;
     double max_event_rate_;
+    mutable RNG rng_;
   };
 }
 

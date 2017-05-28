@@ -25,7 +25,7 @@ namespace BOOM{
   using std::endl;
 
   LongString::LongString(const string &str, unsigned w, unsigned p,
-			 bool pad_first_line)
+                         bool pad_first_line)
     : s(str),
       width(w),
       pad(p),
@@ -41,8 +41,8 @@ namespace BOOM{
     while(back-start > width){
       unsigned pos=start + width;
       while(pos > start){
-	if(s[pos]==' ') break;
-	--pos;
+        if(s[pos]==' ') break;
+        --pos;
       }
       if(pos==start) pos = start + width;
       if(start>0 || (start==0 && pad_first)) out << blanks;

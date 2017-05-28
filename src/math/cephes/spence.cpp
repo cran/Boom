@@ -24,9 +24,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							spence.c
+  /*                                                    spence.c
    *
-   *	Dilogarithm
+   *    Dilogarithm
    *
    *
    *
@@ -66,7 +66,7 @@ namespace BOOM {
    *
    */
 
-  /*							spence.c */
+  /*                                                    spence.c */
 
 
   /*

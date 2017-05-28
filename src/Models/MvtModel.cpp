@@ -253,10 +253,6 @@ namespace BOOM {
     return ans;
   }
 
-  Vector MVT::sim() const {
-    return sim(GlobalRng::rng);
-  }
-
   Vector MVT::sim(RNG &rng) const {
     Vector ans = rmvn_L_mt(rng, mu().zero(), Sigma_chol());
     double nu = this->nu();

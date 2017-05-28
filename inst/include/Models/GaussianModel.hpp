@@ -42,7 +42,7 @@ namespace BOOM{
 
     void set_params(double Mean, double Var);
     void set_mu(double m);
-    void set_sigsq(double s) override;
+    void set_sigsq(double s);
 
     double mu()const override;
     double sigsq()const override;

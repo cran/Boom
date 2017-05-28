@@ -39,12 +39,12 @@ namespace BOOM{
     AugmentedTimeSeries(Ptr<FIRST> x0, const string & ID="");
     AugmentedTimeSeries(Ptr<FIRST> x0, Ptr<D> proto, const string & ID="");
     AugmentedTimeSeries(Ptr<FIRST> x0, const std::vector<Ptr<D> > &v,
-			bool reset_links=true, const string & ID="");
+                        bool reset_links=true, const string & ID="");
     template<class FwdIt>
     AugmentedTimeSeries(Ptr<FIRST>, FwdIt Beg, FwdIt End,
-			bool reset_links = true,
-			bool copy_data=false,
-			const string & ID="");
+                        bool reset_links = true,
+                        bool copy_data=false,
+                        const string & ID="");
 
     AugmentedTimeSeries(const AugmentedTimeSeries &);   // value semantics
     AugmentedTimeSeries<D,FIRST> * clone()const;      // value semantics
@@ -78,7 +78,7 @@ namespace BOOM{
 
   template<class D, class F>
   AugmentedTimeSeries<D,F>::AugmentedTimeSeries(Ptr<F> x0, const std::vector<Ptr<D> > &v,
-						bool reset_links, const string & ID)
+                                                bool reset_links, const string & ID)
     : TimeSeries<D>(v, reset_links, ID),
       x0_(x0)
   {}
@@ -86,7 +86,7 @@ namespace BOOM{
   template <class D, class F>
   template <class FwdIt>
   AugmentedTimeSeries<D,F>::AugmentedTimeSeries(Ptr<F> first, FwdIt Beg, FwdIt End, bool reset_links,
-			      bool copy_data, const string &ID)
+                              bool copy_data, const string &ID)
     : TimeSeries<D>(Beg, End, reset_links, copy_data, ID),
       x0_(first)
   {}

@@ -84,8 +84,8 @@ namespace BOOM{
     double pdf(dPtr, bool)const;
     double pdf(Ptr<DataType>, bool)const;
 
-    Ptr<RegressionData>  simdat()const;
-    Ptr<RegressionData>  simdat(const Vector &X)const;
+    Ptr<RegressionData> simdat(RNG &rng = GlobalRng::rng)const;
+    Ptr<RegressionData> simdat(const Vector &X, RNG &rng = GlobalRng::rng)const;
 
   private:
     // Clear 'suf' and fill it with the expected complete data

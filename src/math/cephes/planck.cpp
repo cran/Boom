@@ -24,9 +24,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							planck.c
+  /*                                                    planck.c
    *
-   *	Integral of Planck's black body radiation formula
+   *    Integral of Planck's black body radiation formula
    *
    *
    *
@@ -116,9 +116,9 @@ namespace BOOM {
     return y;
   }
 
-  /*							planckc
+  /*                                                    planckc
    *
-   *	Complemented Planck radiation integral
+   *    Complemented Planck radiation integral
    *
    *
    *
@@ -171,9 +171,9 @@ namespace BOOM {
       return y;
     }
 
-  /*							planckd
+  /*                                                    planckd
    *
-   *	Planck's black body radiation formula
+   *    Planck's black body radiation formula
    *
    *
    *

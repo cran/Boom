@@ -552,6 +552,73 @@ namespace BOOM {
     }
   }
   //======================================================================
+  UnivariateCollectionListElement::UnivariateCollectionListElement(
+      const std::vector<Ptr<UnivParams>> &parameters,
+      const std::string &name)
+      : RealValuedRListIoElement(name),
+        parameters_(parameters)
+  {}
+
+  SEXP UnivariateCollectionListElement::prepare_to_write(int niter) {
+    RMemoryProtector protector;
+    int dim = parameters_.size();
+    SEXP buffer = protector.protect(Rf_allocMatrix(REALSXP, niter, dim));
+    StoreBuffer(buffer);
+    matrix_view_.reset(SubMatrix(data(), niter, dim));
+    return buffer;
+  }
+
+  void UnivariateCollectionListElement::prepare_to_stream(SEXP object) {
+    RealValuedRListIoElement::prepare_to_stream(object);
+    int nrow = Rf_nrows(rbuffer());
+    int ncol = Rf_ncols(rbuffer());
+    matrix_view_.reset(SubMatrix(data(), nrow, ncol));
+  }
+
+  void UnivariateCollectionListElement::write() {
+    CheckSize();
+    int row = next_position();
+    for (int i = 0; i < parameters_.size(); ++i) {
+      matrix_view_(row, i) = parameters_[i]->value();
+    }
+  }
+
+  void UnivariateCollectionListElement::stream() {
+    CheckSize();
+    int row = next_position();
+    for (int i = 0; i < parameters_.size(); ++i) {
+      parameters_[i]->set(matrix_view_(row, i));
+    }
+  }
+
+  void UnivariateCollectionListElement::CheckSize() {
+    if (matrix_view_.ncol() != parameters_.size()) {
+      std::ostringstream err;
+      err << "The R buffer has " << matrix_view_.ncol()
+          << " columns, but space is needed for "
+          << parameters_.size() << " parameters.";
+      report_error(err.str());
+    }
+  }
+
+  //======================================================================
+  void SdCollectionListElement::write() {
+    CheckSize();
+    int row = next_position();
+    for (int i = 0; i < parameters().size(); ++i) {
+      matrix_view()(row, i) = sqrt(parameters()[i]->value());
+    }
+  }
+
+  void SdCollectionListElement::stream() {
+    CheckSize();
+    int row = next_position();
+    for (int i = 0; i < parameters().size(); ++i) {
+      parameters()[i]->set(square(matrix_view()(row, i)));
+    }
+  }
+
+  //======================================================================
 
   SpdListElement::SpdListElement(Ptr<SpdParams> m,
                                  const std::string &param_name)

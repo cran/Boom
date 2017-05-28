@@ -28,11 +28,11 @@ namespace BOOM{
 
     Subject::Subject(const string &Id, uint nsub)
       : id_(Id),
-	responses_(),
-	search_helper(new NullItem),
-	Theta_(new VectorParams(nsub, 0.0)),
-	x_(),
-	prototype()
+        responses_(),
+        search_helper(new NullItem),
+        Theta_(new VectorParams(nsub, 0.0)),
+        x_(),
+        prototype()
     {
     }
 
@@ -49,22 +49,22 @@ namespace BOOM{
 
     Subject::Subject(const string &Id, uint nsub, const Vector & bg)
       : id_(Id),
-	responses_(),
-	search_helper(new NullItem),
-	Theta_(new VectorParams(nsub, 0.0)),
-	x_(bg),
-	prototype()
+        responses_(),
+        search_helper(new NullItem),
+        Theta_(new VectorParams(nsub, 0.0)),
+        x_(bg),
+        prototype()
     {
     }
 
     Subject::Subject(const Subject &rhs)
       : Data(rhs),
-	id_(rhs.id_),
-	responses_(rhs.responses_),
-	search_helper(new NullItem),
-	Theta_(rhs.Theta_->clone()),
-	x_(rhs.x_),
-	prototype(rhs.prototype->clone())
+        id_(rhs.id_),
+        responses_(rhs.responses_),
+        search_helper(new NullItem),
+        Theta_(rhs.Theta_->clone()),
+        x_(rhs.x_),
+        prototype(rhs.prototype->clone())
     {}
 
     Subject * Subject::clone()const{ return new Subject(*this); }
@@ -99,10 +99,10 @@ namespace BOOM{
     ostream & Subject::display_responses(ostream &out)const{
       // display Subject_id \t Item_id \t response
       for(IrIterC it = responses_.begin(); it!=responses_.end(); ++it){
-	Ptr<Item> item = it->first;
-	Response r = it->second;
-	out << this->id() << "\t" << item->id() << "\t" ;
-	r->display(out) << endl;
+        Ptr<Item> item = it->first;
+        Response r = it->second;
+        out << this->id() << "\t" << item->id() << "\t" ;
+        r->display(out) << endl;
       }
       return out;
     }
@@ -111,13 +111,13 @@ namespace BOOM{
       search_helper->id_ = item_id;
       IrIterC it = responses_.lower_bound(search_helper);
       if(it==responses_.end() ||  it->first->id()!=item_id){
-	if(nag){
-	  ostringstream msg;
-	  msg << "item with id "<< item_id
-	    << " not found in Subject::find_item";
-	  report_error(msg.str());
-	}
-	return Ptr<Item>();
+        if(nag){
+          ostringstream msg;
+          msg << "item with id "<< item_id
+            << " not found in Subject::find_item";
+          report_error(msg.str());
+        }
+        return Ptr<Item>();
       }
       else return it->first;
     }
@@ -125,9 +125,9 @@ namespace BOOM{
     double Subject::loglike()const{
       double ans=0;
       for(IrIterC it = responses_.begin(); it!=responses_.end(); ++it){
-	Ptr<Item> I = it->first;
-	Response resp = it->second;
-	ans += I->response_prob(resp, Theta(), true);
+        Ptr<Item> I = it->first;
+        Response resp = it->second;
+        ans += I->response_prob(resp, Theta(), true);
       }
       return ans;
     }
@@ -159,9 +159,9 @@ namespace BOOM{
       inc.drop(0);
 
       for(IrIterC it = responses_.begin(); it!=responses_.end(); ++it){
-	Ptr<Item> item(it->first);
-	Vector b = inc.select(item->beta());
-	ans.add_outer(b);
+        Ptr<Item> item(it->first);
+        Vector b = inc.select(item->beta());
+        ans.add_outer(b);
       }
       return ans;
     }

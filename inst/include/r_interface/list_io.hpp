@@ -391,6 +391,42 @@ namespace BOOM{
   };
 
   //----------------------------------------------------------------------
+  // Stores a collection of UnivParams objects in a matrix.
+  class UnivariateCollectionListElement
+      : public RealValuedRListIoElement {
+   public:
+    UnivariateCollectionListElement(
+        const std::vector<Ptr<UnivParams>> &parameters,
+        const std::string &param_name);
+
+    SEXP prepare_to_write(int niter) override;
+    void prepare_to_stream(SEXP object) override;
+    void write() override;
+    void stream() override;
+   protected:
+    void CheckSize();
+    std::vector<Ptr<UnivParams>> &parameters() {return parameters_;}
+    SubMatrix &matrix_view() {return matrix_view_;}
+   private:
+    std::vector<Ptr<UnivParams>> parameters_;
+    SubMatrix matrix_view_;
+  };
+
+  // A specialization of UnivariateCollectionListElement for when the parameters
+  // being stored are variances, but you want to report them as standard
+  // deviations.
+  class SdCollectionListElement
+      : public UnivariateCollectionListElement {
+   public:
+    SdCollectionListElement(
+        const std::vector<Ptr<UnivParams>> &variances,
+        const std::string &param_name)
+        : UnivariateCollectionListElement(variances, param_name) {}
+    void write() override;
+    void stream() override;
+  };
+
+  //----------------------------------------------------------------------
   // For managing SpdParams, stored in an R 3-way array.
   class SpdListElement : public MatrixListElementBase {
    public:

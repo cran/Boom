@@ -103,7 +103,7 @@ namespace BOOM{
     clock_t bail = clock();
     double wasted_time = bail-start;
     wasted_time_ += wasted_time/CLOCKS_PER_SEC;
-    if(runif() < polar_frac_){
+    if(runif_mt(rng()) < polar_frac_){
       // backup is a polar draw
       //      cout << "polar draw" << endl;
       polar_draw();
@@ -207,7 +207,7 @@ namespace BOOM{
   bool SepStratSampler::fast_draw(){
     count_ = 0;
     double d = mod_->dim();
-    double slice = logp0(mod_->Sigma(), alpha_) - rexp(1);
+    double slice = logp0(mod_->Sigma(), alpha_) - rexp_mt(rng(), 1);
 
     while(count_++ < max_tries_){
       double a = 1-alpha_;
@@ -316,13 +316,13 @@ namespace BOOM{
     j_ = j;
 
     double oldr = R_(i,j);
-    double slice = logp_slice_R(oldr) - rexp();
+    double slice = logp_slice_R(oldr) - rexp_mt(rng());
     find_limits();
-    double rcand = runif(lo_, hi_);
+    double rcand = runif_mt(rng(), lo_, hi_);
     while(logp_slice_R(rcand) < slice && hi_ > lo_){
       if(rcand > oldr) hi_ = rcand;
       else lo_ = rcand;
-      rcand = runif(lo_,hi_);
+      rcand = runif_mt(rng(), lo_,hi_);
     }
     set_R(rcand);
   }

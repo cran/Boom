@@ -353,13 +353,16 @@ namespace BOOM{
     return ans;
   }
 
-  std::vector<int> ToIntVector(SEXP r_int_vector) {
+  std::vector<int> ToIntVector(SEXP r_int_vector, bool subtract_one) {
     if (!Rf_isInteger(r_int_vector)) {
       report_error("Argument to ToIntVector must be a vector of integers.");
     }
     int *values = INTEGER(r_int_vector);
-    int length = Rf_length(r_int_vector);
-    return std::vector<int>(values, values + length);
+    std::vector<int> ans(values, values + Rf_length(r_int_vector));
+    if (subtract_one) {
+      for (int i = 0; i < ans.size(); ++i) --ans[i];
+    }
+    return ans;
   }
 
   std::vector<std::vector<int>> ToIntMatrix(SEXP r_int_matrix,
@@ -394,13 +397,13 @@ namespace BOOM{
     return ans;
   }
 
-  SEXP ToRIntVector(const std::vector<int> &v) {
+  SEXP ToRIntVector(const std::vector<int> &v, bool add_one) {
     size_t n = v.size();
     RMemoryProtector protector;
     SEXP ans = protector.protect(Rf_allocVector(INTSXP, n));
     int *data = INTEGER(ans);
     for (size_t i = 0; i < n; ++i){
-      data[i] = v[i];
+      data[i] = v[i] + add_one;
     }
     return ans;
   }

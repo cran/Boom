@@ -96,6 +96,17 @@ namespace BOOM {
     }
   }
 
+  void DPMM::update_cluster(const Vector &old_y, const Vector &new_y,
+                            int cluster) {
+    if (cluster < mixture_components_.size()) {
+      Ptr<MvnModel> mvn = mixture_components_[cluster];
+      mvn->suf()->remove_data(old_y);
+      mvn->suf()->update_raw(new_y);
+    } else {
+      report_error("Cluster indicator out of range in update_cluster.");
+    }
+  }
+
   const MvnModel & DPMM::cluster(int i) const {
     if (i >= mixture_components_.size()) {
       report_error("Cluster indicator out of range in cluster().");
@@ -111,13 +122,11 @@ namespace BOOM {
     mvn->set_siginv(Siginv);
   }
 
-  double DPMM::log_likelihood() const {
+  double DPMM::logp(const Vector &x) const {
     int number_of_components = mixture_components_.size();
     double ans = 0;
     if (number_of_components == 1) {
-      for (const auto &data_point : dat()) {
-        ans += mixture_components_[0]->logp(data_point->value());
-      }
+      ans += mixture_components_[0]->logp(x);
       return ans;
     }
     Vector counts = allocation_counts();
@@ -130,14 +139,27 @@ namespace BOOM {
     probs /= sum(probs);  // Posterior mode of mixing weights.
 
     Vector log_probs = log(probs);
+    Vector wsp = log_probs;
+    for (int i = 0; i < number_of_components; ++i) {
+      wsp[i] += mixture_components_[i]->logp(x);
+    }
+    ans += lse(wsp);
+    return ans;
+  }
+
+  double DPMM::log_likelihood() const {
+    double ans = 0;
     for (const auto &data_point : dat()) {
-      Vector wsp = log_probs;
-      for (int i = 0; i < number_of_components; ++i) {
-        wsp[i] += mixture_components_[i]->logp(data_point->value());
-      }
-      ans += lse(wsp);
+      ans += logp(data_point->value());
     }
     return ans;
+  }
+
+  Vector DPMM::sim(RNG &rng) const {
+    report_error(
+        "DPMM model class needs to be refactored to own prior and "
+        "precision base measure before simulation possible.");
+    return Vector(0);
   }
 
   Vector DPMM::allocation_counts() const {

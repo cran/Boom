@@ -7,7 +7,7 @@ namespace BOOM{
   using BOOM::uint;
 
     double fwd_1(Vector &pi, Matrix &P, const Matrix &logQ, const Vector &logd,
-		 const Vector &one){
+                 const Vector &one){
       /*----------------------------------------------------------------------
        * Input: pi[0..S-1] is the conditionl distribution of h[t-1]|Y[t-1]
        *        one[0..S-1] is a vector of 1's

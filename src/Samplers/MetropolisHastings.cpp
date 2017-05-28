@@ -23,7 +23,9 @@
 namespace BOOM{
   typedef MetropolisHastings MH;
 
-  MH::MetropolisHastings(const Target & target, Ptr<MH_Proposal> prop, RNG *rng)
+  MH::MetropolisHastings(const Target & target,
+                         const Ptr<MH_Proposal> &prop,
+                         RNG *rng)
       : Sampler(rng),
         f_(target),
         prop_(prop),
@@ -83,7 +85,7 @@ namespace BOOM{
 
   typedef ScalarMetropolisHastings SMH;
   SMH::ScalarMetropolisHastings(const ScalarTarget &f,
-                                Ptr<MH_ScalarProposal> prop,
+                                const Ptr<MH_ScalarProposal> &prop,
                                 RNG *rng)
       : ScalarSampler(rng),
         f_(f),

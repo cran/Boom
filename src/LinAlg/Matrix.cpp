@@ -118,7 +118,7 @@ namespace BOOM{
     }
   }
 
-  Matrix::Matrix(const std::string & s, string row_delim) {
+  Matrix::Matrix(const std::string & s, const std::string &row_delim) {
     BOOM::StringSplitter rowsplit(row_delim);
     std::vector<string> row_strings = rowsplit(s);
 

@@ -128,11 +128,11 @@ namespace BOOM {
 
     // Simulate n time points from the process, starting from the
     // stationary distribution.
-    Vector simulate(int n)const;
+    Vector simulate(int n, RNG &rng = GlobalRng::rng)const;
 
     // Simulate n time points from the process, starting from y0 as an
     // initial condition.
-    Vector simulate(int n, const Vector &y0)const;
+    Vector simulate(int n, const Vector &y0, RNG &rng = GlobalRng::rng)const;
 
    private:
     // An AR(p) process can be represented as a white noise filter:

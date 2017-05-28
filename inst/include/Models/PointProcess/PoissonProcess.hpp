@@ -53,6 +53,7 @@ namespace BOOM{
     // the process will include marks for those events where the
     // returned value is non-NULL.
     virtual PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> mark_generator = NullDataGenerator()) const = 0;

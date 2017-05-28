@@ -32,7 +32,7 @@ namespace BOOM {
 
     // The initial innovation sd is set to the square root of the step
     // size.
-    ScalarLangevinSampler(Ptr<dScalarTargetFun> logf,
+    ScalarLangevinSampler(const Ptr<dScalarTargetFun> &logf,
                           double initial_step_size,
                           RNG *rng = nullptr);
     double draw(double x) override;

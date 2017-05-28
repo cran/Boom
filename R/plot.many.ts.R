@@ -71,7 +71,13 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
   nobs <- length(indx)
   if (is.null(color))
     color <- rep("black", nx)
-  use.truth <- !is.null(truth) & is.numeric(truth) & (length(truth) == nx)
+  use.truth <- !is.null(truth) && is.numeric(truth) && length(truth) > 0
+  if (use.truth && length(truth) != nx) {
+    warning("Expected ", nx, " elements in 'truth', but it had ",
+            length(truth), ".  Ignoring 'truth' argument. \n",
+            "YOU WANT THE TRUTH?  YOU CAN'T HANDLE THE TRUTH!!")
+    use.truth <- FALSE
+  }
   if (use.truth)
     tmp <- rbind(as.numeric(truth), x)
   else tmp <- x
@@ -112,15 +118,15 @@ PlotManyTs <- function (x, type = "l", gap = 0, boxes = TRUE, truth = NULL,
         if (boxes)
           box()
       }
-      if (j == nr & is.odd(k)) {
+      if (j == nr && is.odd(k)) {
         axis(1, xpd = NA, ...)
       }
-      else if (j == 1 & is.even(k)) {
+      else if (j == 1 && is.even(k)) {
         axis(3, xpd = NA, ...)
       }
-      if (k == 1 & same.scale == TRUE & is.odd(j))
+      if (k == 1 && same.scale == TRUE && is.odd(j))
         axis(2, xpd = NA, ...)
-      else if (k == nc & same.scale == TRUE & is.even(j))
+      else if (k == nc && same.scale == TRUE && is.even(j))
         axis(4, xpd = NA, ...)
     }
   }

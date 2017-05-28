@@ -18,23 +18,29 @@
 #ifndef BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_
 #define BOOM_ZERO_MEAN_GAUSSIAN_CONJ_SAMPLER_HPP_
 
-#include <Models/PosteriorSamplers/GaussianVarSampler.hpp>
+#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
+#include <Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp>
 
 namespace BOOM{
    class ZeroMeanGaussianModel;
 
    class ZeroMeanGaussianConjSampler
-       : public GaussianVarSampler
-   {
+       : public PosteriorSampler {
     public:
      ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
-                                 Ptr<GammaModelBase> siginv_prior,
+                                 const Ptr<GammaModelBase> &siginv_prior,
                                  RNG &seeding_rng = GlobalRng::rng);
      ZeroMeanGaussianConjSampler(ZeroMeanGaussianModel *model,
-                                 double df, double sigma_guess,
+                                 double df,
+                                 double sigma_guess,
                                  RNG &seeding_rng = GlobalRng::rng);
 
      ZeroMeanGaussianConjSampler * clone()const;
+
+     void draw() override;
+     double logpri() const override;
+
+     void set_sigma_upper_limit(double sigma_upper_limit);
 
      // The posterior mode is with respect to sigma^2, not 1 / sigma^2.
      void find_posterior_mode(double epsilon = 1e-5) override;
@@ -80,6 +86,8 @@ namespace BOOM{
 
     private:
      ZeroMeanGaussianModel * model_;
+     Ptr<GammaModelBase> precision_prior_;
+     GenericGaussianVarianceSampler variance_sampler_;
    };
 
 }  // namespace BOOM

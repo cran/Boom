@@ -34,11 +34,11 @@ namespace BOOM{
 
     MSP::MvnSubjectPrior(const MSP &rhs)
       : Model(rhs),
-	SubjectPrior(rhs),
-	ParamPolicy(rhs),
-	DataPolicy(rhs),
-	PriorPolicy(rhs),
-	mvn(rhs.mvn->clone())
+        SubjectPrior(rhs),
+        ParamPolicy(rhs),
+        DataPolicy(rhs),
+        PriorPolicy(rhs),
+        mvn(rhs.mvn->clone())
     {
       ParamPolicy::add_model(mvn);
     }

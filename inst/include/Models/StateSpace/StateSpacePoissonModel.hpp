@@ -84,7 +84,7 @@ namespace BOOM {
     //  \sum_i ((u_{1i} - m_{1i1}) / v_{1i}) + ((u_{2i} - m_{2i}) / v_{2i}) /
     //         (sum_j (1/v_{1j}) + (1/v_{2j}))
     class AugmentedPoissonRegressionData
-        : public Data {
+        : public MultiplexedData {
      public:
       // Starts with an empty data point, with observations to be added later
       // using add_data.
@@ -128,8 +128,11 @@ namespace BOOM {
       const PoissonRegressionData &poisson_data(int i) const {
         return *(poisson_data_[i]);
       }
+      Ptr<PoissonRegressionData> poisson_data_ptr(int i) const {
+        return poisson_data_[i];
+      }
 
-      int sample_size() const {return poisson_data_.size();}
+      int total_sample_size() const override {return poisson_data_.size();}
 
      private:
       // If y() > 0 for observation j then latent_continuous_values_[j] is
@@ -167,6 +170,9 @@ namespace BOOM {
     StateSpacePoissonModel(const StateSpacePoissonModel &rhs);
     StateSpacePoissonModel * clone() const override;
 
+    int total_sample_size(int time) const override {
+      return dat()[time]->total_sample_size();
+    }
     const PoissonRegressionData & data(int time,
                                        int observation) const override {
       return dat()[time]->poisson_data(observation);
@@ -193,7 +199,8 @@ namespace BOOM {
     // Set the state model offset in the data to the state contribution.
     void observe_data_given_state(int t) override;
 
-    Vector simulate_forecast(const Matrix &forecast_predictors,
+    Vector simulate_forecast(RNG &rng,
+                             const Matrix &forecast_predictors,
                              const Vector &exposure,
                              const Vector &final_state);
 

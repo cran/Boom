@@ -193,7 +193,7 @@ namespace BOOM{
     return ans * sigsq();
   }
 
-  Vector ArModel::simulate(int n) const {
+  Vector ArModel::simulate(int n, RNG &rng) const {
     int p = number_of_lags();
     Vector acf = autocovariance(p);
     SpdMatrix Sigma(p);
@@ -204,10 +204,10 @@ namespace BOOM{
     }
     Vector zero(p, 0.0);
     Vector y0 = rmvn(zero, Sigma);
-    return simulate(n, y0);
+    return simulate(n, y0, rng);
   }
 
-  Vector ArModel::simulate(int n, const Vector &y0) const {
+  Vector ArModel::simulate(int n, const Vector &y0, RNG &rng) const {
     if(y0.size() != number_of_lags()){
       ostringstream err;
       err << "Error in ArModel::simulate." << endl
@@ -225,7 +225,7 @@ namespace BOOM{
       for(int lag = 0; lag < number_of_lags(); ++lag) {
         mu += phi[lag] * lags[lag];
       }
-      double y = rnorm(mu, sigma());
+      double y = rnorm_mt(rng, mu, sigma());
       lags.push_front(y);
       lags.pop_back();
       ans.push_back(y);

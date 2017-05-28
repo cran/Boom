@@ -23,9 +23,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							zeta.c
+  /*                                                    zeta.c
    *
-   *	Riemann zeta function of two arguments
+   *    Riemann zeta function of two arguments
    *
    *
    *

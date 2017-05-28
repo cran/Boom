@@ -23,8 +23,8 @@
 namespace BOOM {
 
   RejectionSampler::RejectionSampler(
-      Target log_target_density,
-      Ptr<DirectProposal> proposal)
+      const Target &log_target_density,
+      const Ptr<DirectProposal> &proposal)
       : log_target_density_(log_target_density),
         proposal_(proposal),
         log_proposal_density_offset_(0.0),

@@ -23,9 +23,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*						rgamma.c
+  /*                                            rgamma.c
    *
-   *	Reciprocal gamma function
+   *    Reciprocal gamma function
    *
    *
    *
@@ -131,19 +131,19 @@ namespace BOOM {
     z = 1.0;
     w = x;
 
-    while( w > 1.0 )	/* Downward recurrence */
+    while( w > 1.0 )    /* Downward recurrence */
     {
       w -= 1.0;
       z *= w;
     }
-    while( w < 0.0 )	/* Upward recurrence */
+    while( w < 0.0 )    /* Upward recurrence */
     {
       z /= w;
       w += 1.0;
     }
-    if( w == 0.0 )		/* Nonpositive integer */
+    if( w == 0.0 )              /* Nonpositive integer */
       return(0.0);
-    if( w == 1.0 )		/* Other integer */
+    if( w == 1.0 )              /* Other integer */
       return( 1.0/z );
 
     y = w * ( 1.0 + chbevl( 4.0*w-2.0, R, 16 ) ) / z;

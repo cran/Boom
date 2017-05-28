@@ -22,6 +22,7 @@
 #include <stats/moments.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
+#include <cpputil/Constants.hpp>
 
 namespace BOOM {
   namespace {
@@ -45,9 +46,9 @@ namespace BOOM {
       const std::vector<Ptr<PoissonRegressionData>> &data)
       : AugmentedPoissonRegressionData()
   {
-    poisson_data_ = data;
-    latent_continuous_values_.assign(poisson_data_.size(), 0.0);
-    precisions_.assign(poisson_data_.size(), 1.0);
+    for (int i = 0; i < data.size(); ++i) {
+      add_data(data[i]);
+    }
   }
 
   APRD * APRD::clone() const {return new APRD(*this);}
@@ -63,9 +64,10 @@ namespace BOOM {
   }
 
   void APRD::add_data(const Ptr<PoissonRegressionData> &observation) {
+    MultiplexedData::add_data(observation);
     poisson_data_.push_back(observation);
     latent_continuous_values_.push_back(0);
-    precisions_.push_back(1.0);
+    precisions_.push_back(observation->missing() == Data::observed ? 1.0 : 0.0);
   }
 
   void APRD::set_latent_data(double value, double precision, int observation) {
@@ -85,15 +87,18 @@ namespace BOOM {
   }
 
   double APRD::adjusted_observation(const GlmCoefs &coefficients) const {
-    if (latent_continuous_values_.empty()) {
+    if (missing() == Data::completely_missing
+        || latent_continuous_values_.empty()) {
       return negative_infinity();
     }
     double ans = 0;
     double total_precision = 0;
     for (int i = 0; i < latent_continuous_values_.size(); ++i ) {
-      ans += precisions_[i] * (latent_continuous_values_[i]
-                               - coefficients.predict(poisson_data_[i]->x()));
-      total_precision += precisions_[i];
+      if (poisson_data_[i]->missing() == Data::observed) {
+        ans += precisions_[i] * (latent_continuous_values_[i]
+                                 - coefficients.predict(poisson_data_[i]->x()));
+        total_precision += precisions_[i];
+      }
     }
     if (total_precision <= 0 || !std::isfinite(total_precision)) {
       return negative_infinity();
@@ -102,8 +107,31 @@ namespace BOOM {
   }
 
   double APRD::latent_data_overall_variance() const {
-    double total_precision = sum(precisions_);
+    double total_precision = 0;
+    if (missing() == Data::observed && observed_sample_size() > 0) {
+      total_precision = sum(precisions_);
+    } else if (missing() == Data::completely_missing ||
+               observed_sample_size() == 0) {
+      // In the event that there is NO observed data for this observation at
+      // all, the latent variance is determined by the marginal variance of a
+      // single latent observation, which is the negative log of an exponential
+      // random variable.  This is a standard type 1 extreme value distribution,
+      // which has variance pi^2 / 6.
+      return Constants::pi_squared / 6.0;
+    } else {
+      // If neither case above holds, then we have partial information, with
+      // some missing and some observed values.
+      for (int i = 0; i < total_sample_size(); ++i) {
+        if (poisson_data_[i]->missing() == Data::observed) {
+          total_precision += precisions_[i];
+        }
+      }
+    }
     if (total_precision <= 0 || !std::isfinite(total_precision)) {
+      // This will likely lead to an exception later in the program when the
+      // variance is square-rooted into a standard deviation.
+      //
+      // TODO(stevescott): Should an exception be thrown here?
       return negative_infinity();
     }
     return 1.0 / total_precision;
@@ -144,6 +172,8 @@ namespace BOOM {
                     design.row(i));
       if (missing) {
         dp->set_missing_status(Data::missing_status::completely_missing);
+        dp->poisson_data_ptr(0)->set_missing_status(
+            Data::missing_status::completely_missing);
       }
       add_data(dp);
     }
@@ -163,6 +193,10 @@ namespace BOOM {
   }
 
   double SSPM::observation_variance(int t) const {
+    if (t >= time_dimension()) {
+      // Variance of Poisson latent variable, on the log scale.
+      return Constants::pi_squared / 6;
+    }
     return dat()[t]->latent_data_overall_variance();
   }
 
@@ -174,7 +208,9 @@ namespace BOOM {
   }
 
   bool SSPM::is_missing_observation(int t) const {
-    return dat()[t]->missing() != Data::observed;
+    return t > time_dimension()
+        || dat()[t]->missing() == Data::completely_missing
+        || dat()[t]->observed_sample_size() == 0;
   }
 
   void SSPM::observe_data_given_state(int t) {
@@ -184,7 +220,8 @@ namespace BOOM {
     }
   }
 
-  Vector SSPM::simulate_forecast(const Matrix &forecast_predictors,
+  Vector SSPM::simulate_forecast(RNG &rng,
+                                 const Matrix &forecast_predictors,
                                  const Vector &exposure,
                                  const Vector &final_state) {
     StateSpaceModelBase::set_state_model_behavior(StateModel::MARGINAL);
@@ -192,11 +229,11 @@ namespace BOOM {
     Vector state = final_state;
     int t0 = dat().size();
     for (int t = 0; t < ans.size(); ++t) {
-      state = simulate_next_state(state, t + t0);
+      state = simulate_next_state(rng, state, t + t0);
       double eta = observation_matrix(t + t0).dot(state)
           + observation_model_->predict(forecast_predictors.row(t));
       double mu = exp(eta);
-      ans[t] = rpois(exposure[t] * mu);
+      ans[t] = rpois_mt(rng, exposure[t] * mu);
     }
     return ans;
   }

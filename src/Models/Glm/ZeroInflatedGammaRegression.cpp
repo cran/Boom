@@ -55,7 +55,7 @@ namespace BOOM {
 
   // At this value of x, let mu, alpha, and p, denote the mean and
   // shape parameters of the gamma distribution, and the probability
-  // of a nonzero value, rexpectively.
+  // of a nonzero value, respectively.
   //
   // Let Z = 1 with probability p, and let y > 0 iff Z==1.
   //

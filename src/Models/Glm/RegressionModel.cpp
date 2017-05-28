@@ -538,23 +538,23 @@ namespace BOOM{
   Vector RM::xty()const{ return xty( coef().inc() ) ;}
   double RM::yty()const{ return suf()->yty();  }
 
-  Vector RM::simulate_fake_x()const{
+  Vector RM::simulate_fake_x(RNG &rng)const{
     uint p = nvars_possible();
     Vector x(p-1);
-    for(uint i=0; i<p-1; ++i) x[i] = rnorm();
+    for(uint i=0; i<p-1; ++i) x[i] = rnorm_mt(rng);
     return x;
   }
 
-  RegressionData * RM::simdat()const{
-    Vector x = simulate_fake_x();
+  RegressionData * RM::simdat(RNG &rng)const{
+    Vector x = simulate_fake_x(rng);
     double yhat = predict(x);
-    double y = rnorm(yhat, sigma());
+    double y = rnorm_mt(rng, yhat, sigma());
     return new RegressionData(y,x);
   }
 
-  RegressionData * RM::simdat(const Vector &X)const{
+  RegressionData * RM::simdat(const Vector &X, RNG &rng)const{
     double yhat = predict(X);
-    double y = rnorm(yhat, sigma());
+    double y = rnorm_mt(rng, yhat, sigma());
     return new RegressionData(y,X);
   }
 
@@ -664,7 +664,7 @@ namespace BOOM{
         s->yty(),
         s->n(),
         s->xbar()));
-    reset_suf_ptr(ne_reg_suf);
+    set_suf(ne_reg_suf);
   }
 
   void RM::add_mixture_data(Ptr<Data> dp, double prob){

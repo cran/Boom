@@ -257,6 +257,7 @@ namespace BOOM{
 
     // Simulate a PoissonClusterProcess observed from t0 to t1.
     virtual PointProcess simulate(
+        RNG &rng,
         const DateTime &t0,
         const DateTime &t1,
         std::function<Data*()> primary_mark_simulator = NullDataGenerator(),

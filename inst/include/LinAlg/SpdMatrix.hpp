@@ -111,11 +111,11 @@ namespace BOOM{
     double Mdist(const Vector &x) const ;
 
     SpdMatrix & add_outer(const Vector &x, double w = 1.0,
-      		    bool force_sym=true);     // *this+= w*x*x^T
+                    bool force_sym=true);     // *this+= w*x*x^T
     SpdMatrix & add_outer(const VectorView &x, double w = 1.0,
-      		    bool force_sym=true);     // *this+= w*x*x^T
+                    bool force_sym=true);     // *this+= w*x*x^T
     SpdMatrix & add_outer(const ConstVectorView &x, double w = 1.0,
-      		    bool force_sym=true);     // *this+= w*x*x^T
+                    bool force_sym=true);     // *this+= w*x*x^T
     SpdMatrix & add_outer(const Matrix &X, double w=1.0,
                           bool force_sym = true);   // *this+= w*X*X^T
 
@@ -124,7 +124,7 @@ namespace BOOM{
 
     SpdMatrix & add_inner(const Matrix &x, double w=1.0);
     SpdMatrix & add_inner(const Matrix &X, const Vector & w,
-      		    bool force_sym=true);  // *this+= X^T w X
+                    bool force_sym=true);  // *this+= X^T w X
 
     // *this  += w x.t()*y + y.t()*x;
     SpdMatrix & add_inner2(const Matrix &x, const Matrix &y, double w=1.0);
@@ -164,7 +164,7 @@ namespace BOOM{
     virtual Vector vectorize(bool minimal=true) const;
     virtual void unvectorize(const Vector &v, bool minimal=true);
     Vector::const_iterator unvectorize(Vector::const_iterator &b,
-      				 bool minimal=true);
+                                 bool minimal=true);
     void make_symmetric(bool have_upper_triangle=true);
   };
 

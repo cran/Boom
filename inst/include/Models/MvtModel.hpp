@@ -87,8 +87,7 @@ namespace BOOM{
     void Estep();  // E step for EM/ECME
 
     virtual double complete_data_loglike() const;
-    Vector sim() const override;
-    Vector sim(RNG &rng) const;
+    Vector sim(RNG &rng = GlobalRng::rng) const override;
 
   private:
     void Impute(bool sample, RNG &rng = GlobalRng::rng);

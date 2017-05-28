@@ -35,7 +35,7 @@ namespace BOOM{
     double link_inv(double)const override;
     double dlink_inv(double)const override;
    private:
-    double simulate_latent_variable()const override;
+    double simulate_latent_variable(RNG &rng)const override;
   };
 
 } // ends namespace BOOM

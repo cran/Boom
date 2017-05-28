@@ -24,9 +24,9 @@
 namespace BOOM {
   namespace Cephes {
 
-  /*							shichi.c
+  /*                                                    shichi.c
    *
-   *	Hyperbolic sine and cosine integrals
+   *    Hyperbolic sine and cosine integrals
    *
    *
    *
@@ -216,7 +216,7 @@ namespace BOOM {
 
       z = x * x;
 
-      /*	Direct power series expansion	*/
+      /*        Direct power series expansion   */
 
       a = 1.0;
       s = 1.0;

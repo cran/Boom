@@ -66,8 +66,8 @@ namespace BOOM{
     using LoglikeModel::log_likelihood;
     d2TargetFunPointerAdapter log_likelihood_tf()const;
 
-    bool sim(const Vector &x)const;
-    Ptr<BinaryRegressionData> sim()const;
+    bool sim(const Vector &x, RNG &rng = GlobalRng::rng)const;
+    Ptr<BinaryRegressionData> sim(RNG &rng = GlobalRng::rng)const;
 
   };
 

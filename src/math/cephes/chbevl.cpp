@@ -21,9 +21,9 @@
 
 namespace BOOM {
   namespace Cephes {
-/*							chbevl.c
+/*                                                      chbevl.c
  *
- *	Evaluate Chebyshev series
+ *      Evaluate Chebyshev series
  *
  *
  *
@@ -72,7 +72,7 @@ namespace BOOM {
  * the same degree.
  *
  */
-/*							chbevl.c	*/
+/*                                                      chbevl.c        */
 
 
 

@@ -81,10 +81,10 @@ namespace BOOM {
     return ans;
   }
 
-  Vector PVM::sim() const {
+  Vector PVM::sim(RNG &rng) const {
     Vector ans(marginal_distributions_.size());
     for (int i = 0; i < ans.size(); ++i) {
-      ans[i] = marginal_distributions_[i]->sim();
+      ans[i] = marginal_distributions_[i]->sim(rng);
     }
     return ans;
   }

@@ -23,11 +23,11 @@
 namespace BOOM {
 
   ScalarLangevinSampler::ScalarLangevinSampler(
-      Ptr<dScalarTargetFun> target,
+      const Ptr<dScalarTargetFun> &logf,
       double initial_step_size,
       RNG *rng)
       : ScalarSampler(rng),
-        logf_(target),
+        logf_(logf),
         adapt_(false)
   {
     set_step_size(initial_step_size);

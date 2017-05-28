@@ -17,6 +17,7 @@
 */
 #include <Models/Glm/PosteriorSamplers/BinomialLogitSpikeSlabSampler.hpp>
 #include <cpputil/seq.hpp>
+#include <LinAlg/Cholesky.hpp>
 #include <distributions.hpp>
 #include <cpputil/math_utils.hpp>
 
@@ -50,17 +51,19 @@ namespace BOOM{
       m_->drop_all();
       return;
     }
-    SpdMatrix ivar = g.select(pri_->siginv());
-    Vector ivar_mu = ivar * g.select(pri_->mu());
-    ivar += g.select(suf().xtx());
-    ivar_mu += g.select(suf().xty());
-    Vector b = ivar.solve(ivar_mu);
-    b = rmvn_ivar_mt(rng(), b, ivar);
+    SpdMatrix precision = g.select(pri_->siginv());
+    Vector scaled_mean = precision * g.select(pri_->mu());
+    precision += g.select(suf().xtx());
+    Chol precision_cholesky_factor(precision);
+    scaled_mean += g.select(suf().xty());
+    Vector posterior_mean = precision_cholesky_factor.solve(scaled_mean);
+    Vector beta = rmvn_precision_upper_cholesky_mt(
+        rng(), posterior_mean, precision_cholesky_factor.getLT());
 
     // If model selection is turned off and some elements of beta
     // happen to be zero (because, e.g., of a failed MH step) we don't
     // want the dimension of beta to change.
-    m_->set_included_coefficients(b, g);
+    m_->set_included_coefficients(beta, g);
   }
 
   double BLSSS::logpri()const{

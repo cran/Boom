@@ -42,7 +42,7 @@ namespace BOOM{
     double pdf(Ptr<Data>, bool logscale)const override;
     double pdf(const Data *, bool logscale)const override;
     double logp(double x)const override;
-    double sim()const override;
+    double sim(RNG &rng = GlobalRng::rng)const override;
 
     // This model does not keep copies of the original data set, it
     // uses the sufficient statistics for its component

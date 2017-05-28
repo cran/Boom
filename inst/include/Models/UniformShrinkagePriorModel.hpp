@@ -52,7 +52,7 @@ namespace BOOM {
                    Matrix &Hessian,
                    uint nd) const override;
 
-    double sim() const override;
+    double sim(RNG &rng = GlobalRng::rng) const override;
   };
 
 }  // namespace BOOM

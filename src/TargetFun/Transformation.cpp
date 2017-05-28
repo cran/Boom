@@ -79,8 +79,8 @@ namespace BOOM {
   }
 
   Transformation::Transformation(
-      Target log_density_old_parameterization,
-      Mapping inverse_mapping,
+      const Target &log_density_old_parameterization,
+      const Mapping &inverse_mapping,
       Jacobian *jacobian)
       : logp_original_scale_(log_density_old_parameterization),
         inverse_mapping_(inverse_mapping),
