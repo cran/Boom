@@ -24,6 +24,8 @@
 #include <Models/ChisqModel.hpp>
 #include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
 #include <Models/MvnGivenScalarSigma.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
 
 namespace BOOM {
 
@@ -304,7 +306,24 @@ namespace BOOM {
   //----------------------------------------------------------------------
   void BVS::draw_model_indicators() {
     Selector g = model_->coef().inc();
-    std::random_shuffle(indx.begin(), indx.end());
+    //-to ensure proper seeding using third arg version with RNG
+    //-random_shuffle will be deprecated in future versions of c++
+    //-however using std::shuffle with a boost rng does not work
+    //-and since the Global rng defined in distributions/rng.hpp is 
+    //boost::ranlux, we are stuck with using std::random_shuffle
+    
+    //note that rng() is a PosteriorSampler method defined to return RNG address
+    //signature defined in Models/PosteriorSamplers/PosteriorSampler.hpp
+    //RNG & rng()const{return rng_;}
+    boost::uniform_int<> uni_dist;
+    boost::variate_generator<RNG&, boost::uniform_int<> > gen(rng(), uni_dist);
+ 
+    //--------------------old-code---------------------------
+    //----std::random_shuffle(indx.begin(), indx.end());----
+    //-------------------------------------------------------
+    //-------------------new patched-code--------------------
+    std::random_shuffle(indx.begin(), indx.end(),gen);
+    //-------------------------------------------------------
     double logp = log_model_prob(g);
 
     if (!std::isfinite(logp)) {
