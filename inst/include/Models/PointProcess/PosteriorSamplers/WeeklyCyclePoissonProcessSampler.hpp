@@ -19,21 +19,22 @@
 #ifndef BOOM_WEEKLY_CYCLE_POISSON_PROCESS_POSTERIOR_SAMPLER_HPP_
 #define BOOM_WEEKLY_CYCLE_POISSON_PROCESS_POSTERIOR_SAMPLER_HPP_
 
-#include <Models/PointProcess/WeeklyCyclePoissonProcess.hpp>
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Models/GammaModel.hpp>
-#include <Models/DirichletModel.hpp>
+#include "Models/DirichletModel.hpp"
+#include "Models/GammaModel.hpp"
+#include "Models/PointProcess/WeeklyCyclePoissonProcess.hpp"
+#include "Models/PosteriorSamplers/PosteriorSampler.hpp"
 
-namespace BOOM{
+namespace BOOM {
 
-  class WeeklyCyclePoissonProcessSampler : public PosteriorSampler{
+  class WeeklyCyclePoissonProcessSampler : public PosteriorSampler {
    public:
-    WeeklyCyclePoissonProcessSampler(WeeklyCyclePoissonProcess *model,
-                                     Ptr<GammaModelBase> average_daily_rate_prior,
-                                     Ptr<DirichletModel> day_of_week_prior,
-                                     Ptr<DirichletModel> weekday_hourly_prior,
-                                     Ptr<DirichletModel> weekend_hourly_prior,
-                                     RNG &seeding_rng = GlobalRng::rng);
+    WeeklyCyclePoissonProcessSampler(
+        WeeklyCyclePoissonProcess *model,
+        const Ptr<GammaModelBase> &average_daily_rate_prior,
+        const Ptr<DirichletModel> &day_of_week_prior,
+        const Ptr<DirichletModel> &weekday_hourly_prior,
+        const Ptr<DirichletModel> &weekend_hourly_prior,
+        RNG &seeding_rng = GlobalRng::rng);
 
     void draw() override;
     double logpri() const override;
@@ -47,6 +48,7 @@ namespace BOOM{
     double daily_pattern_accept_rate();
     double weekday_hourly_accept_rate();
     double weekend_hourly_accept_rate();
+
    private:
     WeeklyCyclePoissonProcess *model_;
     Ptr<GammaModelBase> average_daily_rate_prior_;
@@ -64,7 +66,6 @@ namespace BOOM{
     int weekend_hourly_successes_;
   };
 
+}  // namespace BOOM
 
-}
-
-#endif // BOOM_WEEKLY_CYCLE_POISSON_PROCESS_POSTERIOR_SAMPLER_HPP_
+#endif  // BOOM_WEEKLY_CYCLE_POISSON_PROCESS_POSTERIOR_SAMPLER_HPP_

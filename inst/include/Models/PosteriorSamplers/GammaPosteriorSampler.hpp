@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2012 Steven L. Scott
 
@@ -19,9 +20,9 @@
 #ifndef BOOM_MODELS_POSTERIOR_SAMPLERS_GAMMA_POSTERIOR_SAMPLER_HPP_
 #define BOOM_MODELS_POSTERIOR_SAMPLERS_GAMMA_POSTERIOR_SAMPLER_HPP_
 
-#include <Models/GammaModel.hpp>
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Samplers/ScalarSliceSampler.hpp>
+#include "Models/GammaModel.hpp"
+#include "Models/PosteriorSamplers/PosteriorSampler.hpp"
+#include "Samplers/ScalarSliceSampler.hpp"
 
 namespace BOOM {
 
@@ -29,9 +30,8 @@ namespace BOOM {
   // a.
   class GammaPosteriorSampler : public PosteriorSampler {
    public:
-    GammaPosteriorSampler(GammaModel *model,
-                          Ptr<DoubleModel> mean_prior,
-                          Ptr<DoubleModel> alpha_prior,
+    GammaPosteriorSampler(GammaModel *model, const Ptr<DoubleModel> &mean_prior,
+                          const Ptr<DoubleModel> &alpha_prior,
                           RNG &seeding_rng = GlobalRng::rng);
     void draw() override;
     double logpri() const override;
@@ -49,8 +49,8 @@ namespace BOOM {
   class GammaPosteriorSamplerBeta : public PosteriorSampler {
    public:
     GammaPosteriorSamplerBeta(GammaModel *model,
-                              Ptr<DoubleModel> mean_prior,
-                              Ptr<DoubleModel> beta_prior,
+                              const Ptr<DoubleModel> &mean_prior,
+                              const Ptr<DoubleModel> &beta_prior,
                               RNG &seeding_rng = GlobalRng::rng);
     void draw() override;
     double logpri() const override;
@@ -65,4 +65,4 @@ namespace BOOM {
 
 }  // namespace BOOM
 
-#endif //  BOOM_MODELS_POSTERIOR_SAMPLERS_GAMMA_POSTERIOR_SAMPLER_HPP_
+#endif  //  BOOM_MODELS_POSTERIOR_SAMPLERS_GAMMA_POSTERIOR_SAMPLER_HPP_

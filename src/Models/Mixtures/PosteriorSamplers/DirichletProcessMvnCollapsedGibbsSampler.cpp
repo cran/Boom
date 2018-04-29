@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2015 Steven L. Scott
 
@@ -16,86 +17,43 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <Models/Mixtures/PosteriorSamplers/DirichletProcessMvnCollapsedGibbsSampler.hpp>
-#include <distributions.hpp>
-#include <cpputil/report_error.hpp>
-#include <math/special_functions.hpp>
+#include "Models/Mixtures/PosteriorSamplers/DirichletProcessMvnCollapsedGibbsSampler.hpp"
+#include "cpputil/report_error.hpp"
+#include "distributions.hpp"
+#include "math/special_functions.hpp"
 
 namespace BOOM {
   namespace {
     typedef DirichletProcessMvnCollapsedGibbsSampler DPMCGS;
   }  // namespace
 
-  namespace NormalInverseWishart {
-    NormalInverseWishartParameters::NormalInverseWishartParameters(
-        const MvnGivenSigma *mean_model,
-        const WishartModel *precision_model)
-      : mean_model_(mean_model),
-        precision_model_(precision_model),
-        sum_of_squares_(mean_model->dim()),
-        variance_sample_size_(0),
-        mean_sample_size_(0),
-        mean_(mean_model_->dim())
-    {
-      reset_to_prior();
-    }
-
-    void NormalInverseWishartParameters::reset_to_prior() {
-      sum_of_squares_ = precision_model_->sumsq();
-      variance_sample_size_ = precision_model_->nu();
-      mean_sample_size_ = mean_model_->kappa();
-      mean_ = mean_model_->mu();
-    }
-
-    void NormalInverseWishartParameters::compute_mvn_posterior(
-        const MvnSuf &suf) {
-      reset_to_prior();
-      if (suf.n() > 0) {
-        variance_sample_size_ += suf.n();
-        mean_sample_size_ += suf.n();
-        double shrinkage =  mean_model_->kappa() /
-            (mean_model_->kappa() + suf.n());
-        mean_ *= shrinkage;
-        mean_.axpy(suf.ybar(), 1 - shrinkage);
-
-        sum_of_squares_ += suf.center_sumsq();
-        workspace_ = suf.ybar();
-        workspace_ -= mean_;
-        sum_of_squares_.add_outer(workspace_, suf.n(), false);
-
-        workspace_ = mean_model_->mu();
-        workspace_ -= mean_;
-        sum_of_squares_.add_outer(workspace_, mean_model_->kappa(), false);
-        sum_of_squares_.reflect();
-      }
-    }
-
-  }  // namespace NormalInverseWishart
-
   DPMCGS::DirichletProcessMvnCollapsedGibbsSampler(
       DirichletProcessMvnModel *model,
-      Ptr<MvnGivenSigma> mean_base_measure,
-      Ptr<WishartModel> precision_base_measure,
-      RNG &seeding_rng)
-        : PosteriorSampler(seeding_rng),
-          model_(model),
-          mean_base_measure_(mean_base_measure),
-          precision_base_measure_(precision_base_measure),
-          prior_(mean_base_measure_.get(),
-                 precision_base_measure_.get()),
-          posterior_(mean_base_measure_.get(),
-                     precision_base_measure_.get())
-  {}
+      const Ptr<MvnGivenSigma> &mean_base_measure,
+      const Ptr<WishartModel> &precision_base_measure, RNG &seeding_rng)
+      : PosteriorSampler(seeding_rng),
+        model_(model),
+        mean_base_measure_(mean_base_measure),
+        precision_base_measure_(precision_base_measure),
+        prior_(mean_base_measure_.get(), precision_base_measure_.get()),
+        posterior_(mean_base_measure_.get(), precision_base_measure_.get()) {}
 
   double DPMCGS::logpri() const {
-    report_error("Calling logpri for a Dirichlet process mixture really "
-                 "doesn't make a lot of sense");
+    report_error(
+        "Calling logpri for a Dirichlet process mixture really "
+        "doesn't make a lot of sense");
     return 0;
   }
 
   void DPMCGS::draw() {
-    draw_parameters();
+    // The cluster membership indicators should be drawn before the parameters.
+    // The cluster membership indicators are drawn from their marginal
+    // distribution, integrating over the parameters.  The parameters are then
+    // drawn from their conditional distribution given the indicators.
+    // Reversing the order leads to an incoherent joint distribution between
+    // parameters and states.
     draw_cluster_membership_indicators();
+    draw_parameters();
   }
 
   void DPMCGS::draw_cluster_membership_indicators() {
@@ -126,11 +84,9 @@ namespace BOOM {
   void DPMCGS::draw_parameters() {
     for (int i = 0; i < model_->number_of_clusters(); ++i) {
       posterior_.compute_mvn_posterior(*model_->cluster(i).suf());
-      SpdMatrix Siginv = rWish_mt(rng(),
-                                  posterior_.variance_sample_size(),
+      SpdMatrix Siginv = rWish_mt(rng(), posterior_.variance_sample_size(),
                                   posterior_.sum_of_squares().inv());
-      Vector mu = rmvn_ivar_mt(rng(),
-                               posterior_.mean(),
+      Vector mu = rmvn_ivar_mt(rng(), posterior_.mean(),
                                posterior_.mean_sample_size() * Siginv);
       model_->set_component_params(i, mu, Siginv);
     }
@@ -145,11 +101,11 @@ namespace BOOM {
     // both alpha and n are fixed, so this could be precomputed.
     for (int i = 0; i < model_->number_of_clusters(); ++i) {
       const MvnSuf &suf(*model_->cluster(i).suf());
-      ans[i] = log(suf.n()) - log(n - 1 + model_->alpha())
-          + log_marginal_density(y, suf);
+      ans[i] = log(suf.n()) - log(n - 1 + model_->alpha()) +
+               log_marginal_density(y, suf);
     }
-    ans.back() = log(model_->alpha()) - log(n - 1 + model_->alpha())
-        + log_marginal_density(y, empty_suf_);
+    ans.back() = log(model_->alpha()) - log(n - 1 + model_->alpha()) +
+                 log_marginal_density(y, empty_suf_);
 
     ans.normalize_logprob();
     return ans;
@@ -169,13 +125,12 @@ namespace BOOM {
     posterior_.compute_mvn_posterior(posterior_suf);
     int dim = prior_.mean().size();
     double ans =
-        0.5 * dim * log(prior_.mean_sample_size()
-                        / posterior_.mean_sample_size())
-        + 0.5 * prior_.variance_sample_size()
-        * prior_.sum_of_squares().logdet()
-        - 0.5 * posterior_.variance_sample_size()
-        * posterior_.sum_of_squares().logdet()
-        + lmultigamma_ratio(prior_.variance_sample_size() / 2.0, 1, dim);
+        0.5 * dim *
+            log(prior_.mean_sample_size() / posterior_.mean_sample_size()) +
+        0.5 * prior_.variance_sample_size() * prior_.sum_of_squares().logdet() -
+        0.5 * posterior_.variance_sample_size() *
+            posterior_.sum_of_squares().logdet() +
+        lmultigamma_ratio(prior_.variance_sample_size() / 2.0, 1, dim);
     return ans;
   }
 
@@ -184,16 +139,12 @@ namespace BOOM {
   }
 
   void DPMCGS::remove_data_from_cluster(const Vector &y, int cluster) {
-    if (cluster == model_->number_of_clusters()) {
-      std::cout << "Unexpected assignment to new cluster in prior sampler!"
-                << std::endl;
-    } else if (cluster > model_->number_of_clusters()) {
-      std::cout << "Unexpected assignment to crazy cluster in prior sampler!"
-                << std::endl;
-    }
     bool empty = (model_->cluster(cluster).suf()->n() == 1);
     model_->remove_data_from_cluster(y, cluster);
-    // Remap cluster indicies if empty
+    // If this is the last data point in the cluster, then removing it will make
+    // the cluster empty.  Decrement cluster indicators for clusters numbered
+    // larger than 'cluster' to account for the fact that 'cluster' no longer
+    // exists.
     if (empty) {
       for (int i = 0; i < model_->cluster_indicators().size(); ++i) {
         const int current_indicator = model_->cluster_indicators(i);

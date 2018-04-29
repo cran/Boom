@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2013 Steven L. Scott
 
@@ -19,8 +20,8 @@
 #ifndef BOOM_HIERARCHICAL_POISSON_POSTERIOR_SAMPLER_HPP_
 #define BOOM_HIERARCHICAL_POISSON_POSTERIOR_SAMPLER_HPP_
 
-#include <Models/DoubleModel.hpp>
-#include <Models/Hierarchical/HierarchicalPoissonModel.hpp>
+#include "Models/DoubleModel.hpp"
+#include "Models/Hierarchical/HierarchicalPoissonModel.hpp"
 
 namespace BOOM {
 
@@ -46,8 +47,8 @@ namespace BOOM {
     //   gamma_sample_size_prior: Prior distribution on the shape
     //     parameter of the gamma distribution: a.
     HierarchicalPoissonSampler(HierarchicalPoissonModel *model,
-                               Ptr<DoubleModel> gamma_mean_prior,
-                               Ptr<DoubleModel> gamma_sample_size_prior,
+                               const Ptr<DoubleModel> &gamma_mean_prior,
+                               const Ptr<DoubleModel> &gamma_sample_size_prior,
                                RNG &seeding_rng = GlobalRng::rng);
     double logpri() const override;
     void draw() override;
@@ -60,4 +61,4 @@ namespace BOOM {
 
 }  // namespace BOOM
 
-#endif //  BOOM_HIERARCHICAL_POISSON_POSTERIOR_SAMPLER_HPP_
+#endif  //  BOOM_HIERARCHICAL_POISSON_POSTERIOR_SAMPLER_HPP_

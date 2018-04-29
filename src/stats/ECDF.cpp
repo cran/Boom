@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2007 Steven L. Scott
 
@@ -16,30 +17,48 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <stats/ECDF.hpp>
+#include "stats/ECDF.hpp"
 #include <algorithm>
+#include "cpputil/report_error.hpp"
 
-namespace BOOM{
+namespace BOOM {
 
-  ECDF::ECDF(const std::vector<double> &unsorted)
-    : sorted_(unsorted)
-  {
-    std::sort(sorted_.begin(), sorted_.end());
-    b = sorted_.begin();
-    e = sorted_.end();
-    n = static_cast<double>(sorted_.size());
+  ECDF::ECDF(const ConstVectorView &unsorted_data)
+      : sorted_data_(unsorted_data) {
+    if (sorted_data_.empty()) {
+      report_error("ECDF cannot be built from empty vector.");
+    }
+    std::sort(sorted_data_.begin(), sorted_data_.end());
   }
 
-  double ECDF::fplus(double x)const{
-    std::vector<double>::const_iterator it = std::upper_bound(b, e, x);
-    unsigned pos = it - b;  // it is the first element >= x
-    return pos / n;
+  double ECDF::fplus(double x) const {
+    double ans = std::upper_bound(sorted_data_.begin(), sorted_data_.end(), x) -
+                 sorted_data_.begin();
+    return ans / sorted_data_.size();
   }
 
-  double ECDF::fminus(double x)const{
-    std::vector<double>::const_iterator it = std::lower_bound(b, e, x);
-    unsigned pos = it - b;
-    return pos / n;
+  double ECDF::fminus(double x) const {
+    double ans = std::lower_bound(sorted_data_.begin(), sorted_data_.end(), x) -
+                 sorted_data_.begin();
+    return ans / sorted_data_.size();
+  }
+
+  double ECDF::quantile(double probability) const {
+    double min_prob = 1.0 / sorted_data_.size();
+    
+    if (probability < min_prob) {
+      return sorted_data_[0];
+    } else if (probability >= 1.0) {
+      return sorted_data_.back();
+    } 
+    
+    int index = probability * sorted_data_.size();
+    if ((sorted_data_.size() - probability * index) < min_prob
+        || index + 1 == sorted_data_.size()) {
+      return sorted_data_[index];
+    } else {
+      return .5 * (sorted_data_[index] + sorted_data_[index + 1]);
+    }
   }
 
 }  // namespace BOOM

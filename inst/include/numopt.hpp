@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005 Steven L. Scott
 
@@ -20,16 +21,16 @@
 #define BOOM_NUMOPT_HPP
 
 #include <string>
-#include <LinAlg/SpdMatrix.hpp>
+#include "LinAlg/SpdMatrix.hpp"
 
-#include <BOOM.hpp>
+#include "BOOM.hpp"
 #include <functional>
-#include <cpputil/report_error.hpp>
+#include "cpputil/report_error.hpp"
 
 namespace BOOM{
 
   // Optimizers work in terms of arbitrary function objects.
-  // TODO(stevescott): Replace these with C++ function templates once
+  // TODO(user): Replace these with C++ function templates once
   // C++11 becomes more widely supported.
   typedef std::function<double(const Vector &) > Target;
   typedef std::function<double(const Vector &x,
@@ -75,7 +76,7 @@ namespace BOOM{
   double max_nd0(Vector &x, Target target);
 
 //======================================================================
-// TODO(stevescott): maxnd1_careful is starting to have too many
+// TODO(user): maxnd1_careful is starting to have too many
 // parameters.  Replace it with an object that hides some of the
 // complexity.
 //======================================================================
@@ -171,16 +172,6 @@ namespace BOOM{
                        d2Target twice_differentiable_target,
                        double epsilon,
                        string &error_msg);
-
-  // Compute the numerical derivative of f at x.
-  double numeric_deriv(const ScalarTarget target, double x);
-  double numeric_deriv(const ScalarTarget target, double x,
-                       double &dx, double &abs_err);
-
-  // Compute the numerical gradient of f at x.
-  Vector numeric_gradient(const Vector &x, Target target, double dx);
-  Matrix numeric_hessian(const Vector &x, Target target, double dx);
-  Matrix numeric_hessian(const Vector &x, dTarget df, double dx);
 
   //--------- Methods: Each includes a full interface and an inline
   //--------- function providing a simpler interface
@@ -290,7 +281,7 @@ namespace BOOM{
   double newton_raphson_min(Vector &x,
                             Vector &g,
                             Matrix &h,
-                            d2Target target,
+                            const d2Target &target,
                             int &function_call_count,
                             double eps,
                             bool & happy_ending,
@@ -312,7 +303,7 @@ namespace BOOM{
   //   On exit x is the (approximate) minimizing value of f, and the
   //   return value is f(x).
   double simulated_annealing(Vector &x,
-                             Target target,
+                             const Target &target,
                              int max_iterations,
                              int tmax,
                              double ti);
@@ -325,7 +316,7 @@ namespace BOOM{
   // maximizes f(x).
   class ScalarNegation {
    public:
-    ScalarNegation(ScalarTarget target)
+    explicit ScalarNegation(const ScalarTarget &target)
         : original_function_(target) {}
     double operator()(double x)const{ return -1 * original_function_(x); }
    private:
@@ -336,16 +327,16 @@ namespace BOOM{
   // variables.
   class Negate{
   public:
-    Negate(Target F) : f(F){}
+    explicit Negate(const Target &F) : f(F){}
     double operator()(const Vector &x)const;
-  private:
+   private:
     Target f;
   };
 
   // Use this negation when F has first derivatives.
   class dNegate : public Negate{
   public:
-    dNegate(Target F, dTarget dF)
+    dNegate(const Target &F, const dTarget &dF)
       : Negate(F), df(dF){}
     double operator()(const Vector &x)const{
       return Negate::operator()(x);}
@@ -357,7 +348,7 @@ namespace BOOM{
   // Use this Negation when F has first and second derivatives.
   class d2Negate : public dNegate{
   public:
-    d2Negate(Target target, dTarget df, d2Target  d2F)
+    d2Negate(const Target &target, const dTarget &df, const d2Target &d2F)
       : dNegate(target, df), d2f(d2F){}
     double operator()(const Vector &x)const{
       return Negate::operator()(x);}

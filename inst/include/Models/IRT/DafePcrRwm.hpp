@@ -17,11 +17,11 @@
 */
 #ifndef BOOM_DAFE_PCR_RWM_HPP
 #define BOOM_DAFE_PCR_RWM_HPP
-#include <BOOM.hpp>
-#include <Models/IRT/Subject.hpp>
-#include <Models/ModelTypes.hpp>
-#include <Models/VectorModel.hpp>
-#include <Samplers/MetropolisHastings.hpp>
+#include "BOOM.hpp"
+#include "Models/IRT/Subject.hpp"
+#include "Models/ModelTypes.hpp"
+#include "Models/VectorModel.hpp"
+#include "Samplers/MetropolisHastings.hpp"
 
 namespace BOOM {
   class MvnModel;
@@ -30,12 +30,11 @@ namespace BOOM {
     class PartialCreditModel;
     class DafePcrRwmItemSampler : public PosteriorSampler {
      public:
-      DafePcrRwmItemSampler(Ptr<PartialCreditModel>,
-                            Ptr<MvnModel> Prior,
-                            double Tdf,
+      DafePcrRwmItemSampler(const Ptr<PartialCreditModel> &,
+                            const Ptr<MvnModel> &Prior, double Tdf,
                             RNG &seeding_rng = GlobalRng::rng);
       void draw() override;
-      double logpri()const override;
+      double logpri() const override;
 
      private:
       Ptr<PartialCreditModel> mod;
@@ -47,19 +46,19 @@ namespace BOOM {
       Vector b;
 
       void get_moments();
-      void accumulate_moments(Ptr<Subject>);
+      void accumulate_moments(const Ptr<Subject> &);
     };
 
     //======================================================================
-    class DafePcrRwmSubjectSampler : public PosteriorSampler{
-    public:
-      DafePcrRwmSubjectSampler(Ptr<Subject>,
-                   Ptr<SubjectPrior> Prior,
-                   double Tdf,
-             RNG &seeding_rng = GlobalRng::rng);
+    class DafePcrRwmSubjectSampler : public PosteriorSampler {
+     public:
+      DafePcrRwmSubjectSampler(const Ptr<Subject> &,
+                               const Ptr<SubjectPrior> &Prior, double Tdf,
+                               RNG &seeding_rng = GlobalRng::rng);
       void draw() override;
-      double logpri()const override;
-    private:
+      double logpri() const override;
+
+     private:
       Ptr<Subject> sub;
       Ptr<SubjectPrior> prior;
       Ptr<MetropolisHastings> sampler;

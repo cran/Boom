@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2015 Steven L. Scott
 
@@ -20,15 +21,15 @@
 #define BOOM_NUMERICAL_DERIVATIVES_HPP_
 
 #include <functional>
-#include <LinAlg/Vector.hpp>
-#include <LinAlg/Matrix.hpp>
+#include "LinAlg/Matrix.hpp"
+#include "LinAlg/Vector.hpp"
 
 namespace BOOM {
 
   class NumericalDerivatives {
    public:
     typedef std::function<double(const Vector &)> Target;
-    NumericalDerivatives(Target f);
+    explicit NumericalDerivatives(const Target &f);
 
     // Returns the gradient of f at the point x.
     Vector gradient(const Vector &x) const;
@@ -52,12 +53,12 @@ namespace BOOM {
 
     // Second partial derivative of f with respect to x[i] and x[j].
     // Separate step sizes are used.
-    double scalar_second_derivative(
-        const Vector &x, int i, double hi, int j, double hj) const;
+    double scalar_second_derivative(const Vector &x, int i, double hi, int j,
+                                    double hj) const;
 
     // Second partial derivative of f with respect to x[i].
-    double homogeneous_scalar_second_derivative(
-        const Vector &x, int pos, double h) const;
+    double homogeneous_scalar_second_derivative(const Vector &x, int pos,
+                                                double h) const;
 
     Target f_;
   };
@@ -66,7 +67,7 @@ namespace BOOM {
   class ScalarNumericalDerivatives {
    public:
     typedef std::function<double(double)> ScalarTarget;
-    ScalarNumericalDerivatives(ScalarTarget f);
+    explicit ScalarNumericalDerivatives(const ScalarTarget &f);
     double first_derivative(double x) const;
     double second_derivative(double x) const;
 
@@ -80,7 +81,7 @@ namespace BOOM {
   class NumericJacobian {
    public:
     typedef std::function<Vector(const Vector &)> Mapping;
-    NumericJacobian(Mapping inverse_transformation);
+    explicit NumericJacobian(const Mapping &inverse_transformation);
 
     // Returns the derivative of each element of
     // inverse_transformation(new_parameterization) with respect to
@@ -98,7 +99,6 @@ namespace BOOM {
     Mapping inverse_transformation_;
   };
 
-
 }  // namespace BOOM
 
-#endif //  BOOM_NUMERICAL_DERIVATIVES_HPP_
+#endif  //  BOOM_NUMERICAL_DERIVATIVES_HPP_

@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2012 Steven L. Scott
 
@@ -19,12 +20,12 @@
 #ifndef BOOM_HIERARCHICAL_ZERO_INFLATED_POISSON_MODEL_HPP_
 #define BOOM_HIERARCHICAL_ZERO_INFLATED_POISSON_MODEL_HPP_
 
-#include <Models/ZeroInflatedPoissonModel.hpp>
-#include <Models/GammaModel.hpp>
-#include <Models/BetaModel.hpp>
-#include <Models/Policies/IID_DataPolicy.hpp>
-#include <Models/Policies/CompositeParamPolicy.hpp>
-#include <Models/Policies/PriorPolicy.hpp>
+#include "Models/BetaModel.hpp"
+#include "Models/GammaModel.hpp"
+#include "Models/Policies/CompositeParamPolicy.hpp"
+#include "Models/Policies/IID_DataPolicy.hpp"
+#include "Models/Policies/PriorPolicy.hpp"
+#include "Models/ZeroInflatedPoissonModel.hpp"
 
 namespace BOOM {
 
@@ -36,11 +37,12 @@ namespace BOOM {
                             double number_of_positive_trials,
                             double total_number_of_events);
     // Automatic conversions from ZeroInflatedPoissonSuf are allowed.
-    ZeroInflatedPoissonData(const ZeroInflatedPoissonSuf &suf);
+    explicit ZeroInflatedPoissonData(const ZeroInflatedPoissonSuf &suf);
     ZeroInflatedPoissonData(const ZeroInflatedPoissonData &rhs);
-    ZeroInflatedPoissonData * clone() const override;
-    ostream & display(ostream &out)const override;
-    const ZeroInflatedPoissonSuf &suf()const;
+    ZeroInflatedPoissonData *clone() const override;
+    ostream &display(ostream &out) const override;
+    const ZeroInflatedPoissonSuf &suf() const;
+
    private:
     ZeroInflatedPoissonSuf suf_;
   };
@@ -89,21 +91,19 @@ namespace BOOM {
   // *) combine_data: Will add the data_level_models (including
   //                  parameters and data) from the rhs argument to
   //                  the current model.
-  class HierarchicalZeroInflatedPoissonModel
-      : public CompositeParamPolicy,
-        public PriorPolicy {
+  class HierarchicalZeroInflatedPoissonModel : public CompositeParamPolicy,
+                                               public PriorPolicy {
    public:
     // Convenience constructor.
     HierarchicalZeroInflatedPoissonModel(
-        double lambda_prior_guess,
-        double lambda_prior_sample_size,
+        double lambda_prior_guess, double lambda_prior_sample_size,
         double zero_probability_prior_guess,
         double zero_probability_prior_sample_size);
 
     // Provides control over the priors.
     HierarchicalZeroInflatedPoissonModel(
-        Ptr<GammaModel> prior_for_lambda,
-        Ptr<BetaModel> prior_for_zero_probability);
+        const Ptr<GammaModel> &prior_for_lambda,
+        const Ptr<BetaModel> &prior_for_zero_probability);
 
     // Args:
     //   trials: A vector giving the number of trials represented by
@@ -118,20 +118,20 @@ namespace BOOM {
     //   Initializes the priors with rough estimates from the data.
     //   These are respectible starting values for an MCMC algorithm,
     //   but not particularly accurate otherwise.
-    HierarchicalZeroInflatedPoissonModel(
-        const BOOM::Vector &trials,
-        const BOOM::Vector &events,
-        const BOOM::Vector &number_of_zeros);
+    HierarchicalZeroInflatedPoissonModel(const BOOM::Vector &trials,
+                                         const BOOM::Vector &events,
+                                         const BOOM::Vector &number_of_zeros);
 
     HierarchicalZeroInflatedPoissonModel(
         const HierarchicalZeroInflatedPoissonModel &rhs);
 
-    HierarchicalZeroInflatedPoissonModel * clone() const override;
+    HierarchicalZeroInflatedPoissonModel *clone() const override;
 
     // Unless a separate pointer to data_level_model is kept, the data
     // for data_level_model should be set before calling this
     // function.  The posterior sampling_method should not be set.
-    void add_data_level_model(Ptr<ZeroInflatedPoissonModel> data_level_model);
+    void add_data_level_model(
+        const Ptr<ZeroInflatedPoissonModel> &data_level_model);
 
     // Removes all data_level_models and their associated parameters
     // and data.
@@ -148,19 +148,19 @@ namespace BOOM {
     void combine_data(const Model &rhs, bool just_suf = true) override;
 
     // Creates a new data_level_model with data assigned.
-    void add_data(Ptr<Data>) override;
+    void add_data(const Ptr<Data> &) override;
 
     // Returns the number of data_level_models managed by this model.
-    int number_of_groups()const;
+    int number_of_groups() const;
 
-    ZeroInflatedPoissonModel * data_model(int which_group);
-    GammaModel * prior_for_poisson_mean();
-    BetaModel * prior_for_zero_probability();
+    ZeroInflatedPoissonModel *data_model(int which_group);
+    GammaModel *prior_for_poisson_mean();
+    BetaModel *prior_for_zero_probability();
 
-    double poisson_prior_mean()const;
-    double poisson_prior_sample_size()const;
-    double zero_probability_prior_mean()const;
-    double zero_probability_prior_sample_size()const;
+    double poisson_prior_mean() const;
+    double poisson_prior_sample_size() const;
+    double zero_probability_prior_mean() const;
+    double zero_probability_prior_sample_size() const;
 
     // Args:
     //   n:  The number of trials for a particular observation.  All trials will
@@ -168,6 +168,7 @@ namespace BOOM {
     // Returns:
     //   Aggregated data for the all the requested observations.
     ZeroInflatedPoissonData sim(int64_t n) const;
+
    private:
     void initialize();
     Ptr<GammaModel> prior_for_lambda_;
@@ -177,4 +178,4 @@ namespace BOOM {
 
 }  // namespace BOOM
 
-#endif //  BOOM_HIERARCHICAL_ZERO_INFLATED_POISSON_MODEL_HPP_
+#endif  //  BOOM_HIERARCHICAL_ZERO_INFLATED_POISSON_MODEL_HPP_

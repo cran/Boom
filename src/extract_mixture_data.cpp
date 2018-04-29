@@ -1,14 +1,14 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 // Author: stevescott@google.com (Steve Scott)
 
-#include <Models/DataTypes.hpp>
-#include <Models/Glm/Glm.hpp>
-#include <Models/Glm/BinomialRegressionData.hpp>
-#include <Models/CategoricalData.hpp>
-#include <Models/MarkovModel.hpp>
-#include <Models/CompositeData.hpp>
+#include "Models/DataTypes.hpp"
+#include "Models/Glm/Glm.hpp"
+#include "Models/Glm/BinomialRegressionData.hpp"
+#include "Models/CategoricalData.hpp"
+#include "Models/MarkovModel.hpp"
+#include "Models/CompositeData.hpp"
 
-#include <cpputil/report_error.hpp>
+#include "cpputil/report_error.hpp"
 #include <r_interface/boom_r_tools.hpp>
 #include <memory>
 #include <R_ext/Arith.h>
@@ -86,13 +86,13 @@ namespace BOOM {
         }
         SEXP rlevels = Rf_getAttrib(rdata, R_LevelsSymbol);
         std::vector<std::string> levels = StringVector(rlevels);
-        NEW(BOOM::CatKey, key)(levels);
+        Ptr<CatKeyBase> key = new CatKey(levels);
 
         ans.reserve(n);
         double *values = REAL(Rf_coerceVector(rdata, REALSXP));
 
         // Assign initial value.
-        int level = lround(values[0]) - 1;
+        uint level = lround(values[0]) - 1;
         NEW(BOOM::MarkovData, previous_data)(level, key);
         ans.push_back(previous_data);
 

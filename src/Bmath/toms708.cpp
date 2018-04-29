@@ -317,7 +317,6 @@ L_end_after_log:
     if (do_swap) { /* swap */
         double t = *w; *w = *w1; *w1 = t;
     }
-    return;
 
 } /* bratio */
 
@@ -1080,7 +1079,6 @@ void bgrat(double a, double b, double x, double y, double *w,
 
 L_Error:
     *ierr = 1;
-    return;
 } /* bgrat */
 
 void grat1(double a, double x, double r, double *p, double *q,
@@ -1196,8 +1194,6 @@ L120:
         *q = erfc1(0, sqrt(x));
         *p = 0.5 - *q + 0.5;
     }
-    return;
-
 } /* grat1 */
 
 double basym(double a, double b, double lambda, double eps, int log_p)

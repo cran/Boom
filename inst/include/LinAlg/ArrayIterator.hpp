@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2011 Steven L. Scott
 
@@ -18,18 +19,18 @@
 #ifndef BOOM_ARRAY_ITERATOR_HPP_
 #define BOOM_ARRAY_ITERATOR_HPP_
 
-#include <vector>
-#include <iterator>
 #include <iostream>
+#include <iterator>
+#include <vector>
 
-namespace BOOM{
+namespace BOOM {
 
   class ArrayBase;
   class ConstArrayBase;
 
   class ArrayPositionManager {
    public:
-    ArrayPositionManager(const std::vector<int> &dims);
+    explicit ArrayPositionManager(const std::vector<int> &dims);
     void operator++();
 
     // Move the position back to the beginning.
@@ -39,12 +40,12 @@ namespace BOOM{
     void set_to_end();
 
     // Check whether position is one past the end.
-    bool at_end() const {return at_end_;}
+    bool at_end() const { return at_end_; }
 
     bool operator==(const ArrayPositionManager &rhs) const;
     bool operator!=(const ArrayPositionManager &rhs) const;
 
-    const std::vector<int> &position() const {return position_;}
+    const std::vector<int> &position() const { return position_; }
     void set_position(const std::vector<int> &position);
 
    private:
@@ -55,12 +56,10 @@ namespace BOOM{
 
   //======================================================================
   class ArrayIterator
-      : public std::iterator<std::forward_iterator_tag, double>
-  {
+      : public std::iterator<std::forward_iterator_tag, double> {
    public:
-    ArrayIterator(ArrayBase *host,
-                  const std::vector<int> &starting_position);
-    ArrayIterator(ArrayBase *host);
+    ArrayIterator(ArrayBase *host, const std::vector<int> &starting_position);
+    explicit ArrayIterator(ArrayBase *host);
 
     double &operator*();
 
@@ -68,15 +67,14 @@ namespace BOOM{
       return (host_ == rhs.host_) && (position_ == rhs.position_);
     }
 
-    bool operator!=(const ArrayIterator &rhs) const {
-      return !(*this == rhs); }
+    bool operator!=(const ArrayIterator &rhs) const { return !(*this == rhs); }
 
     ArrayIterator &operator++() {
       ++position_;
       return *this;
     }
 
-    const std::vector<int> &position() const {return position_.position();}
+    const std::vector<int> &position() const { return position_.position(); }
 
     void set_position(const std::vector<int> &position) {
       position_.set_position(position);
@@ -94,8 +92,7 @@ namespace BOOM{
 
   //======================================================================
   class ConstArrayIterator
-      : public std::iterator<std::forward_iterator_tag, double>
-  {
+      : public std::iterator<std::forward_iterator_tag, double> {
    public:
     // Iterator begins at the beginning of the array.
     ConstArrayIterator(const ConstArrayBase *host);
@@ -111,16 +108,15 @@ namespace BOOM{
     }
 
     bool operator!=(const ConstArrayIterator &rhs) const {
-      return !(*this == rhs); }
+      return !(*this == rhs);
+    }
 
     ConstArrayIterator &operator++() {
       ++position_;
       return *this;
     }
 
-    const std::vector<int> &position() const {
-      return position_.position();
-    }
+    const std::vector<int> &position() const { return position_.position(); }
 
     void set_position(const std::vector<int> &position) {
       position_.set_position(position);
@@ -132,11 +128,10 @@ namespace BOOM{
     }
 
    private:
-    const ConstArrayBase * host_;
+    const ConstArrayBase *host_;
     ArrayPositionManager position_;
   };
 
-}
+}  // namespace BOOM
 
-
-#endif //  BOOM_ARRAY_ITERATOR_HPP_
+#endif  //  BOOM_ARRAY_ITERATOR_HPP_

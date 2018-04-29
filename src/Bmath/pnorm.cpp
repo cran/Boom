@@ -38,7 +38,7 @@
  *
  *  SYNOPSIS
  *
- *   #include <Bmath.hpp>
+ *   #include "Bmath.hpp"
  *
  *   double pnorm5(double x, double mu, double sigma, int lower_tail,int log_p);
  *         {pnorm (..) is synonymous and preferred inside R}
@@ -293,7 +293,6 @@ void pnorm_both(double x, double *cum, double *ccum, int i_tail, int log_p)
         if(*ccum < min) *ccum = 0.;
     }
 #endif
-    return;
-}
 }
 
+}  // namespace Rmath

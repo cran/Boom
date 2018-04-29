@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2011 Steven L. Scott
 
@@ -18,56 +19,21 @@
 #ifndef BOOM_BETA_BINOMIAL_MODEL_HPP
 #define BOOM_BETA_BINOMIAL_MODEL_HPP
 
-#include <cstdint>
-#include <Models/DataTypes.hpp>
-#include <Models/Policies/ParamPolicy_2.hpp>
-#include <Models/Policies/IID_DataPolicy.hpp>
-#include <Models/Policies/PriorPolicy.hpp>
+#include "Models/BinomialModel.hpp"
+#include "Models/Policies/IID_DataPolicy.hpp"
+#include "Models/Policies/ParamPolicy_2.hpp"
+#include "Models/Policies/PriorPolicy.hpp"
 
-namespace BOOM{
-
-  class BinomialData : public Data{
-   public:
-    BinomialData(int64_t n = 0, int64_t y = 0);
-    BinomialData(const BinomialData &rhs);
-    BinomialData * clone() const override;
-    BinomialData & operator=(const BinomialData &rhs);
-
-    virtual uint size(bool minimal = true) const;
-    ostream &display(ostream &) const override;
-
-    int64_t trials() const;
-    int64_t n() const;
-    void set_n(int64_t trials);
-
-    int64_t y() const;
-    int64_t successes() const;
-    void set_y(int64_t successes);
-
-    // Add to the success and trial counts.
-    // Args:
-    //   more_trials:  The number of additional trials.
-    //   more_successes:  The number of additional successes.
-    void increment(int64_t more_trials, int64_t more_successes);
-
-   private:
-    int64_t trials_;
-    int64_t successes_;
-
-    void check_size(int64_t n, int64_t y)const;
-  };
-
+namespace BOOM {
   // BetaBinomialModel describes a setting were binomial data occurs
   // within groups.  Each group has its own binomial success
   // probability drawn from a beta(a, b) distribution.  If the group
   // size is 1 then this is simply the BetaBinomial distribution.
 
-  class BetaBinomialModel
-    : public ParamPolicy_2<UnivParams, UnivParams>,
-      public IID_DataPolicy<BinomialData>,
-      public PriorPolicy,
-      public NumOptModel
-  {
+  class BetaBinomialModel : public ParamPolicy_2<UnivParams, UnivParams>,
+                            public IID_DataPolicy<BinomialData>,
+                            public PriorPolicy,
+                            public NumOptModel {
    public:
     BetaBinomialModel(double a, double b);
 
@@ -86,40 +52,44 @@ namespace BOOM{
     BetaBinomialModel(const BOOM::Vector &trials,
                       const BOOM::Vector &successes);
     BetaBinomialModel(const BetaBinomialModel &rhs);
-    BetaBinomialModel *clone()const override;
+    BetaBinomialModel *clone() const override;
 
     void clear_data() override;
-    void add_data(Ptr<Data> data) override;
-    void add_data(Ptr<BinomialData> data) override;
+    // Marking virtual functions as final so they can be called in the
+    // constructor.
+    void add_data(const Ptr<Data> &dp) final;
+    void add_data(const Ptr<BinomialData> &data) final;
+    void mle() final { NumOptModel::mle(); }
 
     // The likelihood contribution for observation i is
     // int Pr(y_i | theta_i, n_i) p(theta_i) dtheta_i
-    virtual double loglike()const;
-    double loglike(const Vector &ab)const override;
-    double loglike(double a, double b)const;
-    double Loglike(const Vector &ab, Vector &g, Matrix &H, uint nd)const override;
-    double logp(int64_t n, int64_t y, double a, double b)const;
+    virtual double loglike() const;
+    double loglike(const Vector &ab) const override;
+    double loglike(double a, double b) const;
+    double Loglike(const Vector &ab, Vector &g, Matrix &h,
+                   uint nd) const override;
+    double logp(int64_t n, int64_t y, double a, double b) const;
 
     // Args:
-    //   n:  The number of trials for a particular observation.  All trials will
+    //   n: The number of trials for a particular observation.  All trials will
     //     have the same success probability.
     // Returns:
     //   The number of successes for the observation in question.
-    int64_t sim(RNG &rng, int64_t n)const;
+    int64_t sim(RNG &rng, int64_t n) const;
 
     Ptr<UnivParams> SuccessPrm();
     Ptr<UnivParams> FailurePrm();
-    const Ptr<UnivParams> SuccessPrm()const;
-    const Ptr<UnivParams> FailurePrm()const;
-    double a()const;
+    const Ptr<UnivParams> SuccessPrm() const;
+    const Ptr<UnivParams> FailurePrm() const;
+    double a() const;
     void set_a(double a);
-    double b()const;
+    double b() const;
     void set_b(double b);
 
-    double prior_mean()const;             // a / a+b
+    double prior_mean() const;  // a / a+b
     void set_prior_mean(double prob);
 
-    double prior_sample_size()const;      // a+b
+    double prior_sample_size() const;  // a+b
     void set_prior_sample_size(double sample_size);
 
     // Set a/(a+b) and a+b using a very rough method of moments
@@ -130,11 +100,11 @@ namespace BOOM{
 
     // Print a summary of the model on the stream 'out', and return
     // 'out'.
-    std::ostream & print_model_summary(std::ostream &out) const;
+    std::ostream &print_model_summary(std::ostream &out) const;
 
    private:
-    void check_positive(double arg, const char *function_name)const;
-    void check_probability(double arg, const char *function_name)const;
+    void check_positive(double arg, const char *function_name) const;
+    void check_probability(double arg, const char *function_name) const;
 
     // Stores sum of lgammafn(n+1) - lgammafn(y+1) - lgammafn(n-y+1) since the
     // trials and rewards do not change over the lifetime of this object.
@@ -143,4 +113,4 @@ namespace BOOM{
 
 }  // namespace BOOM
 
-#endif //  BOOM_BETA_BINOMIAL_MODEL_HPP
+#endif  //  BOOM_BETA_BINOMIAL_MODEL_HPP

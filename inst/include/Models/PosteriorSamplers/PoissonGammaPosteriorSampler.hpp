@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2012 Steven L. Scott
 
@@ -19,27 +20,28 @@
 #ifndef BOOM_POISSON_GAMMA_POSTERIOR_SAMPLER_HPP_
 #define BOOM_POISSON_GAMMA_POSTERIOR_SAMPLER_HPP_
 
-#include <Models/DoubleModel.hpp>
-#include <Models/PoissonGammaModel.hpp>
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Samplers/ScalarSliceSampler.hpp>
+#include "Models/DoubleModel.hpp"
+#include "Models/PoissonGammaModel.hpp"
+#include "Models/PosteriorSamplers/PosteriorSampler.hpp"
+#include "Samplers/ScalarSliceSampler.hpp"
 
 namespace BOOM {
 
   class PoissonGammaPosteriorSampler : public PosteriorSampler {
    public:
-    PoissonGammaPosteriorSampler(PoissonGammaModel *model,
-                                 Ptr<DoubleModel> mean_prior_distribution,
-                                 Ptr<DoubleModel> sample_size_prior,
-                                 RNG &seeding_rng = GlobalRng::rng);
+    PoissonGammaPosteriorSampler(
+        PoissonGammaModel *model,
+        const Ptr<DoubleModel> &mean_prior_distribution,
+        const Ptr<DoubleModel> &sample_size_prior,
+        RNG &seeding_rng = GlobalRng::rng);
 
     void draw() override;
     double logpri() const override;
 
-    double logp(double prior_mean, double prior_sample_size)const;
+    double logp(double prior_mean, double prior_sample_size) const;
 
     // Exposed for testing.
-    const PoissonGammaModel *model() const { return model_;}
+    const PoissonGammaModel *model() const { return model_; }
 
    private:
     PoissonGammaModel *model_;

@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2013 Steven L. Scott
 
@@ -21,13 +22,13 @@
 
 #include <functional>
 
-#include <Models/Policies/CompositeParamPolicy.hpp>
-#include <Models/Policies/PriorPolicy.hpp>
-#include <Models/DoubleModel.hpp>
-#include <Models/BinomialModel.hpp>
-#include <Models/GammaModel.hpp>
+#include "Models/BinomialModel.hpp"
+#include "Models/DoubleModel.hpp"
+#include "Models/GammaModel.hpp"
+#include "Models/Policies/CompositeParamPolicy.hpp"
+#include "Models/Policies/PriorPolicy.hpp"
 
-namespace BOOM{
+namespace BOOM {
 
   // The ZeroInflatedGammaModel describes non-negative data that can
   // be exactly zero, but are positive otherwise.  The model is
@@ -40,32 +41,29 @@ namespace BOOM{
   // The Gamma distribution used here is parameterized as Ga(mu, a),
   // instead of the arguably more conventional Ga(a, b).  The mapping
   // between the two parameterizations is mu = a/b and a = a.
-  class ZeroInflatedGammaModel
-      : public CompositeParamPolicy,
-        public PriorPolicy,
-        public LocationScaleDoubleModel
-  {
+  class ZeroInflatedGammaModel : public CompositeParamPolicy,
+                                 public PriorPolicy,
+                                 public LocationScaleDoubleModel {
    public:
     ZeroInflatedGammaModel();
-    ZeroInflatedGammaModel(Ptr<BinomialModel> positive_probability,
-                           Ptr<GammaModel> positive_density);
-    ZeroInflatedGammaModel(int number_of_zeros,
-                           int number_of_positives,
+    ZeroInflatedGammaModel(const Ptr<BinomialModel> &positive_probability,
+                           const Ptr<GammaModel> &positive_density);
+    ZeroInflatedGammaModel(int number_of_zeros, int number_of_positives,
                            double sum_of_positives,
                            double sum_of_logs_of_positives);
     ZeroInflatedGammaModel(const ZeroInflatedGammaModel &rhs);
-    ZeroInflatedGammaModel * clone() const override;
+    ZeroInflatedGammaModel *clone() const override;
 
-    double pdf(Ptr<Data>, bool logscale) const override;
+    double pdf(const Ptr<Data> &dp, bool logscale) const override;
     double pdf(const Data *, bool logscale) const override;
     double logp(double x) const override;
     double sim(RNG &rng = GlobalRng::rng) const override;
 
     // This model does not keep copies of the original data set.  It
     // uses the sufficient statistics of its component models instead.
-    void add_data(Ptr<Data>) override;
+    void add_data(const Ptr<Data> &) override;
     void add_data_raw(double y);
-    void add_mixture_data_raw(double y, double weight);
+    void add_mixture_data_raw(double y, double prob);
     void clear_data() override;
 
     // Combine the data owned by rhs to the data owned by *this.
@@ -100,6 +98,10 @@ namespace BOOM{
 
     Ptr<GammaModel> Gamma_model();
     Ptr<BinomialModel> Binomial_model();
+
+    int number_of_observations() const override {
+      return lround(binomial_->suf()->nobs());
+    }
 
    private:
     // The GammaModel describes the distribution of positive outcomes.
@@ -139,4 +141,4 @@ namespace BOOM{
 
 }  // namespace BOOM
 
-#endif // BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_
+#endif  // BOOM_ZERO_INFLATED_GAMMA_MODEL_HPP_

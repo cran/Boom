@@ -3,36 +3,36 @@
 
 #include <memory>
 
-#include <cpputil/report_error.hpp>
+#include "cpputil/report_error.hpp"
 
-#include <Models/BetaModel.hpp>
-#include <Models/ChisqModel.hpp>
-#include <Models/CompositeModel.hpp>
-#include <Models/GammaModel.hpp>
-#include <Models/GaussianModel.hpp>
-#include <Models/GaussianModelGivenSigma.hpp>
-#include <Models/Glm/BinomialLogitModel.hpp>
-#include <Models/Glm/PosteriorSamplers/BinomialLogitCompositeSpikeSlabSampler.hpp>
-#include <Models/Glm/PosteriorSamplers/BregVsSampler.hpp>
-#include <Models/Glm/RegressionModel.hpp>
-#include <Models/Glm/VariableSelectionPrior.hpp>
-#include <Models/IndependentMvnModel.hpp>
-#include <Models/MultinomialModel.hpp>
-#include <Models/MvnModel.hpp>
-#include <Models/PoissonModel.hpp>
-#include <Models/PosteriorSamplers/BetaBinomialSampler.hpp>
-#include <Models/PosteriorSamplers/CompositeModelSampler.hpp>
-#include <Models/PosteriorSamplers/GaussianConjSampler.hpp>
-#include <Models/PosteriorSamplers/IndependentMvnConjSampler.hpp>
-#include <Models/PosteriorSamplers/MarkovConjSampler.hpp>
-#include <Models/PosteriorSamplers/MultinomialDirichletSampler.hpp>
-#include <Models/PosteriorSamplers/MvnConjSampler.hpp>
-#include <Models/PosteriorSamplers/PoissonGammaSampler.hpp>
-#include <Models/PosteriorSamplers/ZeroInflatedLognormalPosteriorSampler.hpp>
-#include <Models/PosteriorSamplers/ZeroInflatedPoissonSampler.hpp>
-#include <Models/ProductDirichletModel.hpp>
-#include <Models/ZeroInflatedLognormalModel.hpp>
-#include <Models/ZeroInflatedPoissonModel.hpp>
+#include "Models/BetaModel.hpp"
+#include "Models/ChisqModel.hpp"
+#include "Models/CompositeModel.hpp"
+#include "Models/GammaModel.hpp"
+#include "Models/GaussianModel.hpp"
+#include "Models/GaussianModelGivenSigma.hpp"
+#include "Models/Glm/BinomialLogitModel.hpp"
+#include "Models/Glm/PosteriorSamplers/BinomialLogitCompositeSpikeSlabSampler.hpp"
+#include "Models/Glm/PosteriorSamplers/BregVsSampler.hpp"
+#include "Models/Glm/RegressionModel.hpp"
+#include "Models/Glm/VariableSelectionPrior.hpp"
+#include "Models/IndependentMvnModel.hpp"
+#include "Models/MultinomialModel.hpp"
+#include "Models/MvnModel.hpp"
+#include "Models/PoissonModel.hpp"
+#include "Models/PosteriorSamplers/BetaBinomialSampler.hpp"
+#include "Models/PosteriorSamplers/CompositeModelSampler.hpp"
+#include "Models/PosteriorSamplers/GaussianConjSampler.hpp"
+#include "Models/PosteriorSamplers/IndependentMvnConjSampler.hpp"
+#include "Models/PosteriorSamplers/MarkovConjSampler.hpp"
+#include "Models/PosteriorSamplers/MultinomialDirichletSampler.hpp"
+#include "Models/PosteriorSamplers/MvnConjSampler.hpp"
+#include "Models/PosteriorSamplers/PoissonGammaSampler.hpp"
+#include "Models/PosteriorSamplers/ZeroInflatedLognormalPosteriorSampler.hpp"
+#include "Models/PosteriorSamplers/ZeroInflatedPoissonSampler.hpp"
+#include "Models/ProductDirichletModel.hpp"
+#include "Models/ZeroInflatedLognormalModel.hpp"
+#include "Models/ZeroInflatedPoissonModel.hpp"
 
 #include <r_interface/create_mixture_component.hpp>
 #include <r_interface/prior_specification.hpp>
@@ -98,13 +98,13 @@ namespace BOOM {
         std::string component_name
             = GetStringFromList(rmixture_component_, "name");
         if (state_number_ > -1) {
-          if (component_name != "") {
+          if (!component_name.empty()) {
             name_stream << component_name << ".";
           }
           name_stream << parameter_name << "." << state_number_;
-        } else if (component_name_prefix_ != "") {
+        } else if (!component_name_prefix_.empty()) {
           name_stream << component_name_prefix_ << ".";
-          if (component_name != "") {
+          if (!component_name.empty()) {
             name_stream << component_name << ".";
           }
           name_stream << parameter_name;
@@ -418,7 +418,7 @@ namespace BOOM {
                                      prior_spec.mu_guess_weight(),
                                      prior_spec.Sigma_guess(),
                                      prior_spec.Sigma_guess_weight());
-        model->set_conjugate_prior(sampler);
+        model->set_method(sampler);
 
         io_manager->add_list_element(new VectorListElement(
             model->Mu_prm(), create_name("mu")));

@@ -18,8 +18,8 @@
 #include <set>
 #include <tuple>
 
-#include <cpputil/make_unique_preserve_order.hpp>
-#include <cpputil/report_error.hpp>
+#include "cpputil/make_unique_preserve_order.hpp"
+#include "cpputil/report_error.hpp"
 
 #include <r_interface/parse_model_formula.hpp>
 #include <Rinternals.h>
@@ -42,7 +42,7 @@ namespace BOOM {
         // Args:
         //   r_frame: An R data frame containing the variables to be
         //     used as part of a model formula.
-        ExpressionFactory(SEXP r_frame);
+        explicit ExpressionFactory(SEXP r_frame);
 
         // Constructor for ExpressionFactory<BOOM::ContextualEffectGroup>
         ExpressionFactory(SEXP r_experiment_data,
@@ -114,6 +114,7 @@ namespace BOOM {
         std::string variable_name = ToString(PRINTNAME(r_expression));
         if (variable_name == ".") {
           std::vector<EffectGroup> everything;
+          everything.reserve(names_.variable_names_.size());
           for (int i = 0; i < names_.variable_names_.size(); ++i) {
             everything.push_back(EffectGroup(
                 i,

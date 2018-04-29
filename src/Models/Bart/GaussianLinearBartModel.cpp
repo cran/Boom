@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2013 Steven L. Scott
 
@@ -16,23 +17,22 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <Models/Bart/GaussianLinearBartModel.hpp>
+#include "Models/Bart/GaussianLinearBartModel.hpp"
 
 namespace BOOM {
 
-  GaussianLinearBartModel::GaussianLinearBartModel(
-      int number_of_trees, int xdim)
+  GaussianLinearBartModel::GaussianLinearBartModel(int number_of_trees,
+                                                   int xdim)
       : regression_(new RegressionModel(xdim)),
-        bart_(new GaussianBartModel(number_of_trees, 0.0))
-  {
+        bart_(new GaussianBartModel(number_of_trees, 0.0)) {
     Init();
   }
 
-  GaussianLinearBartModel::GaussianLinearBartModel(
-      int number_of_trees, const Vector &y, const Matrix &x)
+  GaussianLinearBartModel::GaussianLinearBartModel(int number_of_trees,
+                                                   const Vector &y,
+                                                   const Matrix &x)
       : regression_(new RegressionModel(ncol(x))),
-        bart_(new GaussianBartModel(number_of_trees, 0.0))
-  {
+        bart_(new GaussianBartModel(number_of_trees, 0.0)) {
     if (y.size() != x.nrow()) {
       ostringstream err;
       err << "Error in GaussianLinearBartModel constructor.  "
@@ -57,20 +57,19 @@ namespace BOOM {
         DataPolicy(rhs),
         PriorPolicy(rhs),
         regression_(rhs.regression_->clone()),
-        bart_(rhs.bart_->clone())
-  {
+        bart_(rhs.bart_->clone()) {
     Init();
   }
 
-  GaussianLinearBartModel * GaussianLinearBartModel::clone() const {
+  GaussianLinearBartModel *GaussianLinearBartModel::clone() const {
     return new GaussianLinearBartModel(*this);
   }
 
-  void GaussianLinearBartModel::add_data(Ptr<Data> dp) {
+  void GaussianLinearBartModel::add_data(const Ptr<Data> &dp) {
     this->add_data(dp.dcast<RegressionData>());
   }
 
-  void GaussianLinearBartModel::add_data(Ptr<RegressionData> dp) {
+  void GaussianLinearBartModel::add_data(const Ptr<RegressionData> &dp) {
     DataPolicy::add_data(dp);
     regression_->add_data(dp);
     bart_->add_data(dp);
@@ -96,11 +95,9 @@ namespace BOOM {
     return regression_.get();
   }
 
-  GaussianBartModel * GaussianLinearBartModel::bart() {
-    return bart_.get();
-  }
+  GaussianBartModel *GaussianLinearBartModel::bart() { return bart_.get(); }
 
-  const GaussianBartModel * GaussianLinearBartModel::bart() const {
+  const GaussianBartModel *GaussianLinearBartModel::bart() const {
     return bart_.get();
   }
 

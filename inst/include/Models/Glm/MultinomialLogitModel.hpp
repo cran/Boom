@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2011 Steven L. Scott
 
@@ -19,23 +20,21 @@
 #ifndef BOOM_MULTINOMIAL_LOGIT_MODEL_HPP
 #define BOOM_MULTINOMIAL_LOGIT_MODEL_HPP
 
-#include <Models/EmMixtureComponent.hpp>
-#include <Models/Policies/ParamPolicy_1.hpp>
-#include <Models/Glm/GlmCoefs.hpp>
-#include <Models/Policies/IID_DataPolicy.hpp>
-#include <Models/Policies/PriorPolicy.hpp>
-#include <Models/Glm/ChoiceData.hpp>
+#include "Models/EmMixtureComponent.hpp"
+#include "Models/Glm/ChoiceData.hpp"
+#include "Models/Glm/GlmCoefs.hpp"
+#include "Models/Policies/IID_DataPolicy.hpp"
+#include "Models/Policies/ParamPolicy_1.hpp"
+#include "Models/Policies/PriorPolicy.hpp"
 
-namespace BOOM{
+namespace BOOM {
 
-  class MultinomialLogitModel
-      : public ParamPolicy_1<GlmCoefs>,
-        public IID_DataPolicy<ChoiceData>,
-        public PriorPolicy,
-        public NumOptModel,
-        virtual public MixtureComponent
-  {
-  public:
+  class MultinomialLogitModel : public ParamPolicy_1<GlmCoefs>,
+                                public IID_DataPolicy<ChoiceData>,
+                                public PriorPolicy,
+                                public NumOptModel,
+                                virtual public MixtureComponent {
+   public:
     // Initialize the model with a set of regression coefficients.
     // Args:
     //   beta_subject: The subject-level parameters.  Each column of
@@ -46,7 +45,8 @@ namespace BOOM{
     //     should not be included.
     //   beta_choice: A vector of coefficients describing the impact
     //     of the choice-level predictors.
-    MultinomialLogitModel(const Matrix & beta_subject, const Vector &beta_choice);
+    MultinomialLogitModel(const Matrix &beta_subject,
+                          const Vector &beta_choice);
 
     // Args:
     //   Nchoices:  The number of possible choices in the response variable.
@@ -71,12 +71,12 @@ namespace BOOM{
     //     correspond to predictors.  The vector can be empty to
     //     signify that there is no choice-level data available.
     MultinomialLogitModel(
-        const std::vector<Ptr<CategoricalData> > & responses,
+        const std::vector<Ptr<CategoricalData> > &responses,
         const Matrix &Xsubject_info,
-        const std::vector<Mat> & Xchoice_info = std::vector<Mat>());
+        const std::vector<Mat> &Xchoice_info = std::vector<Mat>());
 
     MultinomialLogitModel(const MultinomialLogitModel &rhs);
-    MultinomialLogitModel * clone()const override;
+    MultinomialLogitModel *clone() const override;
 
     // coefficient vector: elements corresponding to choice level 0
     // (which are constrained to 0 for identifiability) are omitted.
@@ -89,21 +89,21 @@ namespace BOOM{
     //   ...
     //   subject_characeristic_beta_for_choice_M-1
     //   choice_characteristic_beta ]
-    const Vector & beta()const;
+    const Vector &beta() const;
 
     // Returns the vector of logistic regression coefficients
     // described above (see beta()), but with a vector of 0's
     // prepended, corresponding to the subject parameters for choice
     // level 0.
-    const Vector & beta_with_zeros()const;
+    const Vector &beta_with_zeros() const;
 
     // Returns the vector of subject specific coefficients for the
     // given choice level.  If 'choice' is 0 then a vector of all 0's
     // is returned.
-    Vector beta_subject(uint choice)const;
+    Vector beta_subject(uint choice) const;
 
     // Returns the vector of choice specific coefficients.
-    Vector beta_choice()const;
+    Vector beta_choice() const;
 
     void set_beta(const Vector &b);
 
@@ -119,14 +119,14 @@ namespace BOOM{
     //     must match choice_nvars().
     void set_beta_choice(const Vector &b);
 
-    virtual GlmCoefs & coef();
-    virtual const GlmCoefs& coef()const;
+    virtual GlmCoefs &coef();
+    virtual const GlmCoefs &coef() const;
     virtual Ptr<GlmCoefs> coef_prm();
-    virtual const Ptr<GlmCoefs> coef_prm()const;
+    virtual const Ptr<GlmCoefs> coef_prm() const;
 
     // Returns a Selector of the same dimension as beta().  The
     // structural zeros for beta_subject(0) are not considered.
-    const Selector &inc()const;
+    const Selector &inc() const;
 
     // If keep_intercepts is true, all the slopes will be dropped but
     // the subject level intercepts will remain in the model.  This
@@ -136,8 +136,8 @@ namespace BOOM{
     void add_all_slopes();
 
     // 'beta' refers to the vector of nonzero "included" coefficients.
-    double Loglike(
-        const Vector &beta, Vector &g, Matrix &H, uint nd)const override;
+    double Loglike(const Vector &beta, Vector &g, Matrix &H,
+                   uint nd) const override;
 
     // Args:
     //   beta: The vector of logistic regression coefficients, with
@@ -151,9 +151,7 @@ namespace BOOM{
     //   nd:  The number of derivatives to take.
     // Returns:
     //   The log likelihood evaluated at beta.
-    double log_likelihood(const Vector &beta,
-                          Vector &gradient,
-                          Matrix &Hessian,
+    double log_likelihood(const Vector &beta, Vector &gradient, Matrix &Hessian,
                           int nd) const;
 
     double log_likelihood() const override {
@@ -163,62 +161,64 @@ namespace BOOM{
     }
 
     // Compute beta^Tx for the choice and subject portions of X.
-     double predict_choice(const ChoiceData &, uint m)const;
-     double predict_subject(const ChoiceData &, uint m)const;
+    double predict_choice(const ChoiceData &, uint m) const;
+    double predict_subject(const ChoiceData &, uint m) const;
 
     // Fill in the linear predictor.  The dimension of eta is
     // Nchoices(), so the baseline choice is filled in as well.
-    Vector &fill_eta(const ChoiceData &,
-                     Vector &ans,
-                     const Vector &full_beta)const;
-    Vector &fill_eta(const ChoiceData &, Vector &ans)const;
+    Vector &fill_eta(const ChoiceData &, Vector &ans,
+                     const Vector &full_beta) const;
+    Vector &fill_eta(const ChoiceData &, Vector &ans) const;
 
     //----------------------------------------------------------------------
-    virtual double pdf(Ptr<Data> dp, bool logscale)const;
-    double pdf(const Data * dp, bool logscale)const override;
-    virtual double logp(const ChoiceData & dp)const;
+    virtual double pdf(const Ptr<Data> &dp, bool logscale) const;
+    double pdf(const Data *dp, bool logscale) const override;
+    virtual double logp(const ChoiceData &dp) const;
+    int number_of_observations() const override { return dat().size(); }
 
     // Returns the dimension of the non-sparse set of regression coefficients.
     // Args:
     //   include_zeros: If true then the identically zero coefficients
     //     corresponding to the reference category are included in the
     //     count.
-    uint beta_size(bool include_zeros = false)const;
+    uint beta_size(bool include_zeros = false) const;
 
     // simulate an outcome
-    uint sim(Ptr<ChoiceData> dp, RNG &rng = GlobalRng::rng)const;
-    uint sim(Ptr<ChoiceData>, Vector &eta, RNG &rng = GlobalRng::rng)const;
+    uint sim(const Ptr<ChoiceData> &dp, RNG &rng = GlobalRng::rng) const;
+    uint sim(const Ptr<ChoiceData> &dp, Vector &eta,
+             RNG &rng = GlobalRng::rng) const;
 
     // compute all choice probabilities
-    Vector predict(Ptr<ChoiceData>)const;  // returns choice probabilities
-    Vector & predict(Ptr<ChoiceData>, Vector &ans)const;
+    Vector predict(const Ptr<ChoiceData> &) const;
+    // returns choice probabilities
+    Vector &predict(const Ptr<ChoiceData> &, Vector &ans) const;
 
-    uint subject_nvars()const;
-    uint choice_nvars()const;
-    uint Nchoices()const;
+    uint subject_nvars() const;
+    uint choice_nvars() const;
+    uint Nchoices() const;
 
     // Args:
     //   probs: Gives the probability of keeping in the sample an
     //     observation with response level m.  For a prospective study
     //     all elements of probs would be 1.
     void set_sampling_probs(const Vector &probs);
-    const Vector & log_sampling_probs()const;
+    const Vector &log_sampling_probs() const;
 
-  private:
+   private:
     mutable Vector beta_with_zeros_;
     mutable bool beta_with_zeros_current_;
 
     void watch_beta();
     void setup();
     void setup_observers();
-    void fill_extended_beta()const;
-    void index_out_of_bounds(uint m)const;
+    void fill_extended_beta() const;
+    void index_out_of_bounds(uint m) const;
 
     mutable Vector wsp_;
-    uint nch_;  // number of choices
-    uint psub_; // number of subject X variables
-    uint pch_;  // number of choice X variables
+    uint nch_;   // number of choices
+    uint psub_;  // number of subject X variables
+    uint pch_;   // number of choice X variables
     Vector log_sampling_probs_;
   };
 }  // namespace BOOM
-#endif// BOOM_MULTINOMIAL_LOGIT_MODEL_HPP
+#endif  // BOOM_MULTINOMIAL_LOGIT_MODEL_HPP

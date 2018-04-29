@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005 Steven L. Scott
 
@@ -18,12 +19,14 @@
 #ifndef BOOM_MODEL_TYPES_HPP
 #define BOOM_MODEL_TYPES_HPP
 
-#include <BOOM.hpp>
-#include <Models/ParamTypes.hpp>
-#include <Models/DataTypes.hpp>
-#include <distributions/rng.hpp>
-#include <LinAlg/Vector.hpp>
-#include <LinAlg/Matrix.hpp>
+#include <set>
+
+#include "BOOM.hpp"
+#include "LinAlg/Matrix.hpp"
+#include "LinAlg/Vector.hpp"
+#include "Models/DataTypes.hpp"
+#include "Models/ParamTypes.hpp"
+#include "distributions/rng.hpp"
 
 namespace BOOM {
 
@@ -40,22 +43,23 @@ namespace BOOM {
   //
   // Any class inheriting from model should do so virtually, because
   // Model contains a reference count that should not be duplicated.
-  class Model : private RefCounted{
+  class Model : private RefCounted {
    public:
-    friend void intrusive_ptr_add_ref(Model *d){d->up_count();}
-    friend void intrusive_ptr_release(Model *d){
-      d->down_count(); if(d->ref_count()==0) delete d;}
+    friend void intrusive_ptr_add_ref(Model *d) { d->up_count(); }
+    friend void intrusive_ptr_release(Model *d) {
+      d->down_count();
+      if (d->ref_count() == 0) delete d;
+    }
 
     //------ constructors, destructors, operator=/== -----------
     Model();
-    Model(const Model &rhs);        // ref count is not copied
+    Model(const Model &rhs);  // ref count is not copied
 
     // The result of clone() (and copies generally) should have
     // identical parameters in distinct memory.  It should not have
     // any data assigned.  Nor should it include the same priors and
     // sampling methods.
-    virtual Model * clone() const = 0;
-
+    virtual Model *clone() const = 0;
 
     virtual ~Model() {}
 
@@ -64,7 +68,7 @@ namespace BOOM {
     virtual ParamVector parameter_vector() = 0;
     virtual const ParamVector parameter_vector() const = 0;
 
-    virtual Vector vectorize_params(bool minimal=true)const;
+    virtual Vector vectorize_params(bool minimal = true) const;
     virtual void unvectorize_params(const Vector &v, bool minimal = true);
 
     //------------ functions implemented in DataPolicy -----
@@ -73,7 +77,7 @@ namespace BOOM {
     // model.  It is assumed that dp points to a Data object of the
     // type produced by the concrete model.  The Data type is made
     // concrete in the model's DataPolicy.
-    virtual void add_data(Ptr<Data> dp) = 0;
+    virtual void add_data(const Ptr<Data> &dp) = 0;
 
     // Discard all the data that has been added using add_data().
     virtual void clear_data() = 0;
@@ -81,16 +85,17 @@ namespace BOOM {
     // Combine the data managed by other_model with the data managed
     // by *this.  If just_suf is true and the model has sufficient
     // statistics, the actual data from 'other_model' is not copied.
-    virtual void combine_data(const Model & other_model, bool just_suf=true) = 0;
+    virtual void combine_data(const Model &other_model,
+                              bool just_suf = true) = 0;
 
     //------------ functions over-ridden in PriorPolicy ----
     virtual void sample_posterior() = 0;
-    virtual double logpri()const = 0;      // evaluates current params
-    virtual void set_method(Ptr<PosteriorSampler>) = 0;
+    virtual double logpri() const = 0;  // evaluates current params
+    virtual void set_method(const Ptr<PosteriorSampler> &) = 0;
     virtual int number_of_sampling_methods() const = 0;
 
    protected:
-    virtual PosteriorSampler * sampler(int i) = 0;
+    virtual PosteriorSampler *sampler(int i) = 0;
     virtual PosteriorSampler const *const sampler(int i) const = 0;
   };
 
@@ -112,18 +117,10 @@ namespace BOOM {
     // Set the paramters to their maximum likelihood estimates.
     virtual void mle() = 0;
     virtual void initialize_params();
-    enum MleStatus {
-      NOT_CALLED = -1,
-      FAILURE = 0,
-      SUCCESS = 1
-    };
-    MleStatus mle_status() const {return status_;}
-    const std::string & mle_error_message() const {
-      return error_message_;
-    }
-    bool mle_success() const {
-      return status_ == SUCCESS;
-    }
+    enum MleStatus { NOT_CALLED = -1, FAILURE = 0, SUCCESS = 1 };
+    MleStatus mle_status() const { return status_; }
+    const std::string &mle_error_message() const { return error_message_; }
+    bool mle_success() const { return status_ == SUCCESS; }
 
    private:
     MleStatus status_;
@@ -200,13 +197,12 @@ namespace BOOM {
     // PosteriorSampler capable of computing the gradient of the log
     // prior density.  Returns false otherwise.
     bool can_increment_log_prior_gradient() const;
-
   };
   //======================================================================
   class LoglikeModel : public MLE_Model {
    public:
     // Evaluate log likelihood at the given parameter vector.
-    virtual double loglike(const Vector &theta)const = 0;
+    virtual double loglike(const Vector &theta) const = 0;
 
     // Evaluate log likelihood with the current set of model parameters.
     virtual double log_likelihood() const {
@@ -217,29 +213,29 @@ namespace BOOM {
     void mle() override;
   };
 
-  class dLoglikeModel : public LoglikeModel{
+  class dLoglikeModel : public LoglikeModel {
    public:
-    virtual double dloglike(const Vector &x, Vector &g)const = 0;
+    virtual double dloglike(const Vector &x, Vector &g) const = 0;
     void mle() override;
   };
 
-  class d2LoglikeModel : public dLoglikeModel{
+  class d2LoglikeModel : public dLoglikeModel {
    public:
-    virtual double d2loglike(const Vector &x, Vector &g, Matrix &H)const = 0;
+    virtual double d2loglike(const Vector &x, Vector &g, Matrix &H) const = 0;
     void mle() override;
     virtual double mle_result(Vector &gradient, Matrix &hessian);
   };
 
-  class NumOptModel : public d2LoglikeModel{
+  class NumOptModel : public d2LoglikeModel {
    public:
-    virtual double Loglike(
-        const Vector &x, Vector &g, Matrix &H, uint nd) const = 0;
+    virtual double Loglike(const Vector &x, Vector &g, Matrix &H,
+                           uint nd) const = 0;
     double loglike(const Vector &x) const override {
       Vector g;
       Matrix h;
       return Loglike(x, g, h, 0);
     }
-    double dloglike(const Vector &x, Vector &g) const override{
+    double dloglike(const Vector &x, Vector &g) const override {
       Matrix h;
       return Loglike(x, g, h, 1);
     }
@@ -255,14 +251,101 @@ namespace BOOM {
   //======================================================================
   class CorrelationModel : virtual public Model {
    public:
-    virtual double logp(const CorrelationMatrix &)const = 0;
+    virtual double logp(const CorrelationMatrix &) const = 0;
   };
   //======================================================================
   class MixtureComponent : virtual public Model {
    public:
-    virtual double pdf(const Data *, bool logscale)const = 0;
-    MixtureComponent * clone() const override = 0;
+    MixtureComponent() : component_(-1) {}
+
+    virtual double pdf(const Data *, bool logscale) const = 0;
+
+    // The number of data points that have been allocated to this model.  This
+    // might have been called "sample_size", but that sometimes refers to
+    // certain model parameters, such as the beta distribution.
+    virtual int number_of_observations() const = 0;
+
+    MixtureComponent *clone() const override = 0;
+
+    //----------------------------------------------------------------------
+    // Tools for keeping track of a mixture component's position in a finite
+    // mixture model or the like.
+    int mixture_component_index() const { return component_; }
+
+    // Values less than zero indicate that a component is purposefully unused.
+    void set_mixture_component_index(int i) { component_ = i; }
+
+    void decrement_mixture_component_index() { --component_; }
+
+    void increment_mixture_component_index() { ++component_; }
+
+   private:
+    int component_;
   };
 
+  //======================================================================
+  class ConjugateModel : virtual public Model {
+   public:
+    virtual ConjugateModel *clone() const override = 0;
+  };
+  //======================================================================
+
+  // A mixture component that can also call remove_data, which is an important
+  // ability for components assigned to a Dirichlet process.
+  //
+  // TODO: Remove this class once enough MixtureComponent child classes have had
+  // this ability added,
+  class DirichletProcessMixtureComponent : virtual public MixtureComponent {
+   public:
+    DirichletProcessMixtureComponent *clone() const override = 0;
+
+    // Returns the vector of data stored by the model.
+    virtual std::set<Ptr<Data>> abstract_data_set() const = 0;
+
+    virtual void remove_data(const Ptr<Data> &dp) = 0;
+
+    virtual double log_likelihood() const = 0;
+  };
+
+  //======================================================================
+  class ConjugateDirichletProcessMixtureComponent
+      : virtual public ConjugateModel,
+        virtual public DirichletProcessMixtureComponent {
+   public:
+    ConjugateDirichletProcessMixtureComponent *clone() const override = 0;
+  };
+
+  //===========================================================================
+  // Some complex computations for certain models (e.g. log likelihood and
+  // derivatives) can really only be done using the current set of model
+  // parameters.  To enable likelihood evaluation at parameter other than their
+  // current values, one idiom is to replace the parameters, evalute the
+  // function, and restore the old set of parameters when the computation
+  // concludes.
+  //
+  // This class holds the "old" set of model parameters while a computation
+  // takes place, and restores them when it goes out of scope.
+  //
+  // Mutable values held by the model (e.g. the kalman filter for state space
+  // models, or the log likelihood for HMM's and mixture models) will no longer
+  // be current after the swap is undone.  It is the model's responsibility to
+  // keep track of these quantities.
+  class ParameterHolder {
+   public:
+    ParameterHolder(Model *model, const Vector &parameters)
+        : original_parameters_(model->vectorize_params()), model_(model) {
+      model_->unvectorize_params(parameters);
+    }
+    
+    ~ParameterHolder() { model_->unvectorize_params(original_parameters_); }
+    
+   private:
+    Vector original_parameters_;
+    Model *model_;
+  };
+
+
+
+  
 }  // namespace BOOM
-#endif // BOOM_MODEL_TYPES_HPP
+#endif  // BOOM_MODEL_TYPES_HPP

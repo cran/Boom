@@ -6,9 +6,8 @@ all:	libboom.a
 # -j 8: use 8 threads
 # MAKEFLAGS=" -k -j 8 "
 
-PKG_CFLAGS = -DADD_ -DR_NO_REMAP
-PKG_CPPFLAGS = -I. -I../inst/include -IBmath -Imath/cephes -DNO_BOOST_THREADS -DNO_BOOST_FILESYSTEM -DADD_ -DRLANGUAGE
-PKG_LIBS = ${LAPACK_LIBS} ${BLAS_LIBS} ${FLIBS}
+PKG_CFLAGS = -DADD_ -DR_NO_REMAP 
+PKG_CPPFLAGS = -I. -I../inst/include -IBmath -Imath/cephes 
 
 ############################################################################
 # Begin the list of all the BOOM source files.
@@ -66,8 +65,8 @@ TIMESERIES_SRCS := $(wildcard Models/TimeSeries/*.cpp) \
 
 UTIL_SRCS := $(wildcard cpputil/*.cpp)
 
-
-CXX_SRCS = ${BART_SRCS} \
+CXX_SRCS = ${R_INTERFACE_SRCS} \
+	 ${BART_SRCS} \
 	${DISTRIBUTION_SRCS} \
 	${GLM_SRCS} \
 	${HIERARCHICAL_SRCS} \
@@ -79,7 +78,6 @@ CXX_SRCS = ${BART_SRCS} \
 	${MODELS_SRCS} \
 	${NUMOPT_SRCS} \
 	${POINTPROCESS_SRCS} \
-        ${R_INTERFACE_SRCS} \
 	${RMATH_SRCS} \
 	${SAMPLERS_SRCS} \
 	${STATS_SRCS} \

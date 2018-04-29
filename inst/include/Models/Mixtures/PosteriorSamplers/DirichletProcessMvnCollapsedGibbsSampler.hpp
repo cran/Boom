@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2015 Steven L. Scott
 
@@ -19,66 +20,20 @@
 #ifndef BOOM_DIRICHLET_PROCESS_MVN_COLLAPSED_GIBBS_SAMPLER_HPP_
 #define BOOM_DIRICHLET_PROCESS_MVN_COLLAPSED_GIBBS_SAMPLER_HPP_
 
-#include <Models/Mixtures/DirichletProcessMvnModel.hpp>
-#include <Models/PosteriorSamplers/PosteriorSampler.hpp>
-#include <Models/MvnGivenSigma.hpp>
-#include <Models/WishartModel.hpp>
+#include "Models/Mixtures/DirichletProcessMvnModel.hpp"
+
+#include "Models/MvnGivenSigma.hpp"
+#include "Models/PosteriorSamplers/MvnConjSampler.hpp"
+#include "Models/PosteriorSamplers/PosteriorSampler.hpp"
+#include "Models/WishartModel.hpp"
 
 namespace BOOM {
-
-  namespace  NormalInverseWishart {
-    // Parameters of the normal inverse Wishart model for (mu,
-    // Siginv), where Siginv is the matrix inverse of the variance
-    // matrix Sigma.  The model is
-    //   (mu | Sigma) ~ N(mu0, Sigma / kappa)
-    //         Sigma  ~ W(nu, sum_of_squares)
-    //
-    // Here mean refers to mu0, mean_sample_size refers to kappa, and
-    // variance_sample_size refers to nu.
-    class NormalInverseWishartParameters {
-     public:
-      // Construct the object by storing pointers to the prior models.
-      NormalInverseWishartParameters(const MvnGivenSigma *mean_prior,
-                                     const WishartModel *precision_prior);
-
-      // Updates the parameters of the Normal inverse Wishart model
-      // given data summarized in suf.
-      // Args:
-      //   suf: Sufficient statistics from observed multivariate normal
-      //     data.
-      //
-      // Effects:
-      //   Sets the 4 model parameters to their values in the posterior
-      //   distribution given the data in suf.
-      void compute_mvn_posterior(const MvnSuf &suf);
-
-      const SpdMatrix &sum_of_squares() const {return sum_of_squares_;}
-      double variance_sample_size() const {return variance_sample_size_;}
-      double mean_sample_size() const {return mean_sample_size_;}
-      const Vector &mean() const {return mean_;}
-
-      // Reset model parameters to prior values.
-      void reset_to_prior();
-
-     private:
-      const MvnGivenSigma *mean_model_;
-      const WishartModel *precision_model_;
-
-      SpdMatrix sum_of_squares_;
-      double variance_sample_size_;
-      double mean_sample_size_;
-      Vector mean_;
-      Vector workspace_;
-    };
-  }  // namespace NormalInverseWishart
 
   // A Posterior sampler for a Dirichlet process model that describes
   // observation vector y[i] as a mixture of normals, with a
   // normal-inverse-Wishart prior distribution.
-  class DirichletProcessMvnCollapsedGibbsSampler
-      : public PosteriorSampler {
+  class DirichletProcessMvnCollapsedGibbsSampler : public PosteriorSampler {
    public:
-
     // Args:
     //   model: The model for which posterior samples are desired.
     //   mean_base_measure: A conditional MVN model describing the
@@ -95,8 +50,8 @@ namespace BOOM {
     //     posterior sampler.
     DirichletProcessMvnCollapsedGibbsSampler(
         DirichletProcessMvnModel *model,
-        Ptr<MvnGivenSigma> mean_base_measure,
-        Ptr<WishartModel> precision_base_measure,
+        const Ptr<MvnGivenSigma> &mean_base_measure,
+        const Ptr<WishartModel> &precision_base_measure,
         RNG &seeding_rng = GlobalRng::rng);
 
     // Note that logpri is a required overload, but it doesn't really

@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2013 Steven L. Scott
 
@@ -19,8 +20,10 @@
 #ifndef BOOM_MVN_META_ANALYSIS_MVN_POSTERIOR_SAMPLER_HPP_
 #define BOOM_MVN_META_ANALYSIS_MVN_POSTERIOR_SAMPLER_HPP_
 
-#include <Models/DoubleModel.hpp>
-#include <Models/Mixtures/MvnMetaAnalysisDPMPriorModel.hpp>
+#include "Models/DoubleModel.hpp"
+#include "Models/Mixtures/MvnMetaAnalysisDPMPriorModel.hpp"
+#include "Models/MvnGivenSigma.hpp"
+#include "Models/WishartModel.hpp"
 
 namespace BOOM {
 
@@ -46,10 +49,11 @@ namespace BOOM {
     //     each mixture component.
     //   seeding_rng: The RNG to use to set the seed for this
     //     posterior sampler.
-    MvnMetaAnalysisDPMPriorSampler(MvnMetaAnalysisDPMPriorModel *model,
-                                   Ptr<MvnGivenSigma> mean_base_measure,
-                                   Ptr<WishartModel> precision_base_measure,
-                                   RNG &seeding_rng = GlobalRng::rng);
+    MvnMetaAnalysisDPMPriorSampler(
+        MvnMetaAnalysisDPMPriorModel *model,
+        const Ptr<MvnGivenSigma> &mean_base_measure,
+        const Ptr<WishartModel> &precision_base_measure,
+        RNG &seeding_rng = GlobalRng::rng);
     double logpri() const override;
     void draw() override;
 
@@ -61,4 +65,4 @@ namespace BOOM {
 
 }  // namespace BOOM
 
-#endif //  BOOM_MVN_META_ANALYSIS_MVN_POSTERIOR_SAMPLER_HPP_
+#endif  //  BOOM_MVN_META_ANALYSIS_MVN_POSTERIOR_SAMPLER_HPP_

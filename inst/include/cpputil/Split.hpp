@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2006 Steven L. Scott
 
@@ -21,18 +22,18 @@
 #include <string>
 #include <vector>
 
-namespace BOOM{
-typedef std::vector<std::string> Svec;
-class StringSplitter{
- public:
-  StringSplitter(std::string sep=" \t", bool allow_quotes=true);
-  Svec operator()(const std::string &s)const;
-  //  std::vector<std::string>
- private:
-  std::string delim;
-  std::string quotes;
-  bool delimited;
-};
+namespace BOOM {
+  class StringSplitter {
+   public:
+    explicit StringSplitter(const std::string &sep = " \t", bool allow_quotes = true);
+    std::vector<std::string> operator()(const std::string &s) const;
 
-}
-#endif // BOOM_STRING_SPLIT_HPP
+   private:
+    std::string delim;
+    std::string quotes;
+    bool delimited;
+  };
+
+}  // namespace BOOM
+
+#endif  // BOOM_STRING_SPLIT_HPP

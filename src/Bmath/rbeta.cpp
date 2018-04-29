@@ -44,7 +44,7 @@
  */
 
 #include "nmath.hpp"
-#include <distributions/rng.hpp>
+#include "distributions/rng.hpp"
 namespace Rmath{
 
 constexpr double expmax = (std::numeric_limits<double>::max_exponent * M_LN2);
@@ -60,8 +60,12 @@ constexpr double expmax = (std::numeric_limits<double>::max_exponent * M_LN2);
     double r, s, t, u1, u2, v, w, y, z;
     double beta, gamma, delta, k1, k2;
 
-    if (aa <= 0. || bb <= 0. || (!R_FINITE(aa) && !R_FINITE(bb)))
-      ML_ERR_return_NAN;
+    if (aa <= 0. || bb <= 0. || (!R_FINITE(aa) && !R_FINITE(bb))) {
+      std::ostringstream err;
+      err << "Illegal parameter values a = " << aa
+          << " and b = " << bb << " in call to rbeta.";
+      report_error(err.str());
+    }
 
     if (!R_FINITE(aa))
       return 1.0;
@@ -116,7 +120,18 @@ constexpr double expmax = (std::numeric_limits<double>::max_exponent * M_LN2);
         if (alpha * (log(alpha / (a + w)) + v) - 1.3862944 >= log(z))
           break;
       }
-      return (aa == a) ? a / (a + w) : w / (a + w);
+      double ans = (aa == a) ? a / (a + w) : w / (a + w);
+      if (std::isnan(ans)) {
+        const double zero = std::numeric_limits<double>::epsilon();
+        const double one = 1.0 - zero;
+        if (aa == a) {
+          // return a / (a + w), but be careful because a+w is infinite.
+          return std::isfinite(a) ? zero : one;
+        } else {
+          // return w / (a + w) but be careful because a+w is infinite.
+          return std::isfinite(w) ? zero : one;
+        }
+      } else return ans;
 
     }
     else {              /* Algorithm BB */
@@ -138,8 +153,19 @@ constexpr double expmax = (std::numeric_limits<double>::max_exponent * M_LN2);
         }
       }
       while (r + alpha * log(alpha / (b + w)) < t);
-
-      return (aa != a) ? b / (b + w) : w / (b + w);
+      double ans = (aa != a) ? b / (b + w) : w / (b + w);
+      if (std::isnan(ans)) {
+        const double zero = std::numeric_limits<double>::epsilon();
+        const double one = 1.0 - zero;
+        if (aa != a) {
+          // return b / b + w, but be careful because b + w is infinite.
+          return std::isfinite(b) ? zero : one;
+        } else {
+          // return w / (b + w), but be careful because b + w is infinite.
+          return std::isfinite(w) ? zero : one;
+        }
+      }
+      return ans;
     }
   }
 }

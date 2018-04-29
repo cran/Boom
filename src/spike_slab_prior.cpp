@@ -1,8 +1,8 @@
 #include <r_interface/prior_specification.hpp>
-#include <Models/Glm/VariableSelectionPrior.hpp>
-#include <Models/MvnBase.hpp>
-#include <Models/MvnModel.hpp>
-#include <cpputil/math_utils.hpp>
+#include "Models/Glm/VariableSelectionPrior.hpp"
+#include "Models/MvnBase.hpp"
+#include "Models/MvnModel.hpp"
+#include "cpputil/math_utils.hpp"
 
 namespace BOOM {
   namespace RInterface {
@@ -61,7 +61,7 @@ namespace BOOM {
 
     RegressionConjugateSpikeSlabPrior::RegressionConjugateSpikeSlabPrior(
         SEXP r_spike_slab_prior,
-        Ptr<UnivParams> residual_variance)
+        const Ptr<UnivParams> &residual_variance)
         : prior_inclusion_probabilities_(ToBoomVector(getListElement(
               r_spike_slab_prior, "prior.inclusion.probabilities"))),
           spike_(new VariableSelectionPrior(prior_inclusion_probabilities_)),
@@ -94,7 +94,7 @@ namespace BOOM {
     }
 
     SRCSSP::StudentRegressionConjugateSpikeSlabPrior(
-        SEXP r_prior, Ptr<UnivParams> residual_variance)
+        SEXP r_prior, const Ptr<UnivParams> &residual_variance)
         : RegressionConjugateSpikeSlabPrior(r_prior, residual_variance),
           df_prior_(create_double_model(getListElement(
               r_prior, "degrees.of.freedom.prior")))
@@ -126,7 +126,7 @@ namespace BOOM {
     {}
 
     IndependentRegressionSpikeSlabPrior::IndependentRegressionSpikeSlabPrior(
-        SEXP r_prior, Ptr<UnivParams> sigsq)
+        SEXP r_prior, const Ptr<UnivParams> &sigsq)
         : prior_inclusion_probabilities_(ToBoomVector(getListElement(
               r_prior, "prior.inclusion.probabilities"))),
           spike_(new VariableSelectionPrior(prior_inclusion_probabilities_)),
@@ -142,7 +142,7 @@ namespace BOOM {
     {}
 
     SISSP::StudentIndependentSpikeSlabPrior(
-        SEXP r_prior, Ptr<UnivParams> sigsq)
+        SEXP r_prior, const Ptr<UnivParams> &sigsq)
         : IndependentRegressionSpikeSlabPrior(r_prior, sigsq),
           df_prior_(create_double_model(getListElement(
               r_prior, "degrees.of.freedom.prior")))

@@ -1,3 +1,4 @@
+// Copyright 2018 Google LLC. All Rights Reserved.
 /*
   Copyright (C) 2005-2013 Steven L. Scott
 
@@ -16,9 +17,9 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 
-#include <Models/Mixtures/MvnMetaAnalysisDPMPriorModel.hpp>
-#include <Models/MvnBase.hpp>
+#include "Models/Mixtures/MvnMetaAnalysisDPMPriorModel.hpp"
 #include <utility>
+#include "Models/MvnBase.hpp"
 
 namespace BOOM {
 
@@ -27,10 +28,10 @@ namespace BOOM {
     typedef MvnMetaAnalysisDPMPriorModel mDPMPrior;
   }  // namespace
 
-  mDPMData::MvnMetaAnalysisDPMPriorData(Vector observation,
-                                        SpdMatrix observation_variance)
-      : observation_(new VectorData(std::move(observation))),
-            observation_variance_(std::move(observation_variance)) {}
+  mDPMData::MvnMetaAnalysisDPMPriorData(const Vector& observation,
+                                        const SpdMatrix& observation_variance)
+      : observation_(new VectorData(observation)),
+        observation_variance_(observation_variance) {}
 
   mDPMData* mDPMData::clone() const { return new mDPMData(*this); }
 
@@ -42,12 +43,13 @@ namespace BOOM {
   mDPMPrior::MvnMetaAnalysisDPMPriorModel(int dim, double alpha)
       : HierarchicalBase(new DirichletProcessMvnModel(dim, alpha)) {}
 
-  mDPMPrior::MvnMetaAnalysisDPMPriorModel(Ptr<DirichletProcessMvnModel> prior)
+  mDPMPrior::MvnMetaAnalysisDPMPriorModel(
+      const Ptr<DirichletProcessMvnModel>& prior)
       : HierarchicalBase(prior) {}
 
   mDPMPrior* mDPMPrior::clone() const { return new mDPMPrior(*this); }
 
-  void mDPMPrior::add_data(Ptr<Data> dp) {
+  void mDPMPrior::add_data(const Ptr<Data>& dp) {
     Ptr<mDPMData> data_point = dp.dcast<mDPMData>();
     const Vector& value(data_point->observation());
     NEW(MvnModel, model)(value, data_point->observation_variance());
@@ -57,6 +59,7 @@ namespace BOOM {
 
   std::vector<Vector> mDPMPrior::group_means() const {
     std::vector<Vector> out;
+    out.reserve(number_of_groups());
     for (int i = 0; i < number_of_groups(); ++i) {
       out.push_back(data_model(i)->mu());
     }
