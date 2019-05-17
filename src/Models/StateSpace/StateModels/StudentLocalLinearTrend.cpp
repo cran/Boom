@@ -46,10 +46,10 @@ namespace BOOM {
   SLLTSM::StudentLocalLinearTrendStateModel(
       const StudentLocalLinearTrendStateModel &rhs)
       : Model(rhs),
+        StateModel(rhs),
         ParamPolicy(rhs),
         DataPolicy(rhs),
         PriorPolicy(rhs),
-        StateModel(rhs),
         observation_matrix_(rhs.observation_matrix_),
         state_transition_matrix_(new LocalLinearTrendMatrix),
         state_variance_matrix_(rhs.state_variance_matrix_->clone()),
@@ -85,8 +85,7 @@ namespace BOOM {
   }
 
   void SLLTSM::observe_state(const ConstVectorView &then,
-                             const ConstVectorView &now, int time_now,
-                             ScalarStateSpaceModelBase *) {
+                             const ConstVectorView &now, int time_now) {
     double level_now = now[0];
     double slope_now = now[1];
     double level_then = then[0];
@@ -98,6 +97,7 @@ namespace BOOM {
     // 'then'.  That means we have to first update the complete data
     // sufficient statistics with the old weight before recording the
     // new weight.
+    level_residuals_.push_back(level_residual);
     level_complete_data_sufficient_statistics_.update_raw(
         level_residual, latent_level_scale_factors_[time_now - 1]);
     double level_alpha = .5 * (1 + nu_level());
@@ -108,6 +108,7 @@ namespace BOOM {
         latent_level_scale_factors_[time_now - 1]);
 
     double slope_residual = slope_now - slope_then;
+    slope_residuals_.push_back(slope_residual);
     slope_complete_data_sufficient_statistics_.update_raw(
         slope_residual, latent_slope_scale_factors_[time_now - 1]);
     double slope_alpha = .5 * (1 + nu_slope());
@@ -263,6 +264,8 @@ namespace BOOM {
     level_weight_sufficient_statistics_.clear();
     slope_complete_data_sufficient_statistics_.clear();
     slope_weight_sufficient_statistics_.clear();
+    level_residuals_.clear();
+    slope_residuals_.clear();
   }
 
   const WeightedGaussianSuf &SLLTSM::sigma_level_complete_data_suf() const {

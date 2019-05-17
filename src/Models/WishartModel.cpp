@@ -93,7 +93,7 @@ namespace BOOM {
     return unvectorize(it, minimal);
   }
 
-  ostream &WishartSuf::print(ostream &out) const {
+  std::ostream &WishartSuf::print(std::ostream &out) const {
     return out << "n_ = " << n_ << endl
                << "sumldw_ = " << sumldw_ << endl
                << "sumW_ = " << endl
@@ -118,7 +118,7 @@ namespace BOOM {
       : ParamPolicy(new UnivParams(pri_df), new SpdParams(PriVarEst * pri_df)),
         DataPolicy(new WishartSuf(PriVarEst.nrow())),
         PriorPolicy() {
-    Chol chol(sumsq());
+    Cholesky chol(sumsq());
     if (!chol.is_pos_def()) {
       report_error(
           "Sum of squares matrix must be positive definite in "

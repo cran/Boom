@@ -24,19 +24,58 @@ namespace BOOM {
 
   namespace {
     using DIRM = DynamicInterceptRegressionModel;
-    using StateSpace::MultiplexedRegressionData;
+    using StateSpace::TimeSeriesRegressionData;
   }  // namespace
 
+  namespace StateSpace {
+    TimeSeriesRegressionData::TimeSeriesRegressionData(
+        const Vector &response,
+        const Matrix &predictors,
+        const Selector &observed)
+        : response_(response),
+          predictors_(predictors),
+          observed_(observed)
+    {
+      if (response_.size() != predictors_.nrow()) {
+        report_error("Different numbers of observations in 'response' "
+                     "and 'predictors'.");
+      }
+      if (response_.size() != observed.nvars_possible()) {
+        report_error("Observation indicator and response vector must "
+                     "be the same size.");
+      }
+      for (int i = 0; i < response_.size(); ++i) {
+        regression_data_.push_back(new RegressionData(
+            response_[i], predictors_.row(i)));
+      }
+    }
+
+    TimeSeriesRegressionData * TimeSeriesRegressionData::clone() const {
+      return new TimeSeriesRegressionData(*this);
+    }
+
+    std::ostream &TimeSeriesRegressionData::display(std::ostream &out) const {
+      out << cbind(response_, predictors_);
+      return out;
+    }
+    
+  }  // namespace StateSpace
+
+  //===========================================================================
+  
   DIRM::DynamicInterceptRegressionModel(int xdim) {
     initialize_regression_component(xdim);
   }
 
   DIRM::DynamicInterceptRegressionModel(const DIRM &rhs)
-      : MultivariateStateSpaceModelBase(rhs), observations_(rhs.observations_) {
+      : ConditionalIidMultivariateStateSpaceModelBase(rhs) {
     initialize_regression_component(rhs.xdim());
     regression_->regression()->set_Beta(rhs.regression_->regression()->Beta());
     regression_->regression()->set_sigsq(
         rhs.regression_->regression()->sigsq());
+    for (int s = 0; s < rhs.number_of_state_models(); ++s) {
+      add_state(rhs.state_model(s)->clone());
+    }
   }
 
   RegressionModel *DIRM::observation_model() {
@@ -47,100 +86,175 @@ namespace BOOM {
     return regression_->regression();
   }
 
-  void DIRM::observe_state(int t) {
-    if (t == 0) {
-      observe_initial_state();
-      return;
-    }
-    const ConstVectorView now(state().col(t));
-    const ConstVectorView then(state().col(t - 1));
-    for (int s = 0; s < nstate(); ++s) {
-      report_error(
-          "Need to implement observe_dynamic_regression_state in all "
-          "StateModels.");
-      state_model(s)->observe_dynamic_intercept_regression_state(
-          state_component(then, s), state_component(now, s), t, this);
-    }
-  }
-
   void DIRM::observe_data_given_state(int t) {
-    if (!is_missing_observation(t)) {
+    const Selector &observed(observed_status(t));
+    if (observed.nvars() > 0) {
       // Unless the data point is completely missing, add the regression
       // component of its data to the regression model.  We will do this by
       // subtracting the state mean from the y value of each observation.  The
       // state mean contains contribution from all state elements, including the
       // regression, so we need to add the regression component back in.
-      Ptr<MultiplexedRegressionData> data(dat()[t]);
-      Vector state_mean = (*observation_coefficients(t)) * state(t);
+      Ptr<TimeSeriesRegressionData> data(dat()[t]);
+      Vector state_contribution = (*observation_coefficients(
+          t, observed_status(t))) * shared_state(t);
+      
       RegressionModel *regression = regression_->regression();
-      for (int i = 0; i < data->total_sample_size(); ++i) {
-        const RegressionData &data_point(data->regression_data(i));
-        double regression_prediction = regression->predict(data_point.x());
+      for (int i = 0; i < data->sample_size(); ++i) {
+        const Ptr<RegressionData> &data_point(data->regression_data(i));
+        double adjusted_observation =
+            data_point->y() - state_contribution[i]
+            + regression->predict(data_point->x());
         observation_model()->suf()->add_mixture_data(
-            data_point.y() - state_mean[i] + regression_prediction,
-            data_point.x(), 1.0);
+            adjusted_observation, data_point->x(), 1.0);
       }
     }
   }
 
-  void DIRM::add_data(const Ptr<Data> &dp) { add_multiplexed_data(DAT(dp)); }
-
-  void DIRM::add_multiplexed_data(const Ptr<MultiplexedRegressionData> &dp) {
-    Vector observation_vector(dp->total_sample_size());
-    Matrix predictors(dp->total_sample_size(),
-                      regression_->regression()->xdim());
-    for (int i = 0; i < observation_vector.size(); ++i) {
-      observation_vector[i] = dp->regression_data(i).y();
-      regression_->regression()->add_data(dp->regression_data_ptr(i));
-      predictors.row(i) = dp->regression_data(i).x();
+  void DIRM::observe_state(int t) {
+    if (t == 0) {
+      for (int s = 0; s < state_models_.size(); ++s) {
+        state_model(s)->observe_initial_state(
+            state_models_.state_component(shared_state().col(0), s));
+      }
+    } else {
+      const ConstVectorView now(shared_state().col(t));
+      const ConstVectorView then(shared_state().col(t - 1));
+      for (int s = 0; s < state_models_.size(); ++s) {
+        state_models_[s]->observe_state(
+            state_models_.state_component(then, s),
+            state_models_.state_component(now, s),
+            t);
+      }
     }
-    observations_.push_back(observation_vector);
-    regression_->add_predictor_data({1, predictors});
-
+  }
+  
+  void DIRM::impute_state(RNG &rng) {
+    MultivariateStateSpaceModelBase::impute_state(rng);
+    observation_model()->suf()->fix_xtx();
+  }
+  
+  void DIRM::add_data(const Ptr<Data> &dp) { add_data(DAT(dp)); }
+  void DIRM::add_data(TimeSeriesRegressionData *dp) {
+    add_data(Ptr<TimeSeriesRegressionData>(dp));
+  }
+  void DIRM::add_data(const Ptr<TimeSeriesRegressionData> &dp) {
+    for (int i = 0; i < dp->sample_size(); ++i) {
+      regression_->regression()->add_data(dp->regression_data(i));
+    }
     DataPolicy::add_data(dp);
-    for (int i = 0; i < dp->total_sample_size(); ++i) {
-      observation_model()->add_data(dp->regression_data_ptr(i));
-    }
   }
 
   const SparseKalmanMatrix *DIRM::observation_coefficients(
-      int t) const {
+      int t, const Selector &) const {
     observation_coefficients_.clear();
-    for (int s = 0; s < nstate(); ++s) {
+    const StateSpace::TimeSeriesRegressionData &data_point(*dat()[t]);
+    for (int s = 0; s < number_of_state_models(); ++s) {
       observation_coefficients_.add_block(
-          state_model(s)->dynamic_intercept_regression_observation_coefficients(
-                  t, *dat()[t]));
+          state_models_[s]->observation_coefficients(t, data_point));
     }
     return &observation_coefficients_;
   }
 
-  SpdMatrix DIRM::observation_variance(int t) const {
-    return SpdMatrix(dat()[t]->total_sample_size(),
-                     regression_->regression()->sigsq());
+  double DIRM::observation_variance(int t) const {
+    return regression_->regression()->sigsq();
   }
 
-  double DIRM::conditional_mean(int time, int observation) const {
-    report_error(
-        "Need to implement DynamicInterceptRegressionModel::conditional_mean.");
-    return negative_infinity();
-
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
-    //////////////////////////////
+  ConstVectorView DIRM::observation(int t) const {
+    return dat()[t]->response();
   }
 
+  ConstVectorView DIRM::adjusted_observation(int time) const {
+    return observation(time);
+  }
+
+  const Selector &DIRM::observed_status(int t) const {
+    return dat()[t]->observed();
+  }
+  
+  Vector DIRM::conditional_mean(int time) const {
+    return (*observation_coefficients(
+        time, observed_status(time)) * shared_state().col(time));
+  }
+
+  Vector DIRM::state_contribution(int state_model_index) const {
+    if (state_model_index == 0) {
+      report_error("You can't use a Vector summarize the state contribution "
+                   "from the regression component because there can be more "
+                   "than one observation per time period.");
+    } else if (state_model_index < 0) {
+      report_error("state_model_index must be at least 1.");
+    } else if (state_model_index >= number_of_state_models()) {
+      report_error("state_model_index too large.");
+    } else if (!state_models_[state_model_index]->is_pure_function_of_time()) {
+      std::ostringstream err;
+      err << "The model in position " << state_model_index
+          << " is not a pure function of time.";
+      report_error(err.str());
+    }
+
+    Vector ans(time_dimension());
+    const Matrix &state(this->shared_state());
+    TimeSeriesRegressionData dummy_data(
+        Vector(1, 0.0), Matrix(1, 1, 0.0), Selector(1, true));
+    for (int t = 0; t < time_dimension(); ++t) {
+      ConstVectorView local_state(
+          state_models_.state_component(state.col(t), state_model_index));
+      Vector tmp = *state_model(state_model_index)->observation_coefficients(
+          t, dummy_data) * local_state;
+      ans[t] = tmp[0];
+    }
+    return ans;
+  }
+
+  Vector DIRM::simulate_forecast(RNG &rng,
+                                 const Matrix &forecast_predictors,
+                                 const Vector &final_state,
+                                 const std::vector<int> &timestamps) {
+    if (nrow(forecast_predictors) != timestamps.size()) {
+      report_error("different numbers of timestamps and forecast_predictors.");
+    }
+    if (final_state.size() != state_dimension()) {
+      std::ostringstream err;
+      err << "final state argument was of dimension " << final_state.size()
+          << " but model state dimension is " << state_dimension()
+          << "." << std::endl;
+      report_error(err.str());
+    }
+    Vector ans(timestamps.size());
+    int t0 = time_dimension();
+    int time = -1;
+    Vector state = final_state;
+    int index = 0;
+    int xdim = ncol(forecast_predictors);
+
+    // Move the state to the next time stamp.
+    // Simulate observations for all the data with that timestamp.
+    while(index < timestamps.size() && time < timestamps[index]) {
+      advance_to_timestamp(rng, time, state, timestamps[index], index);
+      while (index < timestamps.size() && time == timestamps[index]) {
+        TimeSeriesRegressionData data_point(
+            Vector(1, 0.0),
+            Matrix(1, xdim, forecast_predictors.row(index)),
+            Selector(1, true));
+        Vector yhat = *observation_coefficients(
+            t0 + time, data_point.observed()) * state;
+        double sigma = sqrt(observation_variance(t0 + time));
+        ans[index] = yhat[0] + rnorm_mt(rng, 0, sigma);
+        ++index;
+      }
+    }
+    return ans;
+  }
+  
   //===========================================================================
   // private:
-  Vector DIRM::simulate_observation(RNG &rng, int t) {
-    Vector ans = (*observation_coefficients(t)) * state(t);
-    double residual_sd = regression_->regression()->sigma();
+  Vector DIRM::simulate_fake_observation(RNG &rng, int t) {
+    int number_of_observations = dat()[t]->sample_size();
+    Selector fully_observed(number_of_observations, true);
+    const Selector &observed(
+        t >= time_dimension() ? fully_observed : observed_status(t));
+    Vector ans = (*observation_coefficients(t, observed)) * shared_state(t);
+    double residual_sd = sqrt(observation_variance(t));
     for (int i = 0; i < ans.size(); ++i) {
       ans[i] += rnorm_mt(rng, 0, residual_sd);
     }
@@ -148,8 +262,12 @@ namespace BOOM {
   }
 
   void DIRM::initialize_regression_component(int xdim) {
-    regression_.reset(new RegressionStateModel(new RegressionModel(xdim)));
+    regression_.reset(new RegressionDynamicInterceptStateModel(
+        new RegressionModel(xdim)));
     add_state(regression_);
+    ParamPolicy::add_model(regression_);
   }
 
+
+  
 }  // namespace BOOM

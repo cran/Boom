@@ -17,6 +17,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include "LinAlg/SubMatrix.hpp"
+#include "cpputil/report_error.hpp"
 #include <iomanip>
 
 namespace BOOM {
@@ -68,6 +69,17 @@ namespace BOOM {
     return *this;
   }
 
+  SM & SubMatrix::reset(Matrix &rhs, int rlo, int rhi, int clo, int chi) {
+    start_ = rhs.data() + rlo + clo * rhs.nrow();
+    nr_ = (rhi - rlo + 1);
+    nc_ = (chi - clo + 1);
+    stride = (rhs.nrow());
+    assert(nr_ >= 0);
+    assert(nc_ >= 0);
+    assert(rhi < rhs.nrow() && chi < rhs.ncol());
+    return *this;
+  }
+  
   SM &SM::reset(double *data, int nrow, int ncol, int new_stride) {
     start_ = data;
     nr_ = nrow;
@@ -84,6 +96,13 @@ namespace BOOM {
     return *this;
   }
 
+  SM &SM::operator=(double scalar) {
+    for (uint i = 0; i < nc_; ++i) {
+      col(i) = scalar;
+    }
+    return *this;
+  }
+  
   //------------------------------------------------------------
   uint SM::nrow() const { return nr_; }
   uint SM::ncol() const { return nc_; }
@@ -159,12 +178,12 @@ namespace BOOM {
     return ans;
   }
   //------------------------------------------------------------
-  ostream &SM::display(ostream &out, int precision) const {
+  std::ostream &SM::display(std::ostream &out, int precision) const {
     ConstSubMatrix m(*this);
     return m.display(out, precision);
   }
 
-  ostream &operator<<(ostream &out, const SubMatrix &m) {
+  std::ostream &operator<<(std::ostream &out, const SubMatrix &m) {
     return m.display(out, 5);
   }
 
@@ -283,8 +302,21 @@ namespace BOOM {
         nr_(rhi - rlo + 1),
         nc_(chi - clo + 1),
         stride(m.nrow()) {
-    assert(rhi >= rlo && chi >= clo);
-    assert(rhi < m.nrow() && chi < m.ncol());
+    if (rlo < 0 || clo < 0) {
+      report_error("Row and column indices cannot be less than zero.");
+    }
+    if (rhi >= m.nrow()) {
+      report_error("Row index exceeds maximum number of rows.");
+    }
+    if (chi >= m.ncol()) {
+      report_error("Column index exceeds maximum number of rows.");
+    }
+    if (rhi < rlo) {
+      report_error("Upper row index is less than lower index.");
+    }
+    if (chi < clo) {
+      report_error("Upper column index is less than lower index.");
+    }
   }
 
   CSM::ConstSubMatrix(const double *data, int nrow, int ncol, int my_stride)
@@ -297,6 +329,19 @@ namespace BOOM {
     assert(stride >= 1);
   }
 
+  CSM & ConstSubMatrix::reset(const Matrix &rhs, int rlo, int rhi,
+                              int clo, int chi) {
+    start_ = rhs.data() + rlo + clo * rhs.nrow();
+    nr_ = (rhi - rlo + 1);
+    nc_ = (chi - clo + 1);
+    stride = (rhs.nrow());
+    assert(nr_ >= 0);
+    assert(nc_ >= 0);
+    assert(rhi < rhs.nrow() && chi < rhs.ncol());
+    return *this;
+  }
+
+  
   uint CSM::nrow() const { return nr_; }
   uint CSM::ncol() const { return nc_; }
   const double &CSM::operator()(uint i, uint j) const {
@@ -349,7 +394,7 @@ namespace BOOM {
     return ans;
   }
   //------------------------------------------------------------
-  ostream &CSM::display(ostream &out, int precision) const {
+  std::ostream &CSM::display(std::ostream &out, int precision) const {
     out << std::setprecision(precision);
     for (uint i = 0; i < nrow(); ++i) {
       for (uint j = 0; j < ncol(); ++j)
@@ -359,7 +404,7 @@ namespace BOOM {
     return out;
   }
   //------------------------------------------------------------
-  ostream &operator<<(ostream &out, const ConstSubMatrix &m) {
+  std::ostream &operator<<(std::ostream &out, const ConstSubMatrix &m) {
     return m.display(out, 5);
   }
 
@@ -410,15 +455,16 @@ namespace BOOM {
       view += m2;
       return ans;
     }
+    template <class MAT>
+    Matrix MatrixAddScalar(const MAT &m, double x) {
+      Matrix ans(m);
+      ans += x;
+      return ans;
+    }
+
   }  // namespace
 
   Matrix operator+(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs) {
-    return MatrixAdd(lhs, rhs);
-  }
-  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs) {
-    return MatrixAdd(lhs, rhs);
-  }
-  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs) {
     return MatrixAdd(lhs, rhs);
   }
   Matrix operator+(const ConstSubMatrix &lhs, const SubMatrix &rhs) {
@@ -426,6 +472,33 @@ namespace BOOM {
   }
   Matrix operator+(const ConstSubMatrix &lhs, const Matrix &rhs) {
     return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const SubMatrix &lhs, const SubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const SubMatrix &lhs, const Matrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const Matrix &lhs, const SubMatrix &rhs) {
+    return MatrixAdd(lhs, rhs);
+  }
+  Matrix operator+(const ConstSubMatrix &lhs, double rhs) {
+    return MatrixAddScalar(lhs, rhs);
+  }
+  Matrix operator+(const SubMatrix &lhs, double rhs) {
+    return MatrixAddScalar(lhs, rhs);
+  }
+  Matrix operator+(double lhs, const ConstSubMatrix &rhs) {
+    return MatrixAddScalar(rhs, lhs);
+  }
+  Matrix operator+(double lhs, const SubMatrix &rhs) {
+    return MatrixAddScalar(rhs, lhs);
   }
 
   namespace {
@@ -436,15 +509,16 @@ namespace BOOM {
       view -= m2;
       return ans;
     }
+
+    template <class MAT>
+    Matrix MatrixSubtractFromScalar(double x, const MAT &m) {
+      Matrix ans(m.nrow(), m.ncol(), x);
+      ans -= m;
+      return ans;
+    }
   }  // namespace
 
   Matrix operator-(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs) {
-    return MatrixSubtract(lhs, rhs);
-  }
-  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs) {
-    return MatrixSubtract(lhs, rhs);
-  }
-  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs) {
     return MatrixSubtract(lhs, rhs);
   }
   Matrix operator-(const ConstSubMatrix &lhs, const SubMatrix &rhs) {
@@ -453,5 +527,124 @@ namespace BOOM {
   Matrix operator-(const ConstSubMatrix &lhs, const Matrix &rhs) {
     return MatrixSubtract(lhs, rhs);
   }
+  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const SubMatrix &lhs, const SubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const SubMatrix &lhs, const Matrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const Matrix &lhs, const SubMatrix &rhs) {
+    return MatrixSubtract(lhs, rhs);
+  }
+  Matrix operator-(const ConstSubMatrix &lhs, double rhs) {
+    return MatrixAddScalar(lhs, -rhs);
+  }
+  Matrix operator-(const SubMatrix &lhs, double rhs) {
+    return MatrixAddScalar(lhs, -rhs);
+  }
+  Matrix operator-(double lhs, const ConstSubMatrix &rhs) {
+    return MatrixSubtractFromScalar(lhs, rhs);
+  }
+  Matrix operator-(double lhs, const SubMatrix &rhs) {
+    return MatrixSubtractFromScalar(lhs, rhs);
+  }
 
+  namespace {
+    template <class MAT>
+    Matrix MatrixScalarMultiply(const MAT &x, double y) {
+      Matrix ans(x);
+      ans *= y;
+      return ans;
+    }
+    
+    template <class MAT1, class MAT2>
+    Matrix MatrixElementDivide(const MAT1 &x, const MAT2 &y) {
+      Matrix ans(x);
+      ans /= y;
+      return ans;
+    }
+
+    template <class MAT>
+    Matrix ScalarDivideMatrix(double x, const MAT &m) {
+      Matrix ans(m.nrow(), m.ncol(), x);
+      ans /= m;
+      return ans;
+    }
+    
+  }  // namespace 
+
+  Matrix operator*(const ConstSubMatrix &x, double y) {
+    return MatrixScalarMultiply(x, y);
+  }
+  Matrix operator*(const SubMatrix &x, double y) {
+    return MatrixScalarMultiply(x, y);
+  }
+  Matrix operator*(double x, const ConstSubMatrix &y) {
+    return MatrixScalarMultiply(y, x);
+  }
+  Matrix operator*(double x, const SubMatrix &y) {
+    return MatrixScalarMultiply(y, x);
+  }
+  
+  Matrix operator/(const ConstSubMatrix &x, const ConstSubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const ConstSubMatrix &x, const SubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const ConstSubMatrix &x, const Matrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const SubMatrix &x, const ConstSubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const SubMatrix &x, const SubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const SubMatrix &x, const Matrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const Matrix &x, const ConstSubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const Matrix &x, const SubMatrix &y) {
+    return MatrixElementDivide(x, y);
+  }
+  Matrix operator/(const ConstSubMatrix &x, double y) {
+    return x * (1.0 / y);
+  }
+  Matrix operator/(const SubMatrix &x, double y) {
+    return x * (1.0 / y);
+  }
+  Matrix operator/(double x, const ConstSubMatrix &y) {
+    return ScalarDivideMatrix(x, y);
+  }
+  Matrix operator/(double x, const SubMatrix &y) {
+    return ScalarDivideMatrix(x, y);
+  }
+  
+  SubMatrix block(Matrix &m, int block_row, int block_col,
+                  int block_row_size, int block_col_size) {
+    int first_row = block_row_size * block_row;
+    int last_row = first_row + block_row_size - 1;
+    int first_col = block_col_size * block_col;
+    int last_col = first_col + block_col_size - 1;
+    return SubMatrix(m, first_row, last_row, first_col, last_col);
+  }
+
+  ConstSubMatrix const_block(const Matrix &m, int block_row, int block_col,
+                             int block_row_size, int block_col_size) {
+    int first_row = block_row_size * block_row;
+    int last_row = first_row + block_row_size - 1;
+    int first_col = block_col_size * block_col;
+    int last_col = first_col + block_col_size - 1;
+    return ConstSubMatrix(m, first_row, last_row, first_col, last_col);
+  }
+  
 }  // namespace BOOM

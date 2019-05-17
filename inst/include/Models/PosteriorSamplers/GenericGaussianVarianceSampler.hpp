@@ -85,7 +85,7 @@ namespace BOOM {
     Ptr<GammaModelBase> prior_;
     double sigma_max_;
   };
-
+  
 }  // namespace BOOM
 
 #endif  //  BOOM_GENERIC_GAUSSIAN_VARIANCE_SAMPLER_HPP_

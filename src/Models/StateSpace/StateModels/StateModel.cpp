@@ -18,12 +18,17 @@
 */
 
 #include "Models/StateSpace/StateModels/StateModel.hpp"
+#include "Models/StateSpace/DynamicInterceptRegression.hpp"
 #include "cpputil/report_error.hpp"
 #include "distributions.hpp"
 
 namespace BOOM {
 
-  void StateModel::update_complete_data_sufficient_statistics(
+  StateModelBase::StateModelBase()
+      : index_(-1)
+  {}
+  
+  void StateModelBase::update_complete_data_sufficient_statistics(
       int t, const ConstVectorView &state_error_mean,
       const ConstSubMatrix &state_error_variance) {
     report_error(
@@ -31,7 +36,7 @@ namespace BOOM {
         "for this StateModel subclass.");
   }
 
-  void StateModel::increment_expected_gradient(
+  void StateModelBase::increment_expected_gradient(
       VectorView gradient, int t, const ConstVectorView &state_error_mean,
       const ConstSubMatrix &state_error_variance) {
     report_error(
@@ -39,7 +44,7 @@ namespace BOOM {
         "this StateModel subclass.");
   }
 
-  void StateModel::simulate_initial_state(RNG &rng, VectorView eta) const {
+  void StateModelBase::simulate_initial_state(RNG &rng, VectorView eta) const {
     if (eta.size() != state_dimension()) {
       std::ostringstream err;
       err << "output vector 'eta' has length " << eta.size()
@@ -50,5 +55,7 @@ namespace BOOM {
     eta = rmvn_mt(rng, initial_state_mean(), initial_state_variance());
   }
 
-  void StateModel::observe_initial_state(const ConstVectorView &state) {}
+  void StateModelBase::observe_initial_state(const ConstVectorView &state) {}
+
+  
 }  // namespace BOOM

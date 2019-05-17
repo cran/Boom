@@ -56,10 +56,11 @@ namespace BOOM {
   // small and the series will be forecastable.  We also hope that 'a'
   // is large because it means that the sigma[i]'s will be similar to
   // one another.
-  class DynamicRegressionStateModel : public StateModel,
-                                      public CompositeParamPolicy,
-                                      public NullDataPolicy,
-                                      public PriorPolicy {
+  class DynamicRegressionStateModel
+      : virtual public StateModel,
+        public CompositeParamPolicy,
+        public NullDataPolicy,
+        public PriorPolicy {
    public:
     // Each row of X is a predictor vector for an observation.  This constructor
     // assumes a single observation for each time point.
@@ -72,15 +73,12 @@ namespace BOOM {
     DynamicRegressionStateModel(const DynamicRegressionStateModel &rhs);
     DynamicRegressionStateModel *clone() const override;
 
-    void set_xnames(const std::vector<string> &xnames);
-    const std::vector<string> &xnames() const;
+    void set_xnames(const std::vector<std::string> &xnames);
+    const std::vector<std::string> &xnames() const;
 
     void clear_data() override;
     void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now, ScalarStateSpaceModelBase *model) override;
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override;
+                       int time_now) override;
     void observe_initial_state(const ConstVectorView &state) override;
     uint state_dimension() const override;
     uint state_error_dimension() const override { return state_dimension(); }
@@ -97,12 +95,8 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
-    // The observation matrix is row t of the desing matrix.
+    // The observation matrix is row t of the design matrix.
     SparseVector observation_matrix(int t) const override;
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override;
 
     // The initial state is the value of the regression coefficients
     // at time 0.  Zero with a big variance is a good guess.
@@ -149,10 +143,9 @@ namespace BOOM {
     uint xdim_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
-    std::vector<string> xnames_;
+    std::vector<std::string> xnames_;
 
-    // Each model is the prior for the differences in regression
-    // coefficients.
+    // Each model is the prior for the differences in regression coefficients.
     std::vector<Ptr<ZeroMeanGaussianModel>> coefficient_transition_model_;
 
     // Predictor variables for use with scalar, non-multiplexed state space
@@ -169,7 +162,7 @@ namespace BOOM {
     Ptr<IdentityMatrix> transition_matrix_;
     Ptr<UpperLeftDiagonalMatrix> transition_variance_matrix_;
   };
-
+  
 }  // namespace BOOM
 
 #endif  //  BOOM_STATE_SPACE_DYNAMIC_REGRESSION_STATE_MODEL_HPP_

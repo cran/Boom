@@ -40,8 +40,12 @@ namespace BOOM {
       latent_data_initialized_ = true;
       impute_nonstate_latent_data();
     }
-    model_->observation_model()->sample_posterior();
-    for (int s = 0; s < model_->nstate(); ++s) {
+    // Multivariate state space models sometimes use proxies that don't have an
+    // explicit observation model.
+    if (model_->observation_model()) {
+      model_->observation_model()->sample_posterior();
+    }
+    for (int s = 0; s < model_->number_of_state_models(); ++s) {
       model_->state_model(s)->sample_posterior();
     }
     // The complete data sufficient statistics for the observation model and the
@@ -55,15 +59,20 @@ namespace BOOM {
   }
 
   double SSPS::logpri() const {
-    double ans = model_->observation_model()->logpri();
-    for (int s = 0; s < model_->nstate(); ++s) {
+    double ans = 0;
+    // Multivariate state space models sometimes use proxies that don't have an
+    // explicit observation model.
+    if (model_->observation_model()) {
+      ans += model_->observation_model()->logpri();
+    }
+    for (int s = 0; s < model_->number_of_state_models(); ++s) {
       ans += model_->state_model(s)->logpri();
     }
     return ans;
   }
 
   void SSPS::Mstep() {
-    for (int i = 0; i < model_->nstate(); ++i) {
+    for (int i = 0; i < model_->number_of_state_models(); ++i) {
       model_->state_model(i)->find_posterior_mode();
     }
     model_->observation_model()->find_posterior_mode();
@@ -144,7 +153,7 @@ namespace BOOM {
   double SSPS::log_prior_density(const ConstVectorView &parameters) const {
     double ans = model_->observation_model()->log_prior_density(
         model_->observation_parameter_component(parameters));
-    for (int s = 0; s < model_->nstate(); ++s) {
+    for (int s = 0; s < model_->number_of_state_models(); ++s) {
       ans += model_->state_model(s)->log_prior_density(
           model_->state_parameter_component(parameters, s));
     }
@@ -161,7 +170,7 @@ namespace BOOM {
         model_->observation_parameter_component(parameter_vector),
         model_->observation_parameter_component(gradient_vector));
 
-    for (int s = 0; s < model_->nstate(); ++s) {
+    for (int s = 0; s < model_->number_of_state_models(); ++s) {
       ans += model_->state_model(s)->increment_log_prior_gradient(
           model_->state_parameter_component(parameter_vector, s),
           model_->state_parameter_component(gradient_vector, s));

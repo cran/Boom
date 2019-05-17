@@ -20,7 +20,7 @@
 #ifndef BOOM_REGRESSION_MODEL_H
 #define BOOM_REGRESSION_MODEL_H
 
-#include "BOOM.hpp"
+#include "uint.hpp"
 #include "LinAlg/QR.hpp"
 #include "Models/EmMixtureComponent.hpp"
 #include "Models/Glm/Glm.hpp"
@@ -40,10 +40,10 @@ namespace BOOM {
     double MSM, MSE;
     double df_error, df_model, df_total;
     double F, p_value;
-    ostream &display(ostream &out) const;
+    std::ostream &display(std::ostream &out) const;
   };
 
-  ostream &operator<<(ostream &out, const AnovaTable &tab);
+  std::ostream &operator<<(std::ostream &out, const AnovaTable &tab);
 
   Matrix add_intercept(const Matrix &X);
   Vector add_intercept(const Vector &X);
@@ -56,6 +56,7 @@ namespace BOOM {
 
     RegSuf *clone() const override = 0;
 
+    virtual void fix_xtx(bool fixed = true) = 0;
     virtual uint size() const = 0;  // dimension of beta
     virtual double yty() const = 0;
     virtual Vector xty() const = 0;
@@ -80,7 +81,8 @@ namespace BOOM {
     // Compute the sum of square errors using the given set of
     // coefficients, taking advantage of sparsity.
     double relative_sse(const GlmCoefs &beta) const;
-
+    double relative_sse(const Vector &beta) const;
+    
     AnovaTable anova() const;
 
     virtual void add_mixture_data(double y, const Vector &x, double prob) = 0;
@@ -88,9 +90,9 @@ namespace BOOM {
                                   double prob) = 0;
     virtual void combine(const Ptr<RegSuf> &) = 0;
 
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
   };
-  inline ostream &operator<<(ostream &out, const RegSuf &suf) {
+  inline std::ostream &operator<<(std::ostream &out, const RegSuf &suf) {
     return suf.print(out);
   }
   //------------------------------------------------------------------
@@ -104,6 +106,7 @@ namespace BOOM {
     void add_mixture_data(double y, const Vector &x, double prob) override;
     void add_mixture_data(double y, const ConstVectorView &x,
                           double prob) override;
+    void fix_xtx(bool fixed = true) override;
     uint size() const override;  // dimension of beta
     double yty() const override;
     Vector xty() const override;
@@ -130,12 +133,12 @@ namespace BOOM {
                                        bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
                                        bool minimal = true) override;
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
 
    private:
     mutable QR qr;
     mutable Vector Qty;
-    mutable double sumsqy;
+    mutable double sumsqy_;
     mutable bool current;
     mutable Vector x_column_sums_;
   };
@@ -163,7 +166,7 @@ namespace BOOM {
 
     // If fixed, then xtx will not be changed by a call to clear(),
     // add_mixture_data(), or any of the flavors of Update().
-    void fix_xtx(bool tf = true);
+    void fix_xtx(bool fixed = true) override;
 
     void clear() override;
     void add_mixture_data(double y, const Vector &x, double prob) override;
@@ -191,36 +194,42 @@ namespace BOOM {
                                        bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
                                        bool minimal = true) override;
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
 
     // Adding data only updates the upper triangle of xtx_.  Calling
     // reflect() fills the lower triangle as well, if needed.
     void reflect() const;
 
+    void allow_non_finite_responses(bool allow) {
+      allow_non_finite_responses_ = allow;
+    }
+    
    private:
     mutable SpdMatrix xtx_;
     mutable bool needs_to_reflect_;
     Vector xty_;
     bool xtx_is_fixed_;
-    double sumsqy;
+    double sumsqy_;
     double n_;
     double sumy_;
     Vector x_column_sums_;
+    bool allow_non_finite_responses_;
   };
 
   template <class Fwd>
   NeRegSuf::NeRegSuf(Fwd b, Fwd e)
       : needs_to_reflect_(true),
         xtx_is_fixed_(false),
-        sumsqy(0.0),
+        sumsqy_(0.0),
         n_(0.0),
-        sumy_(0.0)
+        sumy_(0.0),
+        allow_non_finite_responses_(false)
   {
     Ptr<RegressionData> dp = *b;
     uint p = dp->xdim();
     xtx_ = SpdMatrix(p, 0.0);
     xty_ = Vector(p, 0.0);
-    sumsqy = 0.0;
+    sumsqy_ = 0.0;
     while (b != e) {
       update(*b);
       ++b;
@@ -256,28 +265,39 @@ namespace BOOM {
                           public EmMixtureComponent {
    public:
     explicit RegressionModel(uint p);
-    RegressionModel(const Vector &b, double Sigma);
+
+    // Args:
+    //   coefficients: The vector of regression coefficients.  All are included.
+    //   residual_sd: The standard deviation of the Gaussian errors around the
+    //     regression line.
+    RegressionModel(const Vector &coefficients, double residual_sd);
 
     // Use this constructor if the model needs to share parameters
     // with another model.  E.g. a mixture model with shared variance
     // parameter.
-    RegressionModel(const Ptr<GlmCoefs> &beta, const Ptr<UnivParams> &sigsq);
+    // Args:
+    //   coefficients:  The vector of regression coefficients.
+    //   residual_variance: The residual variance parameter.  Note the
+    //     constructor above is parameterized in terms of residual sd instead of
+    //     residual variance.
+    RegressionModel(const Ptr<GlmCoefs> &coefficients,
+                    const Ptr<UnivParams> &residual_variance);
 
     // Args:
     //   X: The design matrix of predictor variables.  Must contain an
     //     explicit column of 1's if an intercept term is desired.
     //   y: The vector of responses.  The length of y must match the
     //     number of rows in X.
-    // Iniitializes the model with the least squares fit.
-    RegressionModel(const Matrix &X, const Vector &y);
+    //   start_at_mle: If true then the regression coefficients will begin at
+    //     their maximum likelihood estimate.  Otherwise the coefficients begin
+    //     at zero.
+    RegressionModel(const Matrix &X, const Vector &y, bool start_at_mle = true);
 
-    explicit RegressionModel(const DatasetType &d,
-                             bool include_all_variables = true);
     RegressionModel(const RegressionModel &rhs);
     RegressionModel *clone() const override;
 
-    // The number of variables currently included in the model,
-    // including the intercept, if present.
+    // The number of variables currently included in the model, including the
+    // intercept, if present.
     uint nvars() const;
 
     // The number of potential variables, including the intercept.
@@ -344,11 +364,10 @@ namespace BOOM {
     // including the intercept, are zero).
     double empty_loglike(Vector &g, Matrix &h, uint nd) const;
 
-    // If the model was formed using the QR decomposition, switch to
-    // using the normal equations.  The normal equations are
-    // computationally more efficient when doing variable selection or
-    // when the data is changing between MCMC iterations (as in finite
-    // mixtures).
+    // If the model was formed using the QR decomposition, switch to using the
+    // normal equations.  The normal equations are computationally more
+    // efficient when doing variable selection or when the data is changing
+    // between MCMC iterations (as in finite mixtures).
     void use_normal_equations();
 
     void add_mixture_data(const Ptr<Data> &, double prob) override;

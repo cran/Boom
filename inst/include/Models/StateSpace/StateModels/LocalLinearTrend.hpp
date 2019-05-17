@@ -28,19 +28,14 @@ namespace BOOM {
   //  mu[t+1] = mu[t] + delta[t] + u[t]
   //  delta[t+1] = delta[t] + v[t]
   class LocalLinearTrendStateModel : public ZeroMeanMvnModel,
-                                     public StateModel {
+                                     virtual public StateModel {
    public:
     LocalLinearTrendStateModel();
     LocalLinearTrendStateModel(const LocalLinearTrendStateModel &rhs);
     LocalLinearTrendStateModel *clone() const override;
 
     void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now, ScalarStateSpaceModelBase *model) override;
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override {
-      observe_state(then, now, time_now, nullptr);
-    }
+                       int time_now) override;
 
     uint state_dimension() const override { return 2; }
     uint state_error_dimension() const override { return 2; }
@@ -53,13 +48,6 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
     SparseVector observation_matrix(int t) const override;
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
 
     Vector initial_state_mean() const override;
     void set_initial_state_mean(const Vector &v);
@@ -82,6 +70,19 @@ namespace BOOM {
     Ptr<IdentityMatrix> state_error_expander_;
     Vector initial_state_mean_;
     SpdMatrix initial_state_variance_;
+  };
+
+  //===========================================================================
+  class LocalLinearTrendDynamicInterceptModel
+      : public DynamicInterceptStateModel,
+        public LocalLinearTrendStateModel {
+   public:
+    LocalLinearTrendDynamicInterceptModel *clone() const override;
+    Ptr<SparseMatrixBlock> observation_coefficients(
+        int t,
+        const StateSpace::TimeSeriesRegressionData &data_point) const override;
+    
+    bool is_pure_function_of_time() const override { return true; }
   };
 
 }  // namespace BOOM

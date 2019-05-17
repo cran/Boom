@@ -21,7 +21,7 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
-#include "BOOM.hpp"
+#include "uint.hpp"
 #include "LinAlg/Matrix.hpp"
 #include "cpputil/report_error.hpp"
 
@@ -33,7 +33,7 @@ namespace BOOM {
     Vector tmplo = basis(lo, 2);
     Vector tmphi = basis(hi, 2);
     Matrix tmp = rbind(tmplo, tmphi);
-    QR qr(tmp.t());
+    QR qr(tmp.transpose());
     return qr;
   }
 
@@ -67,7 +67,7 @@ namespace BOOM {
   }
 
   void NS::too_few_knots() const {
-    string msg = "you must have at least one knot to use a NaturalSpline";
+    std::string msg = "you must have at least one knot to use a NaturalSpline";
     report_error(msg);
   }
 

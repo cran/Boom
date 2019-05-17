@@ -43,11 +43,11 @@ namespace BOOM {
       nmax = std::max(nmax, n);
     }
     Vector ans(N);
-    Vector wsp(nmax);
+    Vector workspace(nmax);
     Vector::iterator it = ans.begin();
     for (uint i = 0; i < nprm; ++i) {
-      wsp = prm[i]->vectorize(minimal);
-      it = std::copy(wsp.begin(), wsp.end(), it);
+      workspace = prm[i]->vectorize(minimal);
+      it = std::copy(workspace.begin(), workspace.end(), it);
     }
     return ans;
   }
@@ -126,6 +126,20 @@ namespace BOOM {
   //============================================================
   void MLE_Model::initialize_params() { mle(); }
 
+  MLE_Model::MLE_Model(MLE_Model &&rhs)
+      : Model(rhs),
+        status_(rhs.status_),
+        error_message_(rhs.error_message_) {}
+
+  MLE_Model & MLE_Model::operator=(MLE_Model &&rhs) {
+    if (&rhs != this) {
+      status_ = rhs.status_;
+      error_message_ = rhs.error_message_;
+      Model::operator=(rhs);
+    }
+    return *this;
+  }
+  
   //============================================================
   void LoglikeModel::mle() {
     LoglikeTF loglike(this);
@@ -162,7 +176,7 @@ namespace BOOM {
     uint p = parameters.size();
     gradient.resize(p);
     Hessian.resize(p, p);
-    string error_message;
+    std::string error_message;
     double logf;
     bool ok = max_nd2_careful(parameters, gradient, Hessian, logf,
                               Target(loglike), dTarget(loglike),

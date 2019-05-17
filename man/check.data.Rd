@@ -6,6 +6,7 @@
 \alias{check.nonnegative.scalar}
 \alias{check.probability.distribution}
 \alias{check.scalar.integer}
+\alias{check.scalar.boolean}
 
 \description{Checks that data matches a concept}
 
@@ -15,6 +16,7 @@ check.positive.scalar(x)
 check.nonnegative.scalar(x)
 check.probability.distribution(x)
 check.scalar.integer(x)
+check.scalar.boolean(x)
 }
 
 \arguments{
@@ -25,5 +27,5 @@ check.scalar.integer(x)
   \code{\link{stop}} is called.  Otherwise \code{TRUE} is returned.  }
 
 \author{
-  Steven L. Scott \email{stevescott@google.com}
+  Steven L. Scott \email{steve.the.bayesian@gmail.com}
 }

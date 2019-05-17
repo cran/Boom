@@ -1,9 +1,10 @@
 % Copyright 2011 Google Inc. All Rights Reserved.
-% Author: stevescott@google.com (Steve Scott)
+% Author: steve.the.bayesian@gmail.com (Steve Scott)
 
 \name{sufstat.Rd}
 \title{Sufficient Statistics}
 \alias{RegressionSuf}
+\alias{GaussianSuf}
 
 \description{Sufficient statistics for various models.}
 
@@ -15,12 +16,14 @@
                 yty = sum(y^2),
                 n = length(y),
                 xbar = colMeans(X))
+
+  GaussianSuf(y)
 }
 
 \arguments{
   \item{X}{The predictor matrix for a regression problem.}
 
-  \item{y}{The response vector for a regression problem.}
+  \item{y}{The data, or the regression response variable.}
 
   \item{xtx}{The cross product of the design matrix. "X transpose X."}
 
@@ -62,5 +65,5 @@
 }
 
 \author{
-  Steven L. Scott \email{stevescott@google.com}
+  Steven L. Scott \email{steve.the.bayesian@gmail.com}
 }

@@ -31,11 +31,15 @@ namespace BOOM {
       friend class Subject;
       friend class IrtModel;
 
-      typedef std::vector<string> StringVector;
-      Item(const string &Id, uint Maxscore, uint one_subscale, uint nscales,
-           const string &Name = "");
-      Item(const string &Id, uint Maxscore, const std::vector<bool> &subscales,
-           const string &Name = "");
+      typedef std::vector<std::string> StringVector;
+      Item(const std::string &Id,
+           uint Maxscore,
+           uint one_subscale,
+           uint nscales,
+           const std::string &Name = "");
+      Item(const std::string &Id, uint Maxscore,
+           const std::vector<bool> &subscales,
+           const std::string &Name = "");
       Item(const Item &rhs);
 
       Item *clone() const override = 0;
@@ -57,11 +61,11 @@ namespace BOOM {
       const SubjectSet &subjects() const;
       uint Nsubjects() const;
 
-      const string &id() const;
-      const string &name() const;
+      const std::string &id() const;
+      const std::string &name() const;
 
       // create/get responses
-      Response make_response(const string &s) const;
+      Response make_response(const std::string &s) const;
       Response make_response(uint m) const;
       Response response(const Ptr<Subject> &);
       const Response response(const Ptr<Subject> &) const;
@@ -69,11 +73,11 @@ namespace BOOM {
       void set_response_names(const StringVector &levels);
       const StringVector &possible_responses() const;
 
-      void report(ostream &, uint namewidth = 0) const;
+      void report(std::ostream &, uint namewidth = 0) const;
       Vector response_histogram() const;
 
-      ostream &display(ostream &) const;
-      virtual ostream &display_item_params(ostream &,
+      std::ostream &display(std::ostream &) const;
+      virtual std::ostream &display_item_params(std::ostream &,
                                            bool decorate = true) const = 0;
 
       Response simulate_response(const Vector &Theta) const;
@@ -92,8 +96,8 @@ namespace BOOM {
 
      private:
       Indicators subscales_;            // which subscales does this item assess
-      string id_;                       // internal id, like "17"
-      string name_;                     // external id, like "Toy Story"
+      std::string id_;                  // internal id, like "17"
+      std::string name_;                // external id, like "Toy Story"
       Ptr<CatKey> possible_responses_;  // "0", "1"... "Poor","Fair","Good"...
       void increment_hist(const Ptr<Subject> &, Vector &) const;
       void increment_loglike(const Ptr<Subject> &) const;
@@ -108,7 +112,7 @@ namespace BOOM {
      public:
       NullItem() : Item("Null", 1, 0, 1, "Null") {}
       NullItem *clone() const override { return new NullItem(*this); }
-      ostream &display_item_params(ostream &out, bool = true) const override {
+      std::ostream &display_item_params(std::ostream &out, bool = true) const override {
         return out;
       }
       const Vector &beta() const override { return b; }

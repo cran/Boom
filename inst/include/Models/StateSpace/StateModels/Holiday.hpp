@@ -61,7 +61,6 @@ namespace BOOM {
     // Indicates whether this holiday is active on the given date.
     virtual bool active(const Date &arbitrary_date) const = 0;
 
-
    protected:
     // The dates of earliest and latest influence for a holiday occurring on
     // 'holiday_date' meaning that holiday_date is a date in the influence
@@ -114,7 +113,8 @@ namespace BOOM {
   // Returns:
   //   A heap-allocated pointer to the requested holiday.  The caller
   //   is responsible for deleting the returned object.
-  Holiday *CreateNamedHoliday(const string &holiday_name, int days_before,
+  Holiday *CreateNamedHoliday(const std::string &holiday_name,
+                              int days_before,
                               int days_after);
 
   //==========================================================================

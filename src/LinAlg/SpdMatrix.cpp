@@ -35,6 +35,7 @@
 #include "Eigen/Core"
 #include "LinAlg/Eigen.hpp"
 #include "LinAlg/EigenMap.hpp"
+#include "LinAlg/Selector.hpp"
 
 namespace BOOM {
   using Eigen::MatrixXd;
@@ -73,7 +74,10 @@ namespace BOOM {
     if (check) {
       double d = A.distance_from_symmetry();
       if (d > .5) {
-        report_error("Matrix argument to SpdMatrix is not symmetric.");
+        std::ostringstream err;
+        err << "Non-symmetric matrix passed to SpdMatrix constructor."
+            << std::endl << A;
+        report_error(err.str());
       } else if (d > 1e-9) {
         fix_near_symmetry();
       }
@@ -186,7 +190,7 @@ namespace BOOM {
     return chol(ok);
   }
   Matrix SpdMatrix::chol(bool &ok) const {
-    Chol cholesky(*this);
+    Cholesky cholesky(*this);
     if (!cholesky.is_pos_def()) {
       ok = false;
       return Matrix(0, 0);
@@ -206,7 +210,7 @@ namespace BOOM {
   }
 
   SpdMatrix SpdMatrix::inv(bool &ok) const {
-    Chol cholesky(*this);
+    Cholesky cholesky(*this);
     if (!cholesky.is_pos_def()) {
       ok = false;
       return SpdMatrix(0);
@@ -230,7 +234,7 @@ namespace BOOM {
   }
 
   double SpdMatrix::det() const {
-    Chol L(*this);
+    Cholesky L(*this);
     if (L.is_pos_def()) {
       return std::exp(L.logdet());
     } else {
@@ -284,7 +288,7 @@ namespace BOOM {
           "Number of rows in rhs does not match the number of columns "
           "in the SpdMatrix.");
     }
-    Chol cholesky(*this);
+    Cholesky cholesky(*this);
     if (!cholesky.is_pos_def()) {
       ostringstream msg;
       msg << "Matrix not positive definite in SpdMatrix::solve(Matrix)"
@@ -311,7 +315,7 @@ namespace BOOM {
     if (rhs.size() != this->ncol()) {
       report_error("The dimensions of the matrix and vector don't match.");
     }
-    Chol cholesky(*this);
+    Cholesky cholesky(*this);
     ok = cholesky.is_pos_def();
     if (!ok) {
       return Vector(rhs.size(), negative_infinity());
@@ -364,6 +368,25 @@ namespace BOOM {
       if (S.nrow() == 0) return;
       EigenMap(S).selfadjointView<Eigen::Upper>().rankUpdate(EigenMap(v), w);
     }
+
+    template <class VECTOR>
+    void add_outer_subset_impl(SpdMatrix &S, const VECTOR &v,
+                              double weight, const Selector &inc) {
+      assert(S.nrow() == v.size());
+      assert(inc.nvars_possible() == v.size());
+      if (inc.nvars_possible() == inc.nvars()) {
+        add_outer_impl(S, v, weight);
+      } else {
+        for (int i = 0; i < inc.nvars(); ++i) {
+          int I = inc.indx(i);
+          for (int j = i; j < inc.nvars(); ++j) {
+            int J = inc.indx(j);
+            S(I, J) += weight * v[I] * v[J];
+          }
+        }
+      }
+    }
+    
   }  // namespace
 
   SpdMatrix &SpdMatrix::add_outer(const Vector &v, double w, bool force_sym) {
@@ -372,6 +395,13 @@ namespace BOOM {
     return *this;
   }
 
+  SpdMatrix &SpdMatrix::add_outer(const Vector &v, const Selector &inc,
+                                  double weight, bool force_sym) {
+    add_outer_subset_impl(*this, v, weight, inc);
+    if (force_sym) reflect();
+    return *this;
+  }
+  
   SpdMatrix &SpdMatrix::add_outer(const VectorView &v, double w,
                                   bool force_sym) {
     add_outer_impl<VectorView>(*this, v, w);
@@ -379,9 +409,22 @@ namespace BOOM {
     return *this;
   }
 
+  SpdMatrix &SpdMatrix::add_outer(const VectorView &v, const Selector &inc,
+                                  double weight, bool force_sym) {
+    add_outer_subset_impl(*this, v, weight, inc);
+    if (force_sym) reflect();
+    return *this;
+  }
+
   SpdMatrix &SpdMatrix::add_outer(const ConstVectorView &v, double w,
                                   bool force_sym) {
     add_outer_impl<ConstVectorView>(*this, v, w);
+    if (force_sym) reflect();
+    return *this;
+  }
+  SpdMatrix &SpdMatrix::add_outer(const ConstVectorView &v, const Selector &inc,
+                                  double weight, bool force_sym) {
+    add_outer_subset_impl(*this, v, weight, inc);
     if (force_sym) reflect();
     return *this;
   }
@@ -627,7 +670,7 @@ namespace BOOM {
 
   SpdMatrix as_symmetric(const Matrix &A) {
     assert(A.is_square());
-    Matrix ans = A.t();
+    Matrix ans = A.transpose();
     ans += A;
     ans /= 2.0;
     return SpdMatrix(ans, false);  // no symmetry check needed
@@ -685,7 +728,20 @@ namespace BOOM {
     for (int i = 0; i < nrow(eigenvectors); ++i) {
       eigenvectors.col(i) *= sqrt(eigenvalues[i]);
     }
-    return eigenvectors.t();
+    return eigenvectors.transpose();
   }
 
+  SpdMatrix Kronecker(const SpdMatrix &A, const SpdMatrix &B) {
+    uint dima = A.nrow();
+    uint dimb = B.nrow();
+    SpdMatrix ans(dima * dimb);
+    for (int i = 0; i < dima; ++i) {
+      for (int j = i; j < dima; ++j) {
+        block(ans, i, j, dimb, dimb) = A(i, j) * B;
+      }
+    }
+    ans.reflect();
+    return ans;
+  }
+  
 }  // namespace BOOM

@@ -24,29 +24,13 @@
 #include "LinAlg/VectorView.hpp"
 
 namespace BOOM {
-  using std::istream;
-  using std::ostream;
-
   class Vector;
   class VectorView;
   class SpdMatrix;
   class DiagonalMatrix;
   class SubMatrix;
   class ConstSubMatrix;
-  class Matrix
-      : public boost::addable<
-            Matrix,
-            boost::subtractable<
-                Matrix,
-                boost::dividable<
-                    Matrix,
-                    boost::addable<
-                        Matrix, double,
-                        boost::subtractable<
-                            Matrix, double,
-                            boost::multipliable<
-                                Matrix, double,
-                                boost::dividable<Matrix, double> > > > > > > {
+  class Matrix {
    public:
     typedef std::vector<double> dVector;
 
@@ -57,6 +41,14 @@ namespace BOOM {
     Matrix(uint nr, uint nc, double x = 0.0);
     Matrix(uint nr, uint nc, const double *m, bool byrow = false);
     Matrix(uint nr, uint nc, const ConstVectorView &v, bool byrow = false);
+
+    // Populate a matrix by a space-separated string, with rows separated by a
+    // row delimiter.
+    //
+    // Example:
+    // Matrix A("1 2 | 3 4") gives:
+    //   1 2
+    //   3 4
     Matrix(const std::string &s, const std::string &row_delim = "|");
 
     template <class FwdIt>
@@ -158,7 +150,7 @@ namespace BOOM {
     dVector::iterator end();
     dVector::const_iterator begin() const;
     dVector::const_iterator end() const;
-
+    
     dVector::iterator col_begin(uint i);
     dVector::iterator col_end(uint i);
     dVector::const_iterator col_begin(uint i) const;
@@ -204,6 +196,7 @@ namespace BOOM {
     // this^T * B
     virtual Matrix &Tmult(const DiagonalMatrix &B, Matrix &ans,
                           double scal = 1.0) const;
+    Matrix Tmult(const DiagonalMatrix &B) const;
     // this * B^T
     virtual Matrix &multT(const DiagonalMatrix &B, Matrix &ans,
                           double scal = 1.0) const;
@@ -223,16 +216,22 @@ namespace BOOM {
     Vector Tmult(const Vector &v) const;
 
     Matrix Id() const;
-    Matrix t() const;                    // SpdMatrix and DiagonalMatrix
+    Matrix transpose() const;            // SpdMatrix and DiagonalMatrix
     Matrix &transpose_inplace_square();  // asserts (is_square())
     Matrix inv() const;
     virtual SpdMatrix inner() const;  // X^T * X
+    // Return this->transpose * diag(weights) * this
+    SpdMatrix inner(const ConstVectorView &weights) const;
     SpdMatrix outer() const;          // X * X^T
 
     virtual Matrix solve(const Matrix &mat) const;
     virtual Vector solve(const Vector &v) const;
     double trace() const;
     virtual double det() const;
+
+    // The log of the absolute value of the determinant.
+    virtual double logdet() const;
+    
     Vector singular_values() const;  // sorted largest to smallest
     uint rank(double prop = 1e-12) const;
     // 'rank' is the number of singular values at least 'prop' times
@@ -273,6 +272,10 @@ namespace BOOM {
     Matrix &operator-=(const SubMatrix &m);
     Matrix &operator-=(const ConstSubMatrix &m);
 
+    Matrix &operator/=(const Matrix &m);
+    Matrix &operator/=(const SubMatrix &m);
+    Matrix &operator/=(const ConstSubMatrix &m);
+    
     Matrix &exp();  // in place exponentiation
     Matrix &log();  // in place logarithm
 
@@ -285,9 +288,9 @@ namespace BOOM {
     // The value of the entry with the largest absolute value.
     double max_abs() const;
 
-    virtual ostream &display(ostream &out, int precision = 5) const;
-    ostream &write(ostream &, bool nl = true) const;
-    istream &read(istream &);
+    virtual std::ostream &display(std::ostream &out, int precision = 5) const;
+    std::ostream &write(std::ostream &, bool nl = true) const;
+    std::istream &read(std::istream &);
 
    protected:
     Vector V;
@@ -296,7 +299,6 @@ namespace BOOM {
     inline bool inrange(uint i, uint j) const;
   };
 
-  typedef Matrix Mat;
   //======================================================================
   class LabeledMatrix : public Matrix {
    public:
@@ -313,7 +315,7 @@ namespace BOOM {
     const std::vector<std::string> &row_names() const { return row_names_; }
     const std::vector<std::string> &col_names() const { return col_names_; }
 
-    ostream &display(ostream &out, int precision = 5) const override;
+    std::ostream &display(std::ostream &out, int precision = 5) const override;
     Matrix drop_labels() const;
 
    private:
@@ -371,26 +373,72 @@ namespace BOOM {
   inline bool Matrix::inrange(uint i, uint j) const {
     return i < nr_ && j < nc_;
   }
-  ostream &operator<<(ostream &out, const Matrix &x);
+  std::ostream &operator<<(std::ostream &out, const Matrix &x);
 
   // Print the matrix to stdout.
   void print(const Matrix &m);
-  istream &operator>>(istream &in, Matrix &m);
+  std::istream &operator>>(std::istream &in, Matrix &m);
   // reads until a blank line is found or the end of a line
 
   inline double trace(const Matrix &m) { return m.trace(); }
-  Matrix operator-(const double y, const Matrix &x);
-  Matrix operator/(const double y, const Matrix &x);
-  inline Matrix operator-(const Matrix &x) { return -1 * x; }
 
-  // element-by-element operations
-  //     Matrix operator+(const Matrix &m1, const Matrix &m2);
-  //     Matrix operator-(const Matrix &m1, const Matrix &m2);
-  //    Matrix operator/(const Matrix &m1, const Matrix &m2);
+  // Matrix - Matrix element-by-element operations
+  inline Matrix operator+(const Matrix &m1, const Matrix &m2) {
+    Matrix ans(m1);
+    ans += m2;
+    return ans;
+  }
+  inline Matrix operator-(const Matrix &m1, const Matrix &m2) {
+    Matrix ans(m1);
+    ans -= m2;
+    return ans;
+  }
+  inline Matrix operator/(const Matrix &m1, const Matrix &m2) {
+    Matrix ans(m1);
+    ans /= m2;
+    return ans;
+  }
+
+  // Matrix - double Field operators 
+  inline Matrix operator+(const Matrix &m, double a) {
+    Matrix ans(m);
+    ans += a;
+    return ans;
+  }
+  inline Matrix operator+(double a, const Matrix &m) {
+    return m + a;
+  }
+  inline Matrix operator-(const Matrix &m, double a) {
+    return m + (-a);
+  }
+  inline Matrix operator-(double a, const Matrix &m) {
+    Matrix ans(m.nrow(), m.ncol(), a);
+    ans -= m;
+    return ans;
+  }
+  inline Matrix operator*(const Matrix &m, double a) {
+    Matrix ans(m);
+    ans *= a;
+    return ans;
+  }
+  inline Matrix operator*(double a, const Matrix &m) {
+    return m * a;
+  }
+  
+  Matrix operator/(double a, const Matrix &m);
+  inline Matrix operator/(const Matrix &m, double a) {
+    Matrix ans(m);
+    ans /= a;
+    return ans;
+  }
+
+  // Unary minus.
+  inline Matrix operator-(const Matrix &x) { return -1.0 * x; }
+
   Matrix el_mult(const Matrix &A, const Matrix &B);
   double el_mult_sum(const Matrix &A, const Matrix &B);
 
-  inline Matrix t(const Matrix &X) { return X.t(); }
+  inline Matrix t(const Matrix &X) { return X.transpose(); }
   inline uint nrow(const Matrix &X) { return X.nrow(); }
   inline uint ncol(const Matrix &X) { return X.ncol(); }
 
@@ -453,15 +501,18 @@ namespace BOOM {
   Matrix block_diagonal(const Matrix &A, const Matrix &B);
   // A and B both square
 
-  // routines for lower triangluar matrices
-  Vector Lmult(const Matrix &L, const Vector &y);
+  //---------------------------------------------------------------------------
+  // Routines for lower triangluar matrices.
+  Vector Lmult(const Matrix &L, const Vector &y);   // ans = L * y
+  Vector LTmult(const Matrix &L, const Vector &y);  // ans = L^T * y
   Vector Lsolve(const Matrix &L, const Vector &b);  // ans = L^{-1}b
-  Vector &LTsolve_inplace(const Matrix &L, Vector &b);
-  Vector &Lsolve_inplace(const Matrix &L, Vector &b);   // b = L^{-1}b
-  Matrix Lsolve(const Matrix &L, const Matrix &B);      // ans = L^{-1}B
-  Matrix &Lsolve_inplace(const Matrix &L, Matrix &B);   // B = L^{-1}B
-  Matrix &LTsolve_inplace(const Matrix &L, Matrix &B);  // B = L^{-1}B
-  Matrix Linv(const Matrix &L);
+  Vector &LTsolve_inplace(const Matrix &L, Vector &b);  // b = L^{T -1} * b
+  Vector &Lsolve_inplace(const Matrix &L, Vector &b);   // b = L^{-1} * b
+  Matrix Lsolve(const Matrix &L, const Matrix &B);      // ans = L^{-1} * B
+  Matrix &Lsolve_inplace(const Matrix &L, Matrix &B);   // B = L^{-1} * B
+  Matrix &LTsolve_inplace(const Matrix &L, Matrix &B);  // B = L^{T -1}* B
+  // Return the inverse of L (which is upper triangluar).
+  Matrix Linv(const Matrix &L);                      
 
   Vector Umult(const Matrix &U, const Vector &y);
   Matrix Umult(const Matrix &U, const Matrix &m);
@@ -471,6 +522,16 @@ namespace BOOM {
   Matrix &Usolve_inplace(const Matrix &U, Matrix &B);  // B = U^{-1}B
   Matrix Uinv(const Matrix &U);
 
+  // Returns the Kronecker product of A and B, which is a A partitioned matrix
+  // A(0, 0)*B, A(0, 1)*B, ...
+  // A(1, 0)*B, A(1, 1)*B, ...
+  Matrix Kronecker(const Matrix &A, const Matrix &B);
+
+  // Vectorization operator 'vec' forms a Vector from A by stacking its columns.
+  inline Vector vec(const Matrix &A) {
+    return Vector(A.begin(), A.end());
+  }
+    
 }  // namespace BOOM
 
 #endif  // BOOM_NEWLA_MATRIX_HPP

@@ -28,7 +28,7 @@
 
 namespace BOOM {
 
-  ostream &operator<<(ostream &out, const DayNames &d) {
+  std::ostream &operator<<(std::ostream &out, const DayNames &d) {
     if (d == Sat)
       out << "Saturday";
     else if (d == Sun)
@@ -219,19 +219,17 @@ namespace BOOM {
            number_of_leap_years_before_1970(year) + is_leap_year(year);
   }
 
-  Date::Date(const string &m, int d, int yyyy) {
+  Date::Date(const std::string &m, int d, int yyyy) {
     MonthNames month_name = str2month(m);
     set(month_name, d, yyyy);
   }
 
-  Date::Date(const string &mdy, char delim) {
-    std::vector<string> tmp = split_delimited(mdy, delim);
+  Date::Date(const std::string &mdy, char delim) {
+    std::vector<std::string> tmp = split_delimited(mdy, delim);
     MonthNames m = str2month(tmp[0]);
-    istringstream date_stream(tmp[1]);
     int d, y;
-    date_stream >> d;
-    istringstream year_stream(tmp[2]);
-    year_stream >> y;
+    std::istringstream(tmp[1]) >> d;
+    std::istringstream(tmp[2]) >> y;
     set(m, d, y);
   }
 
@@ -247,13 +245,13 @@ namespace BOOM {
 
   void Date::check(MonthNames month, int day, int year) const {
     if (month < 1 || month > 12) {
-      ostringstream err;
+     std::ostringstream err;
       err << "Bad month name: " << month << endl;
       report_error(err.str());
     }
 
     if (day < 1 || day > days_in_month(month, is_leap_year(year))) {
-      ostringstream err;
+     std::ostringstream err;
       err << "bad dateformat:  " << endl
           << "month = " << month << " day = " << day << " year = " << year;
       report_error(err.str());
@@ -337,8 +335,8 @@ namespace BOOM {
   int Date::year() const { return year_; }
 
   DayNames Date::day_of_week() const {
-    /////////////////////////////////////////////////////////
-    // Jan 1 1970 was a Thursday.  Subtract 4
+    // Jan 1 1970 was a Thursday.  So computing the day of week means taking the
+    // julian date mod 7, then subtracting 4.
     int day = days_after_origin_ % 7;
     return DayNames((day + 4) % 7);
   }
@@ -452,6 +450,7 @@ namespace BOOM {
   }
 
   int Date::compute_local_time_zone() {
+    //    std::cout << "computing local time zone!!!" << std::endl;
     time_t now;
     time(&now);
     struct tm local_time = *localtime(&now);
@@ -612,21 +611,20 @@ namespace BOOM {
     return out;
   }
 
-  using std::swap;
-  Date guess_date_format(const string &s, char delim) {
-    std::vector<string> fields = split_delimited(s, delim);
+  Date guess_date_format(const std::string &s, char delim) {
+    std::vector<std::string> fields = split_delimited(s, delim);
     int m, d, y;
-    fields[0] >> m;
-    fields[1] >> d;
-    fields[2] >> y;
+    std::istringstream(fields[0]) >> m;
+    std::istringstream(fields[1]) >> d;
+    std::istringstream(fields[2]) >> y;
 
     if (y <= 31) {
       if (m > 12)
-        swap(y, m);
+        std::swap(y, m);
       else if (d > 31)
-        swap(y, d);
+        std::swap(y, d);
       else {
-        ostringstream err;
+       std::ostringstream err;
         err << "Error in guess_date_format: " << endl
             << "called with argument: " << s << endl
             << "and delimiter = [" << delim << "]" << endl
@@ -635,15 +633,15 @@ namespace BOOM {
       }
     }  // now year is okay;
     assert(y > 31);
-    if (m > 12) swap(d, m);
+    if (m > 12) std::swap(d, m);
 
     assert(m <= 12 && m >= 1 && d >= 1 &&
            d <= Date::days_in_month(MonthNames(m), Date::is_leap_year(y)));
     return Date(m, d, y);
   }
 
-  string Date::str() const {
-    ostringstream os;
+  std::string Date::str() const {
+    std::ostringstream os;
     os << *this;
     return os.str();
   }
@@ -688,13 +686,13 @@ namespace BOOM {
     if (m == "December" || m == "december" || m == "Dec" || m == "dec" ||
         m == "12")
       return Dec;
-    ostringstream err;
+    std::ostringstream err;
     err << "unkown month name: " << m;
     report_error(err.str());
     return unknown_month;
   }
 
-  DayNames str2day(const string &s) {
+  DayNames str2day(const std::string &s) {
     if (s.size() <= 4) {
       if (s == "Sun" || s == "sun") return Sun;
       if (s == "Mon" || s == "mon") return Mon;
@@ -712,7 +710,7 @@ namespace BOOM {
       if (s == "Friday" || s == "friday") return Fri;
       if (s == "Saturday" || s == "saturday") return Sat;
     }
-    ostringstream err;
+    std::ostringstream err;
     err << "Unrecognized day name: " << s;
     report_error(err.str());
     return Sun;  // to keep the compiler quiet.
@@ -730,7 +728,7 @@ namespace BOOM {
     int days_to = ans.days_until(weekday);
     ans += days_to + 7 * (n - 1);
     if (ans.month() != month) {
-      ostringstream err;
+      std::ostringstream err;
       err << "n is too large in nth_weekday_in_month.  There are not " << n
           << " " << weekday << "s in " << month << " in " << year << ".";
       report_error(err.str());

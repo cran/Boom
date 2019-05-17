@@ -19,12 +19,13 @@
 #include <string>
 #include <sstream>
 
-#include <r_interface/boom_r_tools.hpp>
+#include "r_interface/boom_r_tools.hpp"
 #include "cpputil/report_error.hpp"
 
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Parse.h>
+#include "R_ext/Arith.h"  // for R_IsNA
 
 namespace BOOM {
 
@@ -50,6 +51,7 @@ namespace BOOM {
     if (expect_answer && elmt == R_NilValue) {
       std::ostringstream warning;
       warning << "Could not find list element named: " << name << endl;
+      Rf_PrintValue(list);
       report_warning(warning.str());
     }
     return elmt;
@@ -129,7 +131,7 @@ namespace BOOM {
     }
     SET_VECTOR_ELT(ans, n, new_element);
 
-    SEXP old_list_names = Rf_getAttrib(list, R_NamesSymbol);
+    SEXP old_list_names = protector.protect(Rf_getAttrib(list, R_NamesSymbol));
     SEXP list_names = protector.protect(Rf_allocVector(STRSXP, n+1));
 
     if(!Rf_isNull(old_list_names)){
@@ -190,12 +192,32 @@ namespace BOOM {
     return StringVector(rclass);
   }
 
+  void ReportBadClass(const std::string &error_message, SEXP r_object) {
+    std::ostringstream err;
+    err << error_message << std::endl;
+    std::vector<std::string> classes = GetS3Class(r_object);
+    if (classes.empty()) {
+      err << "No class attribute!!" << std:: endl;
+    } else {
+      if (classes.size() == 1) {
+        err << "Object is of class " << classes[0] << std::endl;
+      }
+      else {
+        err << "The object has class attributes: ";
+        for (const auto &el : classes) err << el << " ";
+        err << endl;
+      }
+    }
+    if (Rf_isNull(r_object)) {
+      err << "Object is NULL." << std::endl;
+    }
+    report_error(err.str());
+  }
+  
   std::pair<int,int> GetMatrixDimensions(SEXP matrix){
     if(!Rf_isMatrix(matrix)){
-      report_error("GetMatrixDimensions called on a non-matrix object");
-      // TODO(stevescott): is there a way to find the name of
-      // offending argument in R, so that I can provide a better error
-      // message?
+      ReportBadClass("GetMatrixDimensions called on a non-matrix object",
+                     matrix);
     }
     RMemoryProtector protector;
     SEXP dims = protector.protect(Rf_getAttrib(matrix, R_DimSymbol));
@@ -225,9 +247,41 @@ namespace BOOM {
     return r_matrix;
   }
 
+  SEXP SetDimnames(SEXP r_array,
+                   const std::vector<std::vector<std::string>> &dimnames) {
+    if (dimnames.empty()) return r_array;
+    std::vector<int> dim = GetArrayDimensions(r_array);
+    if (dim.size() != dimnames.size()) {
+      std::ostringstream err;
+      err << "dimnames has length " << dimnames.size()
+          << " which does not match the number of dimension in the array: " 
+          << dim.size();
+      report_error(err.str());
+    }
+    RMemoryProtector protector;
+    SEXP r_dimnames = protector.protect(Rf_allocVector(VECSXP, dim.size()));
+    for (int i = 0; i < dim.size(); ++i) {
+      if (dimnames[i].empty()) {
+        SET_VECTOR_ELT(r_dimnames, i, R_NilValue);
+      } else {
+        if (dimnames[i].size() != dim[i]) {
+          std::ostringstream err;
+          err << "Wrong number of names (" << dimnames[i].size()
+              << ") in dimension " << i << " of the array, which has extent "
+              << dim[i] <<".";
+          report_error(err.str());
+        }
+        SET_VECTOR_ELT(r_dimnames, i, CharacterVector(dimnames[i]));
+      }
+    }
+    Rf_dimnamesgets(r_array, r_dimnames);
+    return r_array;
+  }
+  
   std::vector<int> GetArrayDimensions(SEXP array) {
     if (!Rf_isArray(array)) {
-      report_error("GetArrayDimensions called on a non-array object.");
+      ReportBadClass("GetArrayDimensions called on a non-array object.",
+                     array);
     }
     RMemoryProtector protector;
     SEXP r_dims = protector.protect(Rf_getAttrib(array, R_DimSymbol));
@@ -261,19 +315,39 @@ namespace BOOM {
     return ConstVectorView(data, n, 1);
   }
 
+  Selector FindNonNA(const ConstVectorView &v) {
+    Selector ans(v.size(), true);
+    for (int i = 0; i < v.size(); ++i) ans[i] = !R_IsNA(v[i]);
+    return ans;
+  }
+
+  bool isNA(double x) {
+    return R_IsNA(x);
+  }
+  
   Vector ToBoomVector(SEXP v){
     return Vector(ToBoomVectorView(v));
   }
 
   ConstSubMatrix ToBoomMatrixView(SEXP m) {
     if (!Rf_isMatrix(m)) {
-      report_error("ToBoomMatrix called with a non-matrix argument");
+      report_error("ToBoomMatrixView called with a non-matrix argument");
     }
     std::pair<int,int> dims = GetMatrixDimensions(m);
     RMemoryProtector protector;
     m = protector.protect(Rf_coerceVector(m, REALSXP));
     ConstSubMatrix ans(REAL(m), dims.first, dims.second);
     return ans;
+  }
+
+  SubMatrix ToBoomMutableMatrixView(SEXP m) {
+    if (!Rf_isMatrix(m)) {
+      report_error("ToBoomMutableMatrixView called with a non-matrix argument");
+    }
+    std::pair<int,int> dims = GetMatrixDimensions(m);
+    RMemoryProtector protector;
+    m = protector.protect(Rf_coerceVector(m, REALSXP));
+    return SubMatrix(REAL(m), dims.first, dims.second);
   }
 
   Array ToBoomArray(SEXP r_array) {
@@ -496,6 +570,18 @@ namespace BOOM {
     return ans;
   }
 
+  SEXP AllocateArray(const std::vector<int> &array_dimensions) {
+    RMemoryProtector protector;
+    SEXP r_dims;
+    protector.protect(r_dims = Rf_allocVector(INTSXP, array_dimensions.size()));
+    int *dims_data = INTEGER(r_dims);
+    for (int i = 0; i < array_dimensions.size(); ++i) {
+      dims_data[i] = array_dimensions[i];
+    }
+    SEXP r_array = protector.protect(Rf_allocArray(REALSXP, r_dims));
+    return r_array;
+  }
+  
   std::string ToString(SEXP r_string) {
     if (TYPEOF(r_string) == CHARSXP) {
       return CHAR(r_string);
@@ -524,7 +610,7 @@ namespace BOOM {
     }
     return ans;
   }
-  
+
   Factor::Factor(SEXP r_factor)
       : values_(Rf_length(r_factor)),
         levels_(new CatKey(GetFactorLevels(r_factor)))
@@ -583,7 +669,6 @@ namespace BOOM {
     }
   }
 
-
   RVectorFunction::RVectorFunction(SEXP r_vector_function)
       : function_name_(ToString(getListElement(
             r_vector_function, "function.name"))),
@@ -591,12 +676,10 @@ namespace BOOM {
         r_env_(getListElement(r_vector_function, "env"))
   {
     if (!Rf_isEnvironment(r_env_)) {
-      Rf_PrintValue(r_env_);
       report_error("The second argument to RVectorFunction must be an "
                    "environment.");
     }
     call_string_ = function_name_ + "(" + argument_name_ + ")";
-
   }
 
   // If RVectorFunction_arg_ exists in r_env_ then delete it
@@ -621,12 +704,36 @@ namespace BOOM {
 
     // Next, create a call that we can pass to Rf_eval.
     // ParseStatus is an enum defined in .../include/R_ext/Parse.h
-    ParseStatus parse_status;
-    SEXP r_call = protector.protect(R_ParseVector(
-        ToRString(call_string_), 1, &parse_status, R_NilValue));
-    return Rf_asReal(Rf_eval(VECTOR_ELT(r_call, 0), r_env_));
-  }
+    ParseStatus parse_status = PARSE_NULL;
 
+    // The arguments to R_ParseVector are:
+    //   call_string_:  The R code to evaluate, as a string.
+    //   1: The number of expressions to parse.  We are only evaluating the call
+    //     f(x) or f(x, ...), so we are only evaluating one expression.
+    //   parse_status:  An enum giving the result of the parse.
+    //   R_NilValue: An optional spot to attach a srcfile, in case R_ParseVector
+    //     is parsing a file.  R_NilValue is a signal that no such file is
+    //     present.
+    SEXP r_call = protector.protect(R_ParseVector(
+        protector.protect(ToRString(call_string_)),
+        1,
+        &parse_status,
+        R_NilValue));
+
+    if (parse_status != PARSE_OK) {
+      std::ostringstream err;
+      err << "Could not parse expression: " << call_string_;
+      report_error(err.str());
+    }
+    
+    return Rf_asReal(Rf_eval(VECTOR_ELT(r_call, 0), r_env_));
+
+    // NOTE: rchk raised a warning about passing output from Rf_eval directly to
+    // Rf_asReal.
+    SEXP r_function_output = protector.protect(
+        Rf_eval(VECTOR_ELT(r_call, 0), r_env_));
+    return Rf_asReal(r_function_output);
+  }
   
   namespace {
     // Wrapper for R_CheckUserInterrupt.

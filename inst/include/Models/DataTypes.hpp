@@ -24,12 +24,13 @@
 #include <map>  // for STL's map container
 #include <string>
 #include <vector>
-#include "BOOM.hpp"
+#include "uint.hpp"
 
 #include "LinAlg/CorrelationMatrix.hpp"  // for VectorData
 #include "LinAlg/Matrix.hpp"
 #include "LinAlg/SpdMatrix.hpp"
 #include "LinAlg/Vector.hpp"
+#include "LinAlg/Selector.hpp"
 
 #include <functional>
 #include "cpputil/Ptr.hpp"
@@ -46,19 +47,14 @@ namespace BOOM {
 
     enum missing_status { observed = 0, completely_missing, partly_missing };
 
-   private:
-    missing_status missing_flag;
-    mutable std::vector<std::function<void(void)> > signals_;
-
-   public:
     Data() : missing_flag(observed) {}
     Data(const Data &rhs) : missing_flag(rhs.missing_flag) {}
     virtual Data *clone() const = 0;
     virtual ~Data() = default;
-    virtual ostream &display(ostream &) const = 0;
+    virtual std::ostream &display(std::ostream &) const = 0;
     missing_status missing() const;
     void set_missing_status(missing_status m);
-    void signal() const {
+    void signal() {
       uint n = signals_.size();
       for (uint i = 0; i < n; ++i) {
         signals_[i]();
@@ -77,16 +73,20 @@ namespace BOOM {
     }
     friend void intrusive_ptr_add_ref(Data *d);
     friend void intrusive_ptr_release(Data *d);
-  };
-  //----------------------------------------------------------------------
 
-  //----------------------------------------------------------------------
-  ostream &operator<<(ostream &out, const Data &d);
-  ostream &operator<<(ostream &out, const Ptr<Data> &dp);
+   private:
+    missing_status missing_flag;
+    std::vector<std::function<void(void)> > signals_;
+  };
+  //======================================================================
+  std::ostream &operator<<(std::ostream &out, const Data &d);
+  std::ostream &operator<<(std::ostream &out, const Ptr<Data> &dp);
   void print_data(const Data &d);
 
-  //----------------------------------------------------------------------
-
+  //==========================================================================-
+  // The DataTraits class enforces a uniform interface for set() and value().
+  // It could probably be eliminated, but eliminating it is probably not worth
+  // the effort.
   template <class DAT>
   class DataTraits : virtual public Data {
    public:
@@ -97,7 +97,7 @@ namespace BOOM {
     virtual void set(const value_type &, bool) = 0;
     virtual const value_type &value() const = 0;
   };
-  //----------------------------------------------------------------------
+  //===========================================================================
   template <class T>
   class UnivData : public DataTraits<T> {  // univariate data
    public:
@@ -116,7 +116,7 @@ namespace BOOM {
         this->signal();
       }
     }
-    ostream &display(ostream &out) const {
+    std::ostream &display(std::ostream &out) const {
       out << value_;
       return out;
     }
@@ -125,12 +125,11 @@ namespace BOOM {
     T value_;
   };
 
-  //----------------------------------------------------------------------//
+  //==========================================================================
   using IntData = UnivData<unsigned int>;
   using DoubleData = UnivData<double>;
   using BinaryData = UnivData<bool>;
-  //----------------------------------------------------------------------//
-
+  //==========================================================================
   class VectorData : public DataTraits<Vector> {
    public:
     explicit VectorData(uint n, double X = 0);
@@ -139,10 +138,10 @@ namespace BOOM {
     VectorData *clone() const override;
 
     uint dim() const { return x.size(); }
-    ostream &display(ostream &out) const override;
+    std::ostream &display(std::ostream &out) const override;
 
     const Vector &value() const override { return x; }
-    void set(const Vector &rhs, bool sig = true) override;
+    void set(const Vector &rhs, bool signal_change = true) override;
     virtual void set_element(double value, int position, bool sig = true);
 
     double operator[](uint) const;
@@ -151,8 +150,28 @@ namespace BOOM {
    private:
     Vector x;
   };
-  //----------------------------------------------------------------------//
-  class MatrixData : public DataTraits<Mat> {
+
+  //==========================================================================
+  // A variant of VectorData that handles the partially missing case.
+  class PartiallyObservedVectorData : public VectorData {
+   public:
+    // Args:
+    //   y:  The numeric value of the data vector.
+    //   obs:  Indicates which components of y are observed.
+    PartiallyObservedVectorData(const Vector &y,
+                                const Selector &obs = Selector());
+    PartiallyObservedVectorData * clone() const override;
+    void set(const Vector &value, bool signal_change = true) override;
+
+    Selector &observation_status() { return obs_; }
+    const Selector &observation_status() const { return obs_; }
+    
+   private:
+    Selector obs_;
+  };
+
+  //===========================================================================
+  class MatrixData : public DataTraits<Matrix> {
    public:
     MatrixData(int r, int c, double val = 0.0);
     explicit MatrixData(const Matrix &y);
@@ -162,7 +181,7 @@ namespace BOOM {
     uint nrow() const { return x.nrow(); }
     uint ncol() const { return x.ncol(); }
 
-    ostream &display(ostream &out) const override;
+    std::ostream &display(std::ostream &out) const override;
 
     const Matrix &value() const override { return x; }
     void set(const Matrix &rhs, bool sig = true) override;
@@ -171,6 +190,7 @@ namespace BOOM {
    private:
     Matrix x;
   };
+  
 }  // namespace BOOM
 
 #endif  // DATA_TYPES_H

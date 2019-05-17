@@ -18,6 +18,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 */
 #include "Models/StateSpace/StateModels/LocalLinearTrend.hpp"
+#include "Models/StateSpace/DynamicInterceptRegression.hpp"
 #include "distributions.hpp"
 
 namespace BOOM {
@@ -37,8 +38,8 @@ namespace BOOM {
   }
 
   LLTSM::LocalLinearTrendStateModel(const LLTSM &rhs)
-      : ZeroMeanMvnModel(rhs),
-        StateModel(rhs),
+      : StateModel(rhs),
+        ZeroMeanMvnModel(rhs),
         observation_matrix_(rhs.observation_matrix_),
         state_transition_matrix_(new LocalLinearTrendMatrix),
         state_variance_matrix_(rhs.state_variance_matrix_->clone()),
@@ -49,8 +50,7 @@ namespace BOOM {
   LLTSM *LLTSM::clone() const { return new LLTSM(*this); }
 
   void LLTSM::observe_state(const ConstVectorView &then,
-                            const ConstVectorView &now, int time_now,
-                            ScalarStateSpaceModelBase *model) {
+                            const ConstVectorView &now, int time_now) {
     check_dim(then);
     check_dim(now);
 
@@ -139,4 +139,17 @@ namespace BOOM {
     // matrices here to work this out by hand.
     gradient += .5 * ans.vectorize(true);
   }
+
+  LocalLinearTrendDynamicInterceptModel *
+  LocalLinearTrendDynamicInterceptModel::clone() const {
+    return new LocalLinearTrendDynamicInterceptModel(*this);
+  }
+
+  Ptr<SparseMatrixBlock>
+  LocalLinearTrendDynamicInterceptModel::observation_coefficients(
+      int t, const StateSpace::TimeSeriesRegressionData &data_point) const {
+    return new IdenticalRowsMatrix(observation_matrix(t),
+                                   data_point.sample_size());
+  }
+  
 }  // namespace BOOM

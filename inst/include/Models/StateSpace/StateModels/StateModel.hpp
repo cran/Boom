@@ -23,7 +23,6 @@
 #include "Models/ModelTypes.hpp"
 #include "Models/StateSpace/Filters/SparseMatrix.hpp"
 #include "Models/StateSpace/Filters/SparseVector.hpp"
-#include "Models/StateSpace/MultiplexedData.hpp"
 #include "uint.hpp"
 
 namespace BOOM {
@@ -31,12 +30,16 @@ namespace BOOM {
   class ScalarStateSpaceModelBase;
   class DynamicInterceptRegressionModel;
 
+  namespace StateSpace {
+    class TimeSeriesRegressionData;
+  }  // StateSpace
+  
   // A StateModel describes the propogation rules for one component of state in
   // a StateSpaceModel.  A StateModel has a transition matrix T, which can be
   // time dependent, an error variance Q, which may be of smaller dimension than
   // T, and a matrix R that can multiply draws from N(0, Q) so that the
   // dimension of RQR^T matches the state dimension.
-  class StateModel : virtual public PosteriorModeModel {
+  class StateModelBase : virtual public PosteriorModeModel {
    public:
     // Traditional state models are Gaussian, but Bayesian modeling lets you
     // work with conditionally Gaussian models just as easily.  For
@@ -48,8 +51,9 @@ namespace BOOM {
       MIXTURE    // e.g. treat the t-distribution like a normal mixture.
     };
 
-    ~StateModel() override {}
-    StateModel *clone() const override = 0;
+    StateModelBase();
+    ~StateModelBase() override {}
+    StateModelBase *clone() const override = 0;
 
     // Some state models need to know the maximum value of t so they can set up
     // space for latent variables, etc.  Many state models do not need this
@@ -64,21 +68,9 @@ namespace BOOM {
     //   then:  The state for this component at time_now - 1.
     //   now: The state for this component at time time_now.
     //   time_now:  The current time index.
-    //   model:  The model that owns this state component.
     virtual void observe_state(const ConstVectorView &then,
                                const ConstVectorView &now,
-                               int time_now,
-                               ScalarStateSpaceModelBase *model) = 0;
-
-    // Add the relevant information from the state vector to the complete data
-    // sufficient statistics for this model, when the observation model is a
-    // DynamicInterceptRegressionModel.
-    //
-    // Concrete classes that can observe the state without reference to the
-    // observation model can implement this method in terms of observe_state.
-    virtual void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) = 0;
+                               int time_now) = 0;
 
     // Many models won't be able to do anything with an initial state, so the
     // default implementation is a no-op.
@@ -98,7 +90,7 @@ namespace BOOM {
     // throwing an exception.
     virtual void update_complete_data_sufficient_statistics(
         int t, const ConstVectorView &state_error_mean,
-        const ConstSubMatrix &state_error_variance) = 0;
+        const ConstSubMatrix &state_error_variance);
 
     // Add the expected value of the derivative of log likelihood to the
     // gradient.  Child classes can choose to implement this method by throwing
@@ -151,24 +143,6 @@ namespace BOOM {
     // must know which function to call to get the right observation matrix,
     // observation coefficients, etc.
 
-    // Observation coefficients for a ScalarStateModel(Base).
-    virtual SparseVector observation_matrix(int t) const = 0;
-
-    // Observation coefficients for a dynamic intercept regression model.
-    // Args:
-    //   t:  The time point for which coefficients are desired.
-    //   data_point:  The data point managed by the model at time t.
-    // Returns:
-    //   The return value is a sparse number_of_observations X state_dimension
-    //   matrix.  When multiplied by the state it gives the expected value for
-    //   each of the observations at time t.
-    virtual Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
-
     virtual Vector initial_state_mean() const = 0;
     virtual SpdMatrix initial_state_variance() const = 0;
 
@@ -185,7 +159,79 @@ namespace BOOM {
     // (instead of simply conditionally Gaussian), the default
     // behavior for these member functions is a no-op.
     virtual void set_behavior(Behavior) {}
+
+    // The index of a state model is its position in the vector of state models
+    // maintained by the host model which owns the StateModel (e.g. a
+    // StateSpaceModel.
+    int index() const {return index_;}
+    void set_index(int i) { index_ = i; }
+
+    // Some models require constraints on the relationship between the state and
+    // the model parameters in order to maintain identifiability.  Not all do,
+    // so the default implementation of this function is a no-op.
+    //
+    // Effects:
+    //   Modify the parameters so that they satisfy whatever identifiability
+    //   constraints are assumed by the model.  Corresponding changes will be
+    //   made to the state.  The resulting model will be equivalent to before
+    //   this call, but for the constraints being satisfied.
+    virtual void impose_identifiability_constraint() {}
+    
+   private:
+    int index_;
   };
+
+  //===========================================================================
+  // A state model for scalar time series models.
+  class StateModel : virtual public StateModelBase {
+   public:
+    StateModel * clone() const override = 0;
+    // Observation coefficients for a ScalarStateModel(Base).
+    virtual SparseVector observation_matrix(int t) const = 0;
+  };
+
+  //===========================================================================
+  // State models for dynamic intercept regression problems.
+  class DynamicInterceptStateModel : virtual public StateModelBase {
+   public:
+    DynamicInterceptStateModel * clone() const override = 0;
+
+    // Observation coefficients for a dynamic intercept regression model.
+    // Args:
+    //   t:  The time point for which coefficients are desired.
+    //   data_point:  The data point managed by the model at time t.
+    // Returns:
+    //   The return value is a sparse matrix with dimensions
+    //   number_of_observations X state_dimension.  When multiplied by the state
+    //   it gives the expected value for each of the observations at time t.
+    virtual Ptr<SparseMatrixBlock> observation_coefficients(
+        int t, const StateSpace::TimeSeriesRegressionData &data_point) const = 0;
+
+    // True iff the observation coefficients method does not depend on its
+    // second argument, or the dependence is only based on the sample size.
+    virtual bool is_pure_function_of_time() const = 0;
+  };
+  
+  //===========================================================================
+  // State models for dynamic factor models and similar multivariate time series
+  // with fixed dimension.
+  class SharedStateModel : virtual public StateModelBase {
+   public:
+    SharedStateModel * clone() const override = 0;
+    
+    // The coefficients (Z) in the observation equation.  The coefficients are
+    // arranged so that y = Z * state + error.  Thus columns of the observation
+    // coefficients Z correspond to the state dimension.
+    //
+    // Args:
+    //   t:  The time index of the observation.
+    //   observed: Indicates which elements of the outcome variable are observed
+    //     at time t.  Rows of Z corresponding to unobserved variables are
+    //     omitted.
+    virtual Ptr<SparseMatrixBlock> observation_coefficients(
+        int t, const Selector &observed) const = 0;
+  };
+  
 }  // namespace BOOM
 
 #endif  // BOOM_STATE_SPACE_STATE_MODEL_HPP

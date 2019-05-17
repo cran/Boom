@@ -64,8 +64,7 @@ namespace BOOM {
 
   //======================================================================
   void ArStateModel::observe_state(const ConstVectorView &then,
-                                   const ConstVectorView &now, int t,
-                                   ScalarStateSpaceModelBase *) {
+                                   const ConstVectorView &now, int t) {
     double y = now[0];
     const ConstVectorView &x(then);
     suf()->add_mixture_data(y, x, 1.0);
@@ -147,9 +146,12 @@ namespace BOOM {
   //======================================================================
   void ArStateModel::set_initial_state_mean(const Vector &mu) {
     if (mu.size() != state_dimension()) {
-      report_error(
-          "attempt to set mu to the wrong size in "
-          "ArStateModel::set_initial_state_mean");
+      std::ostringstream err;
+      err << "Attempt to set mu to the wrong size in "
+          "ArStateModel::set_initial_state_mean." << std::endl
+          << " Required size: " << state_dimension() << std::endl
+          << "Supplied argument: " << mu.size() << std::endl;
+      report_error(err.str());
     }
     initial_state_mean_ = mu;
   }

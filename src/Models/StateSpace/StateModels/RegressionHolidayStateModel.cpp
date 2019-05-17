@@ -20,15 +20,17 @@
 #include "Models/StateSpace/DynamicInterceptRegression.hpp"
 #include "Models/StateSpace/StateSpaceModelBase.hpp"
 #include "Models/StateSpace/StateSpaceRegressionModel.hpp"
+#include "Models/ZeroMeanGaussianModel.hpp"
+#include "Models/Glm/TRegression.hpp"
 #include "distributions.hpp"
 
 namespace BOOM {
 
   namespace {
-    using RHBI = RegressionHolidayBaseImpl;
+    using Impl = RegressionHolidayBaseImpl;
   }  // namespace
 
-  RHBI::RegressionHolidayBaseImpl(const Date &time_of_first_observation,
+  Impl::RegressionHolidayBaseImpl(const Date &time_of_first_observation,
                                   const Ptr<UnivParams> &residual_variance)
       : time_of_first_observation_(time_of_first_observation),
         residual_variance_(residual_variance),
@@ -38,12 +40,9 @@ namespace BOOM {
         state_error_variance_(new ZeroMatrix(1)),
         initial_state_mean_(1, 1.0),
         initial_state_variance_(1, 0.0) {
-    if (!residual_variance) {
-      report_error("residual_variance must be non-NULL");
-    }
   }
 
-  void RHBI::observe_time_dimension(int max_time) {
+  void Impl::observe_time_dimension(int max_time) {
     if (which_holiday_.size() == max_time) return;
     Date date = time_of_first_observation_;
     which_holiday_.resize(max_time);
@@ -71,8 +70,27 @@ namespace BOOM {
     }
   }
 
-  void RHBI::add_holiday(const Ptr<Holiday> &holiday) {
+  void Impl::add_holiday(const Ptr<Holiday> &holiday) {
     holidays_.push_back(holiday);
+  }
+
+  Ptr<UnivParams> Impl::extract_residual_variance_parameter(
+      ScalarStateSpaceModelBase &model) {
+    if (ZeroMeanGaussianModel *gaussian =
+        dynamic_cast<ZeroMeanGaussianModel *>(model.observation_model())) {
+      return gaussian->Sigsq_prm();
+    } else if (RegressionModel *reg =
+               dynamic_cast<RegressionModel *>(model.observation_model())) {
+      return reg->Sigsq_prm();
+    } else if (TRegressionModel *student_reg =
+               dynamic_cast<TRegressionModel *>(model.observation_model())) {
+      return student_reg->Sigsq_prm();
+      /////////////
+      // TODO: expose the student variance inflator from the observation equation.
+    } else {
+      report_error("Cannot extract residual variance parameter.");
+    }
+    return Ptr<UnivParams>(nullptr);
   }
 
   //===========================================================================
@@ -91,8 +109,6 @@ namespace BOOM {
       report_error("Prior must not be NULL.");
     }
   }
-
-  RHSM *RHSM::clone() const { return new RHSM(*this); }
 
   void RHSM::add_holiday(const Ptr<Holiday> &holiday) {
     impl_.add_holiday(holiday);
@@ -147,6 +163,10 @@ namespace BOOM {
     for (int holiday = 0; holiday < number_of_holidays; ++holiday) {
       Vector holiday_pattern = holiday_mean_contributions_[holiday]->value();
       for (int day = 0; day < holiday_pattern.size(); ++day) {
+        // TODO: Consider replacing 'residual_variance' with a set of weighted
+        // Gaussian sufficient statistics, to be augmented when we
+        // observe_data().  This is the only place where the residual_variance
+        // is used.
         double posterior_precision =
             daily_counts_[holiday][day] / residual_variance() +
             1.0 / prior_->sigsq();
@@ -165,50 +185,83 @@ namespace BOOM {
     impl_.observe_time_dimension(max_time);
   }
 
-  void RHSM::observe_state(const ConstVectorView &then,
-                           const ConstVectorView &now, int time_now,
-                           ScalarStateSpaceModelBase *model) {
-    int holiday = impl_.which_holiday(time_now);
-    if (holiday < 0) return;
-    int day = impl_.which_day(time_now);
-    double residual =
-        model->adjusted_observation(time_now) -
-        model->observation_matrix(time_now).dot(model->state(time_now)) +
-        this->observation_matrix(time_now).dot(now);
-    daily_totals_[holiday][day] += residual;
-    daily_counts_[holiday][day] += 1.0;
-  }
-
-  void RHSM::observe_dynamic_intercept_regression_state(
-      const ConstVectorView &then, const ConstVectorView &now, int time_now,
-      DynamicInterceptRegressionModel *model) {
-    int holiday = impl_.which_holiday(time_now);
-    if (holiday < 0) return;
-    int day = impl_.which_day(time_now);
-    Ptr<StateSpace::MultiplexedRegressionData> full_data =
-        model->dat()[time_now];
-    if (full_data->missing() == Data::missing_status::completely_missing) {
-      return;
-    }
-    for (int i = 0; i < full_data->total_sample_size(); ++i) {
-      if (full_data->regression_data(i).missing() ==
-          Data::missing_status::observed) {
-        double residual = full_data->regression_data(i).y() -
-                          model->conditional_mean(time_now, i) +
-                          this->observation_matrix(time_now).dot(now);
-        daily_counts_[holiday][day] += 1.0;
-        daily_totals_[holiday][day] += residual;
-      }
-    }
-  }
-
   SparseVector RHSM::observation_matrix(int time_now) const {
     SparseVector ans(1);
     int holiday = impl_.which_holiday(time_now);
-    if (holiday < 0) return ans;
+    if (holiday < 0) {
+      return ans;
+    }
     int day = impl_.which_day(time_now);
     ans[0] = holiday_mean_contributions_[holiday]->value()[day];
     return ans;
   }
 
+  ScalarRegressionHolidayStateModel::ScalarRegressionHolidayStateModel(
+      const Date &time_of_first_observation,
+      ScalarStateSpaceModelBase *model,
+      const Ptr<GaussianModel> &prior,
+      RNG &seeding_rng)
+      : RegressionHolidayStateModel(
+            time_of_first_observation,
+            Impl::extract_residual_variance_parameter(*model),
+            prior,
+            seeding_rng),
+          model_(model)
+    {}
+
+  void ScalarRegressionHolidayStateModel::observe_state(
+      const ConstVectorView &then, const ConstVectorView &now, int time_now) {
+    if (!model_->is_missing_observation(time_now)) {
+      int holiday = impl().which_holiday(time_now);
+      if (holiday < 0) return;
+      int day = impl().which_day(time_now);
+      double residual =
+          model_->adjusted_observation(time_now) -
+          model_->observation_matrix(time_now).dot(model_->state(time_now)) +
+          this->observation_matrix(time_now).dot(now);
+      increment_daily_suf(holiday, day, residual, 1.0);
+    }
+  }
+
+  namespace {
+    using DIRHSM = DynamicInterceptRegressionHolidayStateModel;
+  }
+  
+  DIRHSM::DynamicInterceptRegressionHolidayStateModel(
+      const Date &time_of_first_observation,
+      DynamicInterceptRegressionModel *model,
+      const Ptr<GaussianModel> &prior,
+      RNG &seeding_rng)
+      : RegressionHolidayStateModel(
+            time_of_first_observation,
+            model->observation_model()->Sigsq_prm(),
+            prior,
+            seeding_rng),
+        model_(model)
+  {}
+
+  
+  void DIRHSM::observe_state(const ConstVectorView &then,
+                             const ConstVectorView &now,
+                             int time_now) {
+    int holiday = impl().which_holiday(time_now);
+    if (holiday < 0) return;
+    int day = impl().which_day(time_now);
+    Ptr<StateSpace::TimeSeriesRegressionData> data = model_->dat()[time_now];
+    if (data->missing() == Data::missing_status::completely_missing) {
+      return;
+    }
+    Vector residuals = data->response() - model_->conditional_mean(time_now);
+    residuals += this->observation_matrix(time_now).dot(now);
+    increment_daily_suf(holiday, day, sum(residuals), residuals.size());
+  }
+
+  Ptr<SparseMatrixBlock> DIRHSM::observation_coefficients(
+      int t,
+      const StateSpace::TimeSeriesRegressionData &data_point) const {
+    return new IdenticalRowsMatrix(
+        observation_matrix(t), data_point.sample_size());
+  }
+
+  
 }  // namespace BOOM

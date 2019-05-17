@@ -19,7 +19,7 @@
 #ifndef BOOM_R_PRIOR_SPECIFICATION_HPP_
 #define BOOM_R_PRIOR_SPECIFICATION_HPP_
 
-#include <r_interface/boom_r_tools.hpp>
+#include "r_interface/boom_r_tools.hpp"
 #include "Models/ChisqModel.hpp"
 #include "Models/DoubleModel.hpp"
 #include "Models/Glm/VariableSelectionPrior.hpp"
@@ -31,7 +31,8 @@
 namespace BOOM{
 
   class MarkovModel;
-
+  class RegressionModel;
+  
   namespace RInterface{
     // Convenience classes for communicating commonly used R objects
     // to BOOM.  Each object has a corresponding R function that will
@@ -268,6 +269,17 @@ namespace BOOM{
     };
 
     //----------------------------------------------------------------------
+    class ScaledMatrixNormalPrior {
+     public:
+      explicit ScaledMatrixNormalPrior(SEXP r_prior);
+      const Matrix &mean() const {return mean_;}
+      double sample_size() const {return sample_size_;}
+     private:
+      Matrix mean_;
+      double sample_size_;
+    };
+
+    //----------------------------------------------------------------------
     // A discrete prior over the integers {lo, ..., hi}.
     class DiscreteUniformPrior {
      public:
@@ -408,6 +420,20 @@ namespace BOOM{
       Ptr<ChisqModel> siginv_prior_;
       double sigma_upper_limit_;
     };
+
+    // A unified interface for setting the prior distribution of a regression
+    // model.
+    // Args:
+    //   model:  The model for which a posterior sampler is to be set.
+    //   prior:  An R object specifying one of the following:
+    //     - RegressionNonconjugateSpikeSlabPrior
+    //     - RegressionConjugateSpikeSlabPrior
+    //     - IndependentRegressionSpikeSlabPrior
+    //     - TODO(steve): Add shrinkage regression
+    // Effects:
+    //   A posterior sampler is extracted from r_prior and assigned to model.
+    void SetRegressionSampler(RegressionModel *model, SEXP r_prior);
+    
     //----------------------------------------------------------------------
     class ArSpikeSlabPrior
         : public RegressionNonconjugateSpikeSlabPrior {

@@ -21,7 +21,7 @@
 namespace BOOM {
 
   // A state model composed of a superposition of other state models.
-  class CompositeStateModel : public StateModel {
+  class CompositeStateModel : virtual public StateModel {
    public:
    private:
     std::vector<Ptr<StateModel>> state_;
@@ -32,7 +32,7 @@ namespace BOOM {
 
   // The seasons are constrained to sum to zero at each time period.
   class GeneralSeasonalStateModel
-      : public StateModel {
+      : virtual public StateModel {
    public:
     explicit GeneralSeasonalStateModel(int season_duration);
     ~GeneralSeasonalStateModel(){}
@@ -49,8 +49,7 @@ namespace BOOM {
     void observe_time_dimension(int max_time) override;
     void observe_state(const ConstVectorView &then,
                        const ConstVectorView &now,
-                       int time_now,
-                       ScalarStateSpaceModelBase &model) override;
+                       int time_now) override;
 
     void observe_initial_state(const ConstVectorView &state) override;
     uint state_dimension() const override;
@@ -64,12 +63,6 @@ namespace BOOM {
         VectorView gradient, int t, const ConstVectorView &state_error_mean,
         const ConstSubMatrix &state_error_variance) override;
     
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then,
-        const ConstVectorView &now,
-        int time_now,
-        DynamicInterceptRegressionModel *model) override;
-
     // Simulates the state eror at time t, for moving to time t+1.
     // Args:
     //   rng:  The random number generator to use for the simulation.
@@ -94,7 +87,7 @@ namespace BOOM {
 
     Ptr<SparseMatrixBlock>
     dynamic_intercept_regression_observation_coefficients(
-        int t const StateSpace::MultiplexedData &data_point) const override;
+        int t const StateSpace::TimeSeriesRegressionData &data_point) const override;
 
     Vector initial_state_mean() const override;
     SpdMatrix initial_state_variance() const override;

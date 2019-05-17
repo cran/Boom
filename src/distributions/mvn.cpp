@@ -23,7 +23,9 @@
 #include "LinAlg/Matrix.hpp"
 #include "LinAlg/SpdMatrix.hpp"
 #include "LinAlg/Vector.hpp"
+#include "LinAlg/DiagonalMatrix.hpp"
 #include "distributions.hpp"
+#include "cpputil/report_error.hpp"
 
 namespace BOOM {
 
@@ -68,6 +70,18 @@ namespace BOOM {
     return rmvn_robust_mt(rng, mu, V);
   }
   //======================================================================
+  Vector rmvn_mt(RNG &rng, const Vector &mu, const DiagonalMatrix &V) {
+    Vector ans(mu);
+    const ConstVectorView variances(V.diag());
+    for (int i = 0; i < mu.size(); ++i) {
+      ans[i] += rnorm_mt(rng, 0, sqrt(variances[i]));
+    }
+    return ans;
+  }
+  Vector rmvn(const Vector &mu, const DiagonalMatrix &V) {
+    return rmvn_mt(GlobalRng::rng, mu, V);
+  }
+  //======================================================================
   Vector rmvn_ivar(const Vector &mu, const SpdMatrix &ivar) {
     return rmvn_ivar_mt(GlobalRng::rng, mu, ivar);
   }
@@ -75,7 +89,11 @@ namespace BOOM {
   Vector rmvn_ivar_mt(RNG &rng, const Vector &mu, const SpdMatrix &ivar) {
     // Draws a multivariate normal with mean mu and precision matrix
     // ivar.
-    Matrix U = ivar.chol().t();
+    bool ok = false;
+    Matrix U = ivar.chol(ok).transpose();
+    if (!ok) {
+      report_error("Cholesky decomposition failed in rmvn_ivar_mt.");
+    }
     return rmvn_precision_upper_cholesky_mt(rng, mu, U);
   }
 
@@ -94,13 +112,45 @@ namespace BOOM {
   }
 
   Vector rmvn_suf_mt(RNG &rng, const SpdMatrix &Ivar, const Vector &IvarMu) {
-    Chol L(Ivar);
+    Cholesky L(Ivar);
     uint n = IvarMu.size();
     Vector z(n);
     for (uint i = 0; i < n; ++i) z[i] = rnorm_mt(rng);
     LTsolve_inplace(L.getL(), z);  // returns LT^-1 z which is ~ N(0, Ivar.inv)
     z += L.solve(IvarMu);
     return z;
+  }
+
+  //======================================================================
+  Vector &impute_mvn(Vector &observation,
+                     const Vector &mean, const SpdMatrix &variance,
+                     const Selector &observed, RNG &rng) {
+    if (observed.nvars() == observed.nvars_possible()) {
+      return observation;
+    } else if (observed.nvars() == 0) {
+      observation = rmvn_mt(rng, mean, variance);
+      return observation;
+    }
+    if (observation.size() != observed.nvars_possible()) {
+      report_error("observation and observed must be the same size.");
+    }
+    
+    // The distribution we want is N(mu, V), with 
+    //  V = Sig11 - Sig12 Sig22.inv Sig.21
+    // and
+    // mu = mu1 - Sig12 Sig22.inv (y2 - mu2)
+    // The 1's are missing, and the 2's are observed.
+    Selector missing = observed.complement();
+    Matrix cross_covariance = missing.select_rows(
+        observed.select_cols(variance));
+    SpdMatrix observed_precision = observed.select_square(variance).inv();
+    Vector mu = missing.select(mean) + cross_covariance * observed_precision
+        * (observed.select(observation) - observed.select(mean));
+    SpdMatrix V = missing.select_square(variance)
+        - sandwich(cross_covariance, observed_precision);
+    Vector imputed = rmvn_mt(rng, mu, V);
+    observed.fill_missing_elements(observation, imputed);
+    return observation;
   }
 
   //======================================================================

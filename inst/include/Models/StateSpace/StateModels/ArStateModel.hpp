@@ -50,20 +50,14 @@ namespace BOOM {
   // The shift portion of the stat transition is deterministic, so the
   // one-dimensional error is multiplied by
   // R_t = [1 0 0 0 0]^T
-  class ArStateModel : public StateModel, public ArModel {
+  class ArStateModel : virtual public StateModel, public ArModel {
    public:
     explicit ArStateModel(int number_of_lags = 1);
     ArStateModel(const ArStateModel &rhs);
     ArStateModel *clone() const override;
 
     void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int t, ScalarStateSpaceModelBase *model) override;
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int t,
-        DynamicInterceptRegressionModel *model) override {
-      observe_state(then, now, t, nullptr);
-    }
+                       int t) override;
 
     uint state_dimension() const override;
     uint state_error_dimension() const override { return 1; }
@@ -81,13 +75,6 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
     SparseVector observation_matrix(int t) const override;
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
 
     Vector initial_state_mean() const override;
     SpdMatrix initial_state_variance() const override;

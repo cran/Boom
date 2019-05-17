@@ -35,7 +35,7 @@ namespace BOOM {
                      public IID_DataPolicy<Subject>,
                      public PriorPolicy {
      public:
-      typedef std::vector<string> StringVector;
+      typedef std::vector<std::string> StringVector;
       typedef Ptr<SubjectPrior> PriPtr;
       enum ModelTypeName { MultiSubscaleLogitCut };
 
@@ -50,14 +50,15 @@ namespace BOOM {
 
       void set_subscale_names(const StringVector &);
       const StringVector &subscale_names();
-      ostream &print_subscales(ostream &, bool nl = true, bool decorate = true);
+      std::ostream &print_subscales(
+          std::ostream &, bool nl = true, bool decorate = true);
 
       uint nscales() const;  // number of subscales
       uint nsubjects() const;
       uint nitems() const;
 
       void add_item(const Ptr<Item> &);
-      Ptr<Item> find_item(const string &id, bool nag = true) const;
+      Ptr<Item> find_item(const std::string &id, bool nag = true) const;
       ItemIt item_begin();
       ItemIt item_end();
       ItemItC item_begin() const;
@@ -68,7 +69,7 @@ namespace BOOM {
       SI subject_end();
       CSI subject_begin() const;
       CSI subject_end() const;
-      Ptr<Subject> find_subject(const string &id, bool nag = true) const;
+      Ptr<Subject> find_subject(const std::string &id, bool nag = true) const;
 
       void set_subject_prior(const Ptr<MvnModel> &);
       void set_subject_prior(const Ptr<MvRegModel> &);
@@ -76,8 +77,8 @@ namespace BOOM {
       PriPtr subject_prior();
 
       //----------- io functions -------
-      void item_report(ostream &, uint max_name_width = 40) const;
-      void item_report(const string &fname) const;
+      void item_report(std::ostream &, uint max_name_width = 40) const;
+      void item_report(const std::string &fname) const;
 
      private:
       // see IRT.hpp for types
@@ -103,10 +104,12 @@ namespace BOOM {
     // ID [delim]
     // -or-
     // ID [delim] bg1 [delim] bg2 [delim] ...
-    void read_subject_info_file(const string &fname, const Ptr<IrtModel> &m,
+    void read_subject_info_file(const std::string &fname,
+                                const Ptr<IrtModel> &m,
                                 const char delim = ' ');
 
-    void read_item_response_file(const string &fname, const Ptr<IrtModel> &m);
+    void read_item_response_file(const std::string &fname,
+                                 const Ptr<IrtModel> &m);
 
   }  // namespace IRT
 }  // namespace BOOM

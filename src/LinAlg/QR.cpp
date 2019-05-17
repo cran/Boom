@@ -29,19 +29,13 @@ namespace BOOM {
   using Eigen::Lower;
   using Eigen::MatrixXd;
   using Eigen::Upper;
-  using std::cout;
-  using std::endl;
 
-  QR::QR(const Matrix &mat) { decompose(mat); }
-
-  Matrix QR::getQ() const { return Q_; }
-
-  Matrix QR::getR() const { return R_; }
+  QR::QR(const Matrix &mat, bool just_compute_R) {
+    decompose(mat, just_compute_R);
+  }
 
   Matrix QR::solve(const Matrix &B) const {
-    Matrix ans = Usolve(R_, B);
-    EigenMap(ans) = EigenMap(Q_).transpose() * EigenMap(ans);
-    return ans;
+    return Usolve(R_, QtY(B));
   }
 
   Vector QR::Qty(const Vector &y) const {
@@ -60,38 +54,51 @@ namespace BOOM {
   }
 
   Vector QR::solve(const Vector &B) const {
-    Vector Rinverse_B = Usolve(R_, B);
-    Vector ans(Q_.nrow());
-    EigenMap(ans) = EigenMap(Q_).transpose() * EigenMap(Rinverse_B);
-    return ans;
+    return Usolve(R_, Qty(B));
   }
 
-  double QR::det() const { return R_.diag().prod(); }
+  double QR::det() const { return sign_ * (R_.diag().prod()); }
 
-  void QR::decompose(const Matrix &mat) {
-    Q_ = Matrix(mat.nrow(), mat.ncol());
-    R_ = Matrix(mat.ncol(), mat.ncol(), 0.0);
-
+  double QR::logdet() const {
+    double ans = 0;
+    for (double x : R_.diag()) {
+      ans += log(fabs(x));
+    }
+    return ans;
+  }
+  
+  void QR::decompose(const Matrix &mat, bool just_compute_R) {
+    bool fat = mat.ncol() > mat.nrow();
+    if (fat) {
+      R_ = Matrix(mat.nrow(), mat.ncol());
+    } else {
+      R_ = Matrix(mat.ncol(), mat.ncol(), 0.0);
+    }
     Eigen::HouseholderQR<MatrixXd> eigen_qr(EigenMap(mat));
+    sign_ = 2 * (eigen_qr.hCoeffs().size() % 2) - 1;
 
-    // Temporary is needed because you can't take the block() of a view.
+    // A temporary is needed because you can't take the block() of a view.
     MatrixXd eigen_R = eigen_qr.matrixQR().triangularView<Upper>();
-    EigenMap(R_) = eigen_R.block(0, 0, ncol(), ncol());
+    EigenMap(R_) = eigen_R.block(0, 0, R_.nrow(), R_.ncol());
 
-    // The Q matrix is stored as a vector of rotations, which logically make a
-    // matrix.  We can recover that matrix by applying them to a correctly
-    // shaped identity matrix.  Eigen's Identity class doesn't inherit from
-    // MatrixBase, so it does not have the needed applyOnTheLeft member.  Thus
-    // we work with a dense identity matrix.
-    //
-    // The name thin_Q is because we expect nrow() > ncol() in most settings.
-    // In the full QR decomposition 'fat_Q' will be square with dimension =
-    // max(nrow, ncol).
-    MatrixXd thin_Q(mat.nrow(), mat.ncol());
-    thin_Q.setIdentity();
-    thin_Q.applyOnTheLeft(eigen_qr.householderQ());
-
-    EigenMap(Q_) = thin_Q;
+    if (!just_compute_R) {
+      // The Q matrix is stored as a vector of rotations, which logically make a
+      // matrix.  We can recover that matrix by applying them to a correctly
+      // shaped identity matrix.  Eigen's Identity class doesn't inherit from
+      // MatrixBase, so it does not have the needed applyOnTheLeft member.  Thus
+      // we work with a dense identity matrix.
+      Eigen::MatrixXd eigenQ;
+      if (fat) {
+        Q_ = Matrix(mat.nrow(), mat.nrow());
+        eigenQ = Eigen::MatrixXd(mat.nrow(), mat.nrow());
+      } else {
+        Q_ = Matrix(mat.nrow(), mat.ncol());
+        eigenQ = Eigen::MatrixXd(mat.nrow(), mat.ncol());
+      }
+      eigenQ.setIdentity();
+      eigenQ.applyOnTheLeft(eigen_qr.householderQ());
+      EigenMap(Q_) = eigenQ;
+    }
   }
 
   void QR::clear() {
@@ -102,7 +109,7 @@ namespace BOOM {
   Vector QR::Rsolve(const Vector &Qty) const {
     assert(Qty.size() == R_.nrow());
     Vector ans = Usolve(R_, Qty);
-    EigenMap(ans) = EigenMap(Q_).transpose() * EigenMap(ans);
+    //    EigenMap(ans) = EigenMap(Q_).transpose() * EigenMap(ans);
     return ans;
   }
 

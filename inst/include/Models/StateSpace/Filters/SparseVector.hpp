@@ -20,7 +20,6 @@
 #ifndef BOOM_SPARSE_VECTOR_HPP_
 #define BOOM_SPARSE_VECTOR_HPP_
 
-#include <boost/shared_ptr.hpp>
 #include <map>
 
 #include "LinAlg/SubMatrix.hpp"
@@ -104,7 +103,7 @@ namespace BOOM {
 
   Vector operator*(const SpdMatrix &P, const SparseVector &v);
   Vector operator*(const SubMatrix P, const SparseVector &v);
-  ostream &operator<<(ostream &, const SparseVector &v);
+  std::ostream &operator<<(std::ostream &, const SparseVector &v);
 
 }  // namespace BOOM
 

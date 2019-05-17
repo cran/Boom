@@ -39,21 +39,30 @@ namespace BOOM {
     void Update(const DoubleData &X) override;
     void update_raw(double y);
 
-    void update_expected_value(double expected_sample_size, double expected_sum,
+    void update_expected_value(double expected_sample_size,
+                               double expected_sum,
                                double expected_sum_of_squares);
 
     // Remove the effect of observation y from the sufficient
     // statistics, as if it were dropped from the data set.
     void remove(double y);
+
+    // Increment n by prob, sum by prob * y, and sumsq by prob * y^2.
     void add_mixture_data(double y, double prob);
+
     double sum() const;
+
     // sumsq returns the uncentered (raw) sum of squared y's: sum(y^2)
     double sumsq() const;
+
     // centered_sumsq returns sum((y - mu)^2).
     double centered_sumsq(double mu) const;
+
     double n() const;
 
+    // The sample mean. If there is no data then ybar == 0.
     double ybar() const;
+    // The sample variance.  If the sample size is less than 2 then sample_var == 0.
     double sample_var() const;
 
     GaussianSuf *abstract_combine(Sufstat *s) override;
@@ -64,7 +73,7 @@ namespace BOOM {
                                        bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
                                        bool minimal = true) override;
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
 
    private:
     double sum_, sumsq_, n_;
@@ -94,6 +103,7 @@ namespace BOOM {
 
     double mean() const override { return mu(); }
     double variance() const override { return sigsq(); }
+    double sd() const {return sqrt(variance());}
 
     double pdf(const Ptr<Data> &dp, bool logscale) const override;
     double pdf(const Data *dp, bool logscale) const override;
@@ -112,6 +122,46 @@ namespace BOOM {
     void add_data_raw(double x);
     void remove_data(const Ptr<Data> &dp) override;
     std::set<Ptr<Data>> abstract_data_set() const override;
+
+    // Log of the integrated Gaussian likelihood, conditional on sigma^2,
+    // assuming mu ~ N(mu0, tausq).
+    //
+    // Args:
+    //   suf: The sufficient statistics for the vector of y's over which to
+    //     evaluate likelihood.
+    //   mu0:  The mean of the prior distribution for mu.
+    //   tausq:  The variance fo the prior distribution for mu.
+    //   sigsq:  The variance of the data.
+    //
+    // Returns:
+    //   The log of \int p(y | \mu, \sigma^2) p(\mu |\mu_0, \tausq) d \mu.
+    static double log_integrated_likelihood(const GaussianSuf &suf,
+                                            double mu0,
+                                            double tausq,
+                                            double sigsq);
+
+    // Log of the integrated Gaussian likelihood, assuming y ~ N(mu, sigma^2)
+    // with mu|sigma ~ N(mu0, sigma^2 / kappa) and 1/sigma^2 ~ Ga(df/2, ss/2).
+    //
+    // Args:
+    //   suf: The sufficient statistics for the vector of y's over which to
+    //     evaluate likelihood.
+    //   mu0:  The mean of the prior distribution for mu.
+    //   kappa:  The 'prior sample size' in the prior distribution for mu.
+    //   df:  The prior degrees of freedom for sigsq.
+    //   ss:  The prior sum of squares for sigsq.
+    //
+    // Returns:
+    //  The log of \int p(y | \mu, \sigma^2) p(\mu | \sigma^2) p(1/ \sigma^2) 
+    //     d \mu  d 1/sigma^2
+    static double log_integrated_likelihood(const GaussianSuf &suf,
+                                            double mu0,
+                                            double kappa,
+                                            double df,
+                                            double ss);
+
+    static double log_likelihood(const GaussianSuf &suf, double mu,
+                                 double sigsq);
   };
 
 }  // namespace BOOM

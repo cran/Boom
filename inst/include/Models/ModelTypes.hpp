@@ -21,7 +21,7 @@
 
 #include <set>
 
-#include "BOOM.hpp"
+#include "uint.hpp"
 #include "LinAlg/Matrix.hpp"
 #include "LinAlg/Vector.hpp"
 #include "Models/DataTypes.hpp"
@@ -93,8 +93,6 @@ namespace BOOM {
     virtual double logpri() const = 0;  // evaluates current params
     virtual void set_method(const Ptr<PosteriorSampler> &) = 0;
     virtual int number_of_sampling_methods() const = 0;
-
-   protected:
     virtual PosteriorSampler *sampler(int i) = 0;
     virtual PosteriorSampler const *const sampler(int i) const = 0;
   };
@@ -114,9 +112,18 @@ namespace BOOM {
   class MLE_Model : virtual public Model {
    public:
     MLE_Model() : status_(NOT_CALLED) {}
+    MLE_Model(const MLE_Model &rhs) = default;
+    MLE_Model(MLE_Model &&rhs);
+    MLE_Model & operator=(const MLE_Model &rhs) = default;
+    MLE_Model & operator=(MLE_Model &&rhs); 
+    
     // Set the paramters to their maximum likelihood estimates.
     virtual void mle() = 0;
+
+    // Initialize an MCMC run by setting parameters to their maximum likelihood
+    // estimates.
     virtual void initialize_params();
+    
     enum MleStatus { NOT_CALLED = -1, FAILURE = 0, SUCCESS = 1 };
     MleStatus mle_status() const { return status_; }
     const std::string &mle_error_message() const { return error_message_; }
@@ -127,7 +134,7 @@ namespace BOOM {
     std::string error_message_;
 
    protected:
-    void set_status(MleStatus status, const string &error_message) {
+    void set_status(MleStatus status, const std::string &error_message) {
       status_ = status;
       error_message_ = error_message;
     }

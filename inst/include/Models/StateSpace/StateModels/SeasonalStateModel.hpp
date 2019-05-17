@@ -31,7 +31,7 @@ namespace BOOM {
   // Shared based class for different concrete realizations of seasonal state
   // models.
   class SeasonalStateModelBase : public ZeroMeanGaussianModel,
-                                 public StateModel {
+                                 virtual public StateModel {
    public:
     explicit SeasonalStateModelBase(int nseasons);
     SeasonalStateModelBase(const SeasonalStateModelBase &rhs);
@@ -42,16 +42,7 @@ namespace BOOM {
 
     void observe_state(const ConstVectorView &then,
                        const ConstVectorView &now,
-                       int time_now,
-                       ScalarStateSpaceModelBase *model) override;
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then,
-        const ConstVectorView &now,
-        int time_now,
-        DynamicInterceptRegressionModel *model) override {
-      observe_state(then, now, time_now, nullptr);
-    }
+                       int time_now) override;
 
     uint state_dimension() const override;
     uint state_error_dimension() const override { return 1; }
@@ -63,13 +54,6 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_error_expander(int t) const override;
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
     SparseVector observation_matrix(int t) const override;
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
 
     Vector initial_state_mean() const override;
     void set_initial_state_mean(const Vector &mu);

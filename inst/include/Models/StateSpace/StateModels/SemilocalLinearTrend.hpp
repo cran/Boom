@@ -34,6 +34,8 @@ namespace BOOM {
   //  1   1   0
   //  0  phi (1-phi)
   //  0   0   1
+  //
+  // This class is tested in the test suite for the other sparse matrices.
   class SemilocalLinearTrendMatrix : public SparseMatrixBlock {
    public:
     explicit SemilocalLinearTrendMatrix(const Ptr<UnivParams> &phi);
@@ -49,8 +51,10 @@ namespace BOOM {
                           const ConstVectorView &rhs) const override;
     void Tmult(VectorView lhs, const ConstVectorView &rhs) const override;
     void multiply_inplace(VectorView x) const override;
-    void add_to(SubMatrix block) const override;
-    Mat dense() const override;
+    SpdMatrix inner() const override;
+    SpdMatrix inner(const ConstVectorView &weights) const override;
+    void add_to_block(SubMatrix block) const override;
+    Matrix dense() const override;
 
    private:
     Ptr<UnivParams> phi_;
@@ -68,7 +72,7 @@ namespace BOOM {
   //   | 1 0 |
   //   | 0 1 |
   //   | 0 0 |
-  class SemilocalLinearTrendStateModel : public StateModel,
+  class SemilocalLinearTrendStateModel : virtual public StateModel,
                                          public CompositeParamPolicy,
                                          public IID_DataPolicy<VectorData>,
                                          public PriorPolicy {
@@ -80,13 +84,7 @@ namespace BOOM {
 
     void clear_data() override;
     void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now, ScalarStateSpaceModelBase *model) override;
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override {
-      observe_state(then, now, time_now, nullptr);
-    }
+                       int time_now) override;
 
     void observe_initial_state(const ConstVectorView &state) override;
     uint state_dimension() const override { return 3; }
@@ -105,13 +103,6 @@ namespace BOOM {
     Ptr<SparseMatrixBlock> state_error_variance(int t) const override;
 
     SparseVector observation_matrix(int t) const override;
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
 
     Vector initial_state_mean() const override;
     SpdMatrix initial_state_variance() const override;

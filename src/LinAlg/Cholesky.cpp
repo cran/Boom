@@ -22,40 +22,52 @@
 #include "Eigen/Cholesky"
 #include "LinAlg/EigenMap.hpp"
 #include "LinAlg/Vector.hpp"
+#include "LinAlg/DiagonalMatrix.hpp"
 #include "cpputil/report_error.hpp"
 
 namespace BOOM {
   namespace {
     using Eigen::MatrixXd;
-    using std::cout;
-    using std::endl;
   }  // namespace
 
-  Chol::Chol(const Matrix &m)
-      : lower_cholesky_triangle_(m.nrow(), m.ncol(), 0.0), pos_def_(true) {
-    if (!m.is_square()) {
+  void Cholesky::decompose(const Matrix &A) {
+    if (!A.is_square()) {
       pos_def_ = false;
       lower_cholesky_triangle_ = Matrix();
     } else {
-      Eigen::LLT<MatrixXd> eigen_cholesky(EigenMap(m));
+      lower_cholesky_triangle_.resize(A.nrow(), A.ncol());
+      Eigen::LLT<MatrixXd> eigen_cholesky(EigenMap(A));
       pos_def_ = eigen_cholesky.info() == Eigen::Success;
-      EigenMap(lower_cholesky_triangle_) = eigen_cholesky.matrixL();
+      if (pos_def_) {
+        EigenMap(lower_cholesky_triangle_) = eigen_cholesky.matrixL();
+      } else if (A.is_sym()) {
+        Eigen::LDLT<MatrixXd> eigen_cholesky_safe(EigenMap(A));
+        Vector D(A.nrow());
+        EigenMap(D) = eigen_cholesky_safe.vectorD();
+        EigenMap(lower_cholesky_triangle_) = eigen_cholesky_safe.matrixL();
+        for (int i = 0; i < lower_cholesky_triangle_.ncol(); ++i) {
+          lower_cholesky_triangle_.col(i) *= sqrt(D[i]);
+        }
+        EigenMap(lower_cholesky_triangle_) = 
+            eigen_cholesky_safe.transpositionsP().transpose() *
+            EigenMap(lower_cholesky_triangle_);
+      }
     }
   }
 
-  SpdMatrix Chol::original_matrix() const {
+  SpdMatrix Cholesky::original_matrix() const {
     SpdMatrix ans(lower_cholesky_triangle_.nrow(), 0.0);
     ans.add_outer(lower_cholesky_triangle_);
     return ans;
   }
 
-  SpdMatrix Chol::inv() const { return chol2inv(lower_cholesky_triangle_); }
+  SpdMatrix Cholesky::inv() const { return chol2inv(lower_cholesky_triangle_); }
 
-  uint Chol::nrow() const { return lower_cholesky_triangle_.nrow(); }
-  uint Chol::ncol() const { return lower_cholesky_triangle_.ncol(); }
-  uint Chol::dim() const { return lower_cholesky_triangle_.nrow(); }
+  uint Cholesky::nrow() const { return lower_cholesky_triangle_.nrow(); }
+  uint Cholesky::ncol() const { return lower_cholesky_triangle_.ncol(); }
+  uint Cholesky::dim() const { return lower_cholesky_triangle_.nrow(); }
 
-  Matrix Chol::getL(bool perform_check) const {
+  Matrix Cholesky::getL(bool perform_check) const {
     if (perform_check) {
       check();
     }
@@ -67,21 +79,20 @@ namespace BOOM {
     return ans;
   }
 
-  Matrix Chol::getLT() const {
-    check();
-    return lower_cholesky_triangle_.t();
+  Matrix Cholesky::getLT() const {
+    return lower_cholesky_triangle_.transpose();
   }
 
   // V = L LT
   // V.inv * X = LT.inv * L.inv * X
-  Matrix Chol::solve(const Matrix &B) const {
+  Matrix Cholesky::solve(const Matrix &B) const {
     check();
     Matrix ans = Lsolve(lower_cholesky_triangle_, B);
     LTsolve_inplace(lower_cholesky_triangle_, ans);
     return ans;
   }
 
-  Vector Chol::solve(const Vector &B) const {
+  Vector Cholesky::solve(const Vector &B) const {
     // if *this is the cholesky decomposition of A then
     // this->solve(B) = A^{-1} B.  It is NOT L^{-1} B
     check();
@@ -91,7 +102,8 @@ namespace BOOM {
   }
 
   // returns the log of the determinant of A
-  double Chol::logdet() const {
+  double Cholesky::logdet() const {
+    check();
     ConstVectorView d(diag(lower_cholesky_triangle_));
     double ans = 0;
     for (int i = 0; i < d.size(); ++i) {
@@ -100,13 +112,14 @@ namespace BOOM {
     return 2 * ans;
   }
 
-  double Chol::det() const {
+  double Cholesky::det() const {
+    check();
     ConstVectorView d(diag(lower_cholesky_triangle_));
     double ans = d.prod();
     return ans * ans;
   }
 
-  void Chol::check() const {
+  void Cholesky::check() const {
     if (!pos_def_) {
       std::ostringstream err;
       err << "attempt to use an invalid cholesky decomposition" << std::endl

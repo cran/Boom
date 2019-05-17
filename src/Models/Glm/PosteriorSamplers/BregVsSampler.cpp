@@ -59,7 +59,8 @@ namespace BOOM {
         unscaled_posterior_precision_(1, negative_infinity()),
         DF_(negative_infinity()),
         SS_(negative_infinity()),
-        sigsq_sampler_(residual_precision_prior_) {
+        sigsq_sampler_(residual_precision_prior_),
+        failure_count_(0) {
     uint p = model_->nvars_possible();
     Vector b = Vector(p, 0.0);
     if (first_term_is_intercept) {
@@ -94,7 +95,8 @@ namespace BOOM {
         max_nflips_(indx.size()),
         draw_beta_(true),
         draw_sigma_(true),
-        sigsq_sampler_(residual_precision_prior_) {
+        sigsq_sampler_(residual_precision_prior_),
+        failure_count_(0) {
     uint p = model_->nvars_possible();
     Vector b = Vector(p, 0.0);
     double ybar = model_->suf()->ybar();
@@ -152,7 +154,8 @@ namespace BOOM {
         max_nflips_(indx.size()),
         draw_beta_(true),
         draw_sigma_(true),
-        sigsq_sampler_(residual_precision_prior_) {}
+        sigsq_sampler_(residual_precision_prior_),
+        failure_count_(0) {}
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel *model,
                      const ZellnerPriorParameters &prior, RNG &seeding_rng)
@@ -169,7 +172,8 @@ namespace BOOM {
         max_nflips_(indx.size()),
         draw_beta_(true),
         draw_sigma_(true),
-        sigsq_sampler_(residual_precision_prior_) {}
+        sigsq_sampler_(residual_precision_prior_),
+        failure_count_(0) {}
   //----------------------------------------------------------------------
   BVS::BregVsSampler(RegressionModel *model,
                      const Ptr<MvnGivenScalarSigmaBase> &slab,
@@ -184,7 +188,8 @@ namespace BOOM {
         max_nflips_(indx.size()),
         draw_beta_(true),
         draw_sigma_(true),
-        sigsq_sampler_(residual_precision_prior_) {}
+        sigsq_sampler_(residual_precision_prior_),
+        failure_count_(0) {}
   //----------------------------------------------------------------------
   void BVS::limit_model_selection(uint n) { max_nflips_ = n; }
   void BVS::allow_model_selection(bool allow) {
@@ -243,7 +248,9 @@ namespace BOOM {
   }
   //----------------------------------------------------------------------
   void BVS::draw() {
-    if (max_nflips_ > 0) draw_model_indicators();
+    if (max_nflips_ > 0) {
+      draw_model_indicators();
+    }
     if (draw_beta_ || draw_sigma_) {
       set_reg_post_params(model_->coef().inc(), false);
     }
@@ -263,6 +270,41 @@ namespace BOOM {
     model_->set_sigsq(SS_ / DF_);
   }
 
+  void BVS::attempt_swap() {
+    if (correlation_map_.threshold() >= 1.0) {
+      return;
+    }
+    if (!correlation_map_.filled()) {
+      correlation_map_.fill(*model_->suf());
+    }
+    Selector included = model_->coef().inc();
+    if (included.nvars() == 0 ||
+        included.nvars() == included.nvars_possible()) {
+      return;
+    }
+    int index = included.random_included_position(rng());
+    double forward_proposal_weight;
+    int candidate = correlation_map_.propose_swap(
+        rng(), included, index, &forward_proposal_weight);
+    if (candidate < 0) return;
+    
+    double original_model_log_probability = log_model_prob(included);
+    included.drop(index);
+    included.add(candidate);
+    double reverse_proposal_weight = correlation_map_.proposal_weight(
+        included, candidate, index);
+    double log_MH_numerator =
+        log_model_prob(included) - log(forward_proposal_weight);
+    double log_MH_denominator =
+        original_model_log_probability - log(reverse_proposal_weight);
+    double logu = log(runif_mt(rng()));
+    if (logu < log_MH_numerator - log_MH_denominator) {
+      model_->coef().set_inc(included);
+    } else {
+      // reject the proposal by doing nothing.
+    }
+  }
+
   //----------------------------------------------------------------------
   void BVS::draw_sigma() {
     double df, ss;
@@ -279,10 +321,29 @@ namespace BOOM {
   //----------------------------------------------------------------------
   void BVS::draw_beta() {
     if (model_is_empty()) return;
-    posterior_mean_ =
-        rmvn_ivar_mt(rng(), posterior_mean_,
-                     unscaled_posterior_precision_ / model_->sigsq());
-    model_->set_included_coefficients(posterior_mean_);
+    SpdMatrix posterior_precision =
+        unscaled_posterior_precision_ / model_->sigsq();
+    // The posterior precision might be nearly rank deficient.
+    bool ok = false;
+    Matrix posterior_precision_lower_cholesky = posterior_precision.chol(ok);
+    if (ok) {
+      posterior_mean_ = rmvn_precision_upper_cholesky_mt(
+          rng(), posterior_mean_,
+          posterior_precision_lower_cholesky.transpose());
+      model_->set_included_coefficients(posterior_mean_);
+      failure_count_ = 0;
+    } else {
+      // Handle the case where the information matrix is degenerate.  This
+      // should not happen mathematically, but it might happen for numerical
+      // reasons.  If we're here it is because the variable selection component
+      // messed up, so just bail on this draw and try again.
+      if (++failure_count_ > 10) {
+        report_error("The posterior information matrix is not positive "
+                     "definite.  Check your data or consider adjusting "
+                     "your prior.");
+      }
+      draw();
+    }
   }
   //----------------------------------------------------------------------
   void BVS::draw_model_indicators() {
@@ -307,6 +368,7 @@ namespace BOOM {
       logp = mcmc_one_flip(g, indx[i], logp);
     }
     model_->coef().set_inc(g);
+    attempt_swap();
   }
   //----------------------------------------------------------------------
   double BVS::logpri() const {
@@ -334,7 +396,7 @@ namespace BOOM {
     // siginv = ominv / sigsq, so
     // ominv = siginv * sigsq.
     SpdMatrix unscaled_prior_precision =
-        inclusion_indicators.select(slab_->siginv()) * model_->sigsq();
+        inclusion_indicators.select(slab_->unscaled_precision());
     double ldoi = do_ldoi ? unscaled_prior_precision.logdet() : 0.0;
 
     Ptr<RegSuf> s = model_->suf();
@@ -357,12 +419,18 @@ namespace BOOM {
     DF_ = s->n() + prior_df();
     // SS_ starts off with the prior sum of squares from the prior on sigma^2.
     SS_ = prior_ss();
-
+    if (!std::isfinite(SS_)) {
+      report_error("Prior sum of squares is wrong.");
+    }
+    
     // Add in the sum of squared errors around posterior_mean_
-    double likelihood_ss =
+    double likelihood_ss = 
         s->yty() - 2 * posterior_mean_.dot(xty) + xtx.Mdist(posterior_mean_);
     SS_ += likelihood_ss;
-
+    if (!std::isfinite(SS_)) {
+      report_error("Quadratic form caused infinite SS.");
+    }
+    
     // Add in the sum of squares component arising from the discrepancy between
     // the prior and posterior means.
     SS_ += unscaled_prior_precision.Mdist(posterior_mean_, prior_mean);
@@ -370,6 +438,9 @@ namespace BOOM {
       report_error(
           "Illegal data caused negative sum of squares "
           "in Breg::set_reg_post_params.");
+    } else if (!std::isfinite(SS_)) {
+      report_error("Prior to Posterior Mahalanobis distance caused "
+                   "infinite SS.");
     }
     return ldoi;
   }

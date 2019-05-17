@@ -60,18 +60,16 @@ namespace BOOM {
   //
   // Usage idiom:
   //   HierarchicalRegressionHolidayStateModel model.(time0, residual_variance);
-  //   // Add some holidays
-  //   model.add_holiday(h1);
+  //   model.add_holiday(h1);    
   //   model.add_holiday(h2);
   //   model.add_holiday(h3);
-  //   // Set the sampler.  Use any sampler you like, but this one is a good
-  //   // choice.
+  //   // Set any sampler you like, but this is a good choice.
   //   NEW(HierarchicalGaussianRegressionAsisSampler, sampler)(
   //     model.model(), prior1, prior2, rng);
   //   model.model()->set_method(sampler);
   //   // Observe the time dimension, to build initial data structures.
   //   model.observe_time_dimension(83);
-  class HierarchicalRegressionHolidayStateModel : public StateModel,
+  class HierarchicalRegressionHolidayStateModel : virtual public StateModel,
                                                   public CompositeParamPolicy,
                                                   public NullDataPolicy,
                                                   public PriorPolicy {
@@ -83,14 +81,10 @@ namespace BOOM {
     //     equation.  NOTE: The fact that this parameter is constant restricts
     //     this state model from being used with observation models that assume
     //     time-dependent variance, including GLM's.
-    // TODO: Lift the residual variance restriction.  It might be easier to
-    //    allow a bit of error back into the state equation
     HierarchicalRegressionHolidayStateModel(
         const Date &time_of_first_observation,
         const Ptr<UnivParams> &residual_variance);
-    HierarchicalRegressionHolidayStateModel *clone() const override {
-      return new HierarchicalRegressionHolidayStateModel(*this);
-    }
+    HierarchicalRegressionHolidayStateModel *clone() const override = 0;
 
     // Add a holiday to the set of holidays managed by this model.  The more,
     // similar holidays added the better, because there will be more
@@ -99,12 +93,6 @@ namespace BOOM {
     void add_holiday(const Ptr<Holiday> &holiday);
 
     void observe_time_dimension(int max_time) override;
-    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now, ScalarStateSpaceModelBase *model) override;
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override;
 
     uint state_dimension() const override { return impl_.state_dimension(); }
     uint state_error_dimension() const override {
@@ -152,13 +140,6 @@ namespace BOOM {
     // mean.
     SparseVector observation_matrix(int t) const override;
 
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
-
     Vector initial_state_mean() const override {
       return impl_.initial_state_mean();
     }
@@ -185,6 +166,9 @@ namespace BOOM {
     // influence window.  Element 'day' is 1, all other elements are 0.
     const Vector &daily_dummies(int day) const { return daily_dummies_[day]; }
 
+   protected:
+    const RegressionHolidayBaseImpl &impl() const {return impl_;}
+    
    private:
     RegressionHolidayBaseImpl impl_;
 
@@ -196,6 +180,55 @@ namespace BOOM {
     std::vector<Vector> daily_dummies_;
   };
 
+  //===========================================================================
+  class ScalarStateSpaceModelBase;
+  class ScalarHierarchicalRegressionHolidayStateModel
+      : public HierarchicalRegressionHolidayStateModel {
+   public: 
+    ScalarHierarchicalRegressionHolidayStateModel(
+        const Date &time_of_first_observation,
+        ScalarStateSpaceModelBase *model);
+
+    ScalarHierarchicalRegressionHolidayStateModel *clone() const override {
+      return new ScalarHierarchicalRegressionHolidayStateModel(*this);
+    }
+
+    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
+                       int time_now) override;
+
+   private:
+    const ScalarStateSpaceModelBase *state_space_model_;
+  };
+
+  //===========================================================================
+  class DynamicInterceptRegressionModel;
+  class DynamicInterceptHierarchicalRegressionHolidayStateModel
+      : public HierarchicalRegressionHolidayStateModel,
+        public DynamicInterceptStateModel {
+   public:
+    DynamicInterceptHierarchicalRegressionHolidayStateModel(
+        const Date &time_of_first_observation,
+        DynamicInterceptRegressionModel *model);
+          
+    DynamicInterceptHierarchicalRegressionHolidayStateModel *
+    clone() const override {
+      return new DynamicInterceptHierarchicalRegressionHolidayStateModel(*this);
+    }
+    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
+                       int time_now) override;
+
+    Ptr<SparseMatrixBlock> observation_coefficients(
+        int t,
+        const StateSpace::TimeSeriesRegressionData &data_point) const override;
+    
+    bool is_pure_function_of_time() const override {
+      return true;
+    }
+    
+   private:
+    const DynamicInterceptRegressionModel *state_space_model_;
+  };
+  
 }  // namespace BOOM
 
 #endif  //  BOOM_HIERARCHICAL_REGRESSION_HOLIDAY_STATE_MODEL_HPP_

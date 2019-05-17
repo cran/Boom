@@ -80,7 +80,7 @@ namespace BOOM {
     return unvectorize(it, minimal);
   }
 
-  ostream &PDS::print(ostream &out) const {
+  std::ostream &PDS::print(std::ostream &out) const {
     return out << n_ << endl << sumlog_;
   }
   //============================================================
@@ -160,7 +160,7 @@ namespace BOOM {
       ans += dirichlet_loglike(Nu.row(i), &g_row, 0, sumlog.row(i), n);
       G.row(i) = g_row;
     }
-    G = G.t();
+    G = G.transpose();
     g.assign(G.begin(), G.end());
 
     // need to check that g is vectorized in the right way..  virtual

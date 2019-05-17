@@ -23,10 +23,21 @@
 #include "LinAlg/SpdMatrix.hpp"
 
 namespace BOOM {
-  class Chol {
+  class Cholesky {
    public:
+
+    // A default constructor for use when a cholesky object is needed, but the
+    // matrix to be decomposed is not yet available.  It is the user's
+    // responsibility to ensure that the decompose() method is called before any
+    // other methods are called.
+    Cholesky() : pos_def_(false) {}
+    
     // Compute and store the Cholesky factor of the matrix 'A'.
-    explicit Chol(const Matrix &A);
+    explicit Cholesky(const Matrix &A) { decompose(A); }
+
+    // Compute and store the Cholesky factor of the matrix 'A'.  Any previous
+    // decomposition is discarded.
+    void decompose(const Matrix &A);
 
     // All three of these return the number of rows in the represented matrix
     // (which is the same as the number of columns).
@@ -35,6 +46,9 @@ namespace BOOM {
     uint dim() const;
 
     // The lower Cholesky triangle of A.
+    // If A is not positive definite then:
+    //   - this matrix will not in general be triangular, because of pivoting.
+    //   - the solve() and inv() methods will not work.
     Matrix getL(bool perform_check = true) const;
 
     // The upper Cholesky triangle of A.

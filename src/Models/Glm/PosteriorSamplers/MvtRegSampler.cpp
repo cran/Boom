@@ -43,12 +43,12 @@ namespace BOOM {
                        const Ptr<DoubleModel> &Nu_prior, RNG &seeding_rng)
       : PosteriorSampler(seeding_rng),
         mod(m),
-        reg_model(new MvReg(mod->Beta(), mod->Sigma())),
+        reg_model(new MultivariateRegressionModel(mod->Beta(), mod->Sigma())),
         nu_model(new ScaledChisqModel(m->nu())),
         nu_prior(Nu_prior) {
     reg_model->set_params(mod->Beta_prm(), mod->Sigma_prm());
-    reg_sampler = new MvRegSampler(reg_model.get(), B_guess, prior_nobs,
-                                   prior_df, Sigma_guess);
+    reg_sampler = new MultivariateRegressionSampler(
+        reg_model.get(), B_guess, prior_nobs, prior_df, Sigma_guess);
     nu_model->set_prm(mod->Nu_prm());
     Logp_nu nu_logpost(nu_model, nu_prior);
     nu_sampler = new SliceSampler(nu_logpost, true);
@@ -74,7 +74,7 @@ namespace BOOM {
   }
 
   void MVTRS::impute_w() {
-    Ptr<NeMvRegSuf> rs = reg_model->suf().dcast<NeMvRegSuf>();
+    Ptr<MvRegSuf> rs = reg_model->suf();
     Ptr<GammaSuf> gs = nu_model->suf();
 
     const std::vector<Ptr<MvRegData> > &dat(mod->dat());

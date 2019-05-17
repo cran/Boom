@@ -27,7 +27,6 @@
 #include "Models/Policies/CompositeParamPolicy.hpp"
 #include "Models/Policies/IID_DataPolicy.hpp"
 #include "Models/Policies/PriorPolicy.hpp"
-#include "Models/StateSpace/Filters/KalmanStorage.hpp"
 #include "Models/StateSpace/Filters/SparseMatrix.hpp"
 #include "Models/StateSpace/Filters/SparseVector.hpp"
 #include "Models/StateSpace/StateModels/StateModel.hpp"
@@ -149,7 +148,8 @@ namespace BOOM {
     // holdout sample.
     Vector one_step_holdout_prediction_errors(const Matrix &newX,
                                               const Vector &newY,
-                                              const Vector &final_state) const;
+                                              const Vector &final_state,
+                                              bool standardize = false) const;
 
     Ptr<RegressionModel> regression_model() { return regression_; }
     const Ptr<RegressionModel> regression_model() const { return regression_; }

@@ -27,7 +27,7 @@ namespace BOOM {
     typedef double *col_iterator;
     typedef const double *const_col_iterator;
 
-    SubMatrix(double *v = 0, int nrow = 0, int ncol = 0);
+    explicit SubMatrix(double *v = 0, int nrow = 0, int ncol = 0);
     SubMatrix(Matrix &, uint rlo, uint rhi, uint clo, uint chi);
     SubMatrix(SubMatrix &, uint rlo, uint rhi, uint clo, uint chi);
     SubMatrix(const SubMatrix &rhs);
@@ -39,11 +39,14 @@ namespace BOOM {
     // as operator=(const Matrix &rhs)
     SubMatrix &operator=(const SubMatrix &rhs);
 
+    SubMatrix &operator=(double scalar);
+    
     // Pointer semantics: make the memory here point to the memory
     // there.
+    SubMatrix &reset(Matrix &rhs, int rlo, int rhi, int clo, int chi);
     SubMatrix &reset(const SubMatrix &rhs);
     SubMatrix &reset(double *v, int nrow, int ncol, int stride);
-
+    
     uint nrow() const;
     uint ncol() const;
 
@@ -89,7 +92,7 @@ namespace BOOM {
     double sum() const;
 
     Matrix to_matrix() const;
-    ostream &display(ostream &out, int precision) const;
+    std::ostream &display(std::ostream &out, int precision) const;
 
    private:
     double *start_;
@@ -100,15 +103,15 @@ namespace BOOM {
 
     friend class ConstSubMatrix;
   };
-  ostream &operator<<(ostream &out, const SubMatrix &m);
+  std::ostream &operator<<(std::ostream &out, const SubMatrix &m);
 
   //======================================================================
   // A view into a rectangular subset of a matrix.
   class ConstSubMatrix {
    public:
     typedef const double *const_col_iterator;
-    ConstSubMatrix(const Matrix &);
-    ConstSubMatrix(const SubMatrix &);
+    explicit ConstSubMatrix(const Matrix &);
+    explicit ConstSubMatrix(const SubMatrix &);
 
     // Args:
     //   m:  The matrix to be subsetted.
@@ -128,6 +131,8 @@ namespace BOOM {
     //     cases the stride argument can be ignored.
     ConstSubMatrix(const double *data, int rows, int cols, int stride = -1);
 
+    ConstSubMatrix &reset(const Matrix &rhs, int rlo, int rhi, int clo, int chi);
+    
     uint nrow() const;
     uint ncol() const;
 
@@ -147,7 +152,7 @@ namespace BOOM {
     double sum() const;
 
     Matrix to_matrix() const;
-    ostream &display(ostream &out, int precision) const;
+    std::ostream &display(std::ostream &out, int precision) const;
 
    private:
     const double *start_;
@@ -156,7 +161,7 @@ namespace BOOM {
     const double *cols(int i) const { return start_ + stride * i; }
   };
 
-  ostream &operator<<(ostream &out, const ConstSubMatrix &m);
+  std::ostream &operator<<(std::ostream &out, const ConstSubMatrix &m);
   bool operator==(const Matrix &lhs, const SubMatrix &rhs);
   bool operator==(const Matrix &lhs, const ConstSubMatrix &rhs);
   bool operator==(const SubMatrix &lhs, const Matrix &rhs);
@@ -167,17 +172,61 @@ namespace BOOM {
   bool operator==(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
 
   Matrix operator+(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
-  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs);
-  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs);
   Matrix operator+(const ConstSubMatrix &lhs, const SubMatrix &rhs);
   Matrix operator+(const ConstSubMatrix &lhs, const Matrix &rhs);
+  Matrix operator+(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const SubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator+(const SubMatrix &lhs, const Matrix &rhs);
+  Matrix operator+(const Matrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const Matrix &lhs, const SubMatrix &rhs);
+  Matrix operator+(const ConstSubMatrix &lhs, double rhs);
+  Matrix operator+(double lhs, const ConstSubMatrix &rhs);
+  Matrix operator+(const SubMatrix &lhs, double rhs);
+  Matrix operator+(double lhs, const SubMatrix &rhs);
 
   Matrix operator-(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
-  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs);
-  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs);
   Matrix operator-(const ConstSubMatrix &lhs, const SubMatrix &rhs);
   Matrix operator-(const ConstSubMatrix &lhs, const Matrix &rhs);
+  Matrix operator-(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const SubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator-(const SubMatrix &lhs, const Matrix &rhs);
+  Matrix operator-(const Matrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const Matrix &lhs, const SubMatrix &rhs);
+  Matrix operator-(const ConstSubMatrix &lhs, double rhs);
+  Matrix operator-(double lhs, const ConstSubMatrix &rhs);
+  Matrix operator-(const SubMatrix &lhs, double rhs);
+  Matrix operator-(double lhs, const SubMatrix &rhs);
 
+  Matrix operator*(const ConstSubMatrix &x, double y);
+  Matrix operator*(const SubMatrix &x, double y);
+  Matrix operator*(double x, const ConstSubMatrix &y);
+  Matrix operator*(double x, const SubMatrix &y);
+  
+  Matrix operator/(const ConstSubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator/(const ConstSubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator/(const ConstSubMatrix &lhs, const Matrix &rhs);
+  Matrix operator/(const SubMatrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator/(const SubMatrix &lhs, const SubMatrix &rhs);
+  Matrix operator/(const SubMatrix &lhs, const Matrix &rhs);
+  Matrix operator/(const Matrix &lhs, const ConstSubMatrix &rhs);
+  Matrix operator/(const Matrix &lhs, const SubMatrix &rhs);
+  Matrix operator/(const ConstSubMatrix &lhs, double rhs);
+  Matrix operator/(double lhs, const ConstSubMatrix &rhs);
+  Matrix operator/(const SubMatrix &lhs, double rhs);
+  Matrix operator/(double lhs, const SubMatrix &rhs);
+  
+  // Return a SubMatrix using block-matrix partitioning.  I.e. return block (3,
+  // 4) from a partitioned matrix, where each block element is a (2, 3) matrix.
+  SubMatrix block(Matrix &m, int block_row, int block_col,
+                  int block_row_size, int block_col_size);
+  ConstSubMatrix const_block(const Matrix &m, int block_row, int block_col,
+                  int block_row_size, int block_col_size);
+
+  inline int nrow(const SubMatrix &m) {return m.nrow();}
+  inline int nrow(const ConstSubMatrix &m) {return m.nrow();}
+  inline int ncol(const SubMatrix &m) {return m.ncol();}
+  inline int ncol(const ConstSubMatrix &m) {return m.ncol();}
+  
 }  // namespace BOOM
 
 #endif  // BOOM_SUBMATRIX_HPP

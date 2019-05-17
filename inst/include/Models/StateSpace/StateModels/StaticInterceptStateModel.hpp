@@ -32,7 +32,7 @@ namespace BOOM {
   // The state of this model is entirely determined by its initial distribution.
   // The transition matrix T is the number 1, and the residual variance matrix
   // is the number 0.
-  class StaticInterceptStateModel : public StateModel {
+  class StaticInterceptStateModel : virtual public StateModel {
    public:
     StaticInterceptStateModel();
     StaticInterceptStateModel(const StaticInterceptStateModel &rhs) = default;
@@ -42,12 +42,7 @@ namespace BOOM {
 
     // There is nothing to do here.
     void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now,
-                       ScalarStateSpaceModelBase *model) override {}
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override {}
+                       int time_now) override {}
 
     uint state_dimension() const override { return 1; }
 
@@ -78,13 +73,6 @@ namespace BOOM {
 
     SparseVector observation_matrix(int t) const override {
       return observation_matrix_;
-    }
-
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
     }
 
     Vector initial_state_mean() const override { return initial_state_mean_; }

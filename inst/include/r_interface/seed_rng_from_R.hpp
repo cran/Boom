@@ -19,15 +19,15 @@
 #ifndef BOOM_SEED_RNG_FROM_R_HPP_
 #define BOOM_SEED_RNG_FROM_R_HPP_
 
-#include <r_interface/boom_r_tools.hpp>
+#include "r_interface/boom_r_tools.hpp"
 namespace BOOM{
   namespace RInterface{
 
-    // If rseed is non-NULL, then the BOOM global random number
-    // generator will be seeded with the time since the epoch.  If
-    // rseed is convertable to an int then that seed will be used in
-    // both BOOM's global RNG, and it will be passed to srand() so C++
-    // algorithms relying on rand() will be seeded as well.
+    // If rseed is non-NULL, then the BOOM global random number generator will
+    // be seeded with the time since the epoch.  If rseed is convertable to an
+    // int then that seed will be used in both BOOM's global RNG, and it will be
+    // passed to srand() so C++ algorithms relying on rand() will be seeded as
+    // well.
     void seed_rng_from_R(SEXP rseed);
   }
 }

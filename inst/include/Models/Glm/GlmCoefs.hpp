@@ -30,7 +30,7 @@ namespace BOOM {
     // If infer_model_selection is true then zero-valued coefficients
     // will be marked as excluded from the model.
     explicit GlmCoefs(const Vector &b, bool infer_model_selection = false);
-    GlmCoefs(const Vector &b, const Selector &Inc);
+    explicit GlmCoefs(const Vector &b, const Selector &Inc);
     GlmCoefs(const GlmCoefs &rhs);
     GlmCoefs *clone() const override;
 
@@ -45,8 +45,11 @@ namespace BOOM {
     void add_all();
 
     //---- size querries...
-    uint size(bool minimal =
-                  true) const override;  // number included/possible covariates
+    // Args:
+    //   minimal: If true, return the number of included coefficients.
+    //     Otherwise return the number of available coefficients
+    uint size(bool minimal = true) const override;
+    
     uint nvars() const;
     uint nvars_possible() const;
     uint nvars_excluded() const;
@@ -100,5 +103,58 @@ namespace BOOM {
     double operator[](uint i) const;
   };
 
+  //===========================================================================
+  class MatrixGlmCoefs : public MatrixParams {
+   public:
+    // All coefficients included.  Initial value is zero.
+    explicit MatrixGlmCoefs(int nrow, int ncol);
+
+    // All coefficients are included.
+    explicit MatrixGlmCoefs(const Matrix &coefficients);
+
+    // Specify which coefficients are included.
+    explicit MatrixGlmCoefs(const Matrix &coefficients,
+                            const SelectorMatrix &included);
+
+    MatrixGlmCoefs *clone() const override {return new MatrixGlmCoefs(*this);}
+    
+    int nrow() const {return value().nrow();}
+    int ncol() const {return value().ncol();}
+
+    // The rows of the coefficient matrix correspond to predictors.  The columns
+    // correspond to different outcomes.
+    int xdim() const {return nrow();}
+    int ydim() const {return ncol();}
+    
+    Vector predict(const Vector &predictors) const;
+
+    // Args:
+    //   values: The full matrix of coefficients, including all 0's for excluded
+    //     variables.  Nonzero values for coefficients that have been excluded
+    //     will be 
+    void set(const Matrix &values, bool signal = true) override;
+
+    void set_inclusion_pattern(const SelectorMatrix &included);
+
+    void add_all() {included_.add_all();}
+    void drop_all() {included_.drop_all();}
+    void add(int i, int j) {included_.add(i, j);}
+    void drop(int i, int j) {included_.drop(i, j);}
+    void flip(int i, int j) {included_.flip(i, j);}
+
+    const SelectorMatrix &included_coefficients() const { return included_; }
+    
+   private:
+    // Keeps track of which coefficients are included (i.e. not forced to zero).
+    SelectorMatrix included_;
+
+    // Throws an error if the dimension of the selector matrix does not match
+    // the dimension of the matrix parameter.
+    void check_dimension(const SelectorMatrix &included) const;
+    
+    // Set all excluded coefficients to zero.
+    void set_zeros();
+  };
+  
 }  // namespace BOOM
 #endif  // BOOM_GLM_COEFS_HPP

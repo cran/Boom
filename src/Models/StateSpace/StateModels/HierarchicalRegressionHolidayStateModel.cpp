@@ -26,6 +26,9 @@ namespace BOOM {
 
   namespace {
     using HRHSM = HierarchicalRegressionHolidayStateModel;
+    using SHRHSM = ScalarHierarchicalRegressionHolidayStateModel;
+    using DIHRSM = DynamicInterceptHierarchicalRegressionHolidayStateModel;
+    using Impl = RegressionHolidayBaseImpl;
   }  // namespace
 
   HRHSM::HierarchicalRegressionHolidayStateModel(
@@ -65,54 +68,71 @@ namespace BOOM {
     impl_.observe_time_dimension(max_time);
   }
 
-  void HRHSM::observe_state(const ConstVectorView &then,
-                            const ConstVectorView &now, int time_now,
-                            ScalarStateSpaceModelBase *model) {
-    int which_model = impl_.which_holiday(time_now);
+
+  SHRHSM::ScalarHierarchicalRegressionHolidayStateModel(
+        const Date &time_of_first_observation,
+        ScalarStateSpaceModelBase *model)
+        : HierarchicalRegressionHolidayStateModel(
+              time_of_first_observation,
+              Impl::extract_residual_variance_parameter(*model)),
+          state_space_model_(model) {}
+
+  void SHRHSM::observe_state(const ConstVectorView &then,
+                            const ConstVectorView &now, int time_now) {
+    int which_model = impl().which_holiday(time_now);
     if (which_model < 0) {
       return;
     }
-    int day = impl_.which_day(time_now);
+    int day = impl().which_day(time_now);
     // The residual contains the observed data minus the contributions from all
     // state models but this one.
     double residual =
-        model->adjusted_observation(time_now) -
-        model->observation_matrix(time_now).dot(model->state(time_now)) +
+        state_space_model_->adjusted_observation(time_now) -
+        state_space_model_->observation_matrix(time_now).dot(
+            state_space_model_->state(time_now)) +
         this->observation_matrix(time_now).dot(now);
-    model_->data_model(which_model)
-        ->suf()
-        ->add_mixture_data(residual, daily_dummies(day), 1.0);
+    model()->data_model(which_model)->suf()->add_mixture_data(
+        residual, daily_dummies(day), 1.0);
   }
 
-  void HRHSM::observe_dynamic_intercept_regression_state(
-      const ConstVectorView &then, const ConstVectorView &now, int time_now,
-      DynamicInterceptRegressionModel *model) {
-    int which_model = impl_.which_holiday(time_now);
+  DIHRSM::DynamicInterceptHierarchicalRegressionHolidayStateModel(
+      const Date &time_of_first_observation,
+      DynamicInterceptRegressionModel *model)
+      : HierarchicalRegressionHolidayStateModel(
+            time_of_first_observation,
+            model->observation_model()->Sigsq_prm()),
+        state_space_model_(model) {}
+  
+  void DIHRSM::observe_state(
+      const ConstVectorView &then, const ConstVectorView &now, int time_now) {
+    int which_model = impl().which_holiday(time_now);
     if (which_model < 0) {
       return;
     }
-    int day = impl_.which_day(time_now);
+    int day = impl().which_day(time_now);
     // The residual contains the observed data minus the contributions from all
     // state models but this one.
-    Ptr<StateSpace::MultiplexedRegressionData> full_data =
-        model->dat()[time_now];
-    if (full_data->missing() == Data::missing_status::completely_missing) {
+    Ptr<StateSpace::TimeSeriesRegressionData> data =
+        state_space_model_->dat()[time_now];
+    if (data->missing() == Data::missing_status::completely_missing) {
       return;
     }
-    int nobs = full_data->total_sample_size();
-    for (int i = 0; i < nobs; ++i) {
-      if (full_data->regression_data(i).missing() ==
-          Data::missing_status::observed) {
-        double residual = full_data->regression_data(i).y() -
-                          model->conditional_mean(time_now, i) +
-                          this->observation_matrix(time_now).dot(now);
-        model_->data_model(which_model)
-            ->suf()
-            ->add_mixture_data(residual, daily_dummies(day), 1.0);
-      }
+    Vector residual =
+        data->response() - state_space_model_->conditional_mean(time_now);
+    residual += this->observation_matrix(time_now).dot(now);
+    for (int i = 0; i < residual.size(); ++i) {
+      model()->data_model(which_model)->suf()->add_mixture_data(
+          residual[i], daily_dummies(day), 1.0);
     }
   }
 
+  Ptr<SparseMatrixBlock> DIHRSM::observation_coefficients(
+      int t,
+      const StateSpace::TimeSeriesRegressionData &data_point) const {
+    return new IdenticalRowsMatrix(observation_matrix(t),
+                                   data_point.sample_size());
+  }
+  
   SparseVector HRHSM::observation_matrix(int t) const {
     SparseVector ans(1);
     if (impl_.which_holiday(t) < 0) {

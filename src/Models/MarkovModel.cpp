@@ -74,7 +74,7 @@ namespace BOOM {
   void MD::set_prev(const Ptr<MD> &p) { links.set_prev(p); }
   void MD::set_next(const Ptr<MD> &p) { links.set_next(p); }
 
-  ostream &MD::display(ostream &out) const {
+  std::ostream &MD::display(std::ostream &out) const {
     return CategoricalData::display(out);
   }
 
@@ -108,7 +108,8 @@ namespace BOOM {
     return new TimeSeries<MarkovData>(data, true);
   }
 
-  Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> &raw_data) {
+  Ptr<MarkovDataSeries> make_markov_data(
+      const std::vector<std::string> &raw_data) {
     if (raw_data.empty()) return nullptr;
     Ptr<CatKey> key = make_catkey(raw_data);
     std::vector<Ptr<MarkovData>> data;
@@ -335,7 +336,7 @@ namespace BOOM {
     mle();
   }
 
-  MarkovModel::MarkovModel(const std::vector<string> &sdata)
+  MarkovModel::MarkovModel(const std::vector<std::string> &sdata)
       : DataPolicy(new MarkovSuf(number_of_unique_elements(sdata))) {
     uint S = suf()->state_space_size();
     NEW(TPM, Q1)(S);
@@ -429,21 +430,6 @@ namespace BOOM {
     } else if (pi0_status == Stationary) {
       set_pi0(get_stat_dist(Q));
     }
-  }
-
-  void MarkovModel::set_conjugate_prior(const Ptr<ProductDirichletModel> &pri) {
-    NEW(MarkovConjSampler, sam)(this, pri);
-    set_conjugate_prior(sam);
-  }
-
-  void MarkovModel::set_conjugate_prior(const Ptr<ProductDirichletModel> &pri,
-                                        const Ptr<DirichletModel> &pi0pri) {
-    NEW(MarkovConjSampler, sam)(this, pri, pi0pri);
-    set_conjugate_prior(sam);
-  }
-
-  void MarkovModel::set_conjugate_prior(const Ptr<MarkovConjSampler> &p) {
-    set_method(p);
   }
 
   double MarkovModel::loglike(const Vector &serialized_params) const {

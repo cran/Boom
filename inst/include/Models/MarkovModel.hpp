@@ -21,7 +21,7 @@
 #define BOOM_MARKOV_MODEL_HPP
 
 #include <vector>
-#include "BOOM.hpp"
+#include "uint.hpp"
 
 #include "Models/CategoricalData.hpp"
 #include "Models/EmMixtureComponent.hpp"
@@ -52,7 +52,7 @@ namespace BOOM {
     explicit MarkovData(uint val, const Ptr<CatKeyBase> &key);
     explicit MarkovData(uint val, const Ptr<MarkovData> &last);
 
-    explicit MarkovData(const string &value, const Ptr<CatKey> &key);
+    explicit MarkovData(const std::string &value, const Ptr<CatKey> &key);
     MarkovData(const MarkovData &, bool copy_links = false);
 
     virtual MarkovData *create() const;  // does not copy links
@@ -66,15 +66,17 @@ namespace BOOM {
     void set_prev(const Ptr<MarkovData> &p);
     void set_next(const Ptr<MarkovData> &n);
 
-    ostream &display(ostream &) const override;
-    //    istream & read(istream &in);
+    std::ostream &display(std::ostream &) const override;
   };
   //=====================================================================
   typedef TimeSeries<MarkovData> MarkovDataSeries;
-  Ptr<MarkovDataSeries> make_markov_data(const std::vector<uint> &raw_data);
-  Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> &raw_data);
-  Ptr<MarkovDataSeries> make_markov_data(const std::vector<string> &raw_data,
-                                         const std::vector<string> &order);
+  Ptr<MarkovDataSeries> make_markov_data(
+      const std::vector<uint> &raw_data);
+  Ptr<MarkovDataSeries> make_markov_data(
+      const std::vector<std::string> &raw_data);
+  Ptr<MarkovDataSeries> make_markov_data(
+      const std::vector<std::string> &raw_data,
+      const std::vector<std::string> &order);
 
   //=====================================================================
   const bool debug_markov_update_suf(false);
@@ -194,7 +196,7 @@ namespace BOOM {
     explicit MarkovModel(const Matrix &Q);
     MarkovModel(const Matrix &Q, const Vector &pi0);
     explicit MarkovModel(const std::vector<uint> &);
-    explicit MarkovModel(const std::vector<string> &);
+    explicit MarkovModel(const std::vector<std::string> &);
 
     MarkovModel(const MarkovModel &rhs);
     MarkovModel *clone() const override;
@@ -231,10 +233,6 @@ namespace BOOM {
     double pi0(int) const;
 
     void mle() override;
-    void set_conjugate_prior(const Ptr<ProductDirichletModel> &);
-    void set_conjugate_prior(const Ptr<ProductDirichletModel> &,
-                             const Ptr<DirichletModel> &);
-    void set_conjugate_prior(const Ptr<MarkovConjSampler> &);
 
     // The argument is a Vector with S^2 - 1 elements, where S is the
     // state space size.  The final S-1 are the initial distribution.

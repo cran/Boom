@@ -43,7 +43,7 @@ namespace BOOM {
                                        bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
                                        bool minimal = true) override;
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
 
     double n() const;
 
@@ -75,7 +75,7 @@ namespace BOOM {
   //      y[t] ~ N( (1-phi)*mu + phi*y[t-1], sigsq)
   // where (1-phi)*mu is the intercept and phi is the slope.
   class NonzeroMeanAr1Model
-      : public MLE_Model,
+      : virtual public MLE_Model,
         public ParamPolicy_3<UnivParams, UnivParams, UnivParams>,
         public SufstatDataPolicy<DoubleData, Ar1Suf>,
         public PriorPolicy {

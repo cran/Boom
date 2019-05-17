@@ -134,7 +134,7 @@ namespace BOOM {
   double max_nd2(Vector &x, Vector &g, Matrix &h, Target f, dTarget df,
                  d2Target d2f, double leps) {
     double ans;
-    string error_message;
+    std::string error_message;
     bool ok = max_nd2_careful(x, g, h, ans, std::move(f), std::move(df),
                               std::move(d2f), leps, error_message);
     if (!ok) {
@@ -146,7 +146,7 @@ namespace BOOM {
   //======================================================================
   bool max_nd2_careful(Vector &x, Vector &g, Matrix &h, double &ans, Target f,
                        dTarget df, d2Target d2f, double leps,
-                       string &error_message) {
+                       std::string &error_message) {
     unsigned int ntries = 0, maxtries = 5;
     Vector original_x = x;
     d2Negate nd2f(std::move(f), std::move(df), std::move(d2f));
@@ -176,7 +176,7 @@ namespace BOOM {
     } while (!happy && ntries < maxtries);
 
     if (ntries >= maxtries) {
-      ostringstream err;
+      std::ostringstream err;
       err << "max_nd2 failed.   too many newton_raphson failures " << endl
           << "last error message was: " << endl
           << error_message;

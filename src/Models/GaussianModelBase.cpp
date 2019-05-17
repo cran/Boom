@@ -19,6 +19,7 @@
 #include "Models/GaussianModelBase.hpp"
 #include "Models/SufstatAbstractCombineImpl.hpp"
 #include "distributions.hpp"
+#include "cpputil/Constants.hpp"
 
 namespace BOOM {
 
@@ -133,7 +134,7 @@ namespace BOOM {
     return unvectorize(it, minimal);
   }
 
-  ostream &GS::print(ostream &out) const {
+  std::ostream &GS::print(std::ostream &out) const {
     return out << n_ << " " << sum_ << " " << sumsq_;
   }
 
@@ -210,4 +211,54 @@ namespace BOOM {
   std::set<Ptr<Data>> GaussianModelBase::abstract_data_set() const {
     return std::set<Ptr<Data>>(dat().begin(), dat().end());
   }
+
+  // The log likelihood conditional on sigma, but integrating out mu.
+  double GaussianModelBase::log_integrated_likelihood(
+      const GaussianSuf &suf, double mu0, double tausq, double sigsq) {
+    double posterior_variance = 1.0 / (1.0 / tausq + suf.n() / sigsq);
+    double posterior_mean = 
+        posterior_variance * (suf.sum() / sigsq + mu0 / tausq);
+    double sumsq =
+        suf.centered_sumsq(suf.ybar()) / sigsq
+        + suf.n() * square(suf.ybar()) / sigsq
+        + square(mu0) / tausq
+        - square(posterior_mean) / posterior_variance;
+
+    double ans =
+        -suf.n() * Constants::log_root_2pi
+        -.5 * suf.n() * log(sigsq)
+        + .5 * log(posterior_variance / tausq)
+        - .5 * sumsq;
+    return ans;
+  }
+
+  // The log likelihood after integrating out both sigma and mu.
+  double GaussianModelBase::log_integrated_likelihood(
+      const GaussianSuf &suf, double mu0, double kappa,
+      double df, double ss) {
+    double n = suf.n();
+    double DF = df + n;
+    double posterior_mean = (n * suf.ybar() + kappa * mu0) / (n + kappa);
+    double SS =
+        ss
+        + suf.centered_sumsq(suf.ybar())
+        + n * square(suf.ybar() - posterior_mean)
+        + kappa * square(mu0 - posterior_mean);
+
+    return -.5 * n * Constants::log_2pi
+        + .5 * log(kappa / (n + kappa))
+        + lgamma(DF / 2)
+        - lgamma(df / 2)
+        + (.5 * df) * log(ss / 2)
+        - (.5 * DF) * log(SS / 2);
+  }
+
+  double GaussianModelBase::log_likelihood(const GaussianSuf &suf, double mu, double sigsq) {
+    double n = suf.n();
+    return -.5 * n * Constants::log_2pi
+        - .5 * n * log(sigsq)
+        - .5 * (n - 1) * suf.sample_var() / sigsq
+        - .5 * n * square(suf.ybar() - mu) / sigsq;
+  }
+  
 }  // namespace BOOM

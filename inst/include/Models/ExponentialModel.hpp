@@ -49,7 +49,7 @@ namespace BOOM {
                                        bool minimal = true) override;
     Vector::const_iterator unvectorize(const Vector &v,
                                        bool minimal = true) override;
-    ostream &print(ostream &out) const override;
+    std::ostream &print(std::ostream &out) const override;
 
    private:
     double sum_, n_;
@@ -82,10 +82,6 @@ namespace BOOM {
       double m = mean();
       return m * m;
     }
-
-    void set_conjugate_prior(double a, double b);
-    void set_conjugate_prior(const Ptr<GammaModel> &);
-    void set_conjugate_prior(const Ptr<ExponentialGammaSampler> &);
 
     // probability calculations
     double pdf(const Ptr<Data> &dp, bool logscale) const override;

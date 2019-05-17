@@ -24,17 +24,17 @@
 
 namespace BOOM {
   class GlmCoefs;
-  class VariableSelectionPrior;
+  class StructuredVariableSelectionPrior;
 
   namespace ModelSelection {
     class Variable : private RefCounted {
      public:
-      Variable(uint pos, double prob, const string &name = "");
+      Variable(uint pos, double prob, const std::string &name = "");
       Variable(const Variable &rhs);
       virtual Variable *clone() const = 0;
       ~Variable() override;
 
-      virtual ostream &print(ostream &) const;
+      virtual std::ostream &print(std::ostream &) const;
       virtual double logp(const Selector &inc) const;
 
       // Put inc is in a valid state (where logp > -infinity).
@@ -46,9 +46,9 @@ namespace BOOM {
       Ptr<BinomialModel> model();
       const Ptr<BinomialModel> model() const;
       virtual bool parents_are_present(const Selector &g) const = 0;
-      const string &name() const;
+      const std::string &name() const;
 
-      virtual void add_to(VariableSelectionPrior &) const = 0;
+      virtual void add_to(StructuredVariableSelectionPrior &) const = 0;
 
       friend void intrusive_ptr_add_ref(Variable *v) { v->up_count(); }
       friend void intrusive_ptr_release(Variable *v) {
@@ -59,31 +59,31 @@ namespace BOOM {
      private:
       uint pos_;
       Ptr<BinomialModel> mod_;
-      string name_;
+      std::string name_;
     };
-    ostream &operator<<(ostream &out, const Variable &v);
+    std::ostream &operator<<(std::ostream &out, const Variable &v);
     //______________________________________________________________________
     class MainEffect : public Variable {
      public:
-      MainEffect(uint position, double prob, const string &name = "");
+      MainEffect(uint position, double prob, const std::string &name = "");
       MainEffect *clone() const override;
       virtual bool observed() const;
       bool parents_are_present(const Selector &g) const override;
-      void add_to(VariableSelectionPrior &) const override;
+      void add_to(StructuredVariableSelectionPrior &) const override;
       void make_valid(Selector &inc) const override;
     };
     //______________________________________________________________________
     class MissingMainEffect : public MainEffect {
      public:
       MissingMainEffect(uint position, double prob, uint obs_ind_pos,
-                        const string &name);
+                        const std::string &name);
       MissingMainEffect(const MissingMainEffect &rhs);
       MissingMainEffect *clone() const override;
       double logp(const Selector &inc) const override;
       void make_valid(Selector &inc) const override;
       bool observed() const override;
       bool parents_are_present(const Selector &g) const override;
-      void add_to(VariableSelectionPrior &) const override;
+      void add_to(StructuredVariableSelectionPrior &) const override;
 
      private:
       uint obs_ind_pos_;
@@ -92,14 +92,14 @@ namespace BOOM {
     class Interaction : public Variable {
      public:
       Interaction(uint position, double prob, const std::vector<uint> &parents,
-                  const string &name = "");
+                  const std::string &name = "");
       Interaction(const Interaction &rhs);
       Interaction *clone() const override;
       double logp(const Selector &inc) const override;
       void make_valid(Selector &inc) const override;
       uint nparents() const;
       bool parents_are_present(const Selector &g) const override;
-      void add_to(VariableSelectionPrior &) const override;
+      void add_to(StructuredVariableSelectionPrior &) const override;
 
      private:
       std::vector<uint> parent_pos_;

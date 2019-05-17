@@ -21,12 +21,13 @@
 #include <iostream>
 #include <utility>
 #include "LinAlg/SpdMatrix.hpp"
+#include "LinAlg/DiagonalMatrix.hpp"
 #include "Models/StateSpace/Filters/SparseVector.hpp"
 #include "cpputil/report_error.hpp"
 
 namespace BOOM {
 
-  void SparseMatrixBlock::conforms_to_rows(int i) const {
+  void SparseKalmanMatrix::conforms_to_rows(int i) const {
     if (i == nrow()) return;
     std::ostringstream err;
     err << "object of length " << i
@@ -34,7 +35,7 @@ namespace BOOM {
     report_error(err.str());
   }
 
-  void SparseMatrixBlock::conforms_to_cols(int i) const {
+  void SparseKalmanMatrix::conforms_to_cols(int i) const {
     if (i == ncol()) return;
     std::ostringstream err;
     err << "object of length " << i
@@ -42,7 +43,51 @@ namespace BOOM {
     report_error(err.str());
   }
 
-  void SparseMatrixBlock::check_can_add(const SubMatrix &block) const {
+  namespace {
+    template <class VECTOR>
+    Vector sparse_multiply_impl(const SparseMatrixBlock &m, const VECTOR &v) {
+      m.conforms_to_cols(v.size());
+      Vector ans(m.nrow(), 0.0);
+      m.multiply(VectorView(ans), v);
+      return ans;
+    }
+  }  // namespace
+
+  Vector SparseMatrixBlock::operator*(const Vector &v) const {
+    return sparse_multiply_impl(*this, v);
+  }
+  Vector SparseMatrixBlock::operator*(const VectorView &v) const {
+    return sparse_multiply_impl(*this, v);
+  }
+  Vector SparseMatrixBlock::operator*(const ConstVectorView &v) const {
+    return sparse_multiply_impl(*this, v);
+  }
+  Matrix SparseMatrixBlock::operator*(const Matrix &rhs) const {
+    conforms_to_cols(rhs.nrow());
+    Matrix ans(nrow(), rhs.ncol());
+    for (int j = 0; j < rhs.ncol(); ++j) {
+      multiply(ans.col(j), rhs.col(j));
+    }
+    return ans;
+  }
+
+  Vector SparseMatrixBlock::Tmult(const ConstVectorView &rhs) const {
+    conforms_to_rows(rhs.size());
+    Vector ans(ncol());
+    Tmult(VectorView(ans), rhs);
+    return ans;
+  }
+
+  Matrix SparseMatrixBlock::Tmult(const Matrix &rhs) const {
+    conforms_to_rows(rhs.nrow());
+    Matrix ans(ncol(), rhs.ncol());
+    for (int j = 0; j < ans.ncol(); ++j) {
+      Tmult(ans.col(j), rhs.col(j));
+    }
+    return ans;
+  }
+  
+  void SparseKalmanMatrix::check_can_add(const SubMatrix &block) const {
     if (block.nrow() != nrow() || block.ncol() != ncol()) {
       std::ostringstream err;
       err << "cant add SparseMatrix to SubMatrix: rows and columnns "
@@ -61,6 +106,17 @@ namespace BOOM {
     }
   }
 
+  Matrix SparseMatrixBlock::dense() const {
+    if (nrow() == ncol()) {
+      Matrix ans(nrow(), ncol(), 0.0);
+      ans.diag() = 1.0;
+      matrix_multiply_inplace(SubMatrix(ans));
+      return ans;
+    } else {
+      return *this * SpdMatrix(ncol(), 1.0);
+    }
+  }
+  
   void SparseMatrixBlock::matrix_transpose_premultiply_inplace(
       SubMatrix m) const {
     for (int i = 0; i < m.nrow(); ++i) {
@@ -74,22 +130,15 @@ namespace BOOM {
                  "either mathematically non-invertible, or the left_inverse "
                  "function simply has not been implemented.");
   }
+
+  Matrix & SparseMatrixBlock::add_to(Matrix &P) const {
+    add_to_block(SubMatrix(P));
+    return P;
+  }
   
-  Matrix SparseMatrixBlock::dense() const {
-    Matrix ans(nrow(), ncol());
-    if (nrow() == ncol()) {
-      ans.set_diag(1.0);
-      for (int i = 0; i < ncol(); ++i) {
-        this->multiply_inplace(ans.col(i));
-      }
-      return ans;
-    } else {
-      Matrix id(ncol(), ncol(), 0.0);
-      id.set_diag(1.0);
-      for (int i = 0; i < ncol(); ++i) {
-        multiply(ans.col(i), id.col(i));
-      }
-    }
+  Matrix SparseKalmanMatrix::dense() const {
+    Matrix ans(nrow(), ncol(), 0.0);
+    add_to(ans);
     return ans;
   }
 
@@ -219,7 +268,34 @@ namespace BOOM {
     }
   }
 
-  void BlockDiagonalMatrixBlock::add_to(SubMatrix block) const {
+  SpdMatrix BlockDiagonalMatrixBlock::inner() const {
+    SpdMatrix ans(ncol());
+    int position = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      int local_dim = blocks_[b]->ncol();
+      SubMatrix inner_block(ans, position, position + local_dim - 1,
+                            position, position + local_dim - 1);
+      inner_block = blocks_[b]->inner();
+      position += local_dim;
+    }
+    return ans;
+  }
+
+  SpdMatrix BlockDiagonalMatrixBlock::inner(const ConstVectorView &weights) const {
+    SpdMatrix ans(ncol());
+    int position = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      int local_dim = blocks_[b]->ncol();
+      const ConstVectorView local_weights(weights, position, local_dim);
+      SubMatrix inner_block(ans, position, position + local_dim - 1,
+                            position, position + local_dim - 1);
+      inner_block = blocks_[b]->inner(local_weights);
+      position += local_dim;
+    }
+    return ans;
+  }
+  
+  void BlockDiagonalMatrixBlock::add_to_block(SubMatrix block) const {
     conforms_to_rows(block.nrow());
     conforms_to_cols(block.ncol());
     int position = 0;
@@ -227,7 +303,7 @@ namespace BOOM {
       int local_dim = blocks_[b]->nrow();
       SubMatrix local(block, position, position + local_dim - 1, position,
                       position + local_dim - 1);
-      blocks_[b]->add_to(local);
+      blocks_[b]->add_to_block(local);
       position += local_dim;
     }
   }
@@ -253,6 +329,12 @@ namespace BOOM {
     return *this;
   }
 
+  void StackedMatrixBlock::clear() {
+    blocks_.clear();
+    nrow_ = 0;
+    ncol_ = 0;
+  }
+  
   void StackedMatrixBlock::add_block(const Ptr<SparseMatrixBlock> &block) {
     if (nrow_ == 0) {
       nrow_ = block->nrow();
@@ -314,17 +396,53 @@ namespace BOOM {
     report_error("multiply_inplace only works for square matrices.");
   }
 
-  void StackedMatrixBlock::add_to(SubMatrix block) const {
+  SpdMatrix StackedMatrixBlock::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    for (int b = 0; b < blocks_.size(); ++b) {
+      ans += blocks_[b]->inner();
+    }
+    return ans;
+  }
+
+  SpdMatrix StackedMatrixBlock::inner(const ConstVectorView &weights) const {
+    if (weights.size() != nrow()) {
+      report_error("Weight vector was the wrong size.");
+    }
+    SpdMatrix ans(ncol(), 0.0);
+    int position = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      int local_dim = blocks_[b]->nrow();
+      const ConstVectorView local_weights(weights, position, local_dim);
+      ans += blocks_[b]->inner(local_weights);
+      position += local_dim;
+    }
+    return ans;
+  }
+  
+  void StackedMatrixBlock::add_to_block(SubMatrix block) const {
     conforms_to_rows(block.nrow());
     conforms_to_cols(block.ncol());
     int position = 0;
     for (int b = 0; b < blocks_.size(); ++b) {
-      SubMatrix lhs_block(block, position, position + ncol_ - 1, 0, ncol_ - 1);
-      blocks_[b]->add_to(lhs_block);
-      position += ncol_;
+      SubMatrix lhs_block(block, position, position + blocks_[b]->nrow() - 1,
+                          0, ncol_ - 1);
+      blocks_[b]->add_to_block(lhs_block);
+      position += blocks_[b]->nrow();
     }
   }
 
+  Matrix StackedMatrixBlock::dense() const {
+    Matrix ans(nrow(), ncol());
+    int position = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      SubMatrix ans_block(ans, position, position + blocks_[b]->nrow() - 1,
+                          0, ncol_ - 1);
+      ans_block = blocks_[b]->dense();
+      position += blocks_[b]->nrow();
+    }
+    return ans;
+  }
+  
   //======================================================================
   LocalLinearTrendMatrix *LocalLinearTrendMatrix::clone() const {
     return new LocalLinearTrendMatrix(*this);
@@ -359,7 +477,28 @@ namespace BOOM {
     v[0] += v[1];
   }
 
-  void LocalLinearTrendMatrix::add_to(SubMatrix block) const {
+  SpdMatrix LocalLinearTrendMatrix::inner() const {
+    // 1 0 * 1 1  = 1 1
+    // 1 1   0 1    1 2
+    SpdMatrix ans(2);
+    ans = 1.0;
+    ans(1, 1) = 2.0;
+    return ans;
+  }
+
+  SpdMatrix LocalLinearTrendMatrix::inner(const ConstVectorView &weights) const {
+    // 1 0 * w1 0  * 1 1  =  w1  w1
+    // 1 1   0  w2   0 1     w1  w1 + w2 
+    if (weights.size() != 2) {
+      report_error("Wrong size weight vector");
+    }
+    SpdMatrix ans(2);
+    ans(0, 0) = ans(0, 1) = ans(1, 0) = weights[0];
+    ans(1, 1) = weights[0] + weights[1];
+    return ans;
+  }
+  
+  void LocalLinearTrendMatrix::add_to_block(SubMatrix block) const {
     check_can_add(block);
     block.row(0) += 1;
     block(1, 1) += 1;
@@ -455,7 +594,28 @@ namespace BOOM {
     }
   }
 
-  void SDMB::add_to(SubMatrix block) const {
+  SpdMatrix SDMB::inner() const {
+    Matrix ans(nrow(), 0.0);
+    for (int i = 0; i < positions_.size(); ++i) {
+      int pos = positions_[i];
+      ans(pos, pos) = square(elements_[i]->value());
+    }
+    return ans;
+  }
+
+  SpdMatrix SDMB::inner(const ConstVectorView &weights) const {
+    if (weights.size() != nrow()) {
+      report_error("Wrong size weight vector.");
+    }
+    Matrix ans(nrow(), 0.0);
+    for (int i = 0; i < positions_.size(); ++i) {
+      int pos = positions_[i];
+      ans(pos, pos) = square(elements_[i]->value()) * weights[i];
+    }
+    return ans;
+  }
+  
+  void SDMB::add_to_block(SubMatrix block) const {
     conforms_to_cols(block.ncol());
     conforms_to_rows(block.nrow());
     for (int i = 0; i < positions_.size(); ++i) {
@@ -525,7 +685,40 @@ namespace BOOM {
     *now = total;
   }
 
-  void SSSM::add_to(SubMatrix block) const {
+  SpdMatrix SSSM::inner() const {
+    // -1  1  0  0 .... 0          -1 -1 -1 -1 ... -1
+    // -1  0  1  0 .... 0           1  0  0  0 .... 0
+    // -1  0  0  1 .... 0           0  1  0  0 .... 0
+    // -1  0  0  0 .... 0           0  0  1  0 .... 0
+    // -1  0  0  0 .... 0           0  0  0  1 .... 0
+    SpdMatrix ans(nrow());
+    ans = 1.0;
+    ans.diag() = 2.0;
+    ans.diag().back() = 1.0;
+    return ans;
+  }
+
+  SpdMatrix SSSM::inner(const ConstVectorView &weights) const {
+    // -1  1  0  0 .... 0   w1        -1 -1 -1 -1 ... -1
+    // -1  0  1  0 .... 0     w2       1  0  0  0 .... 0
+    // -1  0  0  1 .... 0       w3     0  1  0  0 .... 0
+    // -1  0  0  0 .... 0         w4   0  0  1  0 .... 0
+    // -1  0  0  0 .... 0           w5 0  0  0  1 .... 0
+    //
+    // = w1 + w2  w1    w1 ....
+    //   w1     w1 + w3 w1 ....
+    //   w1       w1    w1 + w4
+    if (weights.size() != nrow()) {
+      report_error("Wrong size weight vector.");
+    }
+    SpdMatrix ans(nrow(), 0.0);
+    ans += weights[0];
+    VectorView(ans.diag(), 0, nrow() - 1) +=
+        ConstVectorView(weights, 1, nrow() - 1);
+    return ans;
+  }
+  
+  void SSSM::add_to_block(SubMatrix block) const {
     check_can_add(block);
     block.row(0) -= 1;
     VectorView d(block.subdiag(1));
@@ -612,7 +805,27 @@ namespace BOOM {
     }
   }
 
-  void AutoRegressionTransitionMatrix::add_to(SubMatrix block) const {
+  SpdMatrix AutoRegressionTransitionMatrix::inner() const {
+    SpdMatrix ans = outer(autoregression_params_->value());
+    int dim = ans.nrow();
+    VectorView(ans.diag(), 0, dim - 1) += 1.0;
+    return ans;
+  }
+
+  SpdMatrix AutoRegressionTransitionMatrix::inner(
+      const ConstVectorView &weights) const {
+    SpdMatrix ans = outer(autoregression_params_->value());
+    int dim = ans.nrow();
+    if (weights.size() != dim) {
+      report_error("Wrong size weight vector.");
+    }
+    ans *= weights[0];
+    ConstVectorView shifted_weights(weights, 1);
+    VectorView(ans.diag(), 0, dim - 1) += shifted_weights;
+    return ans;
+  }
+  
+  void AutoRegressionTransitionMatrix::add_to_block(SubMatrix block) const {
     check_can_add(block);
     block.row(0) += autoregression_params_->value();
     VectorView d(block.subdiag(1));
@@ -669,18 +882,23 @@ namespace BOOM {
 
   void SEIFR::matrix_transpose_premultiply_inplace(SubMatrix m) const {
     conforms_to_rows(m.nrow());
-    m.row(position_) = value_ * m.row(0);
-    // Set the rows before position_ to zero.
-    if (position_ > 0) {
-      SubMatrix(m, 0, position_ - 1, 0, m.ncol() - 1) = 0;
-    }
-    // Set the rows after position_ to zero.
-    if (position_ < m.nrow() - 1) {
-      SubMatrix(m, position_ + 1, m.nrow() - 1, 0, m.ncol()) = 0;
-    }
+    m.col(0) = m.col(position_) * value_;
+    SubMatrix(m, 0, m.nrow() - 1, 1, m.ncol() - 1) = 0;
   }
 
-  void SEIFR::add_to(SubMatrix block) const {
+  SpdMatrix SEIFR::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    ans(position_, position_) = square(value_);
+    return ans;
+  }
+
+  SpdMatrix SEIFR::inner(const ConstVectorView &weights) const {
+    SpdMatrix ans(ncol(), 0.0);
+    ans(position_, position_) = square(value_) * weights[0];
+    return ans;
+  }
+  
+  void SEIFR::add_to_block(SubMatrix block) const {
     conforms_to_rows(block.nrow());
     conforms_to_cols(block.ncol());
     block(0, position_) += value_;
@@ -818,7 +1036,25 @@ namespace BOOM {
     }
   }
 
-  void GenericSparseMatrixBlock::add_to(SubMatrix block) const {
+  SpdMatrix GenericSparseMatrixBlock::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    for (const auto &el : rows_) {
+      el.second.add_outer_product(ans);
+    }
+    return ans;
+  }
+
+  SpdMatrix GenericSparseMatrixBlock::inner(
+      const ConstVectorView &weights) const {
+    SpdMatrix ans(ncol(), 0.0);
+    for (const auto &el : rows_) {
+      uint position = el.first;
+      el.second.add_outer_product(ans, weights[position]);
+    }
+    return ans;
+  }
+  
+  void GenericSparseMatrixBlock::add_to_block(SubMatrix block) const {
     conforms_to_rows(block.nrow());
     conforms_to_cols(block.ncol());
     for (const auto &row : rows_) {
@@ -844,6 +1080,85 @@ namespace BOOM {
     }
   }
 
+  //======================================================================
+  void StackedRegressionCoefficients::add_row(const Ptr<GlmCoefs> &beta) {
+    if (!coefficients_.empty()) {
+      if (beta->nvars_possible() != coefficients_[0]->nvars_possible()) {
+        report_error("All coefficient vectors must be the same size.");
+      }
+    }
+    coefficients_.push_back(beta);
+  }
+
+  namespace {
+    template <class VECTOR>
+    Vector stacked_regression_vector_mult(
+        const VECTOR &v, const StackedRegressionCoefficients &coef) {
+      Vector ans(coef.nrow());
+      for (int i = 0; i < coef.nrow(); ++i) {
+        ans[i] = coef.coefficients(i).predict(v);
+      }
+      return ans;
+    }
+  }  // namespace
+  
+  Vector StackedRegressionCoefficients::operator*(
+      const Vector &v) const {
+    return stacked_regression_vector_mult(v, *this);
+  }
+  Vector StackedRegressionCoefficients::operator*(
+      const VectorView &v) const {
+    return stacked_regression_vector_mult(v, *this);
+  }
+  Vector StackedRegressionCoefficients::operator*(
+      const ConstVectorView &v) const {
+    return stacked_regression_vector_mult(v, *this);
+  }
+
+  Vector StackedRegressionCoefficients::Tmult(
+      const ConstVectorView &x) const {
+    Vector ans(ncol());
+    for (int i = 0; i < ncol(); ++i) {
+      ans[i] = 0;
+      for (int j = 0; j < nrow(); ++j) {
+        ans[i] += coefficients_[j]->value()[i] * x[i];
+      }
+    }
+    return ans;
+  }
+
+  SpdMatrix StackedRegressionCoefficients::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    for (int i = 0; i < nrow(); ++i) {
+      ans.add_outer(coefficients_[i]->value(), coefficients_[i]->inc());
+    }
+    return ans;
+  }
+
+  SpdMatrix StackedRegressionCoefficients::inner(
+      const ConstVectorView &weights) const {
+    SpdMatrix ans(ncol(), 0.0);
+    for (int i = 0; i < nrow(); ++i) {
+      ans.add_outer(coefficients_[i]->value(),
+                    coefficients_[i]->inc(), weights[i]);
+    }
+    return ans;
+  }
+
+  Matrix &StackedRegressionCoefficients::add_to(Matrix &P) const {
+    for (int i = 0; i < nrow(); ++i) {
+      P.row(i) += coefficients_[i]->value();
+    }
+    return P;
+  }
+
+  SubMatrix StackedRegressionCoefficients::add_to_submatrix(SubMatrix P) const {
+    for (int i = 0; i < nrow(); ++i) {
+      P.row(i) += coefficients_[i]->value();
+    }
+    return P;
+  }
+  
   //======================================================================
   Matrix SparseKalmanMatrix::operator*(const Matrix &rhs) const {
     int nr = nrow();
@@ -933,17 +1248,6 @@ namespace BOOM {
     this->add_to(tmp);
     P = tmp;
     return P;
-  }
-
-  Matrix SparseKalmanMatrix::dense() const {
-    Matrix ans(nrow(), ncol());
-    Vector v(ncol(), 0.0);
-    for (int i = 0; i < ncol(); ++i) {
-      v[i] = 1.0;
-      ans.col(i) = (*this) * v;
-      v[i] = 0.0;
-    }
-    return ans;
   }
 
   // Returns this * rhs.transpose().
@@ -1065,6 +1369,37 @@ namespace BOOM {
       ConstVectorView rhs(x, rhs_pos, blocks_[b]->nrow());
       rhs_pos += blocks_[b]->nrow();
       blocks_[b]->Tmult(lhs, rhs);
+    }
+    return ans;
+  }
+
+  SpdMatrix BlockDiagonalMatrix::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    int start = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      int end = start + blocks_[b]->ncol();
+      SubMatrix(ans, start, end - 1, start, end - 1)
+          = blocks_[b]->inner();
+      start = end;
+    }
+    return ans;
+  }
+
+  SpdMatrix BlockDiagonalMatrix::inner(const ConstVectorView &weights) const {
+    if (weights.size() != nrow()) {
+      report_error("Wrong size weight vector for BlockDiagonalMatrix.");
+    }
+    SpdMatrix ans(ncol(), 0.0);
+    int ans_start = 0;
+    int weight_start = 0;
+    for (int b = 0; b < blocks_.size(); ++b) {
+      const SparseMatrixBlock &block(*blocks_[b]);
+      int ans_end = ans_start + block.ncol();
+      const ConstVectorView local_weights(weights, weight_start, block.nrow());
+      SubMatrix(ans, ans_start, ans_end - 1, ans_start, ans_end - 1)
+          = block.inner(local_weights);
+      ans_start += block.ncol();
+      weight_start += block.nrow();
     }
     return ans;
   }
@@ -1191,7 +1526,7 @@ namespace BOOM {
   Matrix &BlockDiagonalMatrix::add_to(Matrix &P) const {
     for (int b = 0; b < blocks_.size(); ++b) {
       SubMatrix block = get_block(P, b, b);
-      blocks_[b]->add_to(block);
+      blocks_[b]->add_to_block(block);
     }
     return P;
   }
@@ -1199,7 +1534,7 @@ namespace BOOM {
   SubMatrix BlockDiagonalMatrix::add_to_submatrix(SubMatrix P) const {
     for (int b = 0; b < blocks_.size(); ++b) {
       SubMatrix block = get_submatrix_block(P, b, b);
-      blocks_[b]->add_to(block);
+      blocks_[b]->add_to_block(block);
     }
     return P;
   }
@@ -1270,12 +1605,65 @@ namespace BOOM {
     return ans;
   }
 
+  SpdMatrix SparseVerticalStripMatrix::inner() const {
+    SpdMatrix ans(ncol(), 0.0);
+    std::vector<Matrix> dense_blocks;
+    dense_blocks.reserve(blocks_.size());
+    for (int b = 0; b < blocks_.size(); ++b) {
+      dense_blocks.push_back(blocks_[b]->dense());
+    }
+    int row_start = 0;
+    for (int b0 = 0; b0 < blocks_.size(); ++b0) {
+      BlockDiagonalMatrix row_block;
+      row_block.add_block(blocks_[b0]);
+      int col_start = row_start;
+      int row_end = row_start + blocks_[b0]->ncol();
+      for (int b1 = b0; b1 < blocks_.size(); ++b1) {
+        int col_end = col_start + blocks_[b1]->ncol();
+        SubMatrix(ans, row_start, row_end - 1, col_start, col_end - 1)
+            = row_block.Tmult(dense_blocks[b1]);
+        col_start = col_end;
+      }
+      row_start = row_end;
+    }
+    ans.reflect();
+    return ans;
+  }
+
+  SpdMatrix SparseVerticalStripMatrix::inner(
+      const ConstVectorView &weights) const {
+    SpdMatrix ans(ncol(), 0.0);
+    std::vector<Matrix> dense_blocks;
+    dense_blocks.reserve(blocks_.size());
+    DiagonalMatrix weight_block(weights);
+    for (int b = 0; b < blocks_.size(); ++b) {
+      dense_blocks.push_back(weight_block * blocks_[b]->dense());
+    }
+    
+    int row_start = 0;
+    for (int b0 = 0; b0 < blocks_.size(); ++b0) {
+      BlockDiagonalMatrix row_block;
+      row_block.add_block(blocks_[b0]);
+      int col_start = row_start;
+      int row_end = row_start + blocks_[b0]->ncol();
+      for (int b1 = b0; b1 < blocks_.size(); ++b1) {
+        int col_end = col_start + blocks_[b1]->ncol();
+        SubMatrix(ans, row_start, row_end - 1, col_start, col_end - 1)
+            = row_block.Tmult(dense_blocks[b1]);
+        col_start = col_end;
+      }
+      row_start = row_end;
+    }
+    ans.reflect();
+    return ans;
+  }
+  
   Matrix &SparseVerticalStripMatrix::add_to(Matrix &P) const {
     check_can_add(P.nrow(), P.ncol());
     int start_column = 0;
     for (int i = 0; i < blocks_.size(); ++i) {
       int ncol = blocks_[i]->ncol();
-      blocks_[i]->add_to(
+      blocks_[i]->add_to_block(
           SubMatrix(P, 0, nrow() - 1, start_column, start_column + ncol - 1));
       start_column += ncol;
     }
@@ -1287,7 +1675,7 @@ namespace BOOM {
     int start_column = 0;
     for (int i = 0; i < blocks_.size(); ++i) {
       int ncol = blocks_[i]->ncol();
-      blocks_[i]->add_to(
+      blocks_[i]->add_to_block(
           SubMatrix(P, 0, nrow() - 1, start_column, start_column + ncol - 1));
       start_column += ncol;
     }
@@ -1301,7 +1689,11 @@ namespace BOOM {
   }
   void SparseVerticalStripMatrix::check_can_Tmult(int vector_size) const {
     if (nrow() != vector_size) {
-      report_error("Incompatible vector (transpose-)multiplication.");
+      std::ostringstream err;
+      err << "Incompatible vector (transpose-)multiplication.  "
+          << "This matrix has " << nrow() << " rows.  The target vector has "
+          << vector_size << " elements." << std::endl;
+      report_error(err.str());
     }
   }
 

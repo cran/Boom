@@ -46,18 +46,18 @@ namespace BOOM {
   uint MVTP::dim() const { return siginv_.nrow(); }
 
   void MVTP::set_var(const SpdMatrix &V) {
-    Chol L(V);
+    Cholesky L(V);
     chol_ = L.getL();
     siginv_ = L.inv();
     ldsi_ = -2 * sum(log(diag(chol_)));
   }
 
   void MVTP::set_ivar(const SpdMatrix &H) {
-    Chol cholesky(H);
+    Cholesky cholesky(H);
     siginv_ = H;
     chol_ = cholesky.getL();
     ldsi_ = 2 * sum(log(diag(chol_)));
-    chol_ = chol_.t().inv();
+    chol_ = chol_.transpose().inv();
     // now chol_ is an upper triangular matrix with chol_ * chol_.t() = Sigma
   }
 

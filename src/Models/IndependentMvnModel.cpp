@@ -28,75 +28,74 @@ namespace BOOM {
     inline double square(double x) { return x * x; }
   }  // namespace
 
-  IndependentMvnSuf::IndependentMvnSuf(int dim)
-      : sum_(dim), sumsq_(dim), n_(0) {}
+  IndependentMvnSuf::IndependentMvnSuf(int dim) : suf_(dim) {}
 
   IndependentMvnSuf *IndependentMvnSuf::clone() const {
     return new IndependentMvnSuf(*this);
   }
 
   void IndependentMvnSuf::clear() {
-    sum_ = 0;
-    sumsq_ = 0;
-    n_ = 0;
+    for (auto &s : suf_) s.clear();
   }
 
   void IndependentMvnSuf::resize(int dim) {
-    sum_.resize(dim);
-    sumsq_.resize(dim);
+    suf_.resize(dim);
     clear();
   }
 
   void IndependentMvnSuf::Update(const VectorData &d) { update_raw(d.value()); }
 
+  void IndependentMvnSuf::update_single_dimension(double y, int position) {
+    suf_[position].update_raw(y);
+  }
+  
   void IndependentMvnSuf::update_raw(const Vector &y) {
-    n_ += 1;
-    sum_ += y;
     for (int i = 0; i < y.size(); ++i) {
-      sumsq_[i] += square(y[i]);
+      suf_[i].update_raw(y[i]);
     }
   }
 
   void IndependentMvnSuf::add_mixture_data(const Vector &v, double prob) {
-    n_ += prob;
-    sum_.axpy(v, prob);
     for (int i = 0; i < v.size(); ++i) {
-      sumsq_[i] += prob * square(v[i]);
+      suf_[i].add_mixture_data(v[i], prob);
     }
   }
 
   void IndependentMvnSuf::update_expected_value(
       double sample_size, const Vector &expected_sum,
       const Vector &expected_sum_of_squares) {
-    n_ += sample_size;
-    sum_ += expected_sum;
-    sumsq_ += expected_sum_of_squares;
+    for (int i = 0; i < expected_sum.size(); ++i) {
+      suf_[i].update_expected_value(
+          sample_size, expected_sum[i], expected_sum_of_squares[i]);
+    }
   }
 
-  double IndependentMvnSuf::sum(int i) const { return sum_[i]; }
-  double IndependentMvnSuf::sumsq(int i) const { return sumsq_[i]; }
+  double IndependentMvnSuf::sum(int i) const { return suf_[i].sum();}
+  double IndependentMvnSuf::sumsq(int i) const { return suf_[i].sumsq();}
 
   double IndependentMvnSuf::centered_sumsq(int i, double mu) const {
-    return sumsq_[i] - 2 * mu * sum_[i] + n_ * square(mu);
+    return sumsq(i) - 2 * mu * sum(i) + suf_[i].n() * square(mu);
   }
 
-  double IndependentMvnSuf::n() const { return n_; }
+  double IndependentMvnSuf::n(int i) const {
+    return suf_[i].n();
+  }
 
   double IndependentMvnSuf::ybar(int i) const {
-    double ni = n_;
+    double ni = n(i);
     if (ni < 1e-7) {
       return 0;
     }
-    return sum_[i] / ni;
+    return sum(i) / ni;
   }
 
   double IndependentMvnSuf::sample_var(int i) const {
-    double ni = n_;
+    double ni = n(i);
     if (ni - 1 < std::numeric_limits<double>::epsilon()) {
       return 0;
     }
     double ybari = ybar(i);
-    double ss = sumsq_[i] - ni * ybari * ybari;
+    double ss = sumsq(i) - ni * ybari * ybari;
     return ss / (ni - 1);
   }
 
@@ -109,42 +108,42 @@ namespace BOOM {
   }
 
   void IndependentMvnSuf::combine(const IndependentMvnSuf &s) {
-    n_ += s.n_;
-    sum_ += s.sum_;
-    sumsq_ += s.sumsq_;
+    for (int i = 0; i < suf_.size(); ++i) {
+      suf_[i].combine(s.suf_[i]);
+    }
   }
 
   Vector IndependentMvnSuf::vectorize(bool) const {
-    Vector ans(1, n_);
-    ans.reserve(1 + 2 * sum_.size());
-    ans.concat(sum_);
-    ans.concat(sumsq_);
+    Vector ans;
+    ans.reserve(3 * suf_.size());
+    for (int i = 0; i < suf_.size(); ++i) {
+      ans.concat(suf_[i].vectorize());
+    }
     return (ans);
   }
 
   Vector::const_iterator IndependentMvnSuf::unvectorize(
       Vector::const_iterator &v, bool) {
-    int dim = sum_.size();
-    n_ = *v;
-    v += 1;
-    sum_.assign(v, v + dim);
-    v += dim;
-    sumsq_.assign(v, v + dim);
-    v += dim;
+    for (int i = 0; i < suf_.size(); ++i) {
+      v = suf_[i].unvectorize(v);
+    }
     return v;
   }
 
-  Vector::const_iterator IndependentMvnSuf::unvectorize(const Vector &v,
-                                                        bool minimal) {
+  Vector::const_iterator IndependentMvnSuf::unvectorize(
+      const Vector &v, bool minimal) {
     Vector::const_iterator vi = v.begin();
     return unvectorize(vi, minimal);
   }
 
-  ostream &IndependentMvnSuf::print(ostream &out) const {
-    Matrix tmp(sum_.size(), 2);
-    tmp.col(0) = sum_;
-    tmp.col(1) = sumsq_;
-    out << n_ << std::endl << tmp;
+  std::ostream &IndependentMvnSuf::print(std::ostream &out) const {
+    Matrix tmp(suf_.size(), 3);
+    for (int i = 0; i < suf_.size(); ++i) {
+      tmp(i, 0) = n(i);
+      tmp(i, 1) = sum(i);
+      tmp(i, 2) = sumsq(i);
+    }
+    out << tmp;
     return out;
   }
 
@@ -184,6 +183,19 @@ namespace BOOM {
     return new IndependentMvnModel(*this);
   }
 
+  void IndependentMvnModel::add_mixture_data(const Ptr<Data> &dp, double weight) {
+    suf()->add_mixture_data(DAT(dp)->value(), weight);
+  }
+
+  void IndependentMvnModel::mle() {
+    const auto &sufstat(*suf());
+    for (int i = 0; i < dim(); ++i) {
+      set_mu_element(sufstat.ybar(i), i);
+      double ni = sufstat.n(i);
+      set_sigsq_element((ni - 1) * sufstat.sample_var(i) / ni, i);
+    }
+  }
+  
   double IndependentMvnModel::Logp(const Vector &x, Vector &g, Matrix &h,
                                    uint nderivs) const {
     int d = x.size();
@@ -214,6 +226,10 @@ namespace BOOM {
 
   const Vector &IndependentMvnModel::mu() const { return Mu_ref().value(); }
 
+  DiagonalMatrix IndependentMvnModel::diagonal_variance() const {
+    return DiagonalMatrix(sigsq());
+  }
+  
   const SpdMatrix &IndependentMvnModel::Sigma() const {
     sigma_scratch_.set_diag(sigsq());
     return sigma_scratch_;

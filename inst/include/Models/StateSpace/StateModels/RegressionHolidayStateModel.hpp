@@ -131,6 +131,13 @@ namespace BOOM {
       return residual_variance_->value();
     }
 
+    void set_residual_variance_prm(const Ptr<UnivParams> &sigsq) {
+      residual_variance_ = sigsq;
+    }
+
+    static Ptr<UnivParams> extract_residual_variance_parameter(
+        ScalarStateSpaceModelBase &model);
+
    private:
     Date time_of_first_observation_;
     Ptr<UnivParams> residual_variance_;
@@ -160,7 +167,10 @@ namespace BOOM {
   // day in the window.  These dummy variables never co-occur, so X'X is a
   // diagonal matrix with diagonal elements containing occurrance counts for
   // each day.
-  class RegressionHolidayStateModel : public StateModel,
+  //
+  // This is an abstract class because a concrete model class member is needed
+  // to implement observe_state.
+  class RegressionHolidayStateModel : virtual public StateModel,
                                       public ManyParamPolicy,
                                       public NullDataPolicy,
                                       public NullPriorPolicy {
@@ -185,7 +195,7 @@ namespace BOOM {
     RegressionHolidayStateModel &operator=(RegressionHolidayStateModel &&rhs) =
         default;
 
-    RegressionHolidayStateModel *clone() const override;
+    RegressionHolidayStateModel *clone() const override = 0;
 
     // Add a holiday to the set of holidays modeled by this object.
     void add_holiday(const Ptr<Holiday> &holiday);
@@ -222,15 +232,11 @@ namespace BOOM {
 
     // The numerical value of the residual variance parameter from the
     // observation equation.
-    double residual_variance() const { return impl_.residual_variance_value(); }
+    double residual_variance() const {
+      return impl_.residual_variance_value();
+    }
 
     void observe_time_dimension(int max_time) override;
-    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
-                       int time_now, ScalarStateSpaceModelBase *model) override;
-
-    void observe_dynamic_intercept_regression_state(
-        const ConstVectorView &then, const ConstVectorView &now, int time_now,
-        DynamicInterceptRegressionModel *model) override;
 
     uint state_dimension() const override {
       return impl_.state_dimension();
@@ -279,13 +285,6 @@ namespace BOOM {
     // holiday at time t, which is zero if no holiday is active.
     SparseVector observation_matrix(int t) const override;
 
-    Ptr<SparseMatrixBlock>
-    dynamic_intercept_regression_observation_coefficients(
-        int t, const StateSpace::MultiplexedData &data_point) const override {
-      return new IdenticalRowsMatrix(observation_matrix(t),
-                                     data_point.total_sample_size());
-    }
-
     Vector initial_state_mean() const override {
       return impl_.initial_state_mean();
     }
@@ -306,6 +305,15 @@ namespace BOOM {
       return holiday_mean_contributions_[i];
     }
 
+   protected:
+    void increment_daily_suf(int holiday, int day, double incremental_total,
+                             double incremental_count) {
+      daily_totals_[holiday][day] += incremental_total;
+      daily_counts_[holiday][day] += incremental_count;
+    }
+
+    const RegressionHolidayBaseImpl &impl() const {return impl_;}
+    
    private:
     RegressionHolidayBaseImpl impl_;
     std::vector<Ptr<VectorParams>> holiday_mean_contributions_;
@@ -316,6 +324,56 @@ namespace BOOM {
     RNG rng_;
   };
 
+  //===========================================================================
+  class ScalarStateSpaceModelBase;
+  class ScalarRegressionHolidayStateModel
+      : public RegressionHolidayStateModel {
+   public:
+    ScalarRegressionHolidayStateModel(const Date &time_of_first_observation,
+                                      ScalarStateSpaceModelBase *model,
+                                      const Ptr<GaussianModel> &prior,
+                                      RNG &seeding_rng = GlobalRng::rng);
+    
+    ScalarRegressionHolidayStateModel *clone()const override {
+      return new ScalarRegressionHolidayStateModel(*this);
+    }
+    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
+                       int time_now) override;
+   
+   private:
+    const ScalarStateSpaceModelBase *model_;
+  };
+
+  //===========================================================================
+  class DynamicInterceptRegressionModel;
+  class DynamicInterceptRegressionHolidayStateModel
+      : public RegressionHolidayStateModel,
+        public DynamicInterceptStateModel {
+   public:
+    DynamicInterceptRegressionHolidayStateModel(
+        const Date &time_of_first_observation,
+        DynamicInterceptRegressionModel *model,
+        const Ptr<GaussianModel> &prior,
+        RNG &seeding_rng = GlobalRng::rng);
+    
+    DynamicInterceptRegressionHolidayStateModel *clone() const override {
+      return new DynamicInterceptRegressionHolidayStateModel(*this);
+    }
+
+    Ptr<SparseMatrixBlock> observation_coefficients(
+        int t,
+        const StateSpace::TimeSeriesRegressionData &data_point) const override;
+    
+    void observe_state(const ConstVectorView &then, const ConstVectorView &now,
+                       int time_now) override;
+    bool is_pure_function_of_time() const override {
+      return true;
+    }
+
+   private:
+    DynamicInterceptRegressionModel *model_;
+  };
+  
 }  // namespace BOOM
 
 #endif  // BOOM_STATE_SPACE_REGRESSION_HOLIDAY_STATE_MODEL_HPP_

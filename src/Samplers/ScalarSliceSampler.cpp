@@ -23,7 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include "BOOM.hpp"
+#include "uint.hpp"
 #include "cpputil/math_utils.hpp"
 #include "cpputil/report_error.hpp"
 #include "distributions.hpp"
@@ -47,19 +47,25 @@ namespace BOOM {
 
   void SSS::set_limits(double Lo, double Hi) {
     assert(Hi > Lo);
-    lo_ = lower_bound_ = Lo;
-    hi_ = upper_bound_ = Hi;
-    lo_set_manually_ = hi_set_manually_ = true;
+    set_lower_limit(Lo);
+    set_upper_limit(Hi);
   }
+  
   void SSS::set_lower_limit(double Lo) {
-    lo_ = lower_bound_ = Lo;
-    lo_set_manually_ = true;
-    hi_set_manually_ = false;
+    if (std::isfinite(Lo)) {
+      lo_ = lower_bound_ = Lo;
+      lo_set_manually_ = true;
+    } else {
+      lo_set_manually_ = false;
+    }
   }
   void SSS::set_upper_limit(double Hi) {
-    hi_ = upper_bound_ = Hi;
-    lo_set_manually_ = false;
-    hi_set_manually_ = true;
+    if (std::isfinite(Hi)) {
+      hi_ = upper_bound_ = Hi;
+      hi_set_manually_ = true;
+    } else {
+      hi_set_manually_ = false;
+    }
   }
 
   void SSS::unset_limits() { hi_set_manually_ = lo_set_manually_ = false; }

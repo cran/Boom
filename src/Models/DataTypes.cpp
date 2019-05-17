@@ -21,14 +21,15 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include "cpputil/report_error.hpp"
 
 namespace BOOM {
 
-  ostream &operator<<(ostream &out, const Ptr<Data> &dp) {
+  std::ostream &operator<<(std::ostream &out, const Ptr<Data> &dp) {
     return dp->display(out);
   }
 
-  ostream &operator<<(ostream &out, const Data &d) {
+  std::ostream &operator<<(std::ostream &out, const Data &d) {
     d.display(out);
     return out;
   }
@@ -53,14 +54,14 @@ namespace BOOM {
       : Data(rhs), Traits(rhs), x(rhs.x) {}
   VectorData *VectorData::clone() const { return new VectorData(*this); }
 
-  ostream &VectorData::display(ostream &out) const {
+  std::ostream &VectorData::display(std::ostream &out) const {
     out << x;
     return out;
   }
 
-  void VectorData::set(const Vector &rhs, bool sig) {
+  void VectorData::set(const Vector &rhs, bool signal_change) {
     x = rhs;
-    if (sig) {
+    if (signal_change) {
       signal();
     }
   }
@@ -78,7 +79,35 @@ namespace BOOM {
     signal();
     return x[i];
   }
+  //------------------------------------------------------------
+  PartiallyObservedVectorData::PartiallyObservedVectorData(
+      const Vector &y, const Selector &obs)
+      : VectorData(y),
+        obs_(obs) {
+    if (obs.empty()) {
+      obs_ = Selector(y.size(), true);
+    }
+    if (obs_.nvars() == obs_.nvars_possible()) {
+      set_missing_status(observed);
+    } else if (obs_.nvars() > 0) {
+      set_missing_status(partly_missing);
+    } else {
+      set_missing_status(completely_missing);
+    }
+  }
 
+  PartiallyObservedVectorData * PartiallyObservedVectorData::clone() const {
+    return new PartiallyObservedVectorData(*this);
+  }
+  
+  void PartiallyObservedVectorData::set(const Vector &rhs, bool signal_change) {
+    if (rhs.size() != obs_.nvars_possible()) {
+      report_error("Dimension changes are not possible with "
+                   "PartiallyObservedVectorData");
+    }
+    VectorData::set(rhs, signal_change);
+  }
+  
   //------------------------------------------------------------
   MatrixData::MatrixData(int r, int c, double val) : x(r, c, val) {}
 
@@ -88,8 +117,8 @@ namespace BOOM {
       : Data(rhs), Traits(rhs), x(rhs.x) {}
 
   MatrixData *MatrixData::clone() const { return new MatrixData(*this); }
-  ostream &MatrixData::display(ostream &out) const {
-    out << x << endl;
+  std::ostream &MatrixData::display(std::ostream &out) const {
+    out << x << std::endl;
     return out;
   }
 

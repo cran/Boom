@@ -87,7 +87,7 @@ namespace BOOM {
     return unvectorize(it, minimal);
   }
 
-  ostream &ExpSuf::print(ostream &out) const {
+  std::ostream &ExpSuf::print(std::ostream &out) const {
     return out << n_ << " " << sum_;
   }
   //======================================================================
@@ -117,20 +117,6 @@ namespace BOOM {
 
   const double &EM::lam() const { return Lam_prm()->value(); }
   void EM::set_lam(double x) { return Lam_prm()->set(x); }
-
-  void EM::set_conjugate_prior(double a, double b) {
-    NEW(GammaModel, pri)(a, b);
-    set_conjugate_prior(pri);
-  }
-
-  void EM::set_conjugate_prior(const Ptr<GammaModel> &g) {
-    NEW(ExponentialGammaSampler, pri)(this, g);
-    set_conjugate_prior(pri);
-  }
-
-  void EM::set_conjugate_prior(const Ptr<ExponentialGammaSampler> &pri) {
-    set_method(pri);
-  }
 
   double ExponentialModel::Loglike(const Vector &lambda_vector, Vector &g,
                                    Matrix &h, uint nd) const {

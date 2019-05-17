@@ -78,9 +78,30 @@ namespace BOOM {
     x[1] = phi * x[1] + (1 - phi) * x[2];
   }
 
-  void LMAT::add_to(SubMatrix block) const {
+  SpdMatrix LMAT::inner() const {
+    SpdMatrix ans(3, 1.0);
+    ans(0, 1) = 1.0;
+    ans(1, 0) = 1.0;
+    double phi = phi_->value();
+    ans(1, 1) += phi * phi;
+    ans(1, 2) = ans(2, 1) = phi * (1 - phi);
+    ans(2, 2) += square(1 - phi);
+    return ans;
+  }
+
+  SpdMatrix LMAT::inner(const ConstVectorView &weights) const {
+    SpdMatrix ans(3, 0.0);
+    ans(0, 0) = ans(0, 1) = ans(1, 0) = weights[0];
+    double phi = phi_->value();
+    ans(1, 1) = weights[0] + weights[1] * square(phi);
+    ans(1, 2) = ans(2, 1) = weights[1] * phi * (1 - phi);
+    ans(2, 2) = weights[2] + weights[1] * square(1 - phi);
+    return ans;
+  }
+  
+  void LMAT::add_to_block(SubMatrix block) const {
     if (block.nrow() != 3 || block.ncol() != 3) {
-      report_error("block is the wrong size in LMAT::add_to");
+      report_error("block is the wrong size in LMAT::add_to_block");
     }
     double phi = phi_->value();
     block(0, 0) += 1;
@@ -152,8 +173,7 @@ namespace BOOM {
   // error term in level.  The slope model expects the current value
   // of the slope.
   void SLLT::observe_state(const ConstVectorView &then,
-                           const ConstVectorView &now, int time_now,
-                           ScalarStateSpaceModelBase *model) {
+                           const ConstVectorView &now, int time_now) {
     double change_in_level = now[0] - then[0] - then[1];
     level_->suf()->update_raw(change_in_level);
 

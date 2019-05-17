@@ -83,11 +83,10 @@ namespace BOOM {
     double operator()(int x1, int x2, int x3, int x4, int x5) const;
     double operator()(int x1, int x2, int x3, int x4, int x5, int x6) const;
 
-    // Utillity functions for creating a std::vector<int> to be used
-    // as an index.  Up to 6 dimensions are supported.  More can be
-    // added if needed, but if arrays of greater than 6 dimensions
-    // are needed, then people will probably create the dimensions
-    // programmatically.
+    // Utillity functions for creating a std::vector<int> to be used as an
+    // index.  Up to 6 dimensions are supported.  More can be added if needed,
+    // but if arrays of greater than 6 dimensions are needed, then people will
+    // probably create the dimensions programmatically.
     static std::vector<int> index1(int x1);
     static std::vector<int> index2(int x1, int x2);
     static std::vector<int> index3(int x1, int x2, int x3);
@@ -102,6 +101,9 @@ namespace BOOM {
     // dimension is 3 or more then an exception is thrown.
     Matrix to_matrix() const;
 
+    virtual ostream & print(ostream &out) const = 0;
+    virtual std::string to_string() const = 0;
+    
    private:
     std::vector<int> dims_;
     std::vector<int> strides_;
@@ -112,6 +114,11 @@ namespace BOOM {
     void compute_strides();
     static int product(const std::vector<int> &dims);
   };
+
+  inline ostream & operator<<(ostream &out, const ConstArrayBase &array) {
+    return array.print(out);
+  }
+  
   //======================================================================
   class ArrayBase : public ConstArrayBase {
    public:
@@ -174,13 +181,13 @@ namespace BOOM {
     void reset(const double *data, const std::vector<int> &dims,
                const std::vector<int> &strides);
 
-    // 'slice' returns a lower dimensional view into an array.  If you
-    // have a 3-way array indexed by (i, j, k), and you want to get
-    // the (i, k) slice (that is, (i, 0, k), (i, 1, k), ...), then you
-    // call array.slice(i, -1, k).  The negative index says 'give me
-    // all of these', analogous to a missing index in R.  The return
-    // value is a view into the array with dimension equal to the
-    // number of negative arguments.
+    // 'slice' returns a lower dimensional view into an array.  If you have a
+    // 3-way array indexed by (i, j, k), and you want to get the (i, k) slice
+    // (that is, (i, 0, k), (i, 1, k), ...), then you call array.slice(i, -1,
+    // k).  The negative index says 'give me all of these', analogous to a
+    // missing index in R, or the : symbol in Python.  The return value is a
+    // view into the array with dimension equal to the number of negative
+    // arguments.
     ConstArrayView slice(const std::vector<int> &index) const;
     ConstArrayView slice(int x1) const;
     ConstArrayView slice(int x1, int x2) const;
@@ -189,9 +196,8 @@ namespace BOOM {
     ConstArrayView slice(int x1, int x2, int x3, int x4, int x5) const;
     ConstArrayView slice(int x1, int x2, int x3, int x4, int x5, int x6) const;
 
-    // vector_slice() works in exactly the same way as slice(), but it
-    // returns a VectorView instead of an ArrayView.  Exactly one
-    // index must be negative.
+    // vector_slice() works in exactly the same way as slice(), but it returns a
+    // VectorView instead of an ArrayView.  Exactly one index must be negative.
     ConstVectorView vector_slice(const std::vector<int> &index) const;
     ConstVectorView vector_slice(int x1) const;
     ConstVectorView vector_slice(int x1, int x2) const;
@@ -204,9 +210,14 @@ namespace BOOM {
     ConstArrayIterator begin() const;
     ConstArrayIterator end() const;
 
+    ostream &print(ostream &out) const override;
+    std::string to_string() const override;
+    
    private:
     const double *data_;
   };
+
+  
   //======================================================================
   class ArrayView : public ArrayBase {
    public:
@@ -233,13 +244,12 @@ namespace BOOM {
     ArrayView &operator=(const VectorView &a);
     ArrayView &operator=(const ConstVectorView &a);
 
-    // 'slice' returns a lower dimensional view into an array.  If you
-    // have a 3-way array indexed by (i, j, k), and you want to get
-    // the (i, k) slice (that is, (i, 0, k), (i, 1, k), ...), then you
-    // call array.slice(i, -1, k).  The negative index says 'give me
-    // all of these', analogous to a missing index in R.  The return
-    // value is a view into the array with dimension equal to the
-    // number of negative arguments.
+    // 'slice' returns a lower dimensional view into an array.  If you have a
+    // 3-way array indexed by (i, j, k), and you want to get the (i, k) slice
+    // (that is, (i, 0, k), (i, 1, k), ...), then you call array.slice(i, -1,
+    // k).  The negative index says 'give me all of these', analogous to a
+    // missing index in R.  The return value is a view into the array with
+    // dimension equal to the number of negative arguments.
     ConstArrayView slice(const std::vector<int> &index) const;
     ConstArrayView slice(int x1) const;
     ConstArrayView slice(int x1, int x2) const;
@@ -281,6 +291,9 @@ namespace BOOM {
     ArrayIterator begin();
     ArrayIterator end();
 
+    ostream &print(ostream &out) const override;
+    std::string to_string() const override;
+    
    private:
     double *data_;
   };
@@ -301,6 +314,15 @@ namespace BOOM {
     Array(Array &&rhs) = default;
     Array &operator=(const Array &rhs) = default;
     Array &operator=(Array &&rhs) = default;
+
+    // The following assignment opertors expect the array to have the same size
+    // as the RHS, and will produce errors if the dimensions differ.
+    Array &operator=(const ArrayView &a);
+    Array &operator=(const ConstArrayView &a);
+    Array &operator=(const Matrix &a);
+    Array &operator=(const Vector &a);
+    Array &operator=(const VectorView &a);
+    Array &operator=(const ConstVectorView &a);
 
     template <class FwdIt>
     Array &assign(FwdIt begin, FwdIt end) {
@@ -368,8 +390,13 @@ namespace BOOM {
     const_iterator begin() const { return data_.begin(); }
     const_iterator end() const { return data_.end(); }
 
+    ostream &print(ostream &out) const override;
+    std::string to_string() const override;
+
    private:
     std::vector<double> data_;
   };
+  
 }  // namespace BOOM
+
 #endif  // BOOM_ARRAY_HPP
