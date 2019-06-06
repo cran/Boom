@@ -256,13 +256,10 @@ namespace BOOM {
     void add_series_specific_state(const Ptr<StateModel> &state_model,
                                    int series) {
       proxy_models_[series]->add_state(state_model);
-      has_series_specific_state_ = true;
     }
 
     // Indicates whether any of the proxy models have had state assigned.
-    bool has_series_specific_state() const {
-      return has_series_specific_state_;
-    }
+    bool has_series_specific_state() const;
 
     // Dimension of shared state.
     int state_dimension() const override {
@@ -307,7 +304,7 @@ namespace BOOM {
     int time_dimension() const override {return time_dimension_;}
 
     // The number of time series being modeled.  
-    int nseries() const {return nseries_;}
+    int nseries() const override {return nseries_;}
 
     // The dimension of the predictors.
     int xdim() const {return observation_model_->xdim();}
@@ -428,7 +425,8 @@ namespace BOOM {
     // If the observation variance is out of step with the observation_variance_
     // data member, update the data member.  This function is logically const.
     void update_observation_variance() const;
-    
+
+    void resize_subordinate_state();
     void observe_state(int t) override;
     void observe_initial_state();
     void observe_data_given_state(int t) override;
@@ -480,10 +478,6 @@ namespace BOOM {
     // This does not include the regression coefficients from the regression
     // model, nor does it include the series-specific state.
     mutable Ptr<StackedMatrixBlock> observation_coefficients_;
-    
-    // Initially set to false.  Flips to true if any state is assigned to proxy
-    // models.
-    bool has_series_specific_state_;
     
     // The response matrix organizes all the scalar responses from each data
     // point.  Time flows horizontally, so each column is a single time point.
