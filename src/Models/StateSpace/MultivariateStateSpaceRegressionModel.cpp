@@ -46,19 +46,24 @@ namespace BOOM {
   PSSSM::ProxyScalarStateSpaceModel(
       MultivariateStateSpaceRegressionModel *model,
       int which_series)
-      : model_(model),
+      : host_(model),
         which_series_(which_series)
   {}
 
-  int PSSSM::time_dimension() const {return model_->time_dimension();}
+  int PSSSM::time_dimension() const { return host_->time_dimension();}      
+
   double PSSSM::adjusted_observation(int t) const {
-    return model_->adjusted_observation(which_series_, t);
+    return host_->adjusted_observation(which_series_, t);
   }
 
   bool PSSSM::is_missing_observation(int t) const {
-    return model_->is_observed(which_series_, t);
+    return !host_->is_observed(which_series_, t);      
   }
 
+  double PSSSM::observation_variance(int t) const {
+    return host_->single_observation_variance(t, which_series_);
+  }
+  
   void PSSSM::add_data(
       const Ptr<StateSpace::MultiplexedDoubleData> &data_point) {
     report_error("add_data is disabled.");
@@ -67,7 +72,7 @@ namespace BOOM {
   void PSSSM::add_data(const Ptr<Data> &data_point) {
     report_error("add_data is disabled.");
   }
-
+  
   // This is StateSpaceModel::simulate_forecast, but with a zero residual
   // variance.
   Vector PSSSM::simulate_state_contribution_forecast(
@@ -116,7 +121,7 @@ namespace BOOM {
     // Add series specific component.
     if (has_series_specific_state()) {
       for (int j = 0; j < nseries(); ++j) {
-        forecast.row(j) =
+        forecast.row(j) +=
             proxy_models_[j]->simulate_state_contribution_forecast(
                 rng, horizon, series_specific_final_state[j]);
       }
@@ -129,16 +134,16 @@ namespace BOOM {
     int t0 = time_dimension();
     for (int t = 0; t < horizon; ++t) {
       advance_to_timestamp(rng, time, state, t, t);
-      forecast.col(t) += *observation_coefficients(t + t0, fully_observed) * state;
+      forecast.col(t) += *observation_coefficients(time + t0, fully_observed) * state;
     }
 
     // Add regression component and residual error.
     int index = 0;
     for (int t = 0; t < horizon; ++t) {
-      for (int j = 0; j < nseries(); ++j) {
-        forecast(j, t) += observation_model()->model(j)->predict(
+      for (int series = 0; series < nseries(); ++series) {
+        forecast(series, t) += observation_model()->model(series)->predict(
             forecast_data.row(index))
-            + rnorm_mt(rng, 0, observation_model()->model(j)->sigma());
+            + rnorm_mt(rng, 0, observation_model()->model(series)->sigma());
       }
     }
     return forecast;
@@ -189,11 +194,6 @@ namespace BOOM {
     IID_DataPolicy<TimeSeriesRegressionData>::clear_data();
   }
 
-  double MSSRM::observed_data(int series, int time) const {
-    finalize_data();
-    return response_matrix(series, time);
-  }
-  
   const SparseKalmanMatrix *MSSRM::observation_coefficients(
       int t, const Selector &observed) const {
     observation_coefficients_->clear();
@@ -322,16 +322,22 @@ namespace BOOM {
       Selector missing(observed.complement());
       Vector imputed = *observation_coefficients(t, missing) * shared_state(t);
       for (int i = 0; i < missing.nvars(); ++i) {
-        int I = missing.indx(i);
+        int series = missing.indx(i);
         double shared_effect = imputed[i];
-        double series_effect = proxy_models_[I]->observation_matrix(t).dot(
-            proxy_models_[I]->state(t));
-        int data_index = data_indices_[I][t];
-        const RegressionModel &regression(*observation_model_->model(I));
+        double series_effect = 0;
+        if (this->has_series_specific_state()
+            && series_state_dimension(series) > 0) {
+          series_effect = proxy_models_[series]->observation_matrix(t).dot(
+              proxy_models_[series]->state(t));
+        }
+        int data_index = data_indices_[series][t];
+        const RegressionModel &regression(*observation_model_->model(series));
         double regression_effect = regression.predict(dat()[data_index]->x());
         double error = rnorm_mt(rng, 0, regression.sigma());
-        dat()[data_index]->set_y(shared_effect + series_effect
-                                 + regression_effect + error);
+        dat()[data_index]->set_y(shared_effect
+                                 + series_effect
+                                 + regression_effect
+                                 + error);
         
         switch (workspace_status_) {
           case UNSET:
@@ -339,11 +345,11 @@ namespace BOOM {
           break;
           
           case SHOWS_SHARED_EFFECTS:
-            adjusted_data_workspace_(I, t) = shared_effect + error;
+            adjusted_data_workspace_(series, t) = shared_effect + error;
             break;
             
           case SHOWS_SERIES_EFFECTS:
-            adjusted_data_workspace_(I, t) = series_effect + error;
+            adjusted_data_workspace_(series, t) = series_effect + error;
             break;
 
           default:
@@ -370,6 +376,8 @@ namespace BOOM {
     }
   }
 
+  // Set the adjusted data workspace by subtracting regression and
+  // series-specific effects from the observed data.
   void MSSRM::isolate_shared_state() {
     adjusted_data_workspace_.resize(nseries(), time_dimension());
     for (int time = 0; time < time_dimension(); ++time) {
@@ -388,10 +396,9 @@ namespace BOOM {
       }
     }
     workspace_status_ = SHOWS_SHARED_EFFECTS;
-    //    std::cout << "adjusted data workspace: "
-    //              << std::endl << adjusted_data_workspace_ << std::endl;
   }
 
+  // Remove regression effects and the effects of shared state.
   void MSSRM::isolate_series_specific_state() {
     adjusted_data_workspace_.resize(nseries(), time_dimension());
     for (int time = 0; time < time_dimension(); ++time) {
@@ -399,14 +406,12 @@ namespace BOOM {
       Vector shared_state_contribution =
           *observation_coefficients(time, dummy_selector_) * state;
       for (int series = 0; series < nseries(); ++series) {
-        adjusted_data_workspace_(series, time)
-            = observed_data(series, time) - shared_state_contribution[series];
-
-        // Also subtract the regression component.
         int index = data_indices_[series][time];
-        adjusted_data_workspace_(series, time) -=
-            observation_model_->model(series)->predict(dat()[index]->x());
-        
+        const Vector &predictors(dat()[index]->x());
+        adjusted_data_workspace_(series, time)
+            = observed_data(series, time)
+            - shared_state_contribution[series]
+            - observation_model_->model(series)->predict(predictors);
       }
     }
     workspace_status_ = SHOWS_SERIES_EFFECTS;

@@ -34,7 +34,7 @@ namespace BOOM {
   }  // namespace 
   
   SEXP getListElement(SEXP list, const std::string &name, bool expect_answer) {
-    SEXP elmt = R_NilValue;
+    SEXP element = R_NilValue;
     SEXP names = Rf_getAttrib(list, R_NamesSymbol);
     if(Rf_isNull(names)){
       std::ostringstream err;
@@ -45,16 +45,16 @@ namespace BOOM {
     }
     for(int i = 0; i < Rf_length(list); i++)
       if(name == CHAR(STRING_ELT(names, i))){
-        elmt = VECTOR_ELT(list, i);
+        element = VECTOR_ELT(list, i);
         break;
       }
-    if (expect_answer && elmt == R_NilValue) {
+    if (expect_answer && element == R_NilValue) {
       std::ostringstream warning;
       warning << "Could not find list element named: " << name << endl;
       Rf_PrintValue(list);
       report_warning(warning.str());
     }
-    return elmt;
+    return element;
   }
 
   // Returns a vector of list names.  If an element does not have a
@@ -725,14 +725,8 @@ namespace BOOM {
       err << "Could not parse expression: " << call_string_;
       report_error(err.str());
     }
-    
-    return Rf_asReal(Rf_eval(VECTOR_ELT(r_call, 0), r_env_));
 
-    // NOTE: rchk raised a warning about passing output from Rf_eval directly to
-    // Rf_asReal.
-    SEXP r_function_output = protector.protect(
-        Rf_eval(VECTOR_ELT(r_call, 0), r_env_));
-    return Rf_asReal(r_function_output);
+    return Rf_asReal(protector.protect(Rf_eval(VECTOR_ELT(r_call, 0), r_env_)));
   }
   
   namespace {
