@@ -1,4 +1,4 @@
-6d21fa0db2350dfcbccd6d341dbabf25 *DESCRIPTION
+8a03e438a48445f7419e890a09b7c760 *DESCRIPTION
 7eb09e6fd83eb49ed22911c3b2f06744 *LICENSE
 d097581c8ab169ce36a20f3111636ebe *NAMESPACE
 7b7222fed6c42ccefc773cd2e548ac40 *R/add.segments.R
@@ -572,7 +572,7 @@ a2d20271e7c108bb8ce597d019d4a6bf *inst/include/Models/PoissonModel.hpp
 b8a9ad69526f9cd008dabbe10d9b5084 *inst/include/Models/Policies/CompositeParamPolicy.hpp
 61f31a602098cf4744bb98c82328d2f0 *inst/include/Models/Policies/DataInfoPolicy.hpp
 78abb5391dc63ea9459c61e9e3e2fed5 *inst/include/Models/Policies/DeferredDataPolicy.hpp
-f07e99947b9b5b88f821178464e2032b *inst/include/Models/Policies/IID_DataPolicy.hpp
+160c644de00590483b354ac7d2723e9b *inst/include/Models/Policies/IID_DataPolicy.hpp
 89e8ad1c3a0579e0976103e4c5e7f458 *inst/include/Models/Policies/ManyParamPolicy.hpp
 00389cb634c6afa295e1bbc26eb9fd02 *inst/include/Models/Policies/MixtureDataPolicy.hpp
 6b64faa92cdbd41204dabac8f30d0a43 *inst/include/Models/Policies/NonparametricParamPolicy.hpp
@@ -813,8 +813,8 @@ ed8f5e62f7d2a633b809c75d55056ba0 *inst/include/distributions/rng.hpp
 bedcb4477bb97863d0f912e32ad004ee *inst/include/math/cephes/cephes_impl.hpp
 db398c43769f483602d34d6d80e7c6e8 *inst/include/math/special_functions.hpp
 c1ddc5f48596c5bd95eda2f739763735 *inst/include/numopt.hpp
-c41363fb0a27fba967cf1645a892d24a *inst/include/numopt/Brent.hpp
-2ead27bad7b8f13ff3334d8bfd81eb3d *inst/include/numopt/Integral.hpp
+afa70b533adaa66b922f255fa9408bb7 *inst/include/numopt/Brent.hpp
+1f46043ac73f05212116158eb5f5bbe1 *inst/include/numopt/Integral.hpp
 0c01a7dd7dd118e7832b911c392fec39 *inst/include/numopt/NelderMead.hpp
 b8d977120479c340d81965181cba83b2 *inst/include/numopt/NumericalDerivatives.hpp
 a474bda0d68a06c0ac8745e15c17d5ba *inst/include/numopt/Powell.hpp
@@ -1042,7 +1042,7 @@ c1dffea99b9acde0b23d26fdfac799e7 *src/LinAlg/SWEEP.cpp
 3ee118b6c84985fed491527c8720e9ff *src/LinAlg/Vector.cpp
 99dd3af4099543aa1538c42b7818c581 *src/LinAlg/VectorView.cpp
 900d5dcb1029b013f9f337b0c7119433 *src/LinAlg/stack_columns.cpp
-be3343a8f08ec0a88d334b298dc45f04 *src/Makevars
+6bd814fdf00db194727011853b33a667 *src/Makevars
 6875955967986e8ccfabf1ace6ad9693 *src/Models/Bart/Bart.cpp
 b7f4ba3ee694a803b3063c9b42cd579e *src/Models/Bart/GaussianBartModel.cpp
 f0b64cebc22fbe49876a978fd7c8e1b8 *src/Models/Bart/GaussianLinearBartModel.cpp
@@ -1481,7 +1481,7 @@ b93efc7936a0145236dd26af89327dbf *src/math/cephes/powi.cpp
 4888c5eba2c845c1720954e050f3952d *src/math/cephes/zeta.cpp
 498c7a3978c81b3caf7c8935fe5ccf5b *src/math/cephes/zetac.cpp
 6bfc5fa576e1cfd96f91d4f7f6da8038 *src/math/lmultigamma.cpp
-84cd216495b52f3f040ecaf989eb1280 *src/numopt/Brent.cpp
+1051fbcae7c3b3375c45e9981ac5d7f0 *src/numopt/Brent.cpp
 8016808f8b459feda4d1e6dd81b67c6b *src/numopt/Integral.cpp
 d46b18eef8f64b65549713aef48c1935 *src/numopt/Negate.cpp
 03ba8b831f186a297bb2bf538734f72f *src/numopt/NelderMead.cpp
