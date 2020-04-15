@@ -89,6 +89,7 @@ namespace BOOM {
       uint I = indx(i);
       if (!new_inc[I]) Beta(I) = 0;
     }
+    included_coefficients_current_ = false;
     inc_ = new_inc;
   }
 
@@ -192,15 +193,6 @@ namespace BOOM {
   void GlmCoefs::set_included_coefficients(const Vector &b) {
     if (b.size() != nvars()) wrong_size_beta(b);
     set_Beta(inc_.expand(b));
-  }
-
-  void GlmCoefs::set_included_coefficients(const Vector &b,
-                                           const Selector &inc) {
-    if (b.size() != inc.nvars()) wrong_size_beta(b);
-    set_Beta(inc.expand(b));
-    included_coefficients_ = b;
-    included_coefficients_current_ = true;
-    inc_ = inc;
   }
 
   //------- operations on all possible variables ------
@@ -330,7 +322,7 @@ namespace BOOM {
                    "same size.");
     }
   }
-  
+
   void MatrixGlmCoefs::set_zeros() {
     for (int i = 0; i < nrow(); ++i) {
       for (int j = 0; j < ncol(); ++j) {
@@ -341,5 +333,5 @@ namespace BOOM {
     }
   }
 
-  
+
 }  // namespace BOOM
