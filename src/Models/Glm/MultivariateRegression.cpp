@@ -68,6 +68,18 @@ namespace BOOM {
     yty_.add_outer(y, w);
   }
 
+  void MvRegSuf::clear_y_keep_x() {
+    sumw_ = 0;
+    xty_ = 0;
+    yty_ = 0;
+  }
+
+  void MvRegSuf::update_y_not_x(const Vector &y, const Vector &x, double w) {
+    sumw_ += w;
+    xty_.add_outer(x, y, w);
+    yty_.add_outer(y, w);
+  }
+
   Matrix MvRegSuf::beta_hat() const { return xtx_.solve(xty_); }
   Matrix MvRegSuf::conditional_beta_hat(const SelectorMatrix &included) const {
     Matrix ans(xdim(), ydim());
@@ -282,12 +294,12 @@ namespace BOOM {
 
   Vector MvReg::predict(const Vector &x) const { return x * Beta(); }
 
-  MvRegData *MvReg::simdat(RNG &rng) const {
+  MvRegData *MvReg::sim(RNG &rng) const {
     Vector x = simulate_fake_x(rng);
-    return simdat(x, rng);
+    return sim(x, rng);
   }
 
-  MvRegData *MvReg::simdat(const Vector &x, RNG &rng) const {
+  MvRegData *MvReg::sim(const Vector &x, RNG &rng) const {
     Vector mu = predict(x);
     Vector y = rmvn_mt(rng, mu, Sigma());
     return new MvRegData(y, x);

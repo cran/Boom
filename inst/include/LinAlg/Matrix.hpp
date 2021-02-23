@@ -51,6 +51,14 @@ namespace BOOM {
     //   3 4
     explicit Matrix(const std::string &s, const std::string &row_delim = "|");
 
+    // Build a matrix by stacking rows or columns.
+    // Args:
+    //   rows_or_cols: The rows or columns to be joined.  All elements must be
+    //     the same size.
+    //   rows: If true, treat the first argument as a collection of rows.  If
+    //     false treat it as a collection of columns.
+    explicit Matrix(const std::vector<Vector> &rows_or_cols, bool rows=true);
+
     template <class FwdIt>
     Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc);
 
@@ -279,6 +287,12 @@ namespace BOOM {
     Matrix &exp();  // in place exponentiation
     Matrix &log();  // in place logarithm
 
+    // The sum of the elements in each column.  The result has size ncol().
+    Vector col_sums() const;
+
+    // The sum of the elements in each row.  The result has size nrow().
+    Vector row_sums() const;
+
     virtual double sum() const;
     virtual double abs_norm() const;
     virtual double sumsq() const;
@@ -293,10 +307,12 @@ namespace BOOM {
     std::istream &read(std::istream &);
 
    protected:
-    Vector V;
-    uint nr_, nc_;
     inline uint INDX(uint i, uint j) const;
     inline bool inrange(uint i, uint j) const;
+
+   private:
+    Vector data_;
+    uint nr_, nc_;
   };
 
   //======================================================================
@@ -353,14 +369,14 @@ namespace BOOM {
   // ---- template constructor --
   template <class FwdIt>
   Matrix::Matrix(FwdIt Beg, FwdIt End, uint nr, uint nc)
-      : V(Beg, End), nr_(nr), nc_(nc) {
-    assert(V.size() == nr * nc);
+      : data_(Beg, End), nr_(nr), nc_(nc) {
+    assert(data_.size() == nr * nc);
   }
 
   template <class FwdIt>
   FwdIt Matrix::assign(FwdIt b, FwdIt e) {
     assert(distance(b, e) == size());
-    V.assign(b, e);
+    data_.assign(b, e);
     return e;
   }
 
