@@ -21,7 +21,7 @@
 
 namespace BOOM {
   namespace Kalman {
-    
+
     MarginalDistributionBase::MarginalDistributionBase(int dim, int time_index)
         : time_index_(time_index),
           state_mean_(dim),
@@ -37,11 +37,12 @@ namespace BOOM {
       state_variance_ += variance_increment;
       check_variance(state_variance_);
     }
-    
+
     void MarginalDistributionBase::check_variance(const SpdMatrix &v) const {
-      for (int i = 0; i < v.ncol(); ++i) {
+      for (int i = 0; i < v.nrow(); ++i) {
         if (v(i, i) < 0.0) {
-          // Some models with deterministic state can have zero variance.
+          // The check is for < 0 and not <= 0, because some models with
+          // deterministic state can have zero variance.
           std::ostringstream err;
           err << "Variance can't be negative." << std::endl << v;
           report_error(err.str());
@@ -53,7 +54,7 @@ namespace BOOM {
   //===========================================================================
   KalmanFilterBase::KalmanFilterBase()
       : status_(NOT_CURRENT), log_likelihood_(negative_infinity()) {}
-  
+
   std::ostream &KalmanFilterBase::print(std::ostream &out) const {
     for (int i = 0; i < size(); ++i) {
       out << (*this)[i].state_mean() << std::endl;
@@ -66,7 +67,7 @@ namespace BOOM {
     print(out);
     return out.str();
   }
-  
+
   Matrix KalmanFilterBase::state_mean() const {
     Matrix ans;
     int time_dimension = size();
@@ -80,8 +81,8 @@ namespace BOOM {
     }
     return ans;
   }
-  
-  void KalmanFilterBase::clear() {
+
+  void KalmanFilterBase::clear_loglikelihood() {
     log_likelihood_ = 0;
     status_ = NOT_CURRENT;
   }

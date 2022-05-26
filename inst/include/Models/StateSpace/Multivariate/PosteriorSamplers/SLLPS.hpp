@@ -18,7 +18,7 @@
   Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include "Models/StateSpace/StateModels/LocalLevelStateModel.hpp"
+#include "Models/StateSpace/Multivariate/StateModels/SharedLocalLevel.hpp"
 #include "Models/PosteriorSamplers/PosteriorSampler.hpp"
 #include "Models/PosteriorSamplers/GenericGaussianVarianceSampler.hpp"
 #include "Models/MvnBase.hpp"
@@ -57,8 +57,9 @@ namespace BOOM {
   // coefficients can be zero...., so let's give this a try.
   //
   // The prior on the coefficients is a row-wise spike and slab prior.  The
-  // spikes are modified to enforce zeros on the 
-  class SharedLocalLevelPosteriorSampler
+  // spikes are modified to enforce zeros on the
+
+  class GeneralSharedLocalLevelPosteriorSampler
       : public PosteriorSampler {
    public:
     // Args:
@@ -70,22 +71,25 @@ namespace BOOM {
     //     mean of the observation coefficients.
     //   seeding_rng: The random number generator used to seed the RNG for this
     //     sampler.
-    SharedLocalLevelPosteriorSampler(
-        SharedLocalLevelStateModel *model,
+    GeneralSharedLocalLevelPosteriorSampler(
+        GeneralSharedLocalLevelStateModel *model,
         const std::vector<Ptr<MvnBase>> &slabs,
         const std::vector<Ptr<VariableSelectionPrior>> &spikes,
         RNG &seeding_rng = GlobalRng::rng);
-                                     
+
     void draw() override;
     double logpri() const override;
 
     void limit_model_selection(int max_flips);
-    
+
    private:
     void draw_inclusion_indicators(int which_series);
     void draw_coefficients_given_inclusion(int which_series);
-    
-    SharedLocalLevelStateModel *model_;
+
+    GeneralSharedLocalLevelStateModel *model_;
+
+    // The spikes_ and slabs_ vectors each have one element per time series.
+    // These are the models included in samplers_.
     std::vector<Ptr<MvnBase>> slabs_;
     std::vector<Ptr<VariableSelectionPrior>> spikes_;
 
@@ -94,11 +98,49 @@ namespace BOOM {
     // case the coefficients are rows or columns in a matrix, so the inclusion
     // indicators have to be stored externally.
     std::vector<Selector> inclusion_indicators_;
-    
+
+    // There is one element of samplers_ for each time series.
     std::vector<SpikeSlabSampler> samplers_;
   };
-  
+
+  class ConditionallyIndependentSharedLocalLevelPosteriorSampler
+      : public PosteriorSampler {
+   public:
+    // Args:
+    //   model:  The model to be managed.
+    //   slabs: Prior distribution on the conditionally nonzero part of the
+    //     observation coefficients.  One element for each potentially observed
+    //     time series.  Dimension of each element is the number of factors.
+    //   spikes: Prior distribution on the conditionally nonzero part of the
+    //     observation coefficients.  One element for each potentially observed
+    //     time series.
+    //   seeding_rng: The random number generator used to seed the RNG for the
+    //     PosteriorSampler object.
+    ConditionallyIndependentSharedLocalLevelPosteriorSampler(
+        ConditionallyIndependentSharedLocalLevelStateModel *model,
+        const std::vector<Ptr<MvnBase>> &slabs,
+        const std::vector<Ptr<VariableSelectionPrior>> &spikes,
+        RNG &seeding_rng = GlobalRng::rng);
+
+    void draw() override;
+    double logpri() const override;
+    void limit_model_selection(int max_flips);
+
+   private:
+    void draw_inclusion_indicators(int which_series);
+    void draw_coefficients_given_inclusion(int which_series);
+
+    ConditionallyIndependentSharedLocalLevelStateModel *model_;
+
+    // The spikes_ and slabs_ vectors each have one element per time series.
+    // These are the models included in samplers_.
+    std::vector<Ptr<MvnBase>> slabs_;
+    std::vector<Ptr<VariableSelectionPrior>> spikes_;
+
+    // There is one element of samplers_ for each time series.
+    std::vector<SpikeSlabSampler> samplers_;
+  };
+
 }  // namespace BOOM
 
 #endif  // BOOM_STATE_SPACE_SHARED_LOCAL_LEVEL_POSTERIOR_SAMPLER_HPP_
-

@@ -25,19 +25,19 @@ namespace BOOM {
     namespace {
       // Shorten the name.
       using Marginal = ScalarMarginalDistribution;
-    }  // namespace 
-    
+    }  // namespace
+
     Marginal::ScalarMarginalDistribution(
         const ScalarStateSpaceModelBase *model,
-        ScalarMarginalDistribution *previous,
+        ScalarKalmanFilter *filter,
         int time_index)
         : MarginalDistributionBase(model->state_dimension(), time_index),
           model_(model),
-          previous_(previous),
+          filter_(filter),
           prediction_error_(0),
           prediction_variance_(0),
           kalman_gain_(model_->state_dimension(), 0) {}
-    
+
     double Marginal::update(double y, bool missing, int t,
                             double observation_variance_scale_factor) {
       const SparseVector observation_coefficients = model_->observation_matrix(t);
@@ -82,8 +82,25 @@ namespace BOOM {
       return loglike;
     }
 
+    const Marginal *Marginal::previous() const {
+      if (time_index() <= 1) {
+        return nullptr;
+      } else {
+        return &((*filter_)[time_index() - 1]);
+      }
+    }
+
+    Marginal *Marginal::previous() {
+      if (time_index() <= 1) {
+        return nullptr;
+      } else {
+        return &((*filter_)[time_index() - 1]);
+      }
+    }
+
     Vector Marginal::contemporaneous_state_mean() const {
-      if (!previous_) {
+      const Marginal *prev = previous();
+      if (!prev) {
         // This marginal distribution is the initial distribution.
         return model_->initial_state_mean()
             + (model_->initial_state_variance() *
@@ -91,39 +108,46 @@ namespace BOOM {
             * prediction_error_ / prediction_variance_;
       } else {
         // a[t] + P[t] * Z[t]' Finv * v
-        return previous_->state_mean() +
-            (previous_->state_variance()
+        return prev->state_mean() +
+            (prev->state_variance()
              * model_->observation_matrix(time_index()))
             * prediction_error_ / prediction_variance_;
       }
     }
 
     SpdMatrix Marginal::contemporaneous_state_variance() const {
-      SpdMatrix P = previous_ ? model_->initial_state_variance() :
-          previous_->state_variance();
+      const Marginal *prev = previous();
+      SpdMatrix P;
+      if (prev) {
+        P = model_->initial_state_variance();
+      } else {
+        P = prev->state_variance();
+      }
+      // = prev ? model_->initial_state_variance() :
+      //     prev->state_variance();
       SparseVector Z(model_->observation_matrix(time_index()));
       return P - (P * Z).outer() / prediction_variance_;
     }
-    
+
   }  // namespace Kalman
 
   ScalarKalmanFilter::ScalarKalmanFilter(ScalarStateSpaceModelBase *model)
       : model_(model)
-  {} 
+  {}
 
   void ScalarKalmanFilter::update() {
     if (!model_) {
       report_error("Model must be set before calling update().");
     }
     while (nodes_.size() <= model_->time_dimension()) {
-      Kalman::ScalarMarginalDistribution *previous =
-          nodes_.empty() ? nullptr : &nodes_.back();
       nodes_.push_back(Kalman::ScalarMarginalDistribution(
-          model_, previous, nodes_.size()));
+          model_, this, nodes_.size()));
     }
-    clear();
-    nodes_[0].set_state_mean(model_->initial_state_mean());
-    nodes_[0].set_state_variance(model_->initial_state_variance());
+    clear_loglikelihood();
+    if (nodes_.size() > 0) {
+      nodes_[0].set_state_mean(model_->initial_state_mean());
+      nodes_[0].set_state_variance(model_->initial_state_variance());
+    }
 
     for (int t = 0; t < model_->time_dimension(); ++t) {
       if (t > 0) {
@@ -141,7 +165,7 @@ namespace BOOM {
     }
     set_status(CURRENT);
   }
-  
+
   // Disturbance smoother replaces Durbin and Koopman's K[t] with r[t].  The
   // disturbance smoother is equation (5) in Durbin and Koopman (2002).
   //
@@ -176,17 +200,15 @@ namespace BOOM {
     }
     set_initial_scaled_state_error(r);
   }
-  
+
   void ScalarKalmanFilter::update(double y, int t, bool missing) {
     if (!model_) {
       report_error("Model must be set before calling update().");
     }
 
     while (nodes_.size() <= t) {
-      Kalman::ScalarMarginalDistribution *previous =
-          nodes_.empty() ? nullptr : &nodes_.back();
-      nodes_.push_back(
-          Kalman::ScalarMarginalDistribution(model_, previous, nodes_.size()));
+      nodes_.push_back(Kalman::ScalarMarginalDistribution(
+          model_, this, nodes_.size()));
     }
     if (t == 0) {
       nodes_[t].set_state_mean(model_->initial_state_mean());
@@ -197,7 +219,7 @@ namespace BOOM {
     }
     increment_log_likelihood(nodes_[t].update(y, missing, t));
   }
-  
+
   double ScalarKalmanFilter::prediction_error(int t, bool standardize) const {
     double ans = nodes_[t].prediction_error();
     if (standardize) {
@@ -216,5 +238,5 @@ namespace BOOM {
     }
     return nodes_[n - 1];
   }
-  
+
 }  // namespace BOOM

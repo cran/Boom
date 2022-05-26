@@ -421,6 +421,19 @@ namespace BOOM {
     return new AggregatedStateSpaceRegression(*this);
   }
 
+  AggregatedStateSpaceRegression *ASSR::deepclone() const {
+    AggregatedStateSpaceRegression *ans = clone();
+    ans->copy_samplers(*this);
+    ans->regression_model()->clear_methods();
+    int num_methods = regression_model()->number_of_sampling_methods();
+    for (int m = 0; m < num_methods; ++m) {
+      ans->regression_model()->set_method(
+          regression_model()->sampler(m)->clone_to_new_host(
+              ans->regression_model()));
+    }
+    return ans;
+  }
+
   void ASSR::add_data(const Ptr<Data> &dp) { add_data(DAT(dp)); }
 
   void ASSR::add_data(const Ptr<FineNowcastingData> &dp) {
@@ -480,13 +493,13 @@ namespace BOOM {
 
   // TODO: This and other code involving model matrices is an optimization
   // opportunity.  Test it out to see if precomputation makes sense.
-  const AccumulatorTransitionMatrix *ASSR::state_transition_matrix(
+  AccumulatorTransitionMatrix *ASSR::state_transition_matrix(
       int t) const {
     Ptr<FineNowcastingData> fine_data(this->fine_data(t));
     return fill_state_transition_matrix(t, *fine_data, transition_matrix_);
   }
 
-  const AccumulatorTransitionMatrix *ASSR::fill_state_transition_matrix(
+  AccumulatorTransitionMatrix *ASSR::fill_state_transition_matrix(
       int t, const FineNowcastingData &fine_data,
       std::unique_ptr<AccumulatorTransitionMatrix> &transition_matrix) const {
     if (!transition_matrix) {
@@ -511,12 +524,11 @@ namespace BOOM {
     return ans;
   }
 
-  const AccumulatorStateVarianceMatrix *ASSR::state_variance_matrix(
-      int t) const {
+  AccumulatorStateVarianceMatrix *ASSR::state_variance_matrix(int t) const {
     return fill_state_variance_matrix(t, variance_matrix_);
   }
 
-  const AccumulatorStateVarianceMatrix *ASSR::fill_state_variance_matrix(
+  AccumulatorStateVarianceMatrix *ASSR::fill_state_variance_matrix(
       int t,
       std::unique_ptr<AccumulatorStateVarianceMatrix> &variance_matrix) const {
     if (!variance_matrix) {
@@ -586,6 +598,11 @@ namespace BOOM {
     covariance_row = covariance;
     ans(state_dim - 2, state_dim - 2) = y_variance;
     return ans;
+  }
+
+  Matrix ASSR::simulate_holdout_prediction_errors(int, int, bool) {
+    report_error("Method not implemented.");
+    return Matrix(0, 0);
   }
 
 }  // namespace BOOM

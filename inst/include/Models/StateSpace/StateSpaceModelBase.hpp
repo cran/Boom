@@ -48,6 +48,7 @@ namespace BOOM {
     StateSpaceModelBase(const StateSpaceModelBase &rhs);
     StateSpaceModelBase(StateSpaceModelBase &&rhs) = default;
     StateSpaceModelBase *clone() const override = 0;
+    virtual StateSpaceModelBase *deepclone() const = 0;
     StateSpaceModelBase &operator=(const StateSpaceModelBase &rhs);
     StateSpaceModelBase &operator=(StateSpaceModelBase &&rhs) = default;
 
@@ -57,20 +58,15 @@ namespace BOOM {
 
     // Number of elements in the state vector at a single time point.
     virtual int state_dimension() const {
-      return state_models_.state_dimension();
+      return state_models().state_dimension();
     }
 
     // The number of state models.  Presently, a fixed regression model does not
     // count as a state model, nor does a Harvey Cumulator.  This may change in
     // the future.
     virtual int number_of_state_models() const {
-      return state_models_.size();
+      return state_models().size();
     }
-
-    // Returns true if observation t is missing, and false otherwise.  If the
-    // observation at time t is multivariate, then is_missing_observation(t) ==
-    // true indicates that the entire observation is missing.
-    virtual bool is_missing_observation(int t) const = 0;
 
     //--------- Access to client models and model parameters ---------------
     // Returns a pointer to the model responsible for the observation variance.
@@ -81,10 +77,8 @@ namespace BOOM {
     virtual const PosteriorModeModel *observation_model() const = 0;
 
     // Returns a pointer to the specified state model.
-    virtual Ptr<StateModel> state_model(int s) { return state_models_[s]; }
-    virtual const Ptr<StateModel> state_model(int s) const {
-      return state_models_[s];
-    }
+    virtual StateModelBase * state_model(int s) = 0;
+    virtual const StateModelBase * state_model(int s) const = 0;
 
     // Overrides that would normally be handled by a parameter policy.  These
     // are needed to ensure that parameters are vectorized in the correct order.
@@ -112,14 +106,6 @@ namespace BOOM {
         const Vector &model_parameters) const;
 
     // --------------------------- Access to state ---------------------------
-    // Add structure to the state portion of the model.  This is for local
-    // linear trend and different seasonal effects.  It is not for regression,
-    // which this class will handle separately.  The state model should be
-    // initialized (including the model for the initial state), and have its
-    // learning method (e.g. posterior sampler) set prior to being added using
-    // add_state.
-    void add_state(const Ptr<StateModel> &);
-
     // Returns a draw of the state vector (produced by impute_state()) for the
     // last time point in the training data.
     ConstVectorView final_state() const { return state_.last_col(); }
@@ -142,13 +128,13 @@ namespace BOOM {
     // Returns:
     //   The subset of the 'state' argument corresponding to state model 's'.
     VectorView state_component(Vector &state, int s) const {
-      return state_models_.state_component(state, s);
+      return state_models().state_component(state, s);
     }
     VectorView state_component(VectorView &state, int s) const {
-      return state_models_.state_component(state, s);
+      return state_models().state_component(state, s);
     }
     ConstVectorView state_component(const ConstVectorView &state, int s) const {
-      return state_models_.state_component(state, s);
+      return state_models().state_component(state, s);
     }
 
     // Return the component of the full state error vector corresponding to a
@@ -161,14 +147,14 @@ namespace BOOM {
     //
     // Returns:
     //   The error vector for just the specified state model.
-    ConstVectorView const_state_error_component(const Vector &full_state_error,
-                                                int state_model_number) const {
-      return state_models_.const_state_error_component(
+    ConstVectorView const_state_error_component(
+        const Vector &full_state_error, int state_model_number) const {
+      return state_models().const_state_error_component(
           full_state_error, state_model_number);
     }
-    VectorView state_error_component(Vector &full_state_error,
-                                     int state_model_number) const {
-      return state_models_.state_error_component(
+    VectorView state_error_component(
+        Vector &full_state_error, int state_model_number) const {
+      return state_models().state_error_component(
           full_state_error, state_model_number);
     }
 
@@ -180,7 +166,7 @@ namespace BOOM {
     //   state: The index of the state model defining the desired sub-component.
     ConstSubMatrix state_error_variance_component(
         const SpdMatrix &full_error_variance, int state) const {
-      return state_models_.state_error_variance_component(
+      return state_models().state_error_variance_component(
           full_error_variance, state);
     }
 
@@ -196,10 +182,10 @@ namespace BOOM {
     //   dimension of the state vector for the specified state model, and T is
     //   the number of time points.
     ConstSubMatrix full_state_subcomponent(int state_model_index) const {
-      return state_models_.full_state_subcomponent(state_, state_model_index);
+      return state_models().full_state_subcomponent(state(), state_model_index);
     }
     SubMatrix mutable_full_state_subcomponent(int state_model_index) {
-      return state_models_.mutable_full_state_subcomponent(
+      return state_models().mutable_full_state_subcomponent(
           state_, state_model_index);
     }
 
@@ -218,14 +204,14 @@ namespace BOOM {
 
     //------------- Model matrices for structural equations. --------------
     // Durbin and Koopman's T[t] built from state models.
-    virtual const SparseKalmanMatrix *state_transition_matrix(int t) const {
-      return state_models_.state_transition_matrix(t);
+    virtual SparseKalmanMatrix *state_transition_matrix(int t) const {
+      return state_models().state_transition_matrix(t);
     }
 
     // Durbin and Koopman's RQR^T.  Built from state models, often less than
     // full rank.
-    virtual const SparseKalmanMatrix *state_variance_matrix(int t) const {
-      return state_models_.state_variance_matrix(t);
+    virtual SparseKalmanMatrix *state_variance_matrix(int t) const {
+      return state_models().state_variance_matrix(t);
     }
 
     // Durbin and Koopman's R matrix from the transition equation:
@@ -233,16 +219,16 @@ namespace BOOM {
     //
     // This is the matrix that takes the low dimensional state_errors and turns
     // them into error terms for states.
-    virtual const SparseKalmanMatrix *state_error_expander(int t) const {
-      return state_models_.state_error_expander(t);
+    ErrorExpanderMatrix *state_error_expander(int t) const {
+      return state_models().state_error_expander(t);
     }
 
     // The full rank variance matrix for the errors in the transition equation.
     // This is Durbin and Koopman's Q[t].  The errors with this variance are
     // multiplied by state_error_expander(t) to produce the errors described by
     // state_variance_matrix(t).
-    virtual const SparseKalmanMatrix *state_error_variance(int t) const {
-      return state_models_.state_error_variance(t);
+    SparseKalmanMatrix *state_error_variance(int t) const {
+      return state_models().state_error_variance(t);
     }
 
     //----------------- Access to data -----------------
@@ -474,6 +460,22 @@ namespace BOOM {
     void resize_state();
 
    protected:
+    // Add structure to the state portion of the model.  This is for local
+    // linear trend and different seasonal effects.  It is not for regression,
+    // which this class will handle separately.  The state model should be
+    // initialized (including the model for the initial state), and have its
+    // learning method (e.g. posterior sampler) set prior to being added using
+    // add_state.
+    void observe_added_state(const StateModelBase *state);
+
+    // Reference to a StateModelVector object handling the state for this model.
+    virtual StateSpaceUtils::StateModelVectorBase &state_models() = 0;
+    virtual const StateSpaceUtils::StateModelVectorBase &state_models() const = 0;
+
+    // Remove any posterior sampling methods from this model and all client
+    // models.  Copy posterior samplers from rhs to *this.
+    void copy_samplers(const StateSpaceModelBase &rhs);
+
     // Update the complete data sufficient statistics for the state models,
     // given the posterior distribution of the state error at time t (for the
     // transition between times t and t+1), given model parameters and all
@@ -564,7 +566,7 @@ namespace BOOM {
     //     filled with the gradient of log likelihood.
     //
     // Returns:
-    //   The log likeilhood value computed by the Kalman filter.
+    //   The log likelihood value computed by the Kalman filter.
     double average_over_latent_data(bool update_sufficient_statistics,
                                     bool save_state_distributions,
                                     Vector *gradient);
@@ -579,7 +581,7 @@ namespace BOOM {
     //
     // As the state is finalized, the state models and the observation model are
     // updated to reflect the new state values.
-    virtual void propagate_disturbances();
+    virtual void propagate_disturbances(RNG &rhg);
 
     // Send a signal to all data observers (typically just 1) that the
     // complete data sufficient statistics should be reset.
@@ -589,12 +591,13 @@ namespace BOOM {
     // implementing the copy constructor, the state models in the base class
     // need to be cleared out so that the overloaded add_state() in the child
     // classes can maintain parallelism correctly.
-    void clear_state_models() { state_models_.clear(); }
+    void clear_state_models() {
+      state_models().clear();
+    }
 
    private:
     //----------------------------------------------------------------------
-    // data starts here
-    StateSpaceUtils::StateModelVector<StateModel> state_models_;
+    // Data section
 
     // Position [s] is the index in the vector of parameters where the parameter
     // for state model s begins.  Note that the parameter vector for the
@@ -623,7 +626,25 @@ namespace BOOM {
   class ScalarStateSpaceModelBase : public StateSpaceModelBase {
    public:
     ScalarStateSpaceModelBase();
+    ScalarStateSpaceModelBase(const ScalarStateSpaceModelBase &rhs);
     ScalarStateSpaceModelBase *clone() const override = 0;
+    ScalarStateSpaceModelBase *deepclone() const override = 0;
+
+    // Returns true if the response for observation t is missing, and false
+    // otherwise.
+    virtual bool is_missing_observation(int t) const = 0;
+
+    void add_state(const Ptr<StateModel> &state) {
+      state_models_.add_state(state);
+      StateSpaceModelBase::observe_added_state(state.get());
+    }
+
+    StateModel * state_model(int s) override {
+      return state_models_.state_model(s);
+    }
+    const StateModel * state_model(int s) const override {
+      return state_models_.state_model(s);
+    }
 
     //------------- Parameters for structural equations. --------------
     // Variance of observed data y[t], given state alpha[t].  Durbin and
@@ -651,6 +672,9 @@ namespace BOOM {
     // Returns the vector of one step ahead prediction errors for the training
     // data.
     Vector one_step_prediction_errors(bool standardize = false);
+
+    virtual Matrix simulate_holdout_prediction_errors(
+        int niter, int cutpoint_number, bool standardize) = 0;
 
     //------- Accessors for getting at state components -----------
     // Returns the contributions of each state model to the overall mean of the
@@ -682,6 +706,17 @@ namespace BOOM {
     const ScalarKalmanFilter &get_simulation_filter() const override;
 
    protected:
+
+    StateSpaceUtils::StateModelVector<StateModel> &
+    state_models() override {
+      return state_models_;
+    }
+
+    const StateSpaceUtils::StateModelVector<StateModel> &
+    state_models() const override {
+      return state_models_;
+    }
+
     void simulate_forward(RNG &rng) override;
 
     // Args:
@@ -735,6 +770,10 @@ namespace BOOM {
         double observation_error_variance);
 
    private:
+    // data starts here
+    StateSpaceUtils::StateModelVector<StateModel> state_models_;
+
+
     // Simulate an observed Y value (minus any regression effects from a static
     // regression), conditional on the state at time t.
     double simulate_adjusted_observation(RNG &rng, int t);
@@ -790,6 +829,40 @@ namespace BOOM {
      private:
       mutable StateSpaceModelBase *model_;
     };
+
+    // Compute one-step prediction errors on one or more holdout sets.
+    //
+    // Args:
+    //   model:  The model to be assessed.
+    //   niter:  The number of MCMC iterations.
+    //   cutpoints: A set of integers giving the final time index to use in the
+    //     training set.
+    //   standardize: If true, then prediction errors are to be scaled by
+    //     dividing by the one-step prediction standard error from the Kalman
+    //     filter.  If false, then raw prediction errors are computed.
+    //
+    // Returns:
+    //   A set of Matrices, each representing the posterior predictive
+    //   distribution of the one-step prediction errors.  There is one matrix
+    //   for each entry in 'cutpoints'.  Rows represent MCMC draws.  Columns
+    //   represent time points.  Columns prior to the cutpoint are "in-sample"
+    //   errors in the sense that the parameter estimates for the Kalman filter
+    //   were learned based on that data, but they are still "out-of-sample"
+    //   from the perspective of the Kalman filter (i.e. they are "filtering
+    //   errors" rather than "smoothing errors").  Values after the cutpoint are
+    //   "out of sample" in all senses.
+    //
+    // Example:
+    // Suppose 'model' was fit on 200 data (time) points.
+    // auto errors = compute_prediction_errors(model, 1000, {150, 175, 190}, false);
+    // errors[1] is the posterior distribution of the one-step prediction errors
+    // based on y[0..174].
+    std::vector<Matrix> compute_prediction_errors(
+        const ScalarStateSpaceModelBase &model,
+        int niter,
+        const std::vector<int> &cutpoints,
+        bool standardize);
+
 
   }  // namespace StateSpaceUtils
 
