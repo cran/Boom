@@ -20,20 +20,59 @@
 #include "Models/StateSpace/Multivariate/MultivariateStateSpaceModelBase.hpp"
 #include "cpputil/report_error.hpp"
 #include "cpputil/Constants.hpp"
+#include "LinAlg/Eigen.hpp"
 
 namespace BOOM {
 
   namespace Kalman {
     void check_variance(const SpdMatrix &v) {
+#ifndef NDEBUG
       for (auto x : v.diag()) {
-        if (x < -.10) {
+        if (x < .00) {
           report_error("Can't have a negative variance.");
         }
       }
+# endif
     }
 
     namespace {
       using Marginal = MultivariateMarginalDistributionBase;
+
+      // Convert a Matrix to an SpdMatrix.  If the matrix is non-symmetric then
+      // force symmetry and issue a warning.
+      SpdMatrix robust_spd(const Matrix &m) {
+        if (m.is_sym()) {
+          return SpdMatrix(m);
+        } else {
+          std::ostringstream msg;
+          double distance;
+          uint imax, jmax;
+          std::tie(distance, imax, jmax) = m.distance_from_symmetry();
+          msg << "Coercing a non-symmetric matrix to symmetry.\n"
+              << "Distance from symmetry = " << distance << " with maximum "
+              "relative distance at (" << imax
+              << ", " << jmax << ").\n";
+          if (m.nrow() < 10) {
+            msg << "\n"
+                << "original matrix: \n"
+                << m
+                << "\n"
+                << "symmetric matrix: \n"
+                << .5 * (m + m.transpose())
+                ;
+          } else {
+            Matrix m_view = ConstSubMatrix(m, 0, 9, 0, 9).to_matrix();
+            msg << "\n"
+                << "First 10 rows/cols of original matrix:\n"
+                << m_view
+                << "\n"
+                << "symmetric matrix:\n"
+                << .5 * (m_view + m_view.transpose());
+          }
+          report_warning(msg.str());
+          return SpdMatrix(.5 * (m + m.transpose()));
+        }
+      }
     }
 
     //--------------------------------------------------------------------------
@@ -47,8 +86,9 @@ namespace BOOM {
         return fully_missing_update();
       }
 
-      const SparseKalmanMatrix &transition(
-          *model()->state_transition_matrix(time_index()));
+      Ptr<SparseKalmanMatrix> transition_ptr(
+          model()->state_transition_matrix(time_index()));
+      const SparseKalmanMatrix &transition(*transition_ptr);
 
       // The subset of observation coefficients corresponding to elements of
       // 'observation' which are actually observed.
@@ -57,19 +97,28 @@ namespace BOOM {
       const SparseKalmanMatrix &observation_coefficient_subset(
           *observation_coefficient_pointer);
 
-      Vector observed_data = observed.select(observation);
+      Vector observed_data = observed.select_if_needed(observation);
       set_prediction_error(
           observed_data - observation_coefficient_subset * state_mean());
       update_sparse_forecast_precision(observed);
 
-      Ptr<SparseBinomialInverse> Finv_ptr(sparse_forecast_precision());
-      const SparseBinomialInverse &Finv(*Finv_ptr);
+      Ptr<SparseKalmanMatrix> Finv_ptr(sparse_forecast_precision());
+      const SparseKalmanMatrix &Finv(*Finv_ptr);
 
       double log_likelihood = -.5 * observed.nvars() * Constants::log_root_2pi
           + .5 * forecast_precision_log_determinant()
-          - .5 * prediction_error().dot(scaled_prediction_error());
+          - .5 * prediction_error().dot(Finv * prediction_error());
+      if (std::isnan(log_likelihood)) {
+        // This line is important when the model is being fit by optimization.
+        // If a variance becomes negative (or negative definite) during part of
+        // the optimization algorithm, then the function value should be set to
+        // negative infinity so that the optimization algorithm will know it
+        // took a bad step.  NaN cannot be less-than compared, so NaN values
+        // will just confuse an optimizer.
+        log_likelihood = negative_infinity();
+      }
 
-      Ptr<SparseMatrixProduct> gain = sparse_kalman_gain(observed);
+      Ptr<SparseMatrixProduct> gain = sparse_kalman_gain(observed, Finv_ptr);
       const SparseMatrixProduct &kalman_gain(*gain);
 
       // Update the state mean from a[t]   = E(state_t    | Y[t-1]) to
@@ -83,39 +132,41 @@ namespace BOOM {
       // don't need to allocate quite so many SpdMatrix objects.
       //
       // Pt|t = Pt - Pt * Z' Finv Z Pt
-      SpdMatrix new_state_variance = state_variance();
 
-      SpdMatrix increment1 = state_variance() * observation_coefficient_subset.Tmult(
+      // The temporary value 'tmp' is needed because the long string of
+      // multiplications can produce temporaries that are not symmetric.  The
+      // system is free to try to optimize this multiplication using different
+      // associations.  If we try to define an SpdMatrix to receive the outcome,
+      // non-symmetric temporaries can blow up the SpdMatrix constructor.
+      Matrix increment1 = state_variance() * observation_coefficient_subset.Tmult(
           Finv * (observation_coefficient_subset * state_variance()));
 
+      SpdMatrix contemp_variance(robust_spd(state_variance() - increment1));
+      if (!contemp_variance.is_pos_def()) {
+        std::ostringstream warn;
+        warn << "Modifying variance at time " << time_index()
+             << " to enforce positive definiteness.";
+        report_warning(warn.str());
+        SymmetricEigen contemp_eigen(contemp_variance, true);
+        contemp_variance = contemp_eigen.closest_positive_definite();
+      }
+
+      SpdMatrix increment2(robust_spd(model()->state_variance_matrix(
+          time_index())->dense()));
+      SpdMatrix new_state_variance(robust_spd(contemp_variance));
+
       transition.sandwich_inplace(new_state_variance);
-      model()->state_variance_matrix(time_index())->add_to(new_state_variance);
 
-      SpdMatrix contemp_variance(state_variance() - increment1);
-      Kalman::check_variance(contemp_variance);
-
-      SpdMatrix increment2(model()->state_variance_matrix(time_index())->dense());
-
-      new_state_variance = contemp_variance;
-      transition.sandwich_inplace(new_state_variance);
       new_state_variance += increment2;
-#ifndef NDEBUG
-      // Only check the variance in debug mode.
-      Kalman::check_variance(new_state_variance);
-#endif
-
       set_state_variance(new_state_variance);
+
       return log_likelihood;
     }
 
     //----------------------------------------------------------------------
-    Vector Marginal::scaled_prediction_error() const {
-      return (*sparse_forecast_precision()) * prediction_error();
-    }
-
-    //----------------------------------------------------------------------
     Ptr<SparseMatrixProduct> Marginal::sparse_kalman_gain(
-        const Selector &observed) const {
+        const Selector &observed,
+        const Ptr<SparseKalmanMatrix> &forecast_precision) const {
       NEW(SparseMatrixProduct, ans)();
       int t = time_index();
       ans->add_term(model()->state_transition_matrix(t));
@@ -126,7 +177,7 @@ namespace BOOM {
                        : model()->initial_state_variance());
       ans->add_term(P);
       ans->add_term(model()->observation_coefficients(t, observed), true);
-      ans->add_term(sparse_forecast_precision());
+      ans->add_term(forecast_precision);
       return ans;
     }
 
@@ -147,7 +198,8 @@ namespace BOOM {
     }
 
     //----------------------------------------------------------------------
-    SpdMatrix Marginal::contemporaneous_state_variance() const {
+    SpdMatrix Marginal::contemporaneous_state_variance(
+        const Ptr<SparseKalmanMatrix> &forecast_precision) const {
       const Marginal *prev = previous();
       SpdMatrix P = prev ? prev->state_variance() :
           model()->initial_state_variance();
@@ -156,7 +208,7 @@ namespace BOOM {
           model()->observation_coefficients(time_index(), observed));
       NEW(SparseMatrixProduct, ZFZ)();
       ZFZ->add_term(observation_coefficients, true);
-      ZFZ->add_term(sparse_forecast_precision(), false);
+      ZFZ->add_term(forecast_precision, false);
       ZFZ->add_term(observation_coefficients, false);
       return P - sandwich(P, SpdMatrix(ZFZ->dense()));
     }
@@ -197,16 +249,14 @@ namespace BOOM {
       report_error("Model must be set before calling update().");
     }
     clear_loglikelihood();
-    // std::cout << "model->observation_coefficients() = \n";
-    // model()->observation_coefficients(0, model()->observed_status(0))->print(std::cout);
-
     // TODO: Verify that the isolate_shared_state line doesn't break anything
     // when the model has series-specific state.
-    model_->isolate_shared_state();
-    for (int time = 0; time < model_->time_dimension(); ++time) {
+    model()->isolate_shared_state();
+    ensure_size(model()->time_dimension());
+    for (int time = 0; time < model()->time_dimension(); ++time) {
       update_single_observation(
-          model_->adjusted_observation(time),
-          model_->observed_status(time),
+          model()->adjusted_observation(time),
+          model()->observed_status(time),
           time);
       if (!std::isfinite(log_likelihood())) {
         set_status(NOT_CURRENT);
@@ -220,13 +270,13 @@ namespace BOOM {
       const Vector &y,
       const Selector &observed,
       int t) {
-    if (!model_) {
+    if (!model()) {
       report_error("Model must be set before calling update().");
     }
     ensure_size(t);
     if (t == 0) {
-      node(t).set_state_mean(model_->initial_state_mean());
-      node(t).set_state_variance(model_->initial_state_variance());
+      node(t).set_state_mean(model()->initial_state_mean());
+      node(t).set_state_variance(model()->initial_state_variance());
     } else {
       node(t).set_state_mean(node(t - 1).state_mean());
       node(t).set_state_variance(node(t - 1).state_variance());
@@ -241,12 +291,12 @@ namespace BOOM {
   // Returns:
   //   Durbin and Koopman's r0.  Saves r[t] in node(t).scaled_state_error().
   void MultivariateKalmanFilterBase::fast_disturbance_smooth() {
-    if (!model_) {
+    if (!model()) {
       report_error("Model must be set before calling fast_disturbance_smooth().");
     }
 
-    int n = model_->time_dimension();
-    Vector r(model_->state_dimension(), 0.0);
+    int n = model()->time_dimension();
+    Vector r(model()->state_dimension(), 0.0);
     for (int t = n - 1; t >= 0; --t) {
       // Currently r is r[t].  This step of the loop turns it into r[t-1].
       //
@@ -281,18 +331,155 @@ namespace BOOM {
       //
       // u = Finv * v - K'r
       // r = T'r + Z'u
-      const Selector &observed(model_->observed_status(t));
-      Ptr<SparseKalmanMatrix> observation_coefficients(
-          model_->observation_coefficients(t, observed));
+      const Selector &observed(model()->observed_status(t));
       Ptr<SparseKalmanMatrix> transition(
-          model_->state_transition_matrix(t));
-      Ptr<SparseBinomialInverse> forecast_precision_ptr(
-          marg.sparse_forecast_precision());
-      const SparseBinomialInverse &forecast_precision(
-          *forecast_precision_ptr);
-      Vector u = forecast_precision * marg.prediction_error()
-          - marg.sparse_kalman_gain(observed)->Tmult(r);
-      r = transition->Tmult(r) + observation_coefficients->Tmult(u);
+          model()->state_transition_matrix(t));
+      if (observed.nvars() > 0) {
+        Ptr<SparseKalmanMatrix> observation_coefficients(
+            model()->observation_coefficients(t, observed));
+        Ptr<SparseKalmanMatrix> forecast_precision_ptr(
+            marg.sparse_forecast_precision());
+        const SparseKalmanMatrix &forecast_precision(
+            *forecast_precision_ptr);
+        Vector u = forecast_precision * marg.prediction_error()
+            - marg.sparse_kalman_gain(observed, forecast_precision_ptr)->Tmult(r);
+        r = transition->Tmult(r) + observation_coefficients->Tmult(u);
+      } else {
+        r = transition->Tmult(r);
+      }
+    }
+    set_initial_scaled_state_error(r);
+  }
+
+  //===========================================================================
+  void MultivariateKalmanFilterBase::smooth() {
+    // All implicit subsctipts are [t].
+    //  r[t-1] = Z' * Finv * v - L' r
+    //  where
+    //  L[t] = T[t] - K[t] Z[t]
+    // so
+    // r[t-1] = Z' * Finv * v - T'r + Z'K'r
+    //
+    // N[t-1] = Z' Finv Z + L' N L
+    //
+    // smoothed_state_mean[t] = a[t] + P[t] * r[t-1]
+    // smoothed_state_variance[t] = P[t] - P[t] N[t-1] P[t]
+    //
+    // The algorithm is initialized by r[T] = 0, and N[T] = 0.
+
+    if (!model()) {
+      report_error("Model must be set before calling fast_disturbance_smooth().");
+    }
+
+    int n = model()->time_dimension();
+    int state_dimension = model()->state_dimension();
+    Vector r(state_dimension, 0.0);
+    Matrix N(state_dimension, state_dimension, 0.0);
+    for (int t = n - 1; t >= 0; --t) {
+      // Currently r is r[t].  This step of the loop turns it into r[t-1].
+      //
+      // The disturbance smoother is defined by the following formula:
+      // r[t-1] = Z' * Finv * v   +   (T' - Z' * K') * r[t]
+      //        = T' * r[t]       -   Z' * (K' * r[t] - Finv * v)
+      //
+      // Note that Durbin and Koopman (2002) is missing the transpose on Z in
+      // their equation (5).  The transpose is required to get the dimensions to
+      // match.
+      //
+      // K = TPZ'Finv
+      // Z' K' = Z' Finv Z P T'
+      //
+      // Dimensions:
+      //   T:    S x S
+      //   K:    S x m
+      //   Z:    m x S
+      //   Finv: m x m
+      //   v:    m x 1
+      //   r:    S x 1
+      //
+      Kalman::MultivariateMarginalDistributionBase &marg(node(t));
+
+      // All implicit subsctipts are [t].
+      //  r[t-1] = Z' * Finv * v - L' r
+      //  where
+      //  L[t] = T[t] - K[t] Z[t]
+      // so
+      // r[t-1] = Z' * Finv * v - T'r + Z'K'r
+      //
+      // u = Finv * v - K'r
+      // r = T'r + Z'u
+      Ptr<SparseKalmanMatrix> transition(
+          model()->state_transition_matrix(t));
+      const Selector &observed(model()->observed_status(t));
+      if (observed.nvars() > 0) {
+        Ptr<SparseKalmanMatrix> observation_coefficients(
+            model()->observation_coefficients(t, observed));
+        Ptr<SparseKalmanMatrix> forecast_precision_ptr(
+            marg.sparse_forecast_precision());
+        const SparseKalmanMatrix &forecast_precision(
+            *forecast_precision_ptr);
+        Ptr<SparseKalmanMatrix> kalman_gain(marg.sparse_kalman_gain(
+            observed, forecast_precision_ptr));
+        NEW(SparseMatrixProduct, KZ)();
+        KZ->add_term(kalman_gain);
+        KZ->add_term(observation_coefficients);
+        NEW(SparseMatrixSum, L)();
+        L->add_term(transition);
+        L->add_term(KZ, -1);
+        Vector u = forecast_precision * marg.prediction_error()
+            - kalman_gain->Tmult(r);
+
+        // Turn r[t] into r[t-1]
+        r = transition->Tmult(r) + observation_coefficients->Tmult(u);
+        // Turn N[t] into N[t-1]
+        Matrix tmp = observation_coefficients->Tmult(
+            forecast_precision * observation_coefficients->dense())
+            + L->sandwich_transpose(N);
+        N = tmp;
+      } else {
+        r = transition->Tmult(r);
+        N = transition->sandwich_transpose(N);
+      }
+
+      Vector filtered_state_mean;
+      SpdMatrix filtered_state_variance;
+      if (t > 0) {
+        Kalman::MultivariateMarginalDistributionBase &prev(node(t-1));
+        filtered_state_mean = prev.state_mean();
+        filtered_state_variance = prev.state_variance();
+      } else {
+        filtered_state_mean = model()->initial_state_mean();
+        filtered_state_variance = model()->initial_state_variance();
+      }
+
+      Vector smoothed_state_mean =
+          filtered_state_mean + filtered_state_variance * r;
+
+      if (t == 0 && !N.is_sym()) {
+        // TODO:
+        //   Sometimes N is not symmetric at t==0.  The right way to fix this is
+        //   to have the initial distribution be a Marg object that can get
+        //   updated.  The following line is a stop-gap for now.
+        N = .5 * (N + N.transpose());
+      }
+      SpdMatrix SpdN(Kalman::robust_spd(N));
+      if (!SpdN.is_pos_def()) {
+        SymmetricEigen eigenN(SpdN);
+        SpdN = eigenN.closest_positive_definite();
+      }
+
+      SpdMatrix smoothed_state_variance = Kalman::robust_spd(
+          filtered_state_variance - sandwich(
+              filtered_state_variance, SpdN));
+
+      if (!smoothed_state_variance.is_pos_def()) {
+        SymmetricEigen variance_eigen(smoothed_state_variance);
+        smoothed_state_variance = variance_eigen.closest_positive_definite();
+      }
+
+      marg.set_state_mean(smoothed_state_mean);
+      marg.set_state_variance(smoothed_state_variance);
+      N = SpdN;
     }
     set_initial_scaled_state_error(r);
   }

@@ -21,6 +21,7 @@
 #define BOOM_SPARSE_MATRIX_HPP_
 
 #include <map>
+#include <iostream>
 
 #include "LinAlg/Matrix.hpp"
 #include "LinAlg/SpdMatrix.hpp"
@@ -108,6 +109,9 @@ namespace BOOM {
     // Checks that ncol() == i.  Reports an error if it does not.
     void conforms_to_cols(int i) const;
 
+    void check_can_add(int rows, int cols) const;
+    void check_can_multiply(int vector_size) const;
+    void check_can_Tmult(int vector_size) const;
     void check_can_add(const SubMatrix &block) const;
 
     std::ostream & print(std::ostream &out = std::cout) const {
@@ -218,24 +222,70 @@ namespace BOOM {
 
   //===========================================================================
   // Let M = A + UCV.  The Woodbury identity states that Minv = Ainv - Ainv U
-  // (Cinv + V Ainv U) V Ainv.  Note that to use the Woodbury identity both A
+  // (Cinv + V Ainv U).inv V Ainv.  Note that to use the Woodbury identity both A
   // and C must be invertible.
-  class WoodburyInverse : public SparseKalmanMatrix {
+  //
+  // This class assumes V = U'.
+  class SparseWoodburyInverse : public SparseKalmanMatrix {
    public:
+    // Args:
+    //   Ainv:  The inverse of the matrix A in the class definition.
+    //   logdet_Ainv:  The log determinant of Ainv.
+    //   U:  The matrix U in the class definition;
+    //   Cinv: Either the matrix C in the class definition, or an empty
+    //     SpdMatrix.  An empty C is assumed to be the identity matrix.  This
+    //     setting allows the update (A + UU') to be updated quickly.
+    SparseWoodburyInverse(const Ptr<SparseKalmanMatrix> &Ainv,
+                          double logdet_Ainv,
+                          const Ptr<SparseKalmanMatrix> &U,
+                          const SpdMatrix &Cinv = SpdMatrix());
 
-    // This constructor assumes V is U->transpose().
-    WoodburyInverse(const Ptr<SparseKalmanMatrix> &Ainv,
-                    const Ptr<SparseKalmanMatrix> &U,
-                    const SpdMatrix &C)
-        : Ainv_(Ainv),
-          U_(U),
-          C_(C)
-    {}
+    // Construct an inverse using previously constructed elements.
+    //
+    // Args:
+    //   Ainv:  The inverse of the matrix A in the class definition.
+    //   U:  The matrix U in the class definition;
+    //   inner_matrix:  The matrix (Cinv + V Ainv U).inv()
+    //   inner_matrix_condition_number: The condition number of inner_matrix.
+    //   logdet:  The log determinant of the full inverse matrix.
+    SparseWoodburyInverse(const Ptr<SparseKalmanMatrix> &Ainv,
+                          const Ptr<SparseKalmanMatrix> &U,
+                          const SpdMatrix &inner_matrix,
+                          double inner_matrix_condition_number,
+                          double logdet);
+
+    int nrow() const override {return Ainv_->nrow();}
+    int ncol() const override {return Ainv_->ncol();}
+
+    Vector operator*(const Vector &rhs) const override;
+    Vector operator*(const VectorView &rhs) const override;
+    Vector operator*(const ConstVectorView &rhs) const override;
+    Matrix operator*(const Matrix &rhs) const override;
+
+    Vector Tmult(const ConstVectorView &rhs) const override;
+    Matrix Tmult(const Matrix &rhs) const override;
+
+    Matrix &add_to(Matrix &rhs) const override;
+    SpdMatrix inner() const override;
+    SpdMatrix inner(const ConstVectorView &weights) const override;
+
+    Matrix dense() const override;
+
+    // The log determinant of the inverse matrix.
+    double logdet() const;
+
+    const SpdMatrix &inner_matrix() {return inner_matrix_;}
+    double inner_matrix_condition_number() const {
+      return inner_matrix_condition_number_;}
 
    private:
     Ptr<SparseKalmanMatrix> Ainv_;
     Ptr<SparseKalmanMatrix> U_;
-    SpdMatrix C_;
+
+    // The inner matrix is (Cinv + U' Ainv U).inverse
+    SpdMatrix inner_matrix_;
+    double logdet_;
+    double inner_matrix_condition_number_;
   };
   //===========================================================================
 
@@ -286,7 +336,8 @@ namespace BOOM {
                           const Ptr<SparseKalmanMatrix> &U,
                           const SpdMatrix &B,
                           const Matrix &inner,
-                          double logdet);
+                          double logdet,
+                          double condition_number);
 
     // The number of rows and columns in the matrix.
     int nrow() const override {return Ainv_->nrow();}
@@ -303,8 +354,6 @@ namespace BOOM {
 
     Matrix &add_to(Matrix &rhs) const override;
 
-    // Calling 'inner' on a SparseMatrixSum can result in very large matrices
-    // being created.
     SpdMatrix inner() const override;
     SpdMatrix inner(const ConstVectorView &weights) const override;
 
@@ -317,6 +366,17 @@ namespace BOOM {
 
     const Matrix & inner_matrix() const {return inner_matrix_;}
 
+    // The condition number of the computed inner_matrix.
+    double inner_matrix_condition_number() const {
+      return inner_matrix_condition_number_;
+    }
+
+    // Returns true if the condition number of the inner_matrix is small enough
+    // for the operation to be numerically stable.  If okay() is false then most
+    // operations will result in error reports (typically through thrown
+    // exceptions except on platforms where exception reporting is disabled).
+    bool okay() const;
+
    private:
     Ptr<SparseKalmanMatrix> Ainv_;
     Ptr<SparseKalmanMatrix> U_;
@@ -327,6 +387,14 @@ namespace BOOM {
     // inner = (I + P * Z' Hinv Z).inv
     Matrix inner_matrix_;
     double logdet_;
+
+    // If the inner_matrix condition number is below a threshold then the okay_
+    // flag is set to true.  If not then okay_ is false and most operations will
+    // resort in errors.
+    double inner_matrix_condition_number_;
+
+    // Throws an exception with an appropriate error message if okay_ is false.
+    void throw_if_not_okay() const;
   };
 
   //======================================================================
@@ -371,6 +439,13 @@ namespace BOOM {
     // Returns a solution to y = this * x.  This may raise an error if the
     // solution is not well defined, which is the default.
     virtual Vector left_inverse(const ConstVectorView &x) const;
+
+    using SparseKalmanMatrix::check_can_multiply;
+
+    // Checks that this can multiply rhs, and that lhs is correctly sized to
+    // receive the result.  An error is reported if either check fails.
+    void check_can_multiply(const VectorView &lhs,
+                            const ConstVectorView &rhs) const;
   };
 
   //===========================================================================
@@ -403,10 +478,6 @@ namespace BOOM {
     void add_to_block(SubMatrix block) const override;
 
    private:
-    // Checks that this can multiply rhs, and that lhs is correctly sized to
-    // receive the result.  An error is reported if either check fails.
-    void check_can_multiply(const VectorView &lhs,
-                            const ConstVectorView &rhs) const;
     std::vector<Ptr<SparseMatrixBlock>> blocks_;
     int dim_;
   };
@@ -501,6 +572,8 @@ namespace BOOM {
     void Tmult(VectorView lhs, const ConstVectorView &rhs) const override {
       lhs = m_.Tmult(rhs);
     }
+    using SparseMatrixBlock::Tmult;
+
     void multiply_inplace(VectorView x) const override { x = m_ * x; }
     SpdMatrix inner() const override {return m_.inner();}
     SpdMatrix inner(const ConstVectorView &weights) const override {
@@ -2072,10 +2145,14 @@ namespace BOOM {
 
   //======================================================================
   // A matrix formed by stacking a set of GlmCoefs.
-  class StackedRegressionCoefficients : public SparseKalmanMatrix {
+  class StackedRegressionCoefficients : public SparseMatrixBlock {
    public:
-    const GlmCoefs &coefficients(int i) const { return *coefficients_[i]; }
+    StackedRegressionCoefficients *clone() const override;
+
     void add_row(const Ptr<GlmCoefs> &beta);
+    const GlmCoefs &coefficients(int i) const { return *coefficients_[i]; }
+    Ptr<GlmCoefs> coef_ptr(int i) {return coefficients_[i];}
+    const Ptr<GlmCoefs> coef_ptr(int i) const {return coefficients_[i];}
 
     int nrow() const override {return coefficients_.size();}
     int ncol() const override {
@@ -2086,6 +2163,9 @@ namespace BOOM {
       }
     }
 
+    void multiply(VectorView lhs, const ConstVectorView &rhs) const override;
+    void multiply_and_add(VectorView lhs, const ConstVectorView &rhs) const override;
+    void multiply_inplace(VectorView x) const override;
     Vector operator*(const Vector &v) const override;
     Vector operator*(const VectorView &v) const override;
     Vector operator*(const ConstVectorView &v) const override;
@@ -2095,11 +2175,14 @@ namespace BOOM {
 
     using SparseKalmanMatrix::Tmult;
     Vector Tmult(const ConstVectorView &x) const override;
+    void Tmult(VectorView lhs, const ConstVectorView &rhs) const override;
+
     SpdMatrix inner() const override;
     SpdMatrix inner(const ConstVectorView &weights) const override;
 
     Matrix &add_to(Matrix &P) const override;
     SubMatrix add_to_submatrix(SubMatrix P) const override;
+    void add_to_block(SubMatrix block) const override;
 
    private:
     // Each coefficient vector is one row in the matrix.
@@ -2217,9 +2300,6 @@ namespace BOOM {
     SubMatrix add_to_submatrix(SubMatrix P) const override;
 
    private:
-    void check_can_multiply(int vector_size) const;
-    void check_can_Tmult(int vector_size) const;
-    void check_can_add(int rows, int cols) const;
     int ncol_;
     std::vector<Ptr<SparseMatrixBlock>> blocks_;
   };
@@ -2310,8 +2390,6 @@ namespace BOOM {
   };
 
   //===========================================================================
-
-  Vector operator*(const SparseMatrixBlock &, const Vector &);
 
   // P += TPK * K.transpose * w
   void add_outer_product(SpdMatrix &P, const Vector &TPK, const Vector &K,

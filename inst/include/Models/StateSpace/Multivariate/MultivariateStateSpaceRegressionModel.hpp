@@ -461,7 +461,7 @@ namespace BOOM {
     //
     // Returns:
     //   The value of the log-likelihood at the MLE.
-    double mle(double epsilon = 1e-5);
+    double mle(double epsilon = 1e-5, int ntries = 500) override;
 
     // Returns true if all the state models have been assigned priors that
     // implement find_posterior_mode.
@@ -596,6 +596,11 @@ namespace BOOM {
 
     // Ditto for adjusted_data_workspace_.
     void set_workspace_observers();
+
+    // To be called during construction.  Set an observer on the parameters of
+    // *model that will invalidate the current kalman filter likelihood
+    // calculation when the parameters change.
+    void set_parameter_observers(Model *model);
 
     // If the observation variance is out of step with the observation_variance_
     // data member, update the data member.  This function is logically const.

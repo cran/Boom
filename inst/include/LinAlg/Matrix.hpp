@@ -20,6 +20,7 @@
 #define BOOM_NEWLA_MATRIX_HPP
 #include <iosfwd>
 #include <vector>
+#include <tuple>
 #include "LinAlg/Vector.hpp"
 #include "LinAlg/VectorView.hpp"
 
@@ -110,7 +111,7 @@ namespace BOOM {
     // relative to the average absolute magnitude of the elements in the matrix.
     // The distance is taken to be zero if all elements are zero, and infinity
     // if the matrix is not square.
-    double distance_from_symmetry() const;
+    std::tuple<double, uint, uint> distance_from_symmetry() const;
     bool is_sym(double tol = 1.0e-4) const;
     bool same_dim(const Matrix &A) const;
     bool is_square() const;
@@ -254,6 +255,12 @@ namespace BOOM {
     virtual double logdet() const;
 
     Vector singular_values() const;  // sorted largest to smallest
+
+    // The condition_number of a matrix is the ratio of its largest singular
+    // value to its smallest.  This might be infinite if the smallest one is
+    // zero.
+    double condition_number() const;
+
     uint rank(double prop = 1e-12) const;
     // 'rank' is the number of singular values at least 'prop' times
     // the largest
@@ -312,6 +319,10 @@ namespace BOOM {
     virtual double prod() const;
     virtual double max() const;
     virtual double min() const;
+
+    // The smallest and largest values in the matrix.
+    std::pair<double, double> minmax() const {return min_max(data_);}
+
     // The value of the entry with the largest absolute value.
     double max_abs() const;
 
@@ -319,9 +330,22 @@ namespace BOOM {
     std::ostream &write(std::ostream &, bool nl = true) const;
     std::istream &read(std::istream &);
 
+    // Args:
+    //   precision: The precision parameter as understood by std::ostream.  This
+    //     is roughly the number of significant figures desired in the output.
+    //     Scientific notation or negative values may add to this number.
+    //
+    // Returns:
+    //   The number of characters required to print the largest and smallest
+    //   elements of the Matrix.  The larger of these two widths is the returned
+    //   value.  In most cases all other matrix elements can be printed in a
+    //   character field this wide.
+    int max_char_width(int precision) const;
+
    protected:
     inline uint INDX(uint i, uint j) const;
     inline bool inrange(uint i, uint j) const;
+
 
    private:
     Vector data_;

@@ -78,7 +78,7 @@ namespace BOOM {
       // If a[t] = E(state[t] | Data to t-1) then the contemporaneous state mean is
       // a[t] + P[t] * Z[t].transpose() * Finv * v;
       virtual Vector contemporaneous_state_mean() const = 0;
-      virtual SpdMatrix contemporaneous_state_variance() const = 0;
+      //      virtual SpdMatrix contemporaneous_state_variance() const = 0;
 
       // Durbin and Koopman's r[t].  Recall that eta[t] is the error term for
       // moving from state t to state t+1.  The conditional mean of eta[t] given
@@ -173,7 +173,12 @@ namespace BOOM {
     double compute_log_likelihood() {
       if (status_ == NOT_CURRENT) {
         clear_loglikelihood();
-        update();
+        try {
+          update();
+        } catch (...) {
+          log_likelihood_ = negative_infinity();
+          status_ = NOT_CURRENT;
+        }
       }
       return log_likelihood_;
     }

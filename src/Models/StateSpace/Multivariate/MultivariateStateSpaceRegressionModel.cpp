@@ -17,6 +17,7 @@
 */
 
 #include "Models/StateSpace/Multivariate/MultivariateStateSpaceRegressionModel.hpp"
+#include "Models/StateSpace/Filters/KalmanFilterBase.hpp"
 #include "distributions.hpp"
 #include "numopt.hpp"
 #include "numopt/Powell.hpp"
@@ -107,7 +108,8 @@ namespace BOOM {
   {
     initialize_proxy_models();
     set_observation_variance_observers();
-    set_workspace_observers();  // TODO
+    set_workspace_observers();
+    set_parameter_observers(observation_model_.get());
   }
 
   MSSRM * MSSRM::clone() const {
@@ -170,6 +172,7 @@ namespace BOOM {
 
   void MSSRM::add_state(const Ptr<SharedStateModel> &state_model) {
     shared_state_models_.add_state(state_model);
+    set_parameter_observers(state_model.get());
   }
 
   bool MSSRM::has_series_specific_state() const {
@@ -300,7 +303,8 @@ namespace BOOM {
   namespace {
     class MultivariateStateSpaceTargetFun {
      public:
-      MultivariateStateSpaceTargetFun(MultivariateStateSpaceModelBase *model)
+      explicit MultivariateStateSpaceTargetFun(
+          MultivariateStateSpaceModelBase *model)
           : model_(model)
       {}
 
@@ -317,36 +321,12 @@ namespace BOOM {
     };
   }  // namespace
 
-  double MSSRM::mle(double epsilon) {
-    // If the model can be estimated using an EM algorithm, then do a
-    // few steps of EM, and then switch to BFGS.
-    Vector original_parameters = vectorize_params(true);
-    if (check_that_em_is_legal()) {
-      clear_client_data();
-      double old_loglikelihood = Estep(false);
-      double crit = 1 + epsilon;
-      while (crit > std::min<double>(1.0, 100 * epsilon)) {
-        Mstep(epsilon);
-        clear_client_data();
-        double log_likelihood = Estep(false);
-        crit = log_likelihood - old_loglikelihood;
-        old_loglikelihood = log_likelihood;
-      }
+  double MSSRM::mle(double epsilon, int ntries) {
+    if (has_series_specific_state()) {
+      report_error("Maximum likelihood estimation has not been implemented "
+                   "in models with series-specific state.");
     }
-
-    MultivariateStateSpaceTargetFun target(this);
-    Negate min_target(target);
-    PowellMinimizer minimizer(min_target);
-    minimizer.set_evaluation_limit(500);
-    Vector parameters = vectorize_params(true);
-    if (parameters != original_parameters) {
-      double stepsize = fabs(mean(parameters - original_parameters));
-      minimizer.set_initial_stepsize(stepsize);
-    }
-    minimizer.set_precision(epsilon);
-    minimizer.minimize(parameters);
-    unvectorize_params(minimizer.minimizing_value());
-    return log_likelihood();
+    return MultivariateStateSpaceModelBase::mle(epsilon, ntries);
   }
 
   double MSSRM::Estep(bool save_state_distributions) {
@@ -707,25 +687,6 @@ namespace BOOM {
     workspace_status_ = ISOLATE_SHARED_STATE;
   }
 
-  // Remove regression effects and the effects of shared state.
-  // void MSSRM::isolate_series_specific_state() {
-  //   adjusted_data_workspace_.resize(nseries(), time_dimension());
-  //   for (int time = 0; time < time_dimension(); ++time) {
-  //     ConstVectorView state(shared_state(time));
-  //     Vector shared_state_contribution =
-  //         *observation_coefficients(time, dummy_selector_) * state;
-  //     for (int series = 0; series < nseries(); ++series) {
-  //       int index = data_indices_[series][time];
-  //       const Vector &predictors(dat()[index]->x());
-  //       adjusted_data_workspace_(series, time)
-  //           = observed_data(series, time)
-  //           - shared_state_contribution[series]
-  //           - observation_model_->model(series)->predict(predictors);
-  //     }
-  //   }
-  //   workspace_status_ = SHOWS_SERIES_EFFECTS;
-  // }
-
   void MSSRM::isolate_series_specific_state(int time) const {
     if (workspace_status_ == ISOLATE_SERIES_SPECIFIC_STATE
         && workspace_time_index_ == time
@@ -756,6 +717,18 @@ namespace BOOM {
       return 0;
     } else {
       return proxy.observation_matrix(time).dot(proxy.state(time));
+    }
+  }
+
+  void MSSRM::set_parameter_observers(Model *model) {
+    std::vector<Ptr<Params>> parameters = model->parameter_vector();
+    for (auto &el : parameters) {
+      el->add_observer(
+          el.get(),
+          [this](void) {
+            this->get_filter().set_status(
+                KalmanFilterBase::KalmanFilterStatus::NOT_CURRENT);
+          });
     }
   }
 

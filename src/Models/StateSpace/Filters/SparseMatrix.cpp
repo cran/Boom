@@ -18,7 +18,6 @@
 */
 
 #include "Models/StateSpace/Filters/SparseMatrix.hpp"
-#include <iostream>
 #include <utility>
 #include "LinAlg/SpdMatrix.hpp"
 #include "LinAlg/DiagonalMatrix.hpp"
@@ -41,6 +40,19 @@ namespace BOOM {
     err << "object of length " << i
         << " does not conform with the number of columns (" << ncol() << ")";
     report_error(err.str());
+  }
+
+  void SparseKalmanMatrix::check_can_multiply(int vector_size) const {
+    conforms_to_cols(vector_size);
+  }
+
+  void SparseKalmanMatrix::check_can_Tmult(int vector_size) const {
+    conforms_to_rows(vector_size);
+  }
+
+  void SparseKalmanMatrix::check_can_add(int rows, int cols) const {
+    conforms_to_rows(rows);
+    conforms_to_cols(cols);
   }
 
   SparseMatrixProduct::SparseMatrixProduct() {}
@@ -308,6 +320,102 @@ namespace BOOM {
   }
 
   //===========================================================================
+  SparseWoodburyInverse::SparseWoodburyInverse(
+      const Ptr<SparseKalmanMatrix> &Ainv,
+      double logdet_Ainv,
+      const Ptr<SparseKalmanMatrix> &U,
+      const SpdMatrix &Cinv)
+      : Ainv_(Ainv),
+        U_(U)
+  {
+    inner_matrix_ = U_->Tmult(*Ainv_ * U_->dense());
+    if (Cinv.nrow() > 0) {
+      inner_matrix_ += Cinv;
+    } else {
+      // If Cinv is empty then it is assumed to be the identity.
+      inner_matrix_.diag() += 1.0;
+    }
+    inner_matrix_condition_number_ = inner_matrix_.condition_number();
+
+    inner_matrix_ = inner_matrix_.inv();
+
+    // From the Matrix Determinant lemma det(A + UCU') = det(Cinv + U'AinvU) *
+    // det(C) * det(A).  The determinant of the inverse is the reciprocal of the
+    // determinant.  Now take logs.
+    logdet_ = inner_matrix_.logdet() + logdet_Ainv;
+    if (Cinv.nrow() > 0) {
+      logdet_ += Cinv.logdet();
+    }
+    // If Cinv is empty (and thus implicitly the identity) then its log
+    // determinant is zero.
+  }
+
+  SparseWoodburyInverse::SparseWoodburyInverse(
+      const Ptr<SparseKalmanMatrix> &Ainv,
+      const Ptr<SparseKalmanMatrix> &U,
+      const SpdMatrix &inner_matrix,
+      double logdet,
+      double condition_number)
+      : Ainv_(Ainv),
+        U_(U),
+        inner_matrix_(inner_matrix),
+        logdet_(logdet),
+        inner_matrix_condition_number_(condition_number)
+  {
+    if (inner_matrix_.nrow() == 0 || inner_matrix_.ncol() == 0) {
+      report_error("inner_matrix_ must have positive dimension.");
+    }
+  }
+
+  Vector SparseWoodburyInverse::operator*(const ConstVectorView &rhs) const {
+    Vector Ar = *Ainv_ * rhs;
+    return Ar - *Ainv_ * (*U_ * (inner_matrix_ * (U_->Tmult(Ar))));
+  }
+
+  Vector SparseWoodburyInverse::operator*(const Vector &rhs) const {
+    return (*this) * ConstVectorView(rhs);
+  }
+
+  Vector SparseWoodburyInverse::operator*(const VectorView &rhs) const {
+    return (*this) * ConstVectorView(rhs);
+  }
+
+  Matrix SparseWoodburyInverse::operator*(const Matrix &rhs) const {
+    Matrix Ar = *Ainv_ * rhs;
+    return Ar - *Ainv_ * (*U_ * (inner_matrix_ * (U_->Tmult(Ar))));
+  }
+
+  Vector SparseWoodburyInverse::Tmult(const ConstVectorView &rhs) const {
+    return (*this) * rhs;
+  }
+
+  Matrix SparseWoodburyInverse::Tmult(const Matrix &rhs) const {
+    return (*this) * rhs;
+  }
+
+  Matrix &SparseWoodburyInverse::add_to(Matrix &rhs) const {
+    rhs += this->dense();
+    return rhs;
+  }
+
+  SpdMatrix SparseWoodburyInverse::inner() const {
+    return this->dense().inner();
+  }
+
+  SpdMatrix SparseWoodburyInverse::inner(const ConstVectorView &weights) const {
+    return this->dense().inner(weights);
+  }
+
+  double SparseWoodburyInverse::logdet() const {
+    return logdet_;
+  }
+
+  Matrix SparseWoodburyInverse::dense() const {
+    SpdMatrix I(ncol(), 1.0);
+    return (*this) * I;
+  }
+
+  //===========================================================================
 
   SparseBinomialInverse::SparseBinomialInverse(
       const Ptr<SparseKalmanMatrix> &Ainv,
@@ -325,9 +433,17 @@ namespace BOOM {
 
     inner_matrix_ = SpdMatrix(B.nrow(), 1.0);
     inner_matrix_ += B * tmp.dense();
-    inner_matrix_ = inner_matrix_.inv();
 
-    logdet_ = Ainv_logdet + inner_matrix_.logdet();
+    inner_matrix_condition_number_ =
+        inner_matrix_.condition_number();
+
+    if (okay()) {
+      inner_matrix_ = inner_matrix_.inv();
+      logdet_ = Ainv_logdet + inner_matrix_.logdet();
+    } else {
+      logdet_ = negative_infinity();
+      inner_matrix_ = SpdMatrix();
+    }
   }
 
   SparseBinomialInverse::SparseBinomialInverse(
@@ -335,61 +451,87 @@ namespace BOOM {
       const Ptr<SparseKalmanMatrix> &U,
       const SpdMatrix &B,
       const Matrix &inner,
-      double logdet)
+      double logdet,
+      double inner_matrix_condition_number)
       : Ainv_(Ainv),
         U_(U),
         B_(B),
         inner_matrix_(inner),
-        logdet_(logdet)
+        logdet_(logdet),
+        inner_matrix_condition_number_(inner_matrix_condition_number)
   {}
 
   Vector SparseBinomialInverse::operator*(const ConstVectorView &rhs) const {
+    throw_if_not_okay();
     Vector ans = (*Ainv_) * rhs;
     ans -= (*Ainv_) * (*U_ * (inner_matrix_ * (B_ * (U_->Tmult(*Ainv_ * rhs)))));
     return ans;
   }
 
   Vector SparseBinomialInverse::operator*(const Vector &rhs) const {
+    throw_if_not_okay();
     return (*this) * ConstVectorView(rhs);
   }
 
   Vector SparseBinomialInverse::operator*(const VectorView &rhs) const {
+    throw_if_not_okay();
     return (*this) * ConstVectorView(rhs);
   }
 
   Matrix SparseBinomialInverse::operator*(const Matrix &rhs) const {
+    throw_if_not_okay();
     Matrix ans = *Ainv_ * rhs;
     ans -= *Ainv_ * (*U_ * (inner_matrix_ * (B_ * (U_->Tmult(*Ainv_ * rhs)))));
     return ans;
   }
 
   Vector SparseBinomialInverse::Tmult(const ConstVectorView &rhs) const {
+    throw_if_not_okay();
     return (*this) * rhs;
   }
 
   Matrix SparseBinomialInverse::Tmult(const Matrix &rhs) const {
+    throw_if_not_okay();
     return (*this) * rhs;
   }
 
   Matrix SparseBinomialInverse::dense() const {
+    throw_if_not_okay();
     SpdMatrix I(ncol(), 1.0);
     return (*this) * I;
   }
 
   Matrix & SparseBinomialInverse::add_to(Matrix &rhs) const {
+    throw_if_not_okay();
     rhs += this->dense();
     return rhs;
   }
 
   SpdMatrix SparseBinomialInverse::inner() const {
+    throw_if_not_okay();
     return this->dense().inner();
   }
+
   SpdMatrix SparseBinomialInverse::inner(const ConstVectorView &weights) const {
+    throw_if_not_okay();
     return this->dense().inner(weights);
   }
 
   double SparseBinomialInverse::logdet() const {
+    throw_if_not_okay();
     return logdet_;
+  }
+
+  bool SparseBinomialInverse::okay() const {
+    return inner_matrix_condition_number_ < 1e+8;
+  }
+
+  void SparseBinomialInverse::throw_if_not_okay() const {
+    if (!okay()) {
+      report_error("The condition number of the 'inner matrix' used by "
+                   "SparseBinomialInverse was too large.  The caluclation is "
+                   "likely invalid.  Please use another method.");
+    }
   }
   //===========================================================================
 
@@ -402,6 +544,16 @@ namespace BOOM {
       return ans;
     }
   }  // namespace
+
+  void SparseMatrixBlock::check_can_multiply(
+      const VectorView &lhs, const ConstVectorView &rhs) const {
+    if (lhs.size() != nrow()) {
+      report_error("Left hand side is the wrong dimension.");
+    }
+    if (rhs.size() != ncol()) {
+      report_error("Right hand side is the wrong dimension.");
+    }
+  }
 
   Vector SparseMatrixBlock::operator*(const Vector &v) const {
     return sparse_multiply_impl(*this, v);
@@ -526,16 +678,6 @@ namespace BOOM {
     }
     dim_ += block->nrow();
     blocks_.push_back(block);
-  }
-
-  void BlockDiagonalMatrixBlock::check_can_multiply(
-      const VectorView &lhs, const ConstVectorView &rhs) const {
-    if (lhs.size() != dim_) {
-      report_error("Left hand side is the wrong dimension.");
-    }
-    if (rhs.size() != dim_) {
-      report_error("Right hand side is the wrong dimension.");
-    }
   }
 
   void BlockDiagonalMatrixBlock::multiply(VectorView lhs,
@@ -1456,6 +1598,11 @@ namespace BOOM {
   }
 
   //======================================================================
+
+  StackedRegressionCoefficients *StackedRegressionCoefficients::clone() const {
+    return new StackedRegressionCoefficients(*this);
+  }
+
   void StackedRegressionCoefficients::add_row(const Ptr<GlmCoefs> &beta) {
     if (!coefficients_.empty()) {
       if (beta->nvars_possible() != coefficients_[0]->nvars_possible()) {
@@ -1477,6 +1624,56 @@ namespace BOOM {
     }
   }  // namespace
 
+  void StackedRegressionCoefficients::multiply(
+      VectorView lhs, const ConstVectorView &rhs) const {
+    check_can_multiply(lhs, rhs);
+    for (int i = 0; i < lhs.size(); ++i) {
+      lhs[i] = coefficients_[i]->predict(rhs);
+    }
+  }
+
+  void StackedRegressionCoefficients::multiply_and_add(
+      VectorView lhs, const ConstVectorView &rhs) const {
+    check_can_multiply(rhs.size());
+    if (lhs.size() != nrow()) {
+      report_error("lhs argument is the wrong size in "
+                   "StackedRegressionCoefficients::multiply_and_add.");
+    }
+    for (int i = 0; i < lhs.size(); ++i) {
+      lhs[i] += coefficients_[i]->predict(rhs);
+    }
+  }
+
+  void StackedRegressionCoefficients::add_to_block(SubMatrix block) const {
+    for (int i = 0; i < block.nrow(); ++i) {
+      coefficients_[i]->add_to(block.row(i));
+    }
+  }
+
+  void StackedRegressionCoefficients::Tmult(
+      VectorView lhs, const ConstVectorView &rhs) const {
+    check_can_Tmult(rhs.size());
+    if (lhs.size() != ncol()) {
+      report_error("lhs argument is the wrong size in "
+                   "StackedRegressionCoefficients::Tmult.");
+    }
+    for (size_t i = 0; i < lhs.size(); ++i) {
+      lhs[i] = 0;
+      for (size_t j = 0; j < rhs.size(); ++j) {
+        lhs[i] += coefficients_[j]->value()[i] * rhs[j];
+      }
+    }
+  }
+
+  void StackedRegressionCoefficients::multiply_inplace(
+      VectorView x) const {
+    check_can_multiply(x.size());
+    if (nrow() != ncol()) {
+      report_error("multiply_inplace only applies to square matrices.");
+    }
+    x = *this * x;
+  }
+
   Vector StackedRegressionCoefficients::operator*(
       const Vector &v) const {
     return stacked_regression_vector_mult(v, *this);
@@ -1493,12 +1690,7 @@ namespace BOOM {
   Vector StackedRegressionCoefficients::Tmult(
       const ConstVectorView &x) const {
     Vector ans(ncol());
-    for (int i = 0; i < ncol(); ++i) {
-      ans[i] = 0;
-      for (int j = 0; j < nrow(); ++j) {
-        ans[i] += coefficients_[j]->value()[i] * x[i];
-      }
-    }
+    this->Tmult(VectorView(ans), x);
     return ans;
   }
 
@@ -2173,26 +2365,6 @@ namespace BOOM {
     return P;
   }
 
-  void SparseVerticalStripMatrix::check_can_multiply(int vector_size) const {
-    if (ncol() != vector_size) {
-      report_error("Incompatible vector multiplication.");
-    }
-  }
-  void SparseVerticalStripMatrix::check_can_Tmult(int vector_size) const {
-    if (nrow() != vector_size) {
-      std::ostringstream err;
-      err << "Incompatible vector (transpose-)multiplication.  "
-          << "This matrix has " << nrow() << " rows.  The target vector has "
-          << vector_size << " elements." << std::endl;
-      report_error(err.str());
-    }
-  }
-
-  void SparseVerticalStripMatrix::check_can_add(int rows, int cols) const {
-    if (nrow() != rows || ncol() != cols) {
-      report_error("Incompatible matrix addition.");
-    }
-  }
 
   //===========================================================================
   // LHS = *this * RHS

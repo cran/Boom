@@ -106,7 +106,14 @@ namespace BOOM {
     virtual Model *observation_model() = 0;
     virtual const Model *observation_model() const = 0;
 
-    virtual void kalman_filter() = 0;
+    void kalman_filter() {get_filter().update();}
+    void kalman_smoother() {get_filter().smooth();}
+
+    // Return the state mean from the Kalman filter/smoother.  This function
+    // does no filtering or smoothing itself.  It just returns the state_mean()
+    // value for each node in the kalman filter.
+    Matrix state_mean() const;
+
     virtual void observe_state(int t) = 0;
     virtual void observe_data_given_state(int t) = 0;
 
@@ -150,6 +157,24 @@ namespace BOOM {
     double log_likelihood() {
       return get_filter().compute_log_likelihood();
     }
+
+    // Set model parameters to their maximum likelihood estimates.
+    //
+    // Args:
+    //   epsilon: A small positive number.  Absolute changes to log likelihood
+    //     less than this value indicate that the algorithm has converged.
+    //   max_tries:  Stop trying to optimzize after this many iterations.
+    //
+    // Returns:
+    //   The log likelihood value at the maximum.
+    //
+    // Effects:
+    //   Model parameters are set to the maximum likelihood estimates.
+    //
+    // This function is virtual so that child classes are free to handle edge
+    // cases in the optimization.  One such case is the potential presence of
+    // series-specific effects.
+    virtual double mle(double epsilon, int max_tries=500);
 
     //------------- Model matrices for structural equations. --------------
     // Durbin and Koopman's T[t] built from state models.
@@ -415,7 +440,7 @@ namespace BOOM {
     //---------------- Prediction, filtering, smoothing ---------------
     // Run the full Kalman filter over the observed data, saving the information
     // in the filter_ object.  The log likelihood is computed as a by-product.
-    void kalman_filter() override;
+    // void kalman_filter() override;
 
     void update_observation_model(Vector &r, SpdMatrix &N, int t,
                                   bool save_state_distributions,
@@ -467,7 +492,7 @@ namespace BOOM {
     //---------------- Prediction, filtering, smoothing ---------------
     // Run the full Kalman filter over the observed data, saving the information
     // in the filter_ object.  The log likelihood is computed as a by-product.
-    void kalman_filter() override { filter_.update(); }
+    // void kalman_filter() override { filter_.update(); }
 
     using Filter = ConditionallyIndependentKalmanFilter;
     Filter &get_filter() override {return filter_;}
@@ -481,7 +506,6 @@ namespace BOOM {
                                   bool save_state_distributions,
                                   bool update_sufficient_statistics,
                                   Vector *gradient);
-
 
     // Update the complete data sufficient statistics for the observation model
     // based on the posterior distribution of the observation model error term
@@ -529,9 +553,7 @@ namespace BOOM {
 
     // Run the full Kalman filter over the observed data, saving the information
     // in the filter_ object.  The log likelihood is computed as a by-product.
-    void kalman_filter() override {
-      filter_.update();
-    }
+    // void kalman_filter() override { filter_.update(); }
 
     ConditionalIidKalmanFilter &get_filter() override;
     const ConditionalIidKalmanFilter &get_filter() const override;
@@ -559,6 +581,4 @@ namespace BOOM {
 
 } // namespace BOOM
 
-
-
-#endif //  BOOM_MULTIVARIATE_STATE_SPACE_MODEL_BASE_HPP_
+#endif  //  BOOM_MULTIVARIATE_STATE_SPACE_MODEL_BASE_HPP_

@@ -30,8 +30,28 @@
 
 namespace BOOM {
 
+
   namespace {
     using MvBase = MultivariateStateSpaceModelBase;
+
+    // A functor that computes the log likelihood of a MvBase under a candidate
+    // set of parameters.
+    class MultivariateStateSpaceTargetFun {
+     public:
+      explicit MultivariateStateSpaceTargetFun(MvBase *model)
+          : model_(model) {}
+
+      double operator()(const Vector &parameters) {
+        Vector old_parameters(model_->vectorize_params());
+        model_->unvectorize_params(parameters);
+        double ans = model_->log_likelihood();
+        model_->unvectorize_params(old_parameters);
+        return ans;
+      }
+
+     private:
+      MvBase *model_;
+    };
   }  // namespace
 
   MvBase &MvBase::operator=(const MvBase &rhs) {
@@ -314,6 +334,21 @@ namespace BOOM {
     return ConstVectorView(model_parameters, start, size);
   }
 
+  double MvBase::mle(double epsilon, int max_tries) {
+    // If the model can be estimated using an EM algorithm, then do a
+    // few steps of EM, and then switch to BFGS.
+    MultivariateStateSpaceTargetFun target(this);
+    Negate min_target(target);
+    PowellMinimizer minimizer(min_target);
+    minimizer.set_evaluation_limit(max_tries);
+    Vector parameters = vectorize_params(true);
+    minimizer.set_precision(epsilon);
+    minimizer.minimize(parameters);
+    unvectorize_params(minimizer.minimizing_value());
+    return log_likelihood();
+  }
+
+
   //===========================================================================
 
   namespace {
@@ -328,13 +363,17 @@ namespace BOOM {
   // A precondition is that the state at time t was simulated by the forward
   // portion of the Durbin-Koopman data augmentation algorithm.
   Vector CiidBase::simulate_fake_observation(RNG &rng, int t) {
-     Vector ans = (*observation_coefficients(
-         t, observed_status(t))) * shared_state().col(t);
-     double sigma = sqrt(observation_variance(t));
-     for (int i = 0; i < ans.size(); ++i) {
-       ans[i] += rnorm_mt(rng, 0, sigma);
-     }
-     return ans;
+    const Selector &obs(observed_status(t));
+    if (obs.nvars() == 0) {
+      return Vector(0);
+    } else {
+      Vector ans = (*observation_coefficients(t, obs) * shared_state().col(t));
+      double sigma = sqrt(observation_variance(t));
+      for (int i = 0; i < ans.size(); ++i) {
+        ans[i] += rnorm_mt(rng, 0, sigma);
+      }
+      return ans;
+    }
    }
 
   ConditionalIidKalmanFilter & CiidBase::get_filter() {
@@ -370,13 +409,17 @@ namespace BOOM {
   }  // namespace
 
   Vector CindBase::simulate_fake_observation(RNG &rng, int t) {
-    Vector ans = (*observation_coefficients(t, observed_status(t)))
-        * shared_state().col(t);
-    for (int i = 0; i < ans.size(); ++i) {
-      double sigma = sqrt(single_observation_variance(t, i));
-      ans[i] += rnorm_mt(rng, 0, sigma);
+    const Selector &obs(observed_status(t));
+    if (obs.nvars() == 0) {
+      return Vector(0);
+    } else {
+      Vector ans = (*observation_coefficients(t, obs)) * shared_state().col(t);
+      for (int i = 0; i < ans.size(); ++i) {
+        double sigma = sqrt(single_observation_variance(t, i));
+        ans[i] += rnorm_mt(rng, 0, sigma);
+      }
+      return ans;
     }
-    return ans;
   }
 
   void CindBase::update_observation_model(
@@ -394,7 +437,8 @@ namespace BOOM {
     const Vector &v(marg.prediction_error());
 
     Ptr<SparseKalmanMatrix> Finv = marg.sparse_forecast_precision();
-    Ptr<SparseMatrixProduct> K(marg.sparse_kalman_gain(observed_status(t)));
+    Ptr<SparseMatrixProduct> K(marg.sparse_kalman_gain(
+        observed_status(t), Finv));
 
     Vector observation_error_mean = H * (*Finv * v - *K * r);
     Vector observation_error_variance =
@@ -421,6 +465,15 @@ namespace BOOM {
     // sparse_scalar_kalman_disturbance_smoother_update(
     //     r, N, (*state_transition_matrix(t)), K, observation_matrix(t), F, v);
     report_error("CindBase::update_observation_model isn't done.");
+  }
+
+  Matrix MvBase::state_mean() const {
+    const auto &kalman_filter(get_filter());
+    Matrix ans(state_dimension(), time_dimension());
+    for (size_t i = 0; i < time_dimension(); ++i) {
+      ans.col(i) = kalman_filter[i].state_mean();
+    }
+    return ans;
   }
 
 }  // namespace BOOM
