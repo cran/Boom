@@ -96,7 +96,7 @@ namespace BOOM {
 
     // Fill the matrix with N(mu, sd^2) random numbers.
     virtual Matrix &randomize_gaussian(
-        double mean, double sd, RNG &rng = GlobalRng::rng);
+        double mean = 0.0, double sd = 1.0, RNG &rng = GlobalRng::rng);
 
     // Returns true if empty, or if std::isfinite returns 'true' on
     // all elements.  Returns false otherwise.
@@ -431,6 +431,10 @@ namespace BOOM {
   // Print the matrix to stdout.
   void print(const Matrix &m);
   inline void print_matrix(const Matrix &m) {print(m);}
+
+  // Print R code that can read in the matrix values.
+  std::string to_Rstring(const Matrix &m);
+
   std::istream &operator>>(std::istream &in, Matrix &m);
   // reads until a blank line is found or the end of a line
 
@@ -502,6 +506,13 @@ namespace BOOM {
   Matrix matmultT(const Matrix &A, const Matrix &B);  // A B^T
   Vector matmult(const Vector &v, const Matrix &m);   // v^T m
   Vector matmult(const Matrix &m, const Vector &v);   // m * v
+
+  // The distance from A to B defined as |a-b| /2(|a| + |b|), element-wise, max
+  // over elements.
+  double relative_distance(const Matrix &A, const Matrix &B);
+
+  // As above, but i, j return the indices of the max element.
+  double relative_distance(const Matrix &A, const Matrix &B, int &i, int &j);
 
   //    Vector operator*(const Vector &v, const Matrix &m);
   Vector operator*(const Vector &v, const Matrix &m);

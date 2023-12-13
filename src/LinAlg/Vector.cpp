@@ -874,6 +874,20 @@ namespace BOOM {
 
   void print_vector(const Vector &v) { print(v); }
 
+  std::string to_Rstring(const Vector &v) {
+    std::ostringstream out;
+    if (v.empty()) {
+      out << "numeric(0)";
+    } else {
+      out << "c(" << v[0];
+      for (int i = 1; i < v.size(); ++i) {
+        out << ", " << v[i];
+      }
+      out << ")";
+    }
+    return out.str();
+  }
+
   std::istream &operator>>(std::istream &in, Vector &v) {
     std::string s;
     do {
@@ -1019,7 +1033,7 @@ namespace BOOM {
     double real_index = quantile * max_index;
     double index = lround(floor(real_index));
     double fraction = real_index - index;
-    if (fraction > (1.0 / n)) {
+    if (fraction > std::min<double>(0.01, (1.0 / n))) {
       // In this case real_index is between two integers, which means it can't
       // be max_index.  Return an interpolated average of the lower and upper
       // values.
