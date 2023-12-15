@@ -118,4 +118,4 @@ OBJECTS = ${CXX_SRCS:.cpp=.o}
 # of 100), uncomment the "strip" command below.
 libboom.a: ${OBJECTS}
 	   ${AR} rc $@ $^
-	   strip $@
+	   strip --strip-debug $@

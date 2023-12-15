@@ -1,4 +1,4 @@
-a82011926a6bb2f60aba61b42281dd60 *DESCRIPTION
+ff982dbbb99e38933438d42adbd04c9f *DESCRIPTION
 7eb09e6fd83eb49ed22911c3b2f06744 *LICENSE
 540fdd685ff5fbca6605a156b0782b52 *NAMESPACE
 7b7222fed6c42ccefc773cd2e548ac40 *R/add.segments.R
@@ -1132,7 +1132,7 @@ d463a9fd27e493eb57794f13029e5739 *src/LinAlg/SubMatrix.cpp
 9492a50236e3c232016e4aceb0293061 *src/LinAlg/Vector.cpp
 a3ca01a49120b85b90d06ae8acf80301 *src/LinAlg/VectorView.cpp
 900d5dcb1029b013f9f337b0c7119433 *src/LinAlg/stack_columns.cpp
-3916662c98d837b56ed0e30013e83d09 *src/Makevars
+8b5424140c7af87eb2b2e65bfb593aa7 *src/Makevars
 6875955967986e8ccfabf1ace6ad9693 *src/Models/Bart/Bart.cpp
 b7f4ba3ee694a803b3063c9b42cd579e *src/Models/Bart/GaussianBartModel.cpp
 f0b64cebc22fbe49876a978fd7c8e1b8 *src/Models/Bart/GaussianLinearBartModel.cpp
