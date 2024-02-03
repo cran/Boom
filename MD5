@@ -1,4 +1,4 @@
-de50539f67439af8cb7de48732344e47 *DESCRIPTION
+e81f38df02f5475a2937314e570f394c *DESCRIPTION
 7eb09e6fd83eb49ed22911c3b2f06744 *LICENSE
 540fdd685ff5fbca6605a156b0782b52 *NAMESPACE
 7b7222fed6c42ccefc773cd2e548ac40 *R/add.segments.R
@@ -1132,7 +1132,7 @@ d463a9fd27e493eb57794f13029e5739 *src/LinAlg/SubMatrix.cpp
 9492a50236e3c232016e4aceb0293061 *src/LinAlg/Vector.cpp
 a3ca01a49120b85b90d06ae8acf80301 *src/LinAlg/VectorView.cpp
 900d5dcb1029b013f9f337b0c7119433 *src/LinAlg/stack_columns.cpp
-1b9ccb353da3c88b41cd4a5dbe5d496f *src/Makevars
+5bbf007b2ed7377ff55687d4d07461c7 *src/Makevars
 6875955967986e8ccfabf1ace6ad9693 *src/Models/Bart/Bart.cpp
 b7f4ba3ee694a803b3063c9b42cd579e *src/Models/Bart/GaussianBartModel.cpp
 f0b64cebc22fbe49876a978fd7c8e1b8 *src/Models/Bart/GaussianLinearBartModel.cpp
@@ -1606,7 +1606,7 @@ b93efc7936a0145236dd26af89327dbf *src/math/cephes/powi.cpp
 4888c5eba2c845c1720954e050f3952d *src/math/cephes/zeta.cpp
 498c7a3978c81b3caf7c8935fe5ccf5b *src/math/cephes/zetac.cpp
 ed3b17d60235d3541881586116931f29 *src/math/fft.cpp
-bf1d18e9ed7eb04714d39ddc13f6bfaa *src/math/kissfft/kiss_fft.cpp
+9e8c9e8f0b656264dea9555d0ae9185f *src/math/kissfft/kiss_fft.cpp
 6bfc5fa576e1cfd96f91d4f7f6da8038 *src/math/lmultigamma.cpp
 1051fbcae7c3b3375c45e9981ac5d7f0 *src/numopt/Brent.cpp
 8016808f8b459feda4d1e6dd81b67c6b *src/numopt/Integral.cpp
