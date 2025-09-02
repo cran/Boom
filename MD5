@@ -1,4 +1,4 @@
-e81f38df02f5475a2937314e570f394c *DESCRIPTION
+be79cf8b700834cb77fb493fd067bffe *DESCRIPTION
 7eb09e6fd83eb49ed22911c3b2f06744 *LICENSE
 540fdd685ff5fbca6605a156b0782b52 *NAMESPACE
 7b7222fed6c42ccefc773cd2e548ac40 *R/add.segments.R
@@ -1519,7 +1519,7 @@ b76c9bb2cded56c39f3dc32dd729860c *src/Samplers/failed_experiments/AdaptiveRandom
 f29c5dc2a0a44d15a492bc1e9822df42 *src/TargetFun/ScalarLogpostTF.cpp
 9518b6ded1fbb71e34ff9d7ccc697b34 *src/TargetFun/TargetFun.cpp
 9a7f760f5fcc0ebd409414a71f463063 *src/TargetFun/Transformation.cpp
-3f1759f8a0e724cbbd678a1a6823fe96 *src/boom_r_tools.cpp
+b28de298f421f29a1befe19d84fe99fe *src/boom_r_tools.cpp
 85b097f91ad50040f568bd9d1e7ac80d *src/cpputil/AsciiGraph.cpp
 b5f536e7dbc2020f04c4e9a0960209a0 *src/cpputil/Date.cpp
 f8fc3b4562292b18ad23ed99426ad153 *src/cpputil/DateTime.cpp
