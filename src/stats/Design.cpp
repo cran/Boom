@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <tuple>
 
@@ -156,6 +157,16 @@ namespace BOOM {
     }
   }
 
+  void ExperimentStructure::add_factor(
+      const std::string &factor_name,
+      const std::vector<std::string> &factor_levels) {
+    factor_names_.push_back(factor_name);
+    level_names_.push_back(factor_levels);
+    nlevels_.push_back(factor_levels.size());
+
+    // Add a check to ensure that no singleton levels are added???
+  }
+  
   int ExperimentStructure::nfactors() const { return factor_names_.size(); }
 
   int ExperimentStructure::nlevels(int factor) const {
@@ -175,6 +186,19 @@ namespace BOOM {
   const std::string &ExperimentStructure::level_name(int factor,
                                                      int level) const {
     return level_names_[factor][level];
+  }
+
+  const std::vector<std::string> &ExperimentStructure::levels(
+      const std::string &factor_name) const {
+    for (int i = 0; i < factor_names_.size(); ++i) {
+      if (factor_names_[i] == factor_name) {
+        return level_names_[i];
+      }
+    }
+    std::ostringstream err;
+    err << "No factor named " << factor_name << " found in the experiment.";
+    report_error(err.str());
+    return level_names_[0];
   }
 
   std::string ExperimentStructure::full_level_name(
@@ -272,10 +296,10 @@ namespace BOOM {
   Effect::Effect(const Effect &first, const Effect &second) {
     // Add the factors from first.
     std::copy(first.factors_.begin(), first.factors_.end(),
-              back_inserter(factors_));
+              std::back_inserter(factors_));
     // Add the factors from second.
     std::copy(second.factors_.begin(), second.factors_.end(),
-              back_inserter(factors_));
+              std::back_inserter(factors_));
     // Remove any duplicates.
     std::sort(factors_.begin(), factors_.end());
     std::vector<FactorDummy>::iterator it =

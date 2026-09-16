@@ -23,6 +23,7 @@
 #include <cmath>
 #include <ctime>
 #include <sstream>
+#include <utility>
 #include "cpputil/report_error.hpp"
 #include "cpputil/string_utils.hpp"
 
@@ -341,9 +342,12 @@ namespace BOOM {
     return DayNames((day + 4) % 7);
   }
 
-  time_t Date::to_time_t() const {
-    time_t ans = days_after_origin_ * seconds_in_a_day_ +
-                 local_time_zone_gmt_offset_minutes_ * 60;
+  time_t Date::to_time_t(bool local_time_zone) const {
+    time_t ans = days_after_origin_ * seconds_in_a_day_;
+
+    if (local_time_zone)
+      ans += local_time_zone_gmt_offset_minutes_ * 60;
+    
     return ans;
   }
 

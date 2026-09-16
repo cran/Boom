@@ -18,13 +18,14 @@
 */
 
 #include "LinAlg/Array.hpp"
+#include "LinAlg/Selector.hpp"
 #include <algorithm>
 #include <cstdarg>
 #include <sstream>
 #include "cpputil/report_error.hpp"
 #include "cpputil/ToString.hpp"
 #include "distributions.hpp"
-
+#include "stats/optimal_arm_probabilities.hpp"
 
 namespace BOOM {
 
@@ -39,11 +40,24 @@ namespace BOOM {
       : dims_(dims), strides_(strides) {}
 
   void ConstArrayBase::compute_strides() {
-    strides_.resize(dims_.size());
+    compute_strides(dims_, strides_, true);
+  }
+
+  void ConstArrayBase::compute_strides(const std::vector<int> &dims,
+                                       std::vector<int> &strides,
+                                       bool fortran_order) {
+    strides.resize(dims.size());
     int last_stride = 1;
-    for (int i = 0; i < dims_.size(); ++i) {
-      strides_[i] = last_stride;
-      last_stride *= dims_[i];
+    if (fortran_order) {
+      for (int i = 0; i < dims.size(); ++i) {
+        strides[i] = last_stride;
+        last_stride *= dims[i];
+      }
+    } else {
+      for (int i = dims.size() - 1; i >= 0; --i) {
+        strides[i] = last_stride;
+        last_stride *= dims[i];
+      }
     }
   }
 
@@ -67,34 +81,6 @@ namespace BOOM {
       }
       va_end(ap);
       return (ans);
-    }
-
-    // Returns the position in the column-major array
-    inline int array_index(const std::vector<int> &index,
-                           const std::vector<int> &dim,
-                           const std::vector<int> &strides) {
-      if (index.size() != dim.size()) {
-        std::ostringstream err;
-        err << "Wrong number of dimensions passed to "
-            << "ConstArrayBase::operator[]."
-            << "  Expected " << dim.size() << " got " << index.size() << "."
-            << endl;
-        report_error(err.str());
-      }
-      int pos = 0;
-      for (int i = 0; i < dim.size(); ++i) {
-        int ind = index[i];
-        if (ind < 0 || ind >= dim[i]) {
-          std::ostringstream err;
-          err << "Index " << i
-              << " out of bounds in ConstArrayBase::operator[]."
-              << " Value passed = " << ind << " legal range: [0, " << dim[i] - 1
-              << "]." << endl;
-          report_error(err.str());
-        }
-        pos += index[i] * strides[i];
-      }
-      return pos;
     }
 
     template <class V>
@@ -143,7 +129,7 @@ namespace BOOM {
       }
       INPUT_TYPE view_data =
           host_data +
-          array_index(view_initial_position, host_dims, host_strides);
+          ConstArrayBase::array_index(view_initial_position, host_dims, host_strides);
       return RETURN_TYPE(view_data, view_dims, view_strides);
     }
 
@@ -199,7 +185,8 @@ namespace BOOM {
           initial_position[i] = 0;
         }
       }
-      int pos = array_index(initial_position, host_dims, host_strides);
+      size_t pos = ConstArrayBase::array_index(
+          initial_position, host_dims, host_strides);
       RETURN_TYPE ans(
           host_data + pos, host_dims[which_slice], host_strides[which_slice]);
       return ans;
@@ -225,7 +212,44 @@ namespace BOOM {
           host_data, index, host_dims, host_strides);
     }
 
+    template <class ARRAY>
+    double array_sum(const ARRAY &array) {
+      double ans = 0.0;
+      for (auto it = array.begin(); it != array.end(); ++it) {
+        ans += *it;
+      }
+      return ans;
+    }
+
   }  // namespace
+
+    // Returns the position in the column-major array
+  size_t ConstArrayBase::array_index(const std::vector<int> &index,
+                                     const std::vector<int> &dim,
+                                     const std::vector<int> &strides) {
+    if (index.size() != dim.size()) {
+      std::ostringstream err;
+      err << "Wrong number of dimensions passed to "
+          << "ConstArrayBase::operator[]."
+          << "  Expected " << dim.size() << " got " << index.size() << "."
+          << endl;
+      report_error(err.str());
+    }
+    size_t pos = 0;
+    for (int i = 0; i < dim.size(); ++i) {
+      int ind = index[i];
+      if (ind < 0 || ind >= dim[i]) {
+        std::ostringstream err;
+        err << "Index " << i
+            << " out of bounds in ConstArrayBase::operator[]."
+            << " Value passed = " << ind << " legal range: [0, " << dim[i] - 1
+            << "]." << endl;
+        report_error(err.str());
+      }
+      pos += index[i] * strides[i];
+    }
+    return pos;
+  }
 
   double ConstArrayBase::operator[](const std::vector<int> &index) const {
     int pos = array_index(index, dims_, strides_);
@@ -240,8 +264,8 @@ namespace BOOM {
     return false;
   }
 
-  int ConstArrayBase::size() const {
-    int ans = 1;
+  size_t ConstArrayBase::size() const {
+    size_t ans = 1;
     for (int i = 0; i < dims_.size(); ++i) ans *= dims_[i];
     return ans;
   }
@@ -536,6 +560,7 @@ namespace BOOM {
   }
 
   ArrayIterator ArrayView::begin() { return ArrayIterator(this); }
+
   ConstArrayIterator ArrayView::begin() const {
     return ConstArrayIterator(this);
   }
@@ -601,6 +626,15 @@ namespace BOOM {
     }
     std::copy(a.begin(), a.end(), begin());
     return *this;
+  }
+
+  Array ArrayView::sum(const std::vector<int> &sum_over_dims) const {
+    ConstArrayView view(*this);
+    return view.sum(sum_over_dims);
+  }
+
+  double ArrayView::scalar_sum() const {
+    return array_sum<ArrayView>(*this);
   }
 
   ostream &ArrayView::print(ostream &out) const {
@@ -700,6 +734,27 @@ namespace BOOM {
     return ans;
   }
 
+  Array ConstArrayView::sum(const std::vector<int> &sum_over_dims) const {
+    // output_dims contains the extent of each dimension in the output array.
+    Selector sum_over(sum_over_dims, ndim());
+    Selector keep = sum_over.complement();
+    std::vector<int> output_dims = keep.select(dim());
+
+    Array ans(output_dims, 0.0);
+    for (auto it = ans.abegin(); it != ans.aend(); ++it) {
+      std::vector<int> index = keep.expand(it.position());
+      for (const auto &d : sum_over_dims) {
+        index[d] = -1;
+      }
+      *it = slice(index).scalar_sum();
+    }
+    return ans;
+  }
+
+  double ConstArrayView::scalar_sum() const {
+    return array_sum<ConstArrayView>(*this);
+  }
+
   ostream & ConstArrayView::print(ostream &out) const {
     return print_array(out, *this);
   }
@@ -707,9 +762,32 @@ namespace BOOM {
     return array_to_string(*this);
   }
 
+  Array ConstArrayView::apply_scalar_function(
+      const std::vector<int> &apply_over_dims,
+      const std::function<double(const ConstArrayView &)> &functor) const {
+
+    Selector apply_over(apply_over_dims, ndim());
+    Selector keep = apply_over.complement();
+    std::vector<int> output_dims = keep.select(dim());
+
+    Array ans(output_dims, 0.0);
+
+    for (auto it = ans.abegin(); it != ans.aend(); ++it) {
+      std::vector<int> index = keep.expand(it.position());
+      for (const auto &d : apply_over_dims) {
+        index[d] = -1;
+      }
+      *it = functor(slice(index));
+    }
+    return ans;
+  }
+
   //======================================================================
   Array::Array(const std::vector<int> &dims, double initial_value)
       : ArrayBase(dims), data_(ConstArrayBase::size(), initial_value) {}
+
+  Array::Array(const std::initializer_list<int> &dims, double initial_value)
+      : Array(std::vector<int>(dims), initial_value) {}
 
   Array::Array(const std::vector<int> &dims, const std::vector<double> &data)
       : ArrayBase(dims), data_(data) {
@@ -763,6 +841,13 @@ namespace BOOM {
         this->vector_slice(i, j, -1) = matrices[i].row(j);
       }
     }
+  }
+
+  Array &Array::resize(const std::vector<int> &dims) {
+    data_.resize(product(dims));
+    reset_dims(dims);
+    compute_strides();
+    return *this;
   }
 
   Array &Array::operator=(const ArrayView &a) {
@@ -824,6 +909,11 @@ namespace BOOM {
     }
     return *this;
   }
+
+  Array &Array::operator+=(double x) { data_ += x; return *this;}
+  Array &Array::operator-=(double x) { data_ -= x; return *this;}
+  Array &Array::operator*=(double x) { data_ *= x; return *this;}
+  Array &Array::operator/=(double x) { data_ /= x; return *this;}
 
   int ConstArrayBase::product(const std::vector<int> &dims) {
     int ans = 1;
@@ -949,6 +1039,15 @@ namespace BOOM {
     return it;
   }
 
+  Array Array::sum(const std::vector<int> &sum_over_dims) const {
+    ConstArrayView view(*this);
+    return view.sum(sum_over_dims);
+  }
+
+  double Array::scalar_sum() const {
+    return array_sum<Array>(*this);
+  }
+
   ostream &Array::print(ostream &out) const {
     return print_array(out, *this);
   }
@@ -956,5 +1055,84 @@ namespace BOOM {
     return array_to_string(*this);
   }
   //======================================================================
+
+  Array operator+(const Array &arr, double x) {
+    Array ans(arr);
+    ans += x;
+    return ans;
+  }
+
+  Array operator+(double x, const Array &arr) {
+    Array ans(arr);
+    ans += x;
+    return ans;
+  }
+
+  Array operator-(const Array &arr, double x) {
+    Array ans(arr);
+    ans -= x;
+    return ans;
+  }
+
+  Array operator-(double x, const Array &arr) {
+    Array ans(arr);
+    ans *= -1;
+    ans += x;
+    return ans;
+  }
+
+  Array operator*(const Array &arr, double x) {
+    Array ans(arr);
+    ans *= x;
+    return ans;
+  }
+
+  Array operator*(double x, const Array &arr) {
+    Array ans(arr);
+    ans *= x;
+    return ans;
+  }
+
+  Array operator/(const Array &arr, double x) {
+    Array ans(arr);
+    ans /= x;
+    return ans;
+  }
+
+  Array operator/(double x, const Array &arr) {
+    Array ans(arr);
+    for (auto &el : ans) {
+      el = x / el;
+    }
+    return ans;
+  }
+
+  double max(const ConstArrayView &view) {
+    double max_val = negative_infinity();
+    for (const auto &el : view) {
+      if (el > max_val) max_val = el;
+    }
+    return max_val;
+  }
+
+  double min(const ConstArrayView &view) {
+    double min_val = infinity();
+    for (const auto &el : view) {
+      if (el < min_val) min_val = el;
+    }
+    return min_val;
+  }
+
+  ArrayArgMax::ArrayArgMax(RNG &rng)
+      : rng_(rng)
+  {}
+
+  size_t ArrayArgMax::operator()(const ConstArrayView &view) const {
+    if (view.ndim() > 1) {
+      report_error("ArrayArgMax::operator() only works on one-dimensional "
+                   "arrays.");
+    }
+    return argmax_random_ties(view.vector_slice(-1), candidates_, rng_);
+  }
 
 }  // namespace BOOM

@@ -506,21 +506,6 @@ namespace BOOM {
   }
 
   //======================================================================
-  typedef RegressionDataPolicy RDP;
-
-  RDP::RegressionDataPolicy(const Ptr<RegSuf> &s) : DPBase(s) {}
-  RDP::RegressionDataPolicy(const Ptr<RegSuf> &s, const DatasetType &d)
-      : DPBase(s, d) {}
-
-  RDP::RegressionDataPolicy(const RegressionDataPolicy &rhs)
-      : Model(rhs), DPBase(rhs) {}
-
-  RegressionDataPolicy &RDP::operator=(const RegressionDataPolicy &rhs) {
-    if (&rhs != this) DPBase::operator=(rhs);
-    return *this;
-  }
-
-  //======================================================================
   typedef RegressionModel RM;
 
   RM::RegressionModel(uint xdim)
@@ -629,12 +614,6 @@ namespace BOOM {
     add_all();
     set_Beta(suf()->beta_hat());
     set_sigsq(suf()->SSE() / suf()->n());
-  }
-
-  double RM::pdf(const Ptr<Data> &dp, bool logscale) const {
-    Ptr<RegressionData> rd = DAT(dp);
-    const Vector &x = rd->x();
-    return dnorm(rd->y(), predict(x), sigma(), logscale);
   }
 
   double RM::pdf(const Data *dp, bool logscale) const {

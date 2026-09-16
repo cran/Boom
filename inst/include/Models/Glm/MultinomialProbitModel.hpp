@@ -42,8 +42,8 @@ namespace BOOM {
                            const Vector &beta_choice,
                            const SpdMatrix &utility_covariance);
 
-    //     // the function make_catdat_ptrs can make a ResponseVector out of a
-    //     // vector of strings or uints
+    //     // the function create_categorical_data can make a ResponseVector
+    //     // out of a vector of strings or uints
     //     MultinomialProbitModel(ResponseVector responses,
     //                        const Matrix &Xsubject_info,
     //                        const Arr3 &Xchoice_info);
@@ -62,8 +62,8 @@ namespace BOOM {
     void impute_latent_data(RNG &rng) override;
     virtual double complete_data_loglike() const;
 
-    double pdf(const Ptr<Data> &dp, bool logscale) const;
-    double pdf(const Ptr<ChoiceData> &dp, bool logscale) const;
+    double pdf(const Data *dp, bool logscale) const;
+    double pdf(const ChoiceData *dp, bool logscale) const;
     virtual void initialize_params();
 
     const Vector &beta() const;

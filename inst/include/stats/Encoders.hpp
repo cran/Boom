@@ -19,6 +19,9 @@
   Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
+#include <functional>
+#include <unordered_map>
+
 #include "cpputil/RefCounted.hpp"
 #include "stats/DataTable.hpp"
 #include "LinAlg/Vector.hpp"
@@ -36,7 +39,10 @@ namespace BOOM {
     virtual Matrix encode_dataset(const DataTable &data) const = 0;
     virtual Vector encode_row(const MixedMultivariateData &data) const = 0;
     virtual void encode_row(
-        const MixedMultivariateData &data, VectorView v) const = 0;
+        const MixedMultivariateData &data, VectorView view) const = 0;
+
+    // The column names of the matrix produced by calling encode_dataset().
+    virtual std::vector<std::string> encoded_variable_names() const = 0;
 
    private:
     friend void intrusive_ptr_add_ref(DataEncoder *d) {d->up_count();}
@@ -50,23 +56,92 @@ namespace BOOM {
 
   //===========================================================================
   // An encoder that depends on at most 1 variable.
-  class MainEffectsEncoder : public DataEncoder {
+  class MainEffectEncoder : public DataEncoder {
    public:
-    explicit MainEffectsEncoder(int which_variable):
-        which_variable_(which_variable)
+    explicit MainEffectEncoder(const std::string &variable_name):
+        variable_name_(variable_name)
     {}
-    virtual MainEffectsEncoder * clone() const = 0;
-    int which_variable() const {return which_variable_;}
+
+    virtual MainEffectEncoder * clone() const = 0;
+
+    const std::string & variable_name() const {return variable_name_;}
 
    private:
-    int which_variable_;
+    std::string variable_name_;
   };
 
   //===========================================================================
-  class EffectsEncoder : public MainEffectsEncoder {
+
+  // There are 2 cases to consider for effect encoders -- with and without
+  // names.  Thus we have two classes, with a common base to share code.
+  class EffectsEncoderBase : public MainEffectEncoder{
    public:
-    // The reference level is the last listed level in key.
-    explicit EffectsEncoder(int which_variable, const Ptr<CatKeyBase> &key);
+    EffectsEncoderBase(const std::string &variable_name)
+        : MainEffectEncoder(variable_name)
+    {}
+
+    // The key defining the levels of the categorical variable.  The key
+    // includes the baseline level.
+    virtual const CatKeyBase &key() const = 0;
+
+    int dim() const override;
+
+    Matrix encode_dataset(const DataTable &table) const override;
+    virtual Matrix encode(const CategoricalVariable &variable) const = 0;
+
+    // Encode a categorical variable based on its iteger level.
+    Vector encode_level(int level) const;
+    void encode_level(int level, VectorView view) const;
+
+    // The (integer-valued) baseline level of the categorical variable.
+    virtual int baseline_level() const = 0;
+  };
+
+  class IntEffectsEncoder : public EffectsEncoderBase {
+   public:
+    IntEffectsEncoder(const std::string &variable_name,
+                      const Ptr<CatKeyBase> &key)
+        : EffectsEncoderBase(variable_name),
+          key_(key)
+    {}
+
+    IntEffectsEncoder(const IntEffectsEncoder &rhs);
+    IntEffectsEncoder &operator=(const IntEffectsEncoder &rhs);
+    IntEffectsEncoder(IntEffectsEncoder &&rhs) = default;
+    IntEffectsEncoder & operator=(IntEffectsEncoder &&rhs) = default;
+
+    IntEffectsEncoder * clone() const override;
+
+    CatKeyBase &key() const override {return *key_;}
+
+    std::vector<std::string> encoded_variable_names() const override;
+
+    int baseline_level() const override;
+
+    Matrix encode(const CategoricalVariable &variable) const override;
+    Vector encode(const CategoricalData &data_point) const;
+    void encode(const CategoricalData &data_point, VectorView view) const;
+
+    Vector encode_row(const MixedMultivariateData &data_point) const override;
+    void encode_row(const MixedMultivariateData &data_point,
+                    VectorView) const override;
+
+   private:
+    Ptr<CatKeyBase> key_;
+  };
+
+  class EffectsEncoder : public EffectsEncoderBase {
+   public:
+    // Args:
+    //   variable_name: The name of the variable to be encoded.  This is
+    //     frequently a column heading in a DataTable.
+    //   key: Lists all the levels of the variable to be encoded, including the
+    //     baseline level.
+    //   baseline_level: The level to be used as a baseline.  If the empty
+    //     string, then the final level in 'key' will be used as the baseline.
+    explicit EffectsEncoder(const std::string &variable_name,
+                            const Ptr<CatKey> &key,
+                            const std::string &baseline_level = "");
     EffectsEncoder(const EffectsEncoder &rhs);
     EffectsEncoder &operator=(const EffectsEncoder &rhs);
     EffectsEncoder(EffectsEncoder &&rhs) = default;
@@ -74,21 +149,90 @@ namespace BOOM {
 
     EffectsEncoder * clone() const override;
 
-    int dim() const override;
-    Vector encode(const CategoricalData &data) const;
-    void encode(const CategoricalData &data, VectorView view) const;
+    const CatKey &key() const override {return *key_;}
 
-    Vector encode(int level) const;
-    void encode(int level, VectorView view) const;
+    Matrix encode(const CategoricalVariable &variable) const override;
+    Vector encode_row(const MixedMultivariateData &data) const override;
+    void encode_row(const MixedMultivariateData &data,
+                    VectorView view) const override;
+    Vector encode(const LabeledCategoricalData &data_point) const;
+    void encode(const LabeledCategoricalData &data_point, VectorView view) const;
 
-    Matrix encode(const CategoricalVariable &variable) const;
+    std::vector<std::string> encoded_variable_names() const override;
+
+    int baseline_level() const override {return baseline_level_index_;}
+    
+   private:
+    Ptr<CatKey> key_;
+    std::string baseline_level_;
+    int baseline_level_index_;
+  };
+
+  //===========================================================================
+  class IdentityEncoder : public MainEffectEncoder {
+   public:
+    IdentityEncoder(const std::string &variable_name);
+    IdentityEncoder * clone() const override;
 
     Matrix encode_dataset(const DataTable &data) const override;
-    Vector encode_row(const MixedMultivariateData &row) const override;
-    void encode_row(const MixedMultivariateData &row, VectorView view) const override;
+    Vector encode_row(const MixedMultivariateData &data) const override;
+    void encode_row(const MixedMultivariateData &data,
+                    VectorView view) const override;
+
+    int dim() const override { return 1; }
+    std::vector<std::string> encoded_variable_names() const override;
+  };
+
+  //===========================================================================
+  // An encoder that applies a named transformation (e.g. log, log1p, sqrt) to
+  // a single numeric variable before encoding it as a 1-column matrix.
+  //
+  // Named transforms from the built-in registry call the corresponding C++
+  // standard library function directly and are suitable for hot paths.  A
+  // Python functor may also be supplied (via pybind) under a user-chosen name;
+  // this is flexible but incurs Python call overhead on every row.
+  //
+  // Serialization stores the transform name.  Deserialization looks the name
+  // up in the registry; if not found, the caller is responsible for
+  // re-registering the functor before loading.
+  class TransformationEncoder : public MainEffectEncoder {
+   public:
+    using Transform = std::function<double(double)>;
+
+    // Construct from a named transform in the built-in registry.
+    // Throws if 'transform_name' is not registered.
+    TransformationEncoder(const std::string &variable_name,
+                          const std::string &transform_name);
+
+    // Construct with an explicit functor and a name used for serialization.
+    // The name need not be in the built-in registry, but must be re-registered
+    // (via register_transform) before any deserialization of this encoder.
+    TransformationEncoder(const std::string &variable_name,
+                          const std::string &transform_name,
+                          const Transform &transform);
+
+    TransformationEncoder * clone() const override;
+
+    const std::string &transform_name() const { return transform_name_; }
+
+    Matrix encode_dataset(const DataTable &data) const override;
+    Vector encode_row(const MixedMultivariateData &data) const override;
+    void encode_row(const MixedMultivariateData &data,
+                    VectorView view) const override;
+
+    int dim() const override { return 1; }
+    std::vector<std::string> encoded_variable_names() const override;
+
+    // Registry management.
+    static void register_transform(const std::string &name,
+                                   const Transform &fn);
+    static bool is_registered(const std::string &name);
 
    private:
-    Ptr<CatKeyBase> key_;
+    std::string transform_name_;
+    Transform transform_;
+
+    static std::unordered_map<std::string, Transform> &registry();
   };
 
   //===========================================================================
@@ -133,6 +277,8 @@ namespace BOOM {
       return ans;
     }
 
+    std::vector<std::string> encoded_variable_names() const override;
+
    private:
     Ptr<DataEncoder> encoder1_;
     Ptr<DataEncoder> encoder2_;
@@ -161,6 +307,8 @@ namespace BOOM {
         const MixedMultivariateData &row, VectorView ans) const override;
 
     const std::vector<Ptr<DataEncoder>> &encoders() const {return encoders_;}
+
+    std::vector<std::string> encoded_variable_names() const override;
 
    private:
     int dim_;

@@ -18,9 +18,11 @@
 */
 #ifndef BOOM_NEWLA_MATRIX_HPP
 #define BOOM_NEWLA_MATRIX_HPP
+#include <cassert>
 #include <iosfwd>
-#include <vector>
+#include <iterator>
 #include <tuple>
+#include <vector>
 #include "LinAlg/Vector.hpp"
 #include "LinAlg/VectorView.hpp"
 
@@ -143,6 +145,9 @@ namespace BOOM {
 
     VectorView col(uint j);
     const VectorView col(uint j) const;
+    VectorView column(uint j) {return col(j);}
+    const VectorView column(uint j) const {return col(j);}
+
     void set_col(uint j, const Vector &v);
     void set_col(uint j, const double *v);
     void set_col(uint j, double x);
@@ -363,7 +368,8 @@ namespace BOOM {
     //   col_names: Can be an empty vector if no col_names are
     //     desired.  If non-empty, col_names.size() == m.ncol() must
     //     be true.
-    LabeledMatrix(const Matrix &m, const std::vector<std::string> &row_names,
+    LabeledMatrix(const Matrix &m,
+                  const std::vector<std::string> &row_names,
                   const std::vector<std::string> &col_names);
     const std::vector<std::string> &row_names() const { return row_names_; }
     const std::vector<std::string> &col_names() const { return col_names_; }
@@ -412,7 +418,7 @@ namespace BOOM {
 
   template <class FwdIt>
   FwdIt Matrix::assign(FwdIt b, FwdIt e) {
-    assert(distance(b, e) == size());
+    assert(std::distance(b, e) == size());
     data_.assign(b, e);
     return e;
   }
@@ -596,6 +602,12 @@ namespace BOOM {
   inline Vector vec(const Matrix &A) {
     return Vector(A.begin(), A.end());
   }
+
+  inline Vector stack_columns(const Matrix &A) {
+    return vec(A);
+  }
+
+  Vector stack_rows(const Matrix &A);
 
 }  // namespace BOOM
 

@@ -27,7 +27,13 @@
 
 namespace BOOM {
 
+  // The means (across rows) of the columns of m.  If rows are observations and
+  // columns are variables, this returns the mean of each variable.
   Vector mean(const Matrix &m);
+
+  // Compute the standard deviations of the columns of m.
+  Vector sd(const Matrix &m);
+
   SpdMatrix var(const Matrix &m);
   SpdMatrix cor(const Matrix &m);
 
@@ -55,5 +61,14 @@ namespace BOOM {
   double mean(const std::vector<double> &x, const std::vector<bool> &observed);
   double var(const std::vector<double> &x, const std::vector<bool> &observed);
   double sd(const std::vector<double> &x, const std::vector<bool> &observed);
+
+  template<class T>
+  T prod(const std::vector<T> &values) {
+    T ans = 1;
+    for (const auto &value : values) {
+      ans *= value;
+    }
+    return ans;
+  }
 }  // namespace BOOM
 #endif  // BOOM_MOMENTS_HPP

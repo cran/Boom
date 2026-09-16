@@ -16,9 +16,10 @@
   Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <iterator>
+#include <vector>
 #include "cpputil/ToString.hpp"
 #include "Models/Glm/LoglinearModel.hpp"
 #include "Models/SufstatAbstractCombineImpl.hpp"
@@ -80,16 +81,16 @@ namespace BOOM {
   //===========================================================================
   CategoricalMainEffect::CategoricalMainEffect(
       int which_variable, const Ptr<CatKeyBase> &key)
-      : encoder_(which_variable, key),
+      : encoder_("X", key),
         which_variables_(1, which_variable),
         nlevels_(1, encoder_.dim() + 1)
   {}
 
   Vector CategoricalMainEffect::encode(const MCD &data) const {
-    return encoder_.encode(data[encoder_.which_variable()]);
+    return encoder_.encode_level(data[which_variables_[0]].value());
   }
   Vector CategoricalMainEffect::encode(const std::vector<int> &data) const {
-    return encoder_.encode(data[encoder_.which_variable()]);
+    return encoder_.encode_level(data[which_variables_[0]]);
   }
 
   //===========================================================================
@@ -126,7 +127,7 @@ namespace BOOM {
                enc1_->which_variables().end(),
                enc2_->which_variables().begin(),
                enc2_->which_variables().end(),
-               back_inserter(which_variables_));
+               std::back_inserter(which_variables_));
 
     // Build "nlevels".
     for (const auto &el : which_variables_) {

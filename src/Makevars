@@ -4,6 +4,15 @@ all:	libboom.a
 # passed to make can be specified here.
 # -k:  keep going
 # -j 16: use 16 threads
+
+# ifeq ($(origin NOT_CRAN),undefined)
+# 	MAKEFLAGS=" -j 2 "
+# 	$(info ---- compiling with 2 cores ----)
+# else
+# 	MAKEFLAGS=" -j 32 "
+# 	$(info ---- compiling with 32 cores ----)
+# endif
+
 #
 # NOTE: A better way to supply the -j flag is with the Ncpu's argument to
 # install.packages.

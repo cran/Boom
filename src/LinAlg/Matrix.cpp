@@ -24,6 +24,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <sstream>
 #include <string>
@@ -44,7 +45,7 @@
 #include "LinAlg/EigenMap.hpp"
 
 // other BOOM
-#include "cpputil/Split.hpp"
+#include "cpputil/StringSplitter.hpp"
 #include "cpputil/report_error.hpp"
 #include "cpputil/string_utils.hpp"
 #include "distributions.hpp"
@@ -856,8 +857,8 @@ namespace BOOM {
     Vector s = singular_values();
     double bound = s[0] * prop;
     std::vector<double>::iterator pos =
-        lower_bound(s.begin(), s.end(), bound, greater());
-    uint k = distance(pos, s.end());
+        std::lower_bound(s.begin(), s.end(), bound, greater());
+    uint k = std::distance(pos, s.end());
     return s.size() - k;
   }
 
@@ -1197,7 +1198,7 @@ namespace BOOM {
   }
 
   double Matrix::sum() const {
-    return accumulate(data_.begin(), data_.end(), 0.0);
+    return std::accumulate(data_.begin(), data_.end(), 0.0);
   }
 
   double Matrix::abs_norm() const { return EigenMap(*this).lpNorm<1>(); }
@@ -1205,12 +1206,12 @@ namespace BOOM {
   double Matrix::sumsq() const { return EigenMap(*this).squaredNorm(); }
 
   double Matrix::prod() const {
-    return accumulate(data_.begin(), data_.end(), 1.0, mul);
+    return std::accumulate(data_.begin(), data_.end(), 1.0, mul);
   }
 
   double Matrix::max() const { return *std::max_element(begin(), end()); }
 
-  double Matrix::min() const { return *min_element(begin(), end()); }
+  double Matrix::min() const { return *std::min_element(begin(), end()); }
 
   double Matrix::max_abs() const {
     int n = size();
@@ -1636,6 +1637,15 @@ namespace BOOM {
         row = cbind(row, tmp);
       }
       ans = rbind(ans, row);
+    }
+    return ans;
+  }
+
+  Vector stack_rows(const Matrix &A) {
+    Vector ans;
+    ans.reserve(A.size());
+    for (size_t i = 0; i < A.nrow(); ++i) {
+      ans.concat(A.row(i));
     }
     return ans;
   }

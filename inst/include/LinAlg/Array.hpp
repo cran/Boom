@@ -27,6 +27,8 @@
 #include "LinAlg/VectorView.hpp"
 
 #include <vector>
+#include <sstream>
+#include <initializer_list>
 #include "cpputil/report_error.hpp"
 
 namespace BOOM {
@@ -64,7 +66,7 @@ namespace BOOM {
 
     // size() is the number of elements stored in the array.  It is
     // the product of dims_;
-    int size() const;
+    size_t size() const;
 
     // If an Array is the same size and shape as another Array-like
     // thing then they can be compared with operator==
@@ -105,6 +107,36 @@ namespace BOOM {
 
     virtual ostream & print(ostream &out) const = 0;
     virtual std::string to_string() const = 0;
+
+    // Return the position in the underlying data array of the object at
+    // position [i, j, k, ...].
+    //
+    // Args:
+    //   index:  The vector of indicies to be mapped to a memory position.
+    //   dims:  The dimensions (extents) of an array.
+    //   strides:  The strides between dimensions for an array.
+    //
+    // Returns:
+    //   The array offset of the data at index [i, j, k, ...].
+    static size_t array_index(const std::vector<int> &index,
+                              const std::vector<int> &dims,
+                              const std::vector<int> &strides);
+
+    // Compute the vector of strides needed to store an array with the given set
+    // of dimensions.  Views into an array may use different strides.  These are
+    // for a dense, packed array.
+    //
+    // Args:
+    //   dims: The dimensions of the array.
+    //   strides: The vector that will receive the computed strides.  On output
+    //     it will be the same size as 'dims'.
+    //   fortran_order: If true then the strides will be computed according to
+    //     'column major order' where the lowest indicies change the fastest.
+    //     If false then strides will be computed for 'row major order' where
+    //     the highest indices change the fastest.
+    static void compute_strides(const std::vector<int> &dims,
+                                std::vector<int> &strides,
+                                bool fortran_order = true);
 
    private:
     std::vector<int> dims_;
@@ -212,13 +244,44 @@ namespace BOOM {
     ConstArrayIterator begin() const;
     ConstArrayIterator end() const;
 
+    // Args:
+    //   dims: An array of integers over which to compute the sum.  The length
+    //     of dims must be no greater than the number of dimensions of the
+    //     array.  The elements of dims must be unique, non-negative, and less
+    //     than this->ndim().
+    //
+    // Returns:
+    //   The dimensions of the returned array correspond to this->dim() with any
+    //   dimensions in 'dims' removed.
+    Array sum(const std::vector<int> &dims) const;
+
+    // The sum of all elements in the array;
+    double scalar_sum() const;
+    double sum() const {return scalar_sum();}
+
     ostream &print(ostream &out) const override;
     std::string to_string() const override;
+
+    // Args:
+    //   apply_over_dims: The dimensions of the array over which to apply the
+    //     function.
+    //   functor:  The function to apply.
+    //
+    // Returns:
+    //   The array formed by applying the scalar valued function over the
+    //   requested dimensions.
+    //
+    // Example: If the array has 3 dimensions (8, 6, 7) and apply_over_dims =
+    //   {0, 2} then the return value will be an array of a single dimension of
+    //   size 6.  Entry i in the returned array is the result of 'functor'
+    //   applied to the sub-array(this->slice(-1, i, -1)).
+    Array apply_scalar_function(
+        const std::vector<int> &apply_over_dims,
+        const std::function<double(const ConstArrayView &)> &functor) const;
 
    private:
     const double *data_;
   };
-
 
   //======================================================================
   class ArrayView : public ArrayBase {
@@ -293,6 +356,19 @@ namespace BOOM {
     ArrayIterator begin();
     ArrayIterator end();
 
+    // Args:
+    //   dims: An array of integers over which to compute the sum.  The length
+    //     of dims must be no greater than the number of dimensions of the
+    //     array.  The elements of dims must be unique, non-negative, and less
+    //     than this->ndim().
+    //
+    // Returns:
+    //   The dimensions of the returned array correspond to this->dim() with any
+    //   dimensions in 'dims' removed.
+    Array sum(const std::vector<int> &dims) const;
+    double scalar_sum() const;
+    double sum() const {return scalar_sum();}
+
     ostream &print(ostream &out) const override;
     std::string to_string() const override;
 
@@ -312,6 +388,9 @@ namespace BOOM {
     Array(const std::vector<int> &dims, const std::vector<double> &data);
     Array(const std::vector<int> &dims, const double *data);
 
+    explicit Array(const std::initializer_list<int> &dims,
+                   double initial_value = 0);
+
     // Convenience constructor for a 3-way array.  The first array dimension is
     // the index of the vector.  The second and third dimensions are the rows
     // and columns of the elements of 'matrices.'  If 'matrices' is empty then
@@ -323,6 +402,8 @@ namespace BOOM {
     Array(Array &&rhs) = default;
     Array &operator=(const Array &rhs) = default;
     Array &operator=(Array &&rhs) = default;
+
+    Array &resize(const std::vector<int> &dims);
 
     // The following assignment opertors expect the array to have the same size
     // as the RHS, and will produce errors if the dimensions differ.
@@ -336,7 +417,10 @@ namespace BOOM {
 
     Array &operator+=(const Array &rhs);
     Array &operator+=(const ConstArrayView &rhs);
-
+    Array &operator+=(double x);
+    Array &operator-=(double x);
+    Array &operator*=(double x);
+    Array &operator/=(double x);
 
     template <class FwdIt>
     Array &assign(FwdIt begin, FwdIt end) {
@@ -399,6 +483,13 @@ namespace BOOM {
     VectorView vector_slice(int x1, int x2, int x3, int x4, int x5);
     VectorView vector_slice(int x1, int x2, int x3, int x4, int x5, int x6);
 
+    Array apply_scalar_function(
+        const std::vector<int> &apply_over_dims,
+        const std::function<double(const ConstArrayView &view)> &functor) const {
+      return ConstArrayView(*this).apply_scalar_function(
+          apply_over_dims, functor);
+    }
+
     // The easiest way to iterate over all the array elements is to iterate over
     // data_.
     iterator begin() { return data_.begin(); }
@@ -413,11 +504,357 @@ namespace BOOM {
     ConstArrayIterator abegin() const;
     ConstArrayIterator aend() const;
 
+    // Args:
+    //   dims: An array of integers over which to compute the sum.  The length
+    //     of dims must be no greater than the number of dimensions of the
+    //     array.  The elements of dims must be unique, non-negative, and less
+    //     than this->ndim().
+    //
+    // Returns:
+    //   The dimensions of the returned array correspond to this->dim() with any
+    //   dimensions in 'dims' removed.
+    Array sum(const std::vector<int> &dims) const;
+    double scalar_sum() const;
+    double sum() const {return scalar_sum();}
+
     ostream &print(ostream &out) const override;
     std::string to_string() const override;
 
+    using ArrayBase::operator[];
+
+    // Return the i'th element of the Array.  This is storage order dependent,
+    // but for single dimension arrays it allows access to the underlying data
+    // vector.
+    double operator[](int i) const { return data_[i]; }
+    double &operator[](int i) { return data_[i]; }
+
    private:
     Vector data_;
+  };
+
+  Array operator+(const Array &arr, double x);
+  Array operator-(const Array &arr, double x);
+  Array operator*(const Array &arr, double x);
+  Array operator/(const Array &arr, double x);
+
+  Array operator+(double x, const Array &arr);
+  Array operator-(double x, const Array &arr);
+  Array operator*(double x, const Array &arr);
+  Array operator/(double x, const Array &arr);
+
+
+  // A mapping from a multivariate index to a column-major array storage format.
+  //
+  // Template Args:
+  //   INT: The desired storage type for integer values.
+  //
+  // Args:
+  //   index:  The collection of indices pointing to a single array element.
+  //   dim:  The dimensions (aka "extent" or "shape") of the array.
+  //   strides: The number of steps between successive elements in the same
+  //     dimension.  strides[i] is the number of steps you must advance in the
+  //     raw data structure to increment the i'th index by one.
+  //
+  // Returns:
+  //   The position of the element at 'index' in the underlying memory storage
+  //   block.
+  template <class INT = int>
+  inline INT array_index(const std::vector<INT> &index,
+                         const std::vector<INT> &dim,
+                         const std::vector<INT> &strides) {
+    if (index.size() != dim.size()) {
+      std::ostringstream err;
+      err << "Wrong number of dimensions passed to "
+          << "ConstArrayBase::operator[]."
+          << "  Expected " << dim.size() << " got " << index.size() << "."
+          << endl;
+      report_error(err.str());
+    }
+    INT pos = 0;
+    for (INT i = 0; i < dim.size(); ++i) {
+      INT ind = index[i];
+      if (ind < 0 || ind >= dim[i]) {
+        std::ostringstream err;
+        err << "Index " << i
+            << " out of bounds in ConstArrayBase::operator[]."
+            << " Value passed = " << ind << " legal range: [0, " << dim[i] - 1
+            << "]." << endl;
+        report_error(err.str());
+      }
+      pos += index[i] * strides[i];
+    }
+    return pos;
+  }
+
+  // Compute the vector of strides for an array stored in dense vector storage.
+  // Args:
+  //   dims: The dimensions (aka "extents" or "shape") of the array to be
+  //     stored.
+  //
+  // Returns:
+  //   A vector of strides, where strides[i] is the number of positions in raw
+  //   storage between array elements in dimension i.  For example, in a 2-way
+  //   array (a matrix), moving to the next row (dimension 0) involves moving 1
+  //   step, while moving to the next column (dimension 1) means moving "number
+  //   of rows" spaces.
+  template <class INT>
+  std::vector<INT> compute_array_strides(const std::vector<INT> &dims) {
+    std::vector<INT> strides(dims);
+    INT last_stride = 1;
+    for (size_t i = 0; i < dims.size(); ++i) {
+      strides[i] = last_stride;
+      last_stride *= dims[i];
+    }
+    return strides;
+  }
+
+  //===========================================================================
+  // The GenericArray class needs an iterator.  To make things work we need to
+  // forward declare the GenericArray template class, declare the iterator
+  // class, and instantiate the iterator's member functions that depend on
+  // GenericArray after the GenericArray definition.
+  template<class VALUE, class INT> class GenericArray;
+
+  template <class VALUE, class INT>
+  class GenericArrayIterator {
+   public:
+    GenericArrayIterator(GenericArray<VALUE, INT> *host);
+
+    VALUE& operator*();
+    bool operator==(const GenericArrayIterator &rhs) const;
+    bool operator!=(const GenericArrayIterator &rhs) const;
+
+    GenericArrayIterator &operator++() {
+      ++position_;
+      return *this;
+    }
+
+    const std::vector<int> &position() const {
+      return position_.position();
+    }
+
+    void set_position(const std::vector<int> &position) {
+      position_.set_position(position);
+    }
+
+    GenericArrayIterator &set_to_end() {
+      position_.set_to_end();
+      return *this;
+    }
+
+   private:
+    GenericArray<VALUE, INT> *host_;
+    ArrayPositionManager position_;
+  };
+
+  template <class VALUE, class INT>
+  class GenericArrayConstIterator {
+   public:
+    GenericArrayConstIterator(const GenericArray<VALUE, INT> *host);
+
+    const VALUE& operator*() const;
+    bool operator==(const GenericArrayConstIterator &rhs) const;
+    bool operator!=(const GenericArrayConstIterator &rhs) const;
+
+    GenericArrayConstIterator &operator++() {
+      ++position_;
+      return *this;
+    }
+
+    const std::vector<int> &position() const {
+      return position_.position();
+    }
+
+    void set_position(const std::vector<int> &position) {
+      position_.set_position(position);
+    }
+
+    GenericArrayConstIterator &set_to_end() {
+      position_.set_to_end();
+      return *this;
+    }
+
+   private:
+    GenericArray<VALUE, INT> *host_;
+    ArrayPositionManager position_;
+  };
+
+
+  //===========================================================================
+  // A generic array of objects.
+  //
+  // Template Args:
+  //   VALUE:  The type of value stored in the array.
+  //   INT:  The type of integer used to index the array.
+  template <class VALUE, class INT = int>
+  class GenericArray {
+   public:
+
+    GenericArray() {}
+
+    GenericArray(const std::vector<INT> &dims, const std::vector<VALUE> &data)
+        : dims_(dims),
+          data_(data)
+    {
+      check_dimensions(dims_, data_.size());
+      strides_ = compute_array_strides(dims);
+    }
+
+    bool empty() const {return dims_.empty();}
+
+    int ndim() const { return dims_.size(); }
+    int dim(int i) const { return dims_[i]; }
+    const std::vector<int> &dim() const { return dims_; }
+
+    // stride(i) is the number of steps you must advance in data()
+    // to increment the i'th index by one.
+    int stride(int i) const { return strides_[i]; }
+    const std::vector<int> &strides() const { return strides_; }
+
+    // size() is the number of elements stored in the array.  It is
+    // the product of dims_;
+    int size() const;
+
+    // Iterators
+    GenericArrayIterator<VALUE, INT> begin() {
+      return GenericArrayIterator<VALUE, INT>(this);
+    }
+
+    GenericArrayIterator<VALUE, INT> end() {
+      GenericArrayIterator<VALUE, INT> it(this);
+      it.set_to_end();
+      return it;
+    }
+
+    GenericArrayConstIterator<VALUE, INT> begin() const {
+      return GenericArrayConstIterator<VALUE, INT>(this);
+    }
+
+    GenericArrayConstIterator<VALUE, INT> end() const {
+      GenericArrayConstIterator<VALUE, INT> it(this);
+      it.set_to_end();
+      return it;
+    }
+
+    void check_dimensions(const std::vector<INT> &dims, size_t size) const {
+      INT product = 1;
+      for (const auto &el : dims) {
+        product *= el;
+      }
+      if (product != size) {
+        std::ostringstream err;
+        err << "Generic array failed dimension check.  The product of [";
+        for (size_t i = 0; i < dims.size(); ++i) {
+          err << dims[i];
+          if (i + 1 < dims.size()) {
+            err << ", ";
+          }
+        }
+        err << "] is " << product << " but the required size is "
+            << size << ".";
+        report_error(err.str());
+      }
+    }
+
+    VALUE &operator[](const std::vector<INT> &index) {
+      return data_[array_index<INT>(index, dims_, strides_)];
+    }
+
+    const VALUE &operator[](const std::vector<INT> &index) const {
+      return data_[array_index<INT>(index, dims_, strides_)];
+    }
+
+   private:
+    std::vector<INT> dims_;
+    std::vector<VALUE> data_;
+    std::vector<INT> strides_;
+  };
+
+  //===========================================================================
+  // Member function definitions for GenericArrayIterator and
+  // GenericArrayConstIterator.
+
+  template<class VALUE, class INT>
+  GenericArrayIterator<VALUE, INT>::GenericArrayIterator(
+      GenericArray<VALUE, INT> *host):
+      host_(host),
+      position_(host->dim())
+  {}
+
+  template<class VALUE, class INT>
+  VALUE &GenericArrayIterator<VALUE, INT>::operator*() {
+    if (position_.at_end()) {
+      report_error("GenericArrayIterator dereference past end of data.");
+    }
+    return (*host_)[position_.position()];
+  }
+
+  template<class VALUE, class INT>
+  bool GenericArrayIterator<VALUE, INT>::operator==(
+      const GenericArrayIterator &rhs) const {
+    return (host_ == rhs.host_) && (position_ == rhs.position_);
+  }
+
+  template<class VALUE, class INT>
+  bool GenericArrayIterator<VALUE, INT>::operator!=(
+      const GenericArrayIterator &rhs) const {
+    return (host_ != rhs.host_) || (position_ != rhs.position_);
+  }
+
+  // Now for the Const case.
+  template<class VALUE, class INT>
+  GenericArrayConstIterator<VALUE, INT>::GenericArrayConstIterator(
+      const GenericArray<VALUE, INT> *host):
+      host_(host),
+      position_(host->dim())
+  {}
+
+  template<class VALUE, class INT>
+  const VALUE &GenericArrayConstIterator<VALUE, INT>::operator*() const {
+    if (position_.at_end()) {
+      report_error("GenericArrayConstIterator dereference past end of data.");
+    }
+    return (*host_)[position_.position()];
+  }
+
+  template<class VALUE, class INT>
+  bool GenericArrayConstIterator<VALUE, INT>::operator==(
+      const GenericArrayConstIterator &rhs) const {
+    return (host_ == rhs.host_) && (position_ == rhs.position_);
+  }
+
+  template<class VALUE, class INT>
+  bool GenericArrayConstIterator<VALUE, INT>::operator!=(
+      const GenericArrayConstIterator &rhs) const {
+    return (host_ != rhs.host_) || (position_ != rhs.position_);
+  }
+
+  //===========================================================================
+  // Free functions
+  //===========================================================================
+
+  double max(const ConstArrayView &view);
+  inline double max(const Array &array) {
+    return max(ConstArrayView(array));
+  }
+
+  double min(const ConstArrayView &view);
+  inline double min(const Array &array) {
+    return min(ConstArrayView(array));
+  }
+
+  // A functor for finding the index of the maximal value in a 1-D array.  If
+  // there are multiple copies of the same max value, then ties are broken
+  // uniformly at random.
+  class ArrayArgMax {
+   public:
+    ArrayArgMax(RNG &rng = ::BOOM::GlobalRng::rng);
+
+    size_t operator()(const ConstArrayView &view) const;
+
+   private:
+    mutable RNG rng_;
+    mutable std::vector<int> candidates_;
   };
 
 }  // namespace BOOM

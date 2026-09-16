@@ -20,10 +20,13 @@
 #include "Models/CategoricalData.hpp"
 #include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <set>
 #include <sstream>
 #include <utility>
 #include "cpputil/report_error.hpp"
+#include "cpputil/StringSplitter.hpp"
+
 
 namespace BOOM {
 
@@ -91,7 +94,15 @@ namespace BOOM {
   void CatKey::Register(CategoricalData *dp) {
     CatKeyBase::Register(dp);
     if (dp->value() >= labs_.size()) {
-      report_error("Illegal value passed to CatKey::Register");
+      std::ostringstream err;
+      err << "Illegal value: "
+          << dp->value()
+          << " passed to CatKey::Register "
+          << " with labels: ";
+      for (const std::string &label :  labs_) {
+        err << "\n" << label;
+      }
+      report_error(err.str());
     }
   }
 
@@ -107,7 +118,7 @@ namespace BOOM {
         add_label(label);
         dp->set(findstr_safe(label, found));
       } else {
-        report_error("illegal label passed to CatKey::Register");
+        report_error("illegal label passed to CatKey::RegisterWithLabel");
       }
     }
   }
@@ -122,7 +133,7 @@ namespace BOOM {
       return labs_.size();
     }
     found = true;
-    return distance(labs_.begin(), it);
+    return std::distance(labs_.begin(), it);
   }
 
   uint CatKey::findstr(const std::string &lab) const {
@@ -134,6 +145,12 @@ namespace BOOM {
       report_error(out.str());
     }
     return ans;
+  }
+
+  int CatKey::findstr_or_neg(const std::string &lab) const {
+    bool found = true;
+    int position = findstr_safe(lab, found);
+    return found ? position : -1;
   }
 
   void CatKey::add_label(const std::string &lab) { labs_.push_back(lab); }
@@ -280,7 +297,7 @@ namespace BOOM {
     return key_ == rhs.key_;
   }
 
-  inline void incompat() {
+  inline void incompatible_category_error() {
     report_error("comparison between incompatible categorical variables");
   }
   //------------------------------------------------------------
@@ -349,29 +366,32 @@ namespace BOOM {
 
   bool OrdinalData::operator<(const OrdinalData &rhs) const {
     if (!comparable(rhs)) {
-      incompat();
+      incompatible_category_error();
     }
     return value() < rhs.value();
   }
   bool OrdinalData::operator<=(const OrdinalData &rhs) const {
     if (!comparable(rhs)) {
-      incompat();
+      incompatible_category_error();
     }
     return value() <= rhs.value();
   }
   bool OrdinalData::operator>(const OrdinalData &rhs) const {
     if (!comparable(rhs)) {
-      incompat();
+      incompatible_category_error();
     }
     return value() > rhs.value();
   }
   bool OrdinalData::operator>=(const OrdinalData &rhs) const {
     if (!comparable(rhs)) {
-      incompat();
+      incompatible_category_error();
     }
     return value() >= rhs.value();
   }
+
   //======================================================================
+
+
   Ptr<CatKey> make_catkey(const std::vector<std::string> &sv) {
     std::vector<std::string> tmp(sv);
     std::sort(tmp.begin(), tmp.end());
@@ -380,7 +400,7 @@ namespace BOOM {
     return new CatKey(labs);
   }
 
-  std::vector<Ptr<CategoricalData> > make_catdat_ptrs(
+  std::vector<Ptr<CategoricalData> > create_categorical_data(
       const std::vector<std::string> &sv) {
     uint n = sv.size();
     Ptr<CatKey> labs = make_catkey(sv);
@@ -391,19 +411,33 @@ namespace BOOM {
     return ans;
   }
 
-  std::vector<Ptr<CategoricalData> > make_catdat_ptrs(
-      const std::vector<uint> &iv) {
-    uint n = iv.size();
-    int max = *std::max_element(iv.begin(), iv.end());
-    Ptr<CatKeyBase> labs = new FixedSizeIntCatKey(max + 1);
-    std::vector<Ptr<CategoricalData> > ans(iv.size());
-    for (uint i = 0; i < n; ++i) {
-      ans[i] = new CategoricalData(iv[i], labs);
+  namespace {
+    // Create vectors of pointers to CategoricalData from vectors of "integers"
+    // including int, long, unsigned long, etc.
+    template <class INT>
+    std::vector<Ptr<CategoricalData>> create_integer_categorical_data(
+        const std::vector<INT> &input) {
+      INT max = *std::max_element(input.begin(), input.end());
+      Ptr<CatKeyBase> labs = new FixedSizeIntCatKey(max + 1);
+      std::vector<Ptr<CategoricalData>> ans;
+      for (auto el : input) {
+        ans.push_back(new CategoricalData(el, labs));
+      }
+      return ans;
     }
-    return ans;
+  }  // namespace
+
+  std::vector<Ptr<CategoricalData> > create_categorical_data(
+      const std::vector<uint> &iv) {
+    return create_integer_categorical_data<uint>(iv);
+  }
+  std::vector<Ptr<CategoricalData> > create_categorical_data(
+      const std::vector<int> &iv) {
+    return create_integer_categorical_data<int>(iv);
   }
 
-  std::vector<Ptr<OrdinalData> > make_ord_ptrs(const std::vector<uint> &iv) {
+  std::vector<Ptr<OrdinalData>>
+  create_ordinal_data(const std::vector<uint> &iv) {
     uint n = iv.size();
     uint Max = 0;
     for (uint i = 0; i < n; ++i) {

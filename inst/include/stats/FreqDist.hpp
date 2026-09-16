@@ -29,6 +29,14 @@ namespace BOOM {
   // A frequency distribution for categorical data.
   class FrequencyDistribution {
    public:
+
+    // Construct a null frequency distribution.
+    FrequencyDistribution(int nlevels = 0)
+        : counts_(nlevels)
+    {
+      set_default_labels();
+    }
+
     // Overloaded constructors for various integral types.
     // Args:
     //   y:  A vector of categorical data to be tabulated.
@@ -36,8 +44,10 @@ namespace BOOM {
     //     largest values in y will be included (with zero counts if they did
     //     not appear in y).  If false, then values that did not appear in y
     //     will be skipped.
-    explicit FrequencyDistribution(const std::vector<uint> &y, bool contiguous = false);
-    explicit FrequencyDistribution(const std::vector<int> &y, bool contiguous = false);
+    explicit FrequencyDistribution(const std::vector<uint> &y,
+                                   bool contiguous = false);
+    explicit FrequencyDistribution(const std::vector<int> &y,
+                                   bool contiguous = false);
     explicit FrequencyDistribution(const std::vector<unsigned long> &y,
                                    bool contiguous = false);
 
@@ -54,7 +64,7 @@ namespace BOOM {
 
     // Set the category labels for the unique values in y.
     void set_labels(const std::vector<std::string> &labels);
-    const std::vector<std::string> &labels() const { return labs_; }
+    const std::vector<std::string> &labels() const { return labels_; }
 
     // Count the frequency of each value in y.
     const std::vector<int> &counts() const { return counts_; }
@@ -68,6 +78,12 @@ namespace BOOM {
         return ans / normalizing_constant;
       }
     }
+
+    // Add or remove a single observation with the given level.
+    // I.e. add_count(3) instructs the object to record one more observation
+    // with category 3.
+    void add_count(int level_index) {++counts_[level_index];}
+    void remove_count(int level_index) {--counts_[level_index];}
 
     std::ostream &print(std::ostream &out) const;
 
@@ -83,12 +99,14 @@ namespace BOOM {
     int count(const std::string &label) const;
 
    protected:
-    FrequencyDistribution() {}
     void reset(const std::vector<int> &counts,
                const std::vector<std::string> &labels);
 
+    // Set the labels equal to L0, L1, ..., LN-1, where N is counts_.size();
+    void set_default_labels();
+
    private:
-    std::vector<std::string> labs_;
+    std::vector<std::string> labels_;
     std::vector<int> counts_;
   };
 
